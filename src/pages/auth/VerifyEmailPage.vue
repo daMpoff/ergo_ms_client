@@ -48,7 +48,7 @@ const startCountdown = () => {
       <div class="auth__title mb-4 fs-3 fw-bold text-center">Подтвердите почту</div>
 
       <div class="auth__email mb-4">
-        Ссылка для активации аккаунта отправлена на ваш электронный адрес:
+        Введите код подтверждения отправленный на ваш электронный адрес:
         <a
           :href="`mailto:` + $route.query.email"
           class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
