@@ -27,6 +27,7 @@
     "apexcharts": "^4.1.0",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
+    "dotenv": "^16.4.7",
     "js-cookie": "^3.0.5",
     "lucide-vue-next": "^0.460.0",
     "vue": "^3.5.12",
