@@ -2,6 +2,11 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { verifyConfirmationCode } from '@/js/auth';
+
+const codeChecked = ref(false)
+const router = useRouter()
+
 // Форма
 const form = reactive({
   code: '',
@@ -40,6 +45,10 @@ const startCountdown = () => {
     }
   }, 1000)
 }
+
+const submitForm = async () => { 
+
+}
 </script>
 
 <template>
@@ -50,9 +59,9 @@ const startCountdown = () => {
       <div class="auth__email mb-4">
         Введите код подтверждения отправленный на ваш электронный адрес:
         <a
-          :href="`mailto:` + $route.query.email"
+          :href="`mailto:`"
           class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
-          >{{ $route.query.email }}</a
+          >{{ }}</a
         >
       </div>
 
@@ -70,11 +79,17 @@ const startCountdown = () => {
             {{ errors.code }}
           </div>
         </div>
-      </form>
 
-      <RouterLink :to="{ name: 'Login' }" class="text-decoration-none">
-        <button class="btn btn-primary w-100">Войти в аккаунт</button>
-      </RouterLink>
+        <button class="btn btn-primary w-100" type="submit" :disabled="codeChecked">
+          <span
+            v-if="codeChecked"
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          {{ codeChecked ? 'Выполняется проверка кода...' : 'Проверка кода' }}
+        </button>
+      </form>
 
       <div class="mt-3 text-center">
         Не получили письмо?

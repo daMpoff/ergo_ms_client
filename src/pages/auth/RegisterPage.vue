@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 
 import { validateRegistrationForm, validateRegistrationMethod } from '@/js/validation'
 
-import { validateRegistration, sendConfirmationCode } from '@/js/auth';
+import { registration } from '@/js/auth';
 
 const router = useRouter()
 const loggedIn = ref(false)
@@ -64,7 +64,7 @@ const submitForm = async () => {
     loggedIn.value = true
     successMessage.value = ''
 
-    const registrationResult = await validateRegistration(
+    const registrationResult = await registration(
       form.name, 
       form.login, 
       form.email, 
@@ -73,20 +73,7 @@ const submitForm = async () => {
 
     if (registrationResult.success === true)
     {
-      const sendConfirmationCodeResult = await sendConfirmationCode(form.email);
-
-      if (sendConfirmationCodeResult.success === true)
-      {
-        router.push({ name: 'VerifyEmail', query: { email: form.email } })
-      }
-      else 
-      {
-        errors.name = ' ';
-        errors.login = ' ';
-        errors.email = ' ';
-        errors.password = ' ';
-        errors.passwordConfirm = 'Ошибка отправки кода на email.';
-      }
+      router.push({ name: 'Login' })
     }
     else
     {
