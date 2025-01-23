@@ -7,7 +7,7 @@ import TheHeader from '@/components/header/TheHeader.vue'
 const leftPadding = ref('280px')
 
 // Видимость меню
-const isMenuVisible = ref(true) // По умолчанию, меню видимо
+const isMenuVisible = ref(window.innerWidth >= 1200) // По умолчанию, меню видимо
 const isMenuToggledManually = ref(false) // Флаг, указывающий, что меню было переключено вручную
 const isOverlayVisible = ref(false) // Видимость заднего меню
 
@@ -77,6 +77,10 @@ onBeforeUnmount(() => {
 .layout-page {
   padding-inline-start: v-bind(leftPadding);
   transition: padding-inline-start $transition;
+}
+
+.layout-overlay {
+  z-index: 1004;
 }
 
 @media (width < 1200px) {
