@@ -24,7 +24,7 @@
 <script setup>
     import { useRouter } from 'vue-router';
 
-    const message = 'Добро пожаловать на сайт ERGO MS!';
+    const message = 'Авторизуйтесь в системе.';
 
     const router = useRouter();
 
