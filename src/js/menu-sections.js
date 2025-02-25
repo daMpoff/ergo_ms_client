@@ -1,7 +1,7 @@
 import {
   AtSign,
   Calendar,
-  CircleUserRound,
+  CircleUserRound, Code2,
   Grid2x2,
   House,
   KeyRound,
@@ -22,13 +22,24 @@ export const UserMenuSection = {
     { path: 'Teams', name: 'Команды' },
     { path: 'Projects', name: 'Проекты' },
     { path: 'Connections', name: 'Связи' },
-    { path: 'Analytics', name: 'Статистика' },
   ],
 }
 
+// Аналитика
+export const AnalyzeMenuSection = {
+  id: 2,
+  icon: Code2,
+  routeName: 'Analyze',
+  title: 'Анализ',
+  list: [
+    { path: 'DatabaseAnalyze', name: 'Анализ Bitcoin' },
+  ],
+};
+
+
 // Настройки аккаунта
 export const SettingsMenuSection = {
-  id: 2,
+  id: 3,
   icon: UserCog,
   routeName: 'Settings',
   title: 'Настройки',
@@ -37,13 +48,13 @@ export const SettingsMenuSection = {
     { path: 'SecuritySettings', name: 'Безопасность' },
     { path: 'NotificationSettings', name: 'Уведомления' },
     { path: 'ConnectionSettings', name: 'Связи' },
-    { path: 'Roles', name: 'Ролевые настройки'}
+    { path: 'Roles', name: 'Ролевые настройки' }
   ],
 }
 
 // Электронная почта
 export const EmailMenuSection = {
-  id: 3,
+  id: 4,
   icon: AtSign,
   routeName: 'Email',
   title: 'Электронная почта',
@@ -51,8 +62,9 @@ export const EmailMenuSection = {
 
 // Мессенджер
 export const ChatMenuSection = {
-  id: 4,
+  id: 5,
   icon: MessagesSquare,
   routeName: 'Messenger',
   title: 'Мессенджер',
 }
+

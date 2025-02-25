@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
 import {
+  AnalyzeMenuSection,
   ChatMenuSection,
   EmailMenuSection,
   SettingsMenuSection,
@@ -67,10 +68,12 @@ const toggleGroup = (id) => {
 // Список секций меню
 const menuSections = [
   UserMenuSection,
+  AnalyzeMenuSection,
   SettingsMenuSection,
   EmailMenuSection,
   ChatMenuSection,
-]
+];
+
 
 </script>
 

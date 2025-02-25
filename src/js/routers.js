@@ -6,8 +6,7 @@ const mainRoutes = [
   {
     path: '/',
     redirect: { name: 'Account' },
-    meta: 
-    { 
+    meta: {
       requiresAuth: true,
     },
   },
@@ -15,8 +14,7 @@ const mainRoutes = [
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/pages/NotFound.vue'),
-    meta: 
-    { 
+    meta: {
       title: 'Страница не найдена',
       requiresAuth: true,
     },
@@ -30,8 +28,7 @@ const dashboardRoutes = [
     name: 'Dashboard',
     component: () => import('@/pages/dashboard/ParentLayout.vue'),
     redirect: { name: 'Analytics' },
-    meta: 
-    { 
+    meta: {
       requiresAuth: true,
     },
     children: [
@@ -39,8 +36,7 @@ const dashboardRoutes = [
         path: 'analytics',
         name: 'Analytics',
         component: () => import('@/pages/dashboard/analytics/charts/PageLayout.vue'),
-        meta: 
-        { 
+        meta: {
           requiresAuth: true,
         },
       },
@@ -55,8 +51,7 @@ const userRoutes = [
     name: 'User',
     component: () => import('@/pages/user/ParentLayout.vue'),
     redirect: { name: 'Account' },
-    meta: 
-    { 
+    meta: {
       requiresAuth: true,
     },
     children: [
@@ -64,8 +59,7 @@ const userRoutes = [
         path: 'account',
         name: 'Account',
         component: () => import('@/pages/user/account/ParentLayout.vue'),
-        meta: 
-        { 
+        meta: {
           requiresAuth: true,
         },
       },
@@ -73,41 +67,60 @@ const userRoutes = [
         path: 'teams',
         name: 'Teams',
         component: () => import('@/pages/user/teams/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
       {
         path: 'projects',
         name: 'Projects',
         component: () => import('@/pages/user/projects/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
       {
         path: 'connections',
         name: 'Connections',
         component: () => import('@/pages/user/connections/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
       {
         path: 'analytics',
         name: 'Analytics',
         component: () => import('@/pages/dashboard/analytics/charts/PageLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
     ],
   },
 ]
+
+// Секция "Analyze"
+const analyzeRoutes = [
+  {
+    path: '/user/analyze',
+    name: 'Analyze',
+    component: () => import('@/pages/user/analyze/Analyze.vue'),
+    meta: {
+      requiresAuth: true
+    },
+    children: [
+      {
+        path: 'databaseanalyze',
+        name: 'DatabaseAnalyze',
+        component: () => import('@/pages/user/analyze/DatabaseAnalyze.vue'),
+        meta: {
+          requiresAuth: true
+        },
+      }
+    ]
+  },
+];
+
 
 // Настройки аккаунта
 const settingsRoutes = [
@@ -116,63 +129,56 @@ const settingsRoutes = [
     name: 'Settings',
     component: () => import('@/pages/settings/ParentLayout.vue'),
     redirect: { name: 'AccountSettings' },
-    meta: 
-    { 
-      requiresAuth: true 
+    meta: {
+      requiresAuth: true
     },
     children: [
       {
         path: 'account',
         name: 'AccountSettings',
         component: () => import('@/pages/settings/account/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
       {
         path: 'security',
         name: 'SecuritySettings',
         component: () => import('@/pages/settings/security/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
       {
         path: 'billing',
         name: 'BillingSettings',
         component: () => import('@/pages/settings/billing/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
       {
         path: 'notifications',
         name: 'NotificationSettings',
         component: () => import('@/pages/settings/notifications/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
       {
         path: 'connections',
         name: 'ConnectionSettings',
         component: () => import('@/pages/settings/connections/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
       {
         path: 'roles',
         name: 'Roles',
         component: () => import('@/pages/roles/ParentLayout.vue'),
-        meta: 
-        { 
-          requiresAuth: true 
+        meta: {
+          requiresAuth: true
         },
       },
     ],
@@ -185,9 +191,8 @@ const emailRoutes = [
     path: '/email',
     name: 'Email',
     component: () => import('@/pages/email/ParentLayout.vue'),
-    meta: 
-    { 
-      requiresAuth: true 
+    meta: {
+      requiresAuth: true
     },
   },
 ]
@@ -198,14 +203,12 @@ const messengerRoutes = [
     path: '/messenger',
     name: 'Messenger',
     component: () => import('@/pages/messenger/ParentLayout.vue'),
-    meta: 
-    { 
-      requiresAuth: true 
+    meta: {
+      requiresAuth: true
     },
   },
 ]
 
-//
 const startRoutes = [
   {
     path: '/start-page',
@@ -277,6 +280,7 @@ const routes = [
   ...mainRoutes,
   ...dashboardRoutes,
   ...userRoutes,
+  ...analyzeRoutes,
   ...settingsRoutes,
   ...emailRoutes,
   ...messengerRoutes,
@@ -298,25 +302,18 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth) 
-  {
-    runCheckToken().then(isChecked => 
-    {
+  if (to.meta.requiresAuth) {
+    runCheckToken().then(isChecked => {
       if (isChecked === false) {
         next({ name: 'StartPage' });
-      }
-      else
-      {
+      } else {
         next(true);
       }
-    }).catch(error => 
-    {
+    }).catch(error => {
       console.error('Ошибка проверки токена:', error);
       next({ name: 'StartPage' });
     });
-  } 
-  else 
-  {
+  } else {
     next();
   }
 });
@@ -325,6 +322,5 @@ async function runCheckToken() {
   const isChecked = await checkToken();
   return isChecked;
 }
-
 
 export default router
