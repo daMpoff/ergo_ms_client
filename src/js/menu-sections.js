@@ -1,14 +1,9 @@
 import {
   AtSign,
-  Calendar,
   CircleUserRound,
-  Grid2x2,
-  House,
-  KeyRound,
-  Lock,
   MessagesSquare,
   UserCog,
-  Wallet,
+  ChartCandlestick,
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -55,4 +50,11 @@ export const ChatMenuSection = {
   icon: MessagesSquare,
   routeName: 'Messenger',
   title: 'Мессенджер',
+}
+
+export const EducationAnalyticMenuSection = {
+  id: 5,
+  icon: ChartCandlestick,
+  routeName: 'EducationAnalytic',
+  title: 'Учебная аналитика',
 }

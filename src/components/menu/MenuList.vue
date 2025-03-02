@@ -1,11 +1,12 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
+import { ChevronLeft, Cog} from 'lucide-vue-next'
 import {
   ChatMenuSection,
   EmailMenuSection,
   SettingsMenuSection,
   UserMenuSection,
+  EducationAnalyticMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -70,6 +71,7 @@ const menuSections = [
   SettingsMenuSection,
   EmailMenuSection,
   ChatMenuSection,
+  EducationAnalyticMenuSection,
 ]
 
 </script>
