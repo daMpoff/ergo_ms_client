@@ -52,9 +52,15 @@ export const ChatMenuSection = {
   title: 'Мессенджер',
 }
 
+// Модуль учебной аналитики
 export const EducationAnalyticMenuSection = {
   id: 5,
   icon: ChartCandlestick,
   routeName: 'EducationAnalytic',
   title: 'Учебная аналитика',
+  list: [
+    { path: 'UserGeneralSettings', name: 'Общие сведения' },
+    { path: 'EducationMonitoringPage', name: 'Учебная аналитика' },
+    { path: 'Reports', name: 'Отчёты' },
+  ],
 }

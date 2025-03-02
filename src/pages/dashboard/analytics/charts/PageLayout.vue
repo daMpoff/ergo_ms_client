@@ -9,7 +9,6 @@ import CardProfileReport from '@/pages/dashboard/analytics/cards/CardProfileRepo
 import CardOrderStatistics from '@/pages/dashboard/analytics/cards/CardOrderStatistics.vue'
 import CardFinanceTab from '@/pages/dashboard/analytics/cards/CardFinanceTab.vue'
 import CardTransactions from '@/pages/dashboard/analytics/cards/CardTransactions.vue'
-import TechnologyPopularityChart from '@/pages/dashboard/analytics/charts/TechnologyPopularityChart.vue'
 </script>
 
 <template>
@@ -35,9 +34,7 @@ import TechnologyPopularityChart from '@/pages/dashboard/analytics/charts/Techno
     <div class="col-md-6 col-lg-4 order-1 mb-4"><CardFinanceTab /></div>
     <div class="col-md-6 col-lg-4 order-2 mb-4"><CardTransactions /></div>
   </div>
-  <div class="row">
-    <div ><TechnologyPopularityChart /></div>
-  </div>
+  
 </template>
 
 <style lang="scss" scoped></style>

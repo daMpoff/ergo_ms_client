@@ -272,6 +272,43 @@ const startRoutes = [
   },
 ]
 
+const educationAnalyticRoutes = [
+  {
+    path: '/education-analytic', // Основной путь
+    name: 'EducationAnalytic', // Имя маршрута (должно совпадать с routeName в меню)
+    component: () => import('@/pages/educations-analytics/ParentLayout.vue'), // Основной компонент
+    meta: { 
+      requiresAuth: true, // Требуется авторизация
+    },
+    children: [
+      {
+        path: 'general-settings', // Подмаршрут для "Общие сведения"
+        name: 'UserGeneralSettings', // Имя маршрута (должно совпадать с path в меню)
+        component: () => import('@/pages/educations-analytics/UserGeneralSettings.vue'), // Компонент для подраздела
+        meta: { 
+          requiresAuth: true, // Требуется авторизация
+        },
+      },
+      {
+        path: 'education-monitoring', // Подмаршрут для "Учебная аналитика"
+        name: 'EducationMonitoringPage', // Имя маршрута (должно совпадать с path в меню)
+        component: () => import('@/pages/educations-analytics/EducationMonitoringPage.vue'), // Компонент для подраздела
+        meta: { 
+          requiresAuth: true, // Требуется авторизация
+        },
+      },
+      {
+        path: 'reports', // Подмаршрут для "Отчёты"
+        name: 'Reports', // Имя маршрута (должно совпадать с path в меню)
+        component: () => import('@/pages/educations-analytics/ReportsPage.vue'), // Компонент для подраздела
+        meta: { 
+          requiresAuth: true, // Требуется авторизация
+        },
+      },
+    ],
+  },
+];
+
 const routes = [
   ...startRoutes,
   ...mainRoutes,
@@ -280,7 +317,8 @@ const routes = [
   ...settingsRoutes,
   ...emailRoutes,
   ...messengerRoutes,
-]
+  ...educationAnalyticRoutes, 
+];
 
 routes.forEach(route => {
   if (!route.meta || !route.meta.hasOwnProperty('startRoute')) {
