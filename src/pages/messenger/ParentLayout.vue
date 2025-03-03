@@ -2,10 +2,10 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import MessengerHeader from '@/pages/messenger/MessengerHeader.vue'
-import MessengerNavbar from '@/pages/messenger/MessengerNavbar.vue'
 import MessengerLeft from '@/pages/messenger/MessengerLeft.vue'
 import MessengerRight from '@/pages/messenger/MessengerRight.vue'
 import MessengerContent from '@/pages/messenger/MessengerContent.vue'
+import MessengerNavbar from '@/pages/messenger/MessengerNavbar.vue'
 
 // Боковое левое и правое окно
 const isLeftSideOpen = ref(false)
@@ -29,6 +29,26 @@ watch(
   () => activeDialog.value,
   () => (isRightSideOpen.value = false),
 )
+
+// ==================================================
+
+// Статус активности пользователя
+const userStatus = ref('online')
+const choiceStatus = (status) => (userStatus.value = status)
+
+// ==================================================
+
+// Последние сообщения
+const lastMessages = ref([
+  { message: 'Хорошо)', date: '10:11' },
+  { message: 'Сообщений пока нет', date: '' },
+  { message: 'Сообщений пока нет', date: '' },
+])
+
+const changeLastMessage = (message) => {
+  lastMessages.value[message.dialog - 1].message = message.text
+  lastMessages.value[message.dialog - 1].date = message.date
+}
 
 // ==================================================
 
@@ -57,10 +77,7 @@ const autoToggleMessengerMenu = () => {
 const closeMessengerMenu = () => {
   if (isLeftSideOpen.value) isLeftSideOpen.value = false
   else if (isRightSideOpen.value) isRightSideOpen.value = false
-  else {
-    isMessengerMenuOpen.value = false
-    isOverlayVisible.value = false
-  }
+  else toggleMessengerMenu()
 }
 
 // Инициализация
@@ -73,11 +90,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', autoToggleMessengerMe
     <Transition name="slide">
       <div
         v-if="isMessengerMenuOpen"
-        class="messenger-sidebar beautiful-scrollbar card shadow-none rounded-0 border-end"
-        :class="{ collapsed: !isMessengerMenuOpen }"
+        class="messenger-sidebar card shadow-none rounded-0 border-end"
       >
         <MessengerNavbar
           :activeDialog="activeDialog"
+          :userStatus="userStatus"
+          :lastMessage="lastMessages"
           @toggleMessengerMyInfo="toggleSideLeft"
           @openDialog="setActiveDialog"
         />
@@ -85,8 +103,15 @@ onBeforeUnmount(() => window.removeEventListener('resize', autoToggleMessengerMe
     </Transition>
 
     <Transition name="slide">
-      <div v-if="isLeftSideOpen" class="messenger-sidebar card shadow-none rounded-0 border-end">
-        <MessengerLeft @toggleMessengerMyInfo="toggleSideLeft" />
+      <div
+        v-if="isLeftSideOpen"
+        class="messenger-sidebar beautiful-scrollbar card shadow-none rounded-0 border-end"
+      >
+        <MessengerLeft
+          :userStatus="userStatus"
+          @toggleMessengerMyInfo="toggleSideLeft"
+          @choiceStatus="choiceStatus"
+        />
       </div>
     </Transition>
 
@@ -96,7 +121,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', autoToggleMessengerMe
         @toggleMessengerMenu="toggleMessengerMenu"
         @toggleMessengerBuddyInfo="toggleRightSide"
       />
-      <MessengerContent />
+      <MessengerContent :activeDialog="activeDialog" @changeLastMessage="changeLastMessage" />
       <Transition name="slide-right">
         <div
           v-if="isRightSideOpen"
@@ -145,7 +170,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', autoToggleMessengerMe
   left: 0;
   width: 20rem;
   height: 100%;
-  z-index: 1050;
+  z-index: 11;
 
   @media (width <= 767px) {
     width: 100%;
@@ -154,7 +179,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', autoToggleMessengerMe
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: all 0.6s ease-in-out;
+  transition: all $transition;
 }
 .slide-enter-from,
 .slide-leave-to {
@@ -172,7 +197,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', autoToggleMessengerMe
   right: 0;
   width: 20rem;
   height: 100%;
-  z-index: 1010;
+  z-index: 11;
 
   @media (width <= 767px) {
     width: 100%;
@@ -181,7 +206,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', autoToggleMessengerMe
 
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: transform 0.6s ease-in-out;
+  transition: transform $transition;
 }
 
 .slide-right-enter-from,

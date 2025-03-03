@@ -133,10 +133,11 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
 
   transition:
     max-height 0.5s ease,
-    opacity 0.5s ease;
+    opacity 0.5s ease-in-out;
 }
+
 .side-group__list.is-open {
-  max-height: 300px;
+  max-height: 320px;
   opacity: 1;
 }
 
@@ -146,9 +147,10 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
   transform: translateY(-10px);
 
   transition:
-    opacity 0.5s ease,
-    transform 0.5s ease;
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
+
 .side-group__list.is-open .side-group__list-item {
   opacity: 1;
   transform: translateY(0);

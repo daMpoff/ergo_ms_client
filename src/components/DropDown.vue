@@ -32,21 +32,6 @@ const props = defineProps({
 </template>
 
 <style lang="scss">
-// Анимация
-.dropdown .dropdown-menu {
-  transition:
-    max-height 0.3s,
-    opacity 0.2s 0.1s,
-    visibility 0s 0.3s;
-
-  max-height: 0;
-  display: block;
-  overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
 // Кнопка открытия
 .dropdown-button {
   cursor: pointer;
@@ -68,6 +53,8 @@ const props = defineProps({
 // Анимация
 .dropdown .dropdown-menu,
 .dropdown-center .dropdown-menu {
+  background-color: var(--bs-card-bg);
+
   transition:
     max-height 0.3s,
     opacity 0.2s 0.1s,

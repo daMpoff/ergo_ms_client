@@ -5,22 +5,15 @@
 
 // Секция при наведении
 .hover-section {
-  transition: background-color $transition;
+  transition:
+    background-color $transition,
+    box-shadow $transition;
 
   &:hover {
     cursor: pointer;
     background-color: var(--color-secondary-background);
   }
 }
-
-// Красивая прокрутка
-.beautiful-scrollbar {
-  overflow: auto;
-  scrollbar-width: thin;
-  scroll-behavior: smooth;
-  scrollbar-color: var(--color-secondary-background) transparent;
-}
-
 
 // Задний фон
 .layout-overlay {
@@ -31,7 +24,7 @@
   height: 100%;
   background-color: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(2px);
-  z-index: 1004;
+  z-index: 10;
 
   opacity: 1;
   transition: opacity 0.3s ease;
@@ -69,7 +62,9 @@
   }
   // Avatar Status indication
   &.avatar-online,
-  &.avatar-offline,{
+  &.avatar-offline,
+  &.avatar-away,
+  &.avatar-busy {
     &:after {
       content: '';
       position: absolute;
@@ -78,7 +73,8 @@
       width: 8px;
       height: 8px;
       border-radius: 100%;
-      box-shadow: 0 0 0 2px $white;
+
+      box-shadow: 0 0 0 2px var(--bs-card-bg);
     }
   }
   &.avatar-online:after {
@@ -86,6 +82,12 @@
   }
   &.avatar-offline:after {
     background-color: $secondary;
+  }
+  &.avatar-away:after {
+    background-color: $warning;
+  }
+  &.avatar-busy:after {
+    background-color: $danger;
   }
 }
 
@@ -151,11 +153,51 @@
   }
 }
 
-.apexcharts-tooltip {
-  box-shadow: 0 4px 12px 0 rgba(13, 35, 67, 0.03) !important;
-  background: var(--color-secondary-background) !important;
+// График
+svg.apexcharts-svg {
+  background: transparent !important;
+}
+.apexcharts-marker-circle,
+.apexcharts-marker-square,
+.apexcharts-marker,
+.apexcharts-pie-area {
+  stroke: transparent;
+}
+.apexcharts-heatmap-rect,
+.apexcharts-track path,
+.apexcharts-pie-area {
+  stroke: var(--bs-secondary-bg-subtle);
+}
+.apexcharts-gridline,
+.apexcharts-plot-series polygon,
+.apexcharts-grid-borders line[stroke-width='1'],
+.apexcharts-xaxis-tick {
+  stroke: var(--bs-border-color);
+}
+.apexcharts-plot-series polygon {
+  fill: var(--bs-secondary-bg-subtle);
 }
 
-.no-select {
-  user-select: none;
+// Календарь v-календарь
+.vc-container .vc-weekday-1,
+.vc-container .vc-weekday-7 {
+  color: $primary;
+}
+
+.vc-container {
+  background-color: var(--bs-card-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-heading-color);
+
+  transition: background-color $transition;
+}
+
+.vc-header .vc-arrow,
+.vc-header .vc-title {
+  color: var(--bs-heading-color);
+  background-color: transparent;
+
+  &:hover {
+    background-color: var(--bs-secondary-bg-subtle);
+  }
 }
