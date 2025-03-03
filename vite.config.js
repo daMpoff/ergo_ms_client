@@ -1,29 +1,29 @@
-import { fileURLToPath, URL } from 'node:url'; // Импорт функций для работы с URL и путями
+import { fileURLToPath, URL } from 'node:url' // Импорт функций для работы с URL и путями
 
-import vue from '@vitejs/plugin-vue'; // Импорт плагина Vue для Vite
-import { defineConfig } from 'vite'; // Импорт функции для определения конфигурации Vite
-import vueDevTools from 'vite-plugin-vue-devtools'; // Импорт плагина Vue DevTools для Vite
+import vue from '@vitejs/plugin-vue' // Импорт плагина Vue для Vite
+import { defineConfig } from 'vite' // Импорт функции для определения конфигурации Vite
+import vueDevTools from 'vite-plugin-vue-devtools' // Импорт плагина Vue DevTools для Vite
 
-import dotenv from 'dotenv';
-import path from 'path';
+import dotenv from 'dotenv'
+import path from 'path'
 
 // Получение абсолютного пути к файлу .env, находящемуся на одну папку выше
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // Загрузка переменных окружения из файла .env, находящегося на одну папку выше
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') })
 
 // Определение конфигурации Vite
 export default defineConfig({
   // Подключение плагинов
   plugins: [
     vue(), // Подключение плагина Vue для Vite
-    //vueDevTools() // Подключение плагина Vue DevTools для Vite
+    vueDevTools(), // Подключение плагина Vue DevTools для Vite
   ],
 
   // Настройка разрешения путей
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)) // Создание псевдонима '@' для пути './src'
+      '@': fileURLToPath(new URL('./src', import.meta.url)), // Создание псевдонима '@' для пути './src'
     },
   },
 
@@ -42,7 +42,7 @@ export default defineConfig({
   // Настройка сервера разработки
   server: {
     port: parseInt(process.env.CLIENT_PORT, 10) || 5123, // Установка порта для сервера разработки
-    host: process.env.CLEINT_HOST || 'localhost', // Установка хоста для сервера разработки
+    host: process.env.CLIENT_HOST || 'localhost', // Установка хоста для сервера разработки
     https: false, // Отключение HTTPS для сервера разработки
   },
-});
+})

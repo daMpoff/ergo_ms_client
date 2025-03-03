@@ -1,8 +1,4 @@
 {
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
+  "compilerOptions": { "paths": { "@/*": ["./src/*"] }, "types": ["pinia"] },
   "exclude": ["node_modules", "dist"]
 }
