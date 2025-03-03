@@ -321,6 +321,7 @@ const routes = [
 ];
 
 routes.forEach(route => {
+  // eslint-disable-next-line no-prototype-builtins
   if (!route.meta || !route.meta.hasOwnProperty('startRoute')) {
     route.meta = route.meta || {};
     route.meta.startRoute = false;

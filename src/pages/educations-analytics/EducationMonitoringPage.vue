@@ -4,7 +4,7 @@
       <router-view /> <!-- Здесь будут отображаться подразделы -->
     </div>
     <div class="row">
-    <div ><TechnologyPopularityChart /></div>
+    <div class="col-xxl-8 mb-4 order-0"><TechnologyPopularityChart /></div>
   </div>
   </template>
   
