@@ -6,7 +6,7 @@ const thirtyMinutesInDays = 30 / (24 * 60);
 
 export const authorization = async (login, password) => {
     try {
-        const response = await axios.post('http://127.0.0.1:8000/api/adp/authorization/', {
+        const response = await axios.post('http://127.0.0.1:8000/api/cms/adp/authorization/', {
             username: login,
             password: password,
         });
@@ -32,7 +32,7 @@ export const authorization = async (login, password) => {
 export const validateRegistration = async (name, login, email, password) => {
     try 
     { 
-        const response = await axios.post('http://127.0.0.1:8000/api/adp/validate_registration/', {
+        const response = await axios.post('http://127.0.0.1:8000/api/cms/adp/validate_registration/', {
             first_name: name,
             username: login,
             email: email,
@@ -57,7 +57,7 @@ export const validateRegistration = async (name, login, email, password) => {
 
 export const sendConfirmationCode = async (email) => {
     try {
-        const response = await axios.post('http://127.0.0.1:8000/api/adp/send_code/', {
+        const response = await axios.post('http://127.0.0.1:8000/api/cms/adp/send_code/', {
             email: email,
         });
 
@@ -78,7 +78,7 @@ export const sendConfirmationCode = async (email) => {
 
 export const verifyConfirmationCode = async (email, code) => {
     try {
-        const response = await axios.post('http://127.0.0.1:8000/api/adp/verify_code/', {
+        const response = await axios.post('http://127.0.0.1:8000/api/cms/adp/verify_code/', {
             email: email,
             code: code,
         });
@@ -101,7 +101,7 @@ export const verifyConfirmationCode = async (email, code) => {
 export const registration = async (name, login, email, password) => {
     try 
     { 
-        const response = await axios.post('http://127.0.0.1:8000/api/adp/registration/', {
+        const response = await axios.post('http://127.0.0.1:8000/api/cms/adp/registration/', {
             first_name: name,
             username: login,
             email: email,
@@ -134,7 +134,7 @@ export const checkToken = async () => {
 
     try 
     {
-        const response = await axios.get('http://127.0.0.1:8000/api/adp/protected/', {
+        const response = await axios.get('http://127.0.0.1:8000/api/cms/adp/protected/', {
             headers: {
                 Authorization: `Bearer ${token}`
             }
