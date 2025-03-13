@@ -60,7 +60,7 @@ export const EducationAnalyticMenuSection = {
   title: 'Учебная аналитика',
   list: [
     { path: 'UserGeneralSettings', name: 'Общие сведения' },
-    { path: 'EducationMonitoringPage', name: 'Учебная аналитика' },
+    { path: 'EducationMonitoringPage', name: 'Статистика' },
     { path: 'Reports', name: 'Отчёты' },
   ],
 }
