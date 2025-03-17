@@ -388,6 +388,15 @@ const startRoutes = [
     },
   },
 ]
+// Формы ввода
+const shortcodeRoutes = [
+  {
+    path: '/shortcodes',
+    name: 'Shortcodes',
+    component: () => import('@/pages/shortcodes/ParentLayout.vue'),
+    meta: { title: 'Шорткоды', requiresAuth: true },
+  },
+]
 
 const routes = [
   ...startRoutes,
@@ -406,6 +415,7 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...shortcodeRoutes
 ]
 
 routes.forEach((route) => {

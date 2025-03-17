@@ -1,5 +1,6 @@
 import {
   AtSign,
+  Braces,
   Calendar,
   ChartSpline,
   CircleUserRound,
@@ -141,4 +142,10 @@ export const ComponentsMenuSection = {
     { path: 'ListGroups', name: 'Группы списков' },
     { path: 'Typography', name: 'Типография' },
   ],
+}
+export const ShortcodesMenuSection = {
+  id: 14,
+  icon: Braces,
+  routeName: 'Shortcodes',
+  title: 'Редактор страниц',
 }
