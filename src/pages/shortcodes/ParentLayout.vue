@@ -3,7 +3,7 @@
     <div class="row">
       <!-- Шорткоды, разделение по категориям -->
       <div class="col-md-2">
-        <h4>Шорткоды</h4>
+        <h2>Шорткоды</h2>
         <div v-for="(category, categoryIndex) in availableComponents" :key="categoryIndex">
           <h5>{{ category.name }}</h5>
           <div
