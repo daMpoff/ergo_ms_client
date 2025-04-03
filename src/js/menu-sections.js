@@ -1,17 +1,21 @@
 import {
   AtSign,
+<<<<<<< HEAD
   Calendar,
   ChartSpline,
   CircleUserRound,
   Component,
   Grid2x2,
   Map,
+=======
+  CircleUserRound,
+>>>>>>> ccf887ac147e794a38253ce26dfcacb60131423f
   MessagesSquare,
   PictureInPicture2,
   Table2,
   TextCursorInput,
   UserCog,
-  Wallet,
+  ChartCandlestick,
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -60,6 +64,7 @@ export const ChatMenuSection = {
   title: 'Мессенджер',
 }
 
+<<<<<<< HEAD
 // Карты
 export const MapsMenuSection = {
   id: 5,
@@ -142,3 +147,17 @@ export const ComponentsMenuSection = {
     { path: 'Typography', name: 'Типография' },
   ],
 }
+=======
+// Модуль учебной аналитики
+export const EducationAnalyticMenuSection = {
+  id: 5,
+  icon: ChartCandlestick,
+  routeName: 'EducationAnalytic',
+  title: 'Учебная аналитика',
+  list: [
+    { path: 'UserGeneralSettings', name: 'Общие сведения' },
+    { path: 'EducationMonitoringPage', name: 'Статистика' },
+    { path: 'Reports', name: 'Отчёты' },
+  ],
+}
+>>>>>>> ccf887ac147e794a38253ce26dfcacb60131423f

@@ -1,11 +1,12 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
+import { ChevronLeft, Cog} from 'lucide-vue-next'
 import {
   ChatMenuSection,
   EmailMenuSection,
   SettingsMenuSection,
   UserMenuSection,
+<<<<<<< HEAD
   MapsMenuSection,
   BillingMenuSection,
   CalendarMenuSection,
@@ -15,6 +16,9 @@ import {
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+=======
+  EducationAnalyticMenuSection,
+>>>>>>> ccf887ac147e794a38253ce26dfcacb60131423f
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -80,6 +84,7 @@ const menuSections = [
   SettingsMenuSection,
   EmailMenuSection,
   ChatMenuSection,
+<<<<<<< HEAD
   MapsMenuSection,
   BillingMenuSection,
   CalendarMenuSection,
@@ -89,6 +94,9 @@ const menuSections = [
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+=======
+  EducationAnalyticMenuSection,
+>>>>>>> ccf887ac147e794a38253ce26dfcacb60131423f
 ]
 
 // Список разделителей
