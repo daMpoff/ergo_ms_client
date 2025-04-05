@@ -1,6 +1,7 @@
 import {
   AtSign,
   Calendar,
+  ChartCandlestick,
   ChartSpline,
   CircleUserRound,
   Component,
@@ -140,5 +141,22 @@ export const ComponentsMenuSection = {
     { path: 'Carousel', name: 'Карусель' },
     { path: 'ListGroups', name: 'Группы списков' },
     { path: 'Typography', name: 'Типография' },
+  ],
+}
+
+// Модуль учебной аналитики
+export const EducationAnalyticMenuSection = {
+  id: 14,
+  icon: ChartCandlestick,
+  routeName: 'EducationAnalyticModule',
+  title: 'Учебная аналитика',
+  list: [
+    { path: 'MainPage', name: "Главное" },
+    { path: 'StatsPage', name: "Статистика" },
+    { path: 'LearningTrackPage', name: "Траектория" },
+    { path: 'ReportsPage', name: "Отчёты" },
+    { path: 'ProfilePage', name: "Профиль" },
+    { path: 'AdminPanelPage', name: "admin" },
+    { path: 'SuperUserPage', name: "super user" },
   ],
 }

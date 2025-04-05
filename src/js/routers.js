@@ -322,6 +322,60 @@ const componentsRoutes = [
   },
 ]
 
+  // Маршрутизация страниц модуля учебной аналитики
+  const learningAnalyticsRoutes = [
+    {
+      path: '/education_analytics',
+      name: 'EducationAnalyticModule',
+      component: () => import('@/pages/education_analytics_module/ParentLayout.vue'),
+      redirect: { name: 'MainPage' },
+      children: [
+        {
+          path: 'main',
+          name: 'MainPage',
+          component: () => import('@/pages/education_analytics_module/MainPage.vue'),
+          meta: { title: 'MainPage', requiresAuth: true },
+        },
+        {
+          path: 'learning_track',
+          name: 'LearningTrackPage',
+          component: () => import('@/pages/education_analytics_module/LearningTrack.vue'),
+          meta: { title: 'LearningTrackPage', requiresAuth: true },
+        },
+        {
+          path: 'reports',
+          name: 'ReportsPage',
+          component: () => import('@/pages/education_analytics_module/ReportsPage.vue'),
+          meta: { title: 'ReportsPage', requiresAuth: true },
+        },
+        {
+          path: 'stats',
+          name: 'StatsPage',
+          component: () => import('@/pages/education_analytics_module/StatsPage.vue'),
+          meta: { title: 'StatsPage', requiresAuth: true },
+        },
+        {
+          path: 'profile',
+          name: 'ProfilePage',
+          component: () => import('@/pages/education_analytics_module/ProfilePage.vue'),
+          meta: { title: 'ProfilePage', requiresAuth: true },
+        },
+        {
+          path: 'admin',
+          name: 'AdminPanelPage',
+          component: () => import('@/pages/education_analytics_module/AdminPanelPage.vue'),
+          meta: { title: 'AdminPanelPage', requiresAuth: true },
+        },
+        {
+          path: 'root',
+          name: 'SuperUserPage',
+          component: () => import('@/pages/education_analytics_module/SuperUserPanelPage.vue'),
+          meta: { title: 'SuperUserPage', requiresAuth: true },
+        },
+    ],
+    },
+  ]
+
 //
 const startRoutes = [
   {
@@ -389,6 +443,8 @@ const startRoutes = [
   },
 ]
 
+
+
 const routes = [
   ...startRoutes,
   ...mainRoutes,
@@ -406,6 +462,7 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...learningAnalyticsRoutes,
 ]
 
 routes.forEach((route) => {

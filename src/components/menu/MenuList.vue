@@ -15,6 +15,7 @@ import {
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  EducationAnalyticMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -78,6 +79,7 @@ const toggleGroup = (id) => {
 const menuSections = [
   UserMenuSection,
   SettingsMenuSection,
+  EducationAnalyticMenuSection,
   EmailMenuSection,
   ChatMenuSection,
   MapsMenuSection,
