@@ -1,11 +1,12 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
+import { ChevronLeft, Cog} from 'lucide-vue-next'
 import {
   ChatMenuSection,
   EmailMenuSection,
   SettingsMenuSection,
   UserMenuSection,
+
   MapsMenuSection,
   BillingMenuSection,
   CalendarMenuSection,

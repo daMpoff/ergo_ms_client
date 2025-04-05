@@ -1,8 +1,8 @@
 import {
   AtSign,
   Calendar,
-  ChartCandlestick,
   ChartSpline,
+  ChartCandlestick,
   CircleUserRound,
   Component,
   Grid2x2,
@@ -60,6 +60,7 @@ export const ChatMenuSection = {
   routeName: 'Messenger',
   title: 'Мессенджер',
 }
+
 
 // Карты
 export const MapsMenuSection = {
