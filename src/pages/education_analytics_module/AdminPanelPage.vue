@@ -2,7 +2,6 @@
   <div>
     <h2 class="mb-4">Админ-панель</h2>
     <router-view />
-    
     <div class="database-management card rounded-3 p-4 mb-4">
       <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -20,7 +19,7 @@
               </template>
               <template v-else>
                 <Download :size="20" class="me-2"/> 
-                <span>Выгрузить данные модуля</span>
+                <span>Выгрузить данные модуля (.csv)</span>
               </template>
             </button>
             <button 
@@ -288,10 +287,11 @@ const clearDatabase = async () => {
   try {
     isClearing.value = true
     showToast('Очистка базы данных...', TOAST_TYPES.INFO)
-    // TODO: Добавить логику очистки
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Имитация очистки
+    
+    await axios.post('http://localhost:8000/api/learning_analytics/tables/clear/')
+    
+    await fetchTablesList() // Обновляем список таблиц
     showToast('База данных успешно очищена', TOAST_TYPES.SUCCESS)
-    await fetchTablesList()
   } catch (error) {
     console.error('Error clearing database:', error)
     showToast('Ошибка при очистке базы данных', TOAST_TYPES.ERROR)
