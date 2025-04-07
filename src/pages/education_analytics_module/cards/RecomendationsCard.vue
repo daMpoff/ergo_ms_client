@@ -1,57 +1,59 @@
 <template>
-    <div class="recommendations-container container-fluid p-0">
-      <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-body p-4">
+    <div class="recommendations-container-fluid p-0 w-100">
+      <div class="card border-0">
+        <div class="card-body p-4 p-lg-5">
           <!-- Заголовок и описание -->
-          <div class="mb-4">
-            <h2 class="mb-2 fw-bold">Персонализированные рекомендации</h2>
-            <p class="text-muted mb-0">Подборка материалов для вашего профессионального роста</p>
+          <div class="mb-4 mb-lg-5 text-center text-lg-start">
+            <h2 class="mb-2 fw-bold display-6">Персонализированные рекомендации</h2>
+            <p class="text-muted mb-0 fs-5">Подборка материалов для вашего профессионального роста</p>
           </div>
   
           <!-- Табы категорий -->
-          <ul class="nav nav-tabs mb-4" id="recommendationsTab" role="tablist">
-            <li 
-              v-for="category in categories"
-              :key="category.id"
-              class="nav-item"
-              role="presentation"
-            >
-              <button
-                @click="selectCategory(category.id)"
-                :class="{ active: selectedCategory === category.id }"
-                class="nav-link"
-                type="button"
+          <div class="d-flex justify-content-center justify-content-lg-start mb-4 mb-lg-5">
+            <ul class="nav nav-tabs flex-nowrap overflow-auto" style="width: 100%">
+              <li 
+                v-for="category in categories"
+                :key="category.id"
+                class="nav-item flex-shrink-0"
+                role="presentation"
               >
-                {{ category.name }}
-              </button>
-            </li>
-          </ul>
+                <button
+                  @click="selectCategory(category.id)"
+                  :class="{ active: selectedCategory === category.id }"
+                  class="nav-link px-4 py-2"
+                  type="button"
+                >
+                  {{ category.name }}
+                </button>
+              </li>
+            </ul>
+          </div>
   
           <!-- Контент рекомендаций -->
           <div class="tab-content">
             <div class="tab-pane fade show active">
-              <div v-if="filteredRecommendations.length" class="row g-4">
+              <div v-if="filteredRecommendations.length" class="row g-4 g-lg-5">
                 <div 
                   v-for="recommendation in filteredRecommendations"
                   :key="recommendation.id"
-                  class="col-12 col-md-6 col-lg-4"
+                  class="col-12 col-md-6 col-xl-4"
                 >
-                  <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
-                    <div class="card-body d-flex flex-column">
+                  <div class="card h-100 border-0 shadow-sm hover-shadow transition-all h-100">
+                    <div class="card-body d-flex flex-column p-4">
                       <!-- Бейдж типа -->
                       <span 
-                        class="badge mb-3 align-self-start"
+                        class="badge mb-3 align-self-start px-3 py-2"
                         :class="`bg-${getBadgeVariant(recommendation.type)}-subtle text-${getBadgeVariant(recommendation.type)}`"
                       >
                         {{ getTypeName(recommendation.type) }}
                       </span>
                       
                       <!-- Заголовок и описание -->
-                      <h5 class="card-title">{{ recommendation.title }}</h5>
-                      <p class="card-text text-muted mb-3">{{ recommendation.description }}</p>
+                      <h5 class="card-title fs-5 fw-bold">{{ recommendation.title }}</h5>
+                      <p class="card-text text-muted mb-3 flex-grow-1">{{ recommendation.description }}</p>
                       
                       <!-- Мета-информация -->
-                      <div class="mt-auto">
+                      <div class="mt-auto w-100">
                         <div class="d-flex gap-3 text-muted small mb-3">
                           <span v-if="recommendation.duration" class="d-flex align-items-center gap-1">
                             <i class="bi bi-clock"></i>
@@ -67,7 +69,7 @@
                         <a 
                           :href="recommendation.link" 
                           target="_blank"
-                          class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                          class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2"
                         >
                           Изучить
                           <i class="bi bi-arrow-right"></i>
@@ -81,10 +83,10 @@
               <!-- Сообщение, если нет рекомендаций -->
               <div v-else class="text-center py-5">
                 <div class="mb-3">
-                  <i class="bi bi-info-circle text-muted" style="font-size: 2.5rem;"></i>
+                  <i class="bi bi-info-circle text-muted" style="font-size: 3rem;"></i>
                 </div>
-                <h5 class="text-muted">Рекомендации не найдены</h5>
-                <p class="text-muted">Попробуйте выбрать другую категорию</p>
+                <h5 class="text-muted fs-4">Рекомендации не найдены</h5>
+                <p class="text-muted fs-5">Попробуйте выбрать другую категорию</p>
               </div>
             </div>
           </div>
@@ -203,34 +205,54 @@
   </script>
   
   <style scoped>
-  .recommendations-container {
-    max-width: 1200px;
-    margin: 0 auto;
+  .recommendations-container-fluid {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .card {
+    border-radius: 0;
   }
   
   .hover-shadow {
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    border-radius: 12px;
   }
   
   .hover-shadow:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
   }
   
   .transition-all {
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+  }
+  
+  .nav-tabs {
+    border-bottom: none;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  
+  .nav-tabs::-webkit-scrollbar {
+    display: none;
   }
   
   .nav-tabs .nav-link {
-    color: var(--bs-gray-600);
+    color: var(--bs-gray-700);
     font-weight: 500;
     border: none;
-    padding: 0.75rem 1.25rem;
+    padding: 0.75rem 1.5rem;
     position: relative;
+    font-size: 1.1rem;
+    white-space: nowrap;
   }
   
   .nav-tabs .nav-link:hover {
     color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), 0.05);
   }
   
   .nav-tabs .nav-link.active {
@@ -243,10 +265,11 @@
     content: '';
     position: absolute;
     bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
+    left: 1rem;
+    right: 1rem;
+    height: 3px;
     background: var(--bs-primary);
+    border-radius: 3px 3px 0 0;
   }
   
   .bg-purple-subtle {
@@ -255,5 +278,11 @@
   
   .text-purple {
     color: #6f42c1 !important;
+  }
+  
+  @media (min-width: 992px) {
+    .card-body {
+      padding: 2rem !important;
+    }
   }
   </style>

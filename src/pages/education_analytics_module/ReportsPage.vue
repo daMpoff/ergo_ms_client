@@ -1,10 +1,10 @@
 <template>
-    <div>
+  <div>
       <h2>Отчёты</h2>
       <router-view /> <!-- Здесь будут отображаться подразделы -->
     </div>
-  </template>
-  
+</template>
+
   <script setup>
   // Логика для основного раздела
   </script>

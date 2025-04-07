@@ -152,12 +152,12 @@ export const EducationAnalyticMenuSection = {
   routeName: 'EducationAnalyticModule',
   title: 'Учебная аналитика',
   list: [
-    { path: 'MainPage', name: "Главное" },
+    { path: 'MainPage', name: "Общее" },
     { path: 'StatsPage', name: "Статистика" },
     { path: 'LearningTrackPage', name: "Траектория" },
     { path: 'ReportsPage', name: "Отчёты" },
     { path: 'ProfilePage', name: "Профиль" },
-    { path: 'AdminPanelPage', name: "admin" },
-    { path: 'SuperUserPage', name: "super user" },
+    { path: 'AdminPanelPage', name: "Админ-панель" },
+    { path: 'SuperUserPage', name: "SAdmin  " },
   ],
 }
