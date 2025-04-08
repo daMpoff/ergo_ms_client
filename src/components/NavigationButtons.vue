@@ -1,13 +1,21 @@
+<!-- NavigationsButton.vue -->
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 
-defineProps({
+const props = defineProps({
   data: { type: Array, default: () => [] },
 })
 
+const route = useRoute()
 const scrollContainer = ref(null)
 const isScrolledToEnd = ref(false)
 const isScrolledToStart = ref(true)
+
+const showNavigation = computed(() => {
+  // Проверяем, есть ли в данных пункт "Проекты" и он активен
+  return props.data.some(item => item.title === 'Все' && route.name === item.link)
+})
 
 const handleScroll = () => {
   const container = scrollContainer.value
@@ -26,7 +34,11 @@ const handleScroll = () => {
 <template>
   <div
     class="navbar-scroll"
-    :class="{ scrolledToEnd: isScrolledToEnd, scrolledToStart: isScrolledToStart }"
+    :class="{ 
+      scrolledToEnd: isScrolledToEnd, 
+      scrolledToStart: isScrolledToStart,
+      'd-none': !showNavigation
+    }"
   >
     <div class="navbar-scroll-wrapper py-1" ref="scrollContainer" @scroll="handleScroll">
       <ul class="navbar-nav flex-row gap-1">

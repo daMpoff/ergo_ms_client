@@ -1,16 +1,15 @@
 <script setup>
 import { ref } from 'vue'
-import { ChartNoAxesCombined, LayoutGrid, Link, UserRound, UsersRound } from 'lucide-vue-next'
+import { LayoutGrid, Link, UserRound } from 'lucide-vue-next'
 
 import MainInfo from '@/pages/user/CardMain.vue'
 import NavigationButtons from '@/components/NavigationButtons.vue'
 
 const navigationButtons = ref([
-  { icon: UserRound, title: 'Профиль', link: 'Account' },
-  { icon: UsersRound, title: 'Команды', link: 'Teams' },
-  { icon: LayoutGrid, title: 'Проекты', link: 'Projects' },
-  { icon: Link, title: 'Связи', link: 'Connections' },
-  { icon: ChartNoAxesCombined, title: 'Статистика', link: 'Analytics' },
+  { icon: LayoutGrid, title: 'Все', link: 'Projects' },
+  { icon: UserRound, title: 'Личные', link: 'Kanban' },
+  { icon: Link, title: 'Приглашённые', link: 'Calendar' },
+  
 ])
 </script>
 
