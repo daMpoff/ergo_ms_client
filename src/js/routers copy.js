@@ -78,6 +78,16 @@ const userRoutes = [
         meta: {
           requiresAuth: true,
         },
+        children: [
+          {
+            path: ':projectId',
+            name: 'ProjectDetails',
+            component: () => import('@/pages/user/projects/ProjectDetails.vue'),
+            meta: {
+              requiresAuth: true,
+            },
+          }
+        ]
       },
       {
         path: 'connections',

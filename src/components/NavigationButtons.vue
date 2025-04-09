@@ -1,4 +1,4 @@
-<!-- NavigationsButton.vue -->
+<!-- NavigationButtons.vue -->
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -13,7 +13,6 @@ const isScrolledToEnd = ref(false)
 const isScrolledToStart = ref(true)
 
 const showNavigation = computed(() => {
-  // Проверяем, есть ли в данных пункт "Проекты" и он активен
   return props.data.some(item => item.title === 'Все' && route.name === item.link)
 })
 
@@ -24,7 +23,6 @@ const handleScroll = () => {
     const scrollWidth = container.scrollWidth
     const clientWidth = container.clientWidth
 
-    // Проверяем, что прокрутка почти до конца
     isScrolledToEnd.value = scrollLeft + clientWidth >= scrollWidth - 0.4
     isScrolledToStart.value = scrollLeft <= 0.4
   }
@@ -71,6 +69,7 @@ li {
 
 .navbar-scroll {
   position: relative;
+  flex-grow: 1;
 
   &::after {
     content: '';
