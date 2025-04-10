@@ -8,6 +8,7 @@ import {
   Map,
   MessagesSquare,
   PictureInPicture2,
+  SearchCode,
   Table2,
   TextCursorInput,
   UserCog,
@@ -141,4 +142,10 @@ export const ComponentsMenuSection = {
     { path: 'ListGroups', name: 'Группы списков' },
     { path: 'Typography', name: 'Типография' },
   ],
+}
+export const SEOAnalysisMenuSection = {
+  id: 15,
+  icon: SearchCode,
+  routeName: 'SEO-Analysis',
+  title: 'SEO-Анализ',
 }

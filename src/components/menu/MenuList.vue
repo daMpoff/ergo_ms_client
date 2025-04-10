@@ -15,6 +15,7 @@ import {
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  SEOAnalysisMenuSection
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -89,6 +90,7 @@ const menuSections = [
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  SEOAnalysisMenuSection
 ]
 
 // Список разделителей

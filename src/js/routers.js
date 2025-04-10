@@ -269,6 +269,14 @@ const modalWindowsRoutes = [
     meta: { title: 'Модальные окна', requiresAuth: true },
   },
 ]
+const seoAnalysisRoutes = [
+  {
+    path: '/seo-analysis',
+    name: 'SEO-Analysis',
+    component: () => import('@/pages/seo-analysis/ParentLayout.vue'),
+    meta: {title: 'SEO-Анализ', requiresAuth: true},
+  },
+]
 
 // Формы ввода
 const inputsRoutes = [
@@ -406,6 +414,7 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...seoAnalysisRoutes
 ]
 
 routes.forEach((route) => {
