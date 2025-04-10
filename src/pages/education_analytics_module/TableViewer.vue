@@ -34,12 +34,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import DatabaseTable from '../datatables/DatabaseTable.vue'
 
 const route = useRoute()
-const router = useRouter()
 const tableName = ref(route.params.tableName)
 const isLoading = ref(true)
 const error = ref(null)
