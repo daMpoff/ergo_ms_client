@@ -8,7 +8,7 @@ import { useToast } from 'vue-toastification'
 import DropDown from '@/components/DropDown.vue'
 import KanbanTask from '@/pages/kanban/KanbanTask.vue'
 import KanbanTaskViewing from '@/pages/kanban/KanbanTaskViewing.vue'
-import { useKanbanStore } from '@/stores/kanbanStore.js'
+import { useKanbanStore } from '@/js/api/services/tasksService'
 
 const kanbanStore = useKanbanStore()
 const isCopyingText = ref(true)
