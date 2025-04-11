@@ -1,10 +1,11 @@
+import { apiClient } from '../manager';
+import { endpoints } from '../endpoints';
+import Cookies from 'js-cookie';
+
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { Offcanvas } from 'bootstrap/dist/js/bootstrap.bundle.min.js'
-import Cookies from 'js-cookie'
-import { apiClient } from '@/js/api/manager.js';
-import { endpoints } from '@/js/api/endpoints.js';
 
 export const useKanbanStore = defineStore('kanbanStore', () => {
   const toast = useToast()
@@ -53,9 +54,8 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
 
     isLoading.value = true
     try {
-      const response = await apiClient.get(endpoints.crm.tasks.sectionTasks, { user_id: parseInt(Cookies.get('userId'))});
-      
-      if (!response.ok) throw new Error('Ошибка при загрузке данных')
+        const response = await apiClient.get(endpoints.crm.tasks.sectionTasks, { user_id: parseInt(Cookies.get('userId'))});
+        if (!response.ok) throw new Error('Ошибка при загрузке данных')
       
       const data = await response.json()
       

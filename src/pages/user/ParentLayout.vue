@@ -1,22 +1,28 @@
 <!-- ParentLayout.vue -->
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { LayoutGrid, Link, UserRound, SquarePlus } from 'lucide-vue-next'
 
 import MainInfo from '@/pages/user/CardMain.vue'
 import NavigationButtons from '@/components/NavigationButtons.vue'
 
+const route = useRoute()
 const mainButtons = ref([
   { icon: LayoutGrid, title: 'Все', link: 'Projects' },
-  { icon: UserRound, title: 'Личные', link: 'Kanban' },
-  { icon: Link, title: 'Приглашённые', link: 'Calendar' },
+  { icon: UserRound, title: 'Личные', link: 'PersonalProjects' },
+  { icon: Link, title: 'Приглашённые', link: 'InvitedProjects' },
 ])
 
 const createButton = ref({ 
   icon: SquarePlus, 
   title: 'Создать проект', 
   link: 'Maps',
-  class: 'create-btn' // Добавляем класс для стилизации
+  class: 'create-btn'
+})
+
+const showCreateButton = computed(() => {
+  return ['Projects', 'PersonalProjects', 'InvitedProjects'].includes(route.name)
 })
 </script>
 
@@ -28,6 +34,7 @@ const createButton = ref({
   <div class="mb-4 d-flex justify-content-between align-items-center navigation-container">
     <NavigationButtons :data="mainButtons" />
     <RouterLink
+      v-if="showCreateButton"
       :to="{ name: createButton.link }"
       class="btn fw-bold text-center create-project-btn"
       active-class="btn-primary"
@@ -45,14 +52,14 @@ const createButton = ref({
 <style lang="scss" scoped>
 .navigation-container {
   position: relative;
-  padding-right: 1rem; // Добавляем отступ справа
+  padding-right: 1rem;
 }
 
 .create-project-btn {
-  margin-left: auto; // Выравниваем кнопку вправо
+  margin-left: auto;
   white-space: nowrap;
   position: relative;
-  z-index: 2; // Чтобы кнопка была поверх градиента
+  z-index: 2;
   
   &:not(.btn-primary):hover {
     background-color: var(--bs-primary-bg-subtle);
@@ -60,7 +67,6 @@ const createButton = ref({
   }
 }
 
-// Адаптация для мобильных устройств
 @media (max-width: 768px) {
   .navigation-container {
     flex-direction: column;

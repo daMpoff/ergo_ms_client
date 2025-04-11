@@ -41,8 +41,14 @@ export default defineConfig({
 
   // Настройка сервера разработки
   server: {
-    port: parseInt(process.env.CLIENT_PORT, 10) || 5123, // Установка порта для сервера разработки
+    port: parseInt(process.env.CLIENT_PORT, 10) || 8001, // Установка порта для сервера разработки
     host: process.env.CLIENT_HOST || 'localhost', // Установка хоста для сервера разработки
     https: false, // Отключение HTTPS для сервера разработки
+  },
+
+  // Экспорт переменных окружения в клиентский код
+  define: {
+    'import.meta.env.VITE_API_HOST': JSON.stringify(process.env.API_HOST),
+    'import.meta.env.VITE_API_PORT': JSON.stringify(process.env.API_PORT),
   },
 })

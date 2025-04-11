@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import { checkToken } from '@/js/auth'
+import { checkToken } from '@/js/api/services/auth-index'
 
 const mainRoutes = [
   {
@@ -74,6 +74,22 @@ const userRoutes = [
       {
         path: 'projects',
         name: 'Projects',
+        component: () => import('@/pages/user/projects/ParentLayout.vue'),
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
+        path: 'projects',
+        name: 'PersonalProjects',
+        component: () => import('@/pages/user/projects/ParentLayout.vue'),
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
+        path: 'projects',
+        name: 'InvitedProjects',
         component: () => import('@/pages/user/projects/ParentLayout.vue'),
         meta: {
           requiresAuth: true,
