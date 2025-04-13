@@ -7,4 +7,8 @@ export const endpoints = {
         registration: 'cms/adp/registration/',
         protected: 'cms/adp/protected/',
     },
+    bi: {
+        uploadStorageData: 'bi_analysis/storage_data/upload/',
+        getStorageList: 'bi_analysis/storage_data/',
+    }
 }; 

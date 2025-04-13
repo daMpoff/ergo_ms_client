@@ -389,6 +389,33 @@ const startRoutes = [
   },
 ]
 
+const biRoutes = [
+  {
+    path: '/bi',
+    name: 'BI',
+    component: () => import('@/pages/bi/HomePageBI.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/storagelist',
+    name: 'StorageList',
+    component: () => import('@/pages/bi/StorageListPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/warehouse',
+    name: 'Warehouse',
+    component: () => import('@/pages/bi/WarehousePage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/storage',
+    name: 'BIStorage',
+    component: () => import('@/pages/bi/StorageData.vue'),
+    meta: { requiresAuth: true },
+  },
+]
+
 const routes = [
   ...startRoutes,
   ...mainRoutes,
@@ -406,6 +433,7 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...biRoutes,
 ]
 
 routes.forEach((route) => {

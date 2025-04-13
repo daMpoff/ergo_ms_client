@@ -142,3 +142,26 @@ export const ComponentsMenuSection = {
     { path: 'Typography', name: 'Типография' },
   ],
 }
+
+// BI секция
+export const BIMenuSection = {
+  id: 14,
+  icon: ChartSpline,
+  routeName: 'BI',
+  title: 'BI',
+  list: [
+    {
+      name: 'Датасеты',
+      action: 'openDatasetSidebar',
+      isOffcanvas: true
+    },
+    {
+      path: 'StorageList',
+      name: 'Подключения',
+    },
+    {
+      path: 'Warehouse',
+      name: 'Чарты',
+    },
+  ],
+}

@@ -1,21 +1,16 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, nextTick } from 'vue'
 
 import MenuList from '@/components/menu/MenuList.vue'
 import TheHeader from '@/components/header/TheHeader.vue'
+import StorageSidebar from '@/pages/bi/components/StorageSidebar.vue'
 
 const leftPadding = ref('280px')
 
-// Видимость меню
-const isMenuVisible = ref(window.innerWidth >= 1200) // По умолчанию, меню видимо
-const isMenuToggledManually = ref(false) // Флаг, указывающий, что меню было переключено вручную
-const isOverlayVisible = ref(false) // Видимость заднего меню
+const isMenuVisible = ref(window.innerWidth >= 1200)
+const isMenuToggledManually = ref(false)
+const isOverlayVisible = ref(false)
 
-const leftToggle = (newPadding) => {
-  leftPadding.value = newPadding
-}
-
-// Переключение видимости меню в зависимости от ширины экрана
 const updateMenuVisibility = () => {
   if (window.innerWidth >= 1200) {
     isMenuVisible.value = true
@@ -27,27 +22,62 @@ const updateMenuVisibility = () => {
   }
 }
 
-// Переключение видимости меню
 const toggleMenu = (isVisible) => {
   isMenuToggledManually.value = true
   isMenuVisible.value = isVisible
   isOverlayVisible.value = isVisible && window.innerWidth < 1200
 }
 
-// Закрытие меню при клике на overlay
 const closeMenu = () => {
   isMenuVisible.value = false
   isOverlayVisible.value = false
   isMenuToggledManually.value = false
 }
 
-// Инициализация
+// === StorageSidebar state ===
+const isDatasetSidebarOpen = ref(false)
+let bsSidebar = null
+
+async function initSidebar() {
+  await nextTick()
+
+  const el = document.getElementById('datasetSidebar')
+  if (!el) {
+    console.warn('datasetSidebar не найден в DOM')
+    return
+  }
+
+  const bootstrap = await import('bootstrap')
+  bsSidebar = new bootstrap.Offcanvas(el, { backdrop: false, scroll: true })
+
+  el.addEventListener('shown.bs.offcanvas', () => {
+    isDatasetSidebarOpen.value = true
+  })
+  el.addEventListener('hidden.bs.offcanvas', () => {
+    isDatasetSidebarOpen.value = false
+  })
+}
+
+function leftToggle(val) {
+  leftPadding.value = val
+}
+
+const openDatasetSidebar = () => {
+  if (!bsSidebar) {
+    initSidebar().then(() => {
+      bsSidebar?.show()
+    })
+  } else {
+    bsSidebar.show()
+  }
+}
+
 onMounted(() => {
   updateMenuVisibility()
   window.addEventListener('resize', updateMenuVisibility)
+  initSidebar()
 })
 
-// Очистка
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateMenuVisibility)
 })
@@ -55,21 +85,27 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="layout-container">
-    <MenuList @left-padding="leftToggle" :is-visible="isMenuVisible" />
-    <div class="layout-page">
+    <MenuList
+      @left-padding="leftToggle"
+      :is-visible="isMenuVisible"
+      @open-datasets="openDatasetSidebar"
+    />
+    <div class="layout-page" :style="{ paddingLeft: leftPadding }">
       <div class="pt-4 container-xxl">
         <TheHeader @toggleMenu="toggleMenu" />
       </div>
       <div class="py-4 container-xxl">
-        <RouterView :key="$route.path"></RouterView>
+        <RouterView :key="$route.path" />
       </div>
     </div>
   </div>
 
   <div @click="closeMenu" class="layout-overlay" :class="{ active: isOverlayVisible }"></div>
+
+  <StorageSidebar :isDatasetSidebarOpen="isDatasetSidebarOpen" />
 </template>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .layout-page {
   padding-inline-start: v-bind(leftPadding);
   transition: padding-inline-start $transition;

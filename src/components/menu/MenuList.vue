@@ -15,6 +15,7 @@ import {
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  BIMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -33,8 +34,6 @@ watch(
     }
   },
 )
-
-const emit = defineEmits(['left-padding'])
 
 // Состояние меню
 const isCollapsed = ref(false)
@@ -74,10 +73,19 @@ const toggleGroup = (id) => {
   openGroupId.value = openGroupId.value === id ? null : id
 }
 
+const emit = defineEmits(['left-padding', 'open-datasets'])
+
+function handleAction(action) {
+  if (action === 'openDatasetSidebar') {
+    emit('open-datasets')
+  }
+}
+
 // Список секций меню
 const menuSections = [
   UserMenuSection,
   SettingsMenuSection,
+  BIMenuSection,
   EmailMenuSection,
   ChatMenuSection,
   MapsMenuSection,
@@ -94,7 +102,7 @@ const menuSections = [
 // Список разделителей
 const separators = (index) => {
   switch (index) {
-    case 1:
+    case 2:
       return 'Шаблоны'
   }
 }
@@ -131,8 +139,9 @@ const separators = (index) => {
           :is-open="openGroupId === section.id"
           :data="section"
           @toggle="toggleGroup(section.id)"
+          @action="handleAction"
         />
-        <div v-if="[1].includes(index)" class="side-menu__divider side-divider py-3">
+        <div v-if="[2].includes(index)" class="side-menu__divider side-divider py-3">
           <div class="side-divider__icon"><Minus :size="20" /></div>
           <div class="side-divider__name text-smooth-animation" :class="{ hidden: !isHovering }">
             {{ separators(index) }}
