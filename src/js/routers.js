@@ -403,7 +403,6 @@ const shortcodeRoutes = [
         component: () => import('@/pages/shortcodes/ShortcodeEditor.vue'),
         meta: {
           title: 'Редактор страниц',
-          startRoute: true,
           requiresAuth: true },
       },
     ],
