@@ -36,8 +36,6 @@ const fetchDatasets = async () => {
       created_at: item.created_at,
       storage_type: item.storage_type
     }))
-
-    console.log('📦 Загружены датасеты:', datasets.value)
   } catch (e) {
     console.error('Ошибка при запросе:', e.response?.data || e.message)
   }

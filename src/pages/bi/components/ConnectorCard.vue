@@ -1,0 +1,58 @@
+<template>
+    <div class="card" @click="$emit('click')">
+      <a class="a_link">
+        <img :src="icon" class="card-icon" />
+        <div class="card_title">{{ name }}</div>
+      </a>
+    </div>
+  </template>
+  
+  <script setup>
+  defineProps({
+    name: String,
+    icon: Object
+  })
+  </script>
+  
+  <style scoped>
+  .card {
+    width: 163px;
+    height: 114px;
+    background-color: transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s;
+    border: 1px solid #4c4b51;
+  }
+  
+  .card:hover {
+    background-color: #333;
+  }
+  
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  
+  .card_title {
+    font-size: 14px;
+    color: #fff;
+  }
+
+  .a_link{
+    padding-top: 15px;
+    padding-bottom: 15px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+  }
+  </style>

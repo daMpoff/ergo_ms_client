@@ -414,6 +414,18 @@ const biRoutes = [
     component: () => import('@/pages/bi/StorageData.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/bi/connections/new',
+    name: 'NewConnection',
+    component: () => import('@/pages/bi/NewConnection.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/file',
+    name: 'NewFile',
+    component: () => import('@/pages/bi/NewFile.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const routes = [
