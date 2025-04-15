@@ -9,7 +9,7 @@ export const authService = {
         const response = await apiClient.post(endpoints.auth.login, {
             username,
             password,
-        });
+        }, false);
         
         if (response.success) {
             Cookies.set('token', response.data.access, { expires: thirtyMinutesInDays });
@@ -26,15 +26,15 @@ export const authService = {
             email,
             password,
             is_superuser: false
-        });
+        }, false);
     },
     
     async sendConfirmationCode(email) {
-        return await apiClient.post(endpoints.auth.sendCode, { email });
+        return await apiClient.post(endpoints.auth.sendCode, { email }, false);
     },
     
     async verifyConfirmationCode(email, code) {
-        return await apiClient.post(endpoints.auth.verifyCode, { email, code });
+        return await apiClient.post(endpoints.auth.verifyCode, { email, code }, false);
     },
     
     async registration(firstName, username, email, password) {
@@ -44,7 +44,7 @@ export const authService = {
             email,
             password,
             is_superuser: false
-        });
+        }, false);
     },
     
     async checkToken() {
