@@ -388,13 +388,25 @@ const startRoutes = [
     },
   },
 ]
-// Формы ввода
+
 const shortcodeRoutes = [
   {
     path: '/shortcodes',
     name: 'Shortcodes',
     component: () => import('@/pages/shortcodes/ParentLayout.vue'),
-    meta: { title: 'Шорткоды', requiresAuth: true },
+    meta: { title: 'Редактор страниц', requiresAuth: true },
+    redirect: { name: 'ShortcodeEditor' },
+    children: [
+      {
+        path: 'editor',
+        name: 'ShortcodeEditor',
+        component: () => import('@/pages/shortcodes/ShortcodeEditor.vue'),
+        meta: {
+          title: 'Редактор страниц',
+          startRoute: true,
+          requiresAuth: true },
+      },
+    ],
   },
 ]
 

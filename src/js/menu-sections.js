@@ -148,4 +148,7 @@ export const ShortcodesMenuSection = {
   icon: Braces,
   routeName: 'Shortcodes',
   title: 'Редактор страниц',
+  list: [
+    { path: 'ShortcodeEditor', name: 'Редактор' },
+  ],
 }

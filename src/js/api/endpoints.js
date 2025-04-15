@@ -7,4 +7,9 @@ export const endpoints = {
         registration: 'cms/adp/registration/',
         protected: 'cms/adp/protected/',
     },
-}; 
+    shortcodes: {
+      templates: 'cms_shortcodes/templates/',
+      pages: 'cms_shortcodes/pages/',
+      instances: 'cms_shortcodes/instances/',
+    },
+};
