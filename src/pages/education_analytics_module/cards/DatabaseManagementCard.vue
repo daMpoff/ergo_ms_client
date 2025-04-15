@@ -1,51 +1,85 @@
 <template>
   <div class="database-management card rounded-3 p-4 mb-4">
-    <div class="container">
+    <div class="container px-0">
+      <!-- Заголовок и кнопки управления -->
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0 text-primary">
-          <i class="bi bi-database me-2"></i>Работа с базой данных
+        <h3 class="mb-0 text-primary d-flex align-items-center">
+          <Database :size="22" class="me-2"/>
+          Управление данными
         </h3>
-        <div class="d-flex gap-3">
+        <div class="d-flex gap-2">
           <button 
             @click="$emit('download')" 
-            :disabled="isDownloading"
-            class="btn btn-primary d-flex align-items-center">
+            :disabled="isDownloading || isUploading"
+            class="btn btn-primary d-flex align-items-center action-btn">
             <template v-if="isDownloading">
               <span class="spinner-border spinner-border-sm me-2" role="status"></span>
               Выгрузка...
             </template>
             <template v-else>
-              <Download :size="20" class="me-2"/> 
-              <span>Выгрузить данные модуля (.csv)</span>
+              <ArrowDownToLine :size="18" class="me-2"/> 
+              <span>Экспорт данных</span>
             </template>
           </button>
           <button 
             @click="$emit('load-example')" 
-            class="btn btn-primary d-flex align-items-center">
-            <Upload :size="20" class="me-2"/>
-            <span>Загрузить тестовые данные</span>
+            :disabled="isDownloading || isUploading"
+            class="btn btn-outline-primary d-flex align-items-center action-btn">
+            <template v-if="isUploading">
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Загрузка...
+            </template>
+            <template v-else>
+              <ArrowUpFromLine :size="18" class="me-2"/>
+              <span>Загрузить примеры</span>
+            </template>
           </button>
           <button 
             @click="$emit('clear')" 
-            class="btn btn-outline-danger d-flex align-items-center">
-            <OctagonX :size="20" class="me-2"/>
-            <span>Очистить БД</span>
+            :disabled="isDownloading || isUploading"
+            class="btn btn-outline-danger d-flex align-items-center action-btn">
+            <Trash2 :size="18" class="me-2"/>
+            <span>Очистить</span>
           </button>
         </div>
       </div>
-      <div class="alert alert-info" role="alert">
-        <CircleAlert :size="20" class="me-1" /> Используйте для управления данными в БД
+
+      <div class="alert alert-secondary border-0 d-flex align-items-center" role="alert">
+        <Info :size="18" class="me-2 text-primary"/>
+        <span>Используйте эти инструменты для управления данными в базе данных</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { Download, Upload, OctagonX, CircleAlert } from 'lucide-vue-next'
+import { Database, ArrowDownToLine, ArrowUpFromLine, Trash2, Info } from 'lucide-vue-next'
 
 defineProps({
-  isDownloading: Boolean
+  isDownloading: Boolean,
+  isUploading: Boolean
 })
 
 defineEmits(['download', 'load-example', 'clear'])
 </script>
+
+<style scoped>
+.database-management {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+}
+
+.action-btn {
+  min-width: 160px;
+  transition: all 0.15s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.alert {
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+}
+</style>

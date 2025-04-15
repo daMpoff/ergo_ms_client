@@ -104,10 +104,12 @@ const loadExampleData = async () => {
   try {
     isUploading.value = true
     showToast('Загрузка тестовых данных...', TOAST_TYPES.INFO)
-    // TODO: Добавить логику загрузки
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Имитация загрузки
+    
+    // Здесь должен быть реальный API-запрос
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    await fetchTablesList() // Обновляем список таблиц
     showToast('Тестовые данные успешно загружены', TOAST_TYPES.SUCCESS)
-    await fetchTablesList()
   } catch (error) {
     console.error('Error loading example data:', error)
     showToast('Ошибка при загрузке тестовых данных', TOAST_TYPES.ERROR)
@@ -128,8 +130,9 @@ const clearDatabase = async () => {
     showToast('Очистка базы данных...', TOAST_TYPES.INFO)
     
     await axios.post('http://localhost:8000/api/learning_analytics/tables/clear/')
-    
+    selectedTable.value = null // Сбрасываем выбранную таблицу
     await fetchTablesList() // Обновляем список таблиц
+    
     showToast('База данных успешно очищена', TOAST_TYPES.SUCCESS)
   } catch (error) {
     console.error('Error clearing database:', error)
