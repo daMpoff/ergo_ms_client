@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { authorization } from '@/js/auth'
+import { authorization } from '@/js/api/services/auth-index'
 
 import { validateAuthorizationForm, validateAuthorizationMethod } from '@/js/validation'
 

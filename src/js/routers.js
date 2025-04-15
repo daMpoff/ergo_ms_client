@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import { checkToken } from '@/js/auth'
+import { checkToken } from '@/js/api/services/auth-index'
 
 const mainRoutes = [
   {
