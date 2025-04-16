@@ -13,7 +13,7 @@ const isScrolledToEnd = ref(false)
 const isScrolledToStart = ref(true)
 
 const showNavigation = computed(() => {
-  return props.data.some(item => item.title === 'Все' && route.name === item.link)
+  return props.data.some(item => item.title === 'Все' && route.name === item.link ||route.name === 'PersonalProjects'||route.name === 'InvitedProjects')
 })
 
 const handleScroll = () => {

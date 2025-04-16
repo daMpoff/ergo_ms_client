@@ -111,61 +111,76 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
   // Создание нового раздела
   const addSection = async (sectionData) => {
     if (!currentUserId.value) {
-      toast.error('Необходимо авторизоваться')
-      return
+      toast.error('Необходимо авторизоваться');
+      return null;
     }
-
-    isLoading.value = true
+  
+    isLoading.value = true;
+    
     try {
-      // Формируем данные в точном соответствии с API
       const requestData = {
-        section_name: sectionData.section_name, // Используем section_name как в API
-        project_id: sectionData.project_id || 1 // project_id обязателен
-      }
-
-      const response = await fetch('http://localhost:8000/api/crm/tasks/section-new/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': Cookies.get('csrftoken') || '',
-        },
-        body: JSON.stringify(requestData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Детали ошибки:', errorData)
-        throw new Error(
-          errorData.error || 
-          errorData.message || 
-          'Ошибка при создании раздела'
-        )
-      }
-
-      const data = await response.json()
-      console.log('Ответ сервера:', data)
-
-      // Обрабатываем ответ сервера
+        section_name: sectionData.section_name,
+        project_id: sectionData.project_id || 1
+      };
+  
+      // 1. Делаем запрос
+      const response = await apiClient.post(
+        endpoints.crm.tasks.add_section,
+        requestData,
+        true
+      );
+  
+      // 2. Анализируем ответ сервера (безопасно)
+      const responseData = response?.data || response;
+      
+      // 3. Пытаемся извлечь ID раздела (все возможные варианты)
+      const sectionId = responseData?.id 
+                      || responseData?.data?.id 
+                      || responseData?.result?.id 
+                      || responseData?.item?.id;
+  
+      // 4. Пытаемся извлечь название раздела
+      const sectionName = responseData?.name 
+                        || responseData?.section_name 
+                        || responseData?.data?.name 
+                        || sectionData.section_name;
+  
+      // 6. Создаем новую секцию
       const newSection = {
-        id: data.data.id,
-        title: data.data.name, // Используем name из ответа
+        id: sectionId,
+        title: sectionName,
         cards: []
-      }
-
-      columns.value = [...columns.value, newSection]
-      toast.success(`Раздел "${data.data.name}" успешно создан!`)
-      return newSection
-
+      };
+  
+      // 7. Обновляем список секций
+      columns.value = [...columns.value, newSection];
+      
+      // 8. Уведомление об успехе
+      toast.success(`Раздел "${sectionName}" успешно создан!`);
+      return newSection;
+  
     } catch (error) {
-      console.error('Ошибка при создании раздела:', error)
-      toast.error(error.message || 'Ошибка при создании раздела')
-      throw error
+      console.error('Ошибка создания раздела:', {
+        error: error.message,
+        response: error.response?.data
+      });
+      
+      // 9. Улучшенная обработка ошибок
+      const errorMessage = error.response?.data?.message || 
+                         error.response?.data?.error || 
+                         error.message || 
+                         'Ошибка при создании раздела';
+      
+      toast.error(errorMessage.includes('Network Error') 
+        ? 'Проблемы с соединением' 
+        : errorMessage);
+      
+      return null;
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
-  // Создание новой задачи
- // Создание новой задачи
+  };
+// Создание новой задачи
  const createTask = async (taskData) => {
   if (!currentUserId.value) {
     toast.error('Необходимо авторизоваться')
@@ -184,42 +199,28 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
       section_id: taskData.section_id,
       description: taskData.description || null,
       deadline: taskData.deadline || null,
-      priority: taskData.priority || 0,
+      priority: taskData.priority || 1,
       parenttask_id: taskData.parenttask_id || 1,
       user_id: currentUserId.value,
       isdone: taskData.isdone || false,
       dateofcreation: new Date().toISOString() // Добавляем текущую дату
     }
 
-    const response = await fetch('http://localhost:8000/api/crm/tasks/task-new/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': Cookies.get('csrftoken') || '',
-      },
-      body: JSON.stringify(requestData),
-    })
+    const response = await apiClient.post(endpoints.crm.tasks.add_task, 
+       requestData,
+    );
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || errorData.error || 'Ошибка при создании задачи')
-    }
 
-    const responseData = await response.json()
-    
-    if (!responseData.data || !responseData.data.id) {
-      throw new Error('Неверный формат ответа сервера')
-    }
+    const responseData = response
 
-    const createdTask = responseData.data
+    const createdTask = responseData
 
     const newTask = {
-      id: createdTask.id,
       title: createdTask.text,
       section_id: createdTask.section_id,
       isdone: createdTask.isdone || false,
       dateofcreation: createdTask.dateofcreation, // Сохраняем дату создания
-      priority: createdTask.priority || 0,
+      priority: createdTask.priority || 1,
       description: createdTask.description || '',
       user_id: currentUserId.value,
       subtasks: [],

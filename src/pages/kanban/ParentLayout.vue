@@ -26,9 +26,11 @@ const showDatePicker = ref(false)
 const showReminderPicker = ref(false)
 const reminderDate = ref(null)
 const priorityOptions = [
-  { value: 0, label: 'Низкий', color: 'success' },
-  { value: 1, label: 'Средний', color: 'warning' },
-  { value: 2, label: 'Высокий', color: 'danger' }
+  { value: 1, label: 'критическая', color: 'danger' },
+  { value: 2, label: 'важная', color: 'warning' },
+  { value: 3, label: 'срочная', color: 'info' },
+  { value: 4, label: 'рутинная', color: 'secondary' }
+
 ]
 
 onMounted(async () => {
@@ -107,7 +109,7 @@ const submitNewTask = async (columnIndex) => {
     section_id: kanbanStore.columns[columnIndex]?.id,
     description: newTaskData.value.description?.trim() || null,
     deadline: newTaskData.value.dueDate ? formatDateTimeForAPI(newTaskData.value.dueDate) : null,
-    priority: newTaskData.value.priority || 0,
+    priority: newTaskData.value.priority || 1,
     user_id: parseInt(Cookies.get('userId')) || null,
     isdone: false,
     dateofcreation: new Date().toISOString() // Добавляем текущую дату
@@ -119,6 +121,8 @@ const submitNewTask = async (columnIndex) => {
   }
 
   try {
+
+    
     const createdTask = await kanbanStore.createTask(taskData)
     useToast().success(`Задача "${createdTask.text}" создана!`)
     
@@ -292,7 +296,6 @@ const submitNewTask = async (columnIndex) => {
           
           <!-- Bottom Section -->
           <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted">#2 семестр / Школа</span>
             <div class="d-flex gap-2">
               <button class="btn btn-sm btn-outline-secondary" @click="isAddingTask = -1">
                 Отмена
