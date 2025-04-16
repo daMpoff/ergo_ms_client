@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useKanbanStore } from '@/stores/kanbanStore.js'
+import { SquarePlus } from 'lucide-vue-next'
 
 const kanbanStore = useKanbanStore()
 const newSubtaskText = ref('')
@@ -217,7 +218,7 @@ const closeModal = () => {
                     class="subtask-checkbox"
                   >
                   <span :class="{ 'completed': subtask.is_completed }">{{ subtask.title }}</span>
-                  <button @click="deleteSubtask(subtask.id)" class="action-button delete-button">×</button>
+                  <button @click="deleteSubtask(subtask.id) " style = "border: none; background-color: white;">×</button>
                 </div>
                 <div class="subtask-item">
                   <input 
@@ -227,7 +228,7 @@ const closeModal = () => {
                     @keyup.enter="addSubtask"
                     class="description-input"
                   >
-                  <button @click="addSubtask" class="action-button save-button">+</button>
+                  <button @click="addSubtask"style = "border: none; background-color: white;">+</button>
                 </div>
               </div>
             </div>
@@ -259,15 +260,17 @@ const closeModal = () => {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .viewing-task-window {
   position: relative;
   width: 400px;
   height: 500px;
-  background-color: #DCDCDC;
-  font-family: 'Roboto', sans-serif;
+  background-color: white;
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .close-button {
@@ -279,10 +282,11 @@ const closeModal = () => {
   font-size: 24px;
   cursor: pointer;
   z-index: 1001;
+  color: #333;
 }
 
 .window-container {
-  padding: 10px;
+  padding: 20px;
 }
 
 .task-grid {
@@ -329,6 +333,7 @@ const closeModal = () => {
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
+  padding-top: 10px;
 }
 
 .toggle-button {
@@ -354,7 +359,7 @@ const closeModal = () => {
 }
 
 .icon {
-  color: #000;
+  color: #333;
   width: 20px;
   height: 20px;
 }
@@ -368,9 +373,10 @@ const closeModal = () => {
   height: 30px;
   padding: 5px;
   border: none;
-  border-bottom: 1px solid #9E9E9E;
+  border-bottom: 1px solid #ccc;
   background: transparent;
   font-size: 16px;
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .task-input:focus, .description-input:focus {
@@ -383,9 +389,10 @@ const closeModal = () => {
   height: 36px;
   padding: 5px;
   border: none;
-  border-bottom: 1px solid #9E9E9E;
+  border-bottom: 1px solid #ccc;
   background: transparent;
   font-size: 14px;
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .combo-box:focus {
@@ -398,9 +405,10 @@ const closeModal = () => {
   height: 36px;
   padding: 5px;
   border: none;
-  border-bottom: 1px solid #9E9E9E;
+  border-bottom: 1px solid #ccc;
   background: transparent;
   font-size: 14px;
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .date-picker:focus {
@@ -434,23 +442,30 @@ const closeModal = () => {
 }
 
 .action-button {
-  padding: 2px 5px;
-  font-size: 12px;
+  padding: 8px 16px;
+  font-size: 14px;
   border: none;
-  background: none;
+  border-radius: 4px;
   cursor: pointer;
-  color: #000;
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  transition: background-color 0.3s;
 }
 
-.action-button:hover {
-  text-decoration: underline;
+.delete-button {
+  background-color: #cb2c20;
+  color: white;
 }
 
 .delete-button:hover {
-  color: #f44336;
+  background-color: #cb2c20;
+}
+
+.save-button {
+  background-color: #cb2c20;
+  color: white;
 }
 
 .save-button:hover {
-  color: #4CAF50;
+  background-color: #cb2c20;
 }
 </style>
