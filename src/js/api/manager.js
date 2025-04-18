@@ -1,6 +1,5 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { endpoints } from './endpoints';
 
 class ApiClient {
     constructor() {
@@ -12,76 +11,71 @@ class ApiClient {
                 'Content-Type': 'application/json',
             },
         });
-
-        // Add request interceptor for authentication
-        this.client.interceptors.request.use(
-            (config) => {
-                const token = Cookies.get('token');
-                if (token) {
-                    config.headers.Authorization = `Bearer ${token}`;
-                }
-                return config;
-            },
-            (error) => {
-                return Promise.reject(error);
-            }
-        );
     }
 
     // Generic request methods
-    async get(endpoint, params = {}) {
+    async get(endpoint, params = {}, needToken = true) {
         try {
-            const response = await this.client.get(endpoint, { params });
+            const config = { params };
+            if (needToken) {
+                this._addAuthToken(config);
+            }
+            const response = await this.client.get(endpoint, config);
             return this.handleResponse(response);
         } catch (error) {
             return this.handleError(error);
         }
     }
 
-    async post(endpoint, data = {}) {
+    async post(endpoint, data = {}, needToken = true) {
         try {
-            const response = await this.client.post(endpoint, data);
+            const config = {};
+            if (needToken) {
+                this._addAuthToken(config);
+            }
+            const response = await this.client.post(endpoint, data, config);
             return this.handleResponse(response);
         } catch (error) {
             return this.handleError(error);
         }
     }
 
-    async put(endpoint, data = {}) {
+    async put(endpoint, data = {}, needToken = true) {
         try {
-            const response = await this.client.put(endpoint, data);
+            const config = {};
+            if (needToken) {
+                this._addAuthToken(config);
+            }
+            const response = await this.client.put(endpoint, data, config);
             return this.handleResponse(response);
         } catch (error) {
             return this.handleError(error);
         }
     }
 
-    async delete(endpoint, params = {}) {
+    async delete(endpoint, params = {}, needToken = true) {
         try {
-            const response = await this.client.delete(endpoint, { params });
+            const config = { params };
+            if (needToken) {
+                this._addAuthToken(config);
+            }
+            const response = await this.client.delete(endpoint, config);
             return this.handleResponse(response);
         } catch (error) {
             return this.handleError(error);
         }
     }
 
-    // Auth utility methods
-    async login(username, password) {
-        return await this.post(endpoints.auth.login, { username, password });
-    }
-
-    async checkToken() {
+    // Helper method to add auth token to config
+    _addAuthToken(config) {
         const token = Cookies.get('token');
-        if (!token) {
-            return false;
+        if (token) {
+            if (!config.headers) {
+                config.headers = {};
+            }
+            config.headers.Authorization = `Bearer ${token}`;
         }
-
-        try {
-            const response = await this.client.get(endpoints.auth.protected);
-            return response.status === 200;
-        } catch (error) {
-            return false;
-        }
+        return config;
     }
 
     logout() {
