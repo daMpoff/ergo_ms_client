@@ -96,6 +96,14 @@ const userRoutes = [
         },
       },
       {
+        path: 'createproject',
+        name: 'CreateProject',
+        component: () => import('@/pages/user/projects/CreateProject.vue'),
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
         path: 'connections',
         name: 'Connections',
         component: () => import('@/pages/user/connections/ParentLayout.vue'),

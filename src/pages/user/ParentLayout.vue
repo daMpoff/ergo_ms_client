@@ -1,13 +1,13 @@
-<!-- ParentLayout.vue -->
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { LayoutGrid, Link, UserRound, SquarePlus } from 'lucide-vue-next'
 
 import MainInfo from '@/pages/user/CardMain.vue'
 import NavigationButtons from '@/components/NavigationButtons.vue'
 
 const route = useRoute()
+const router = useRouter()
 const mainButtons = ref([
   { icon: LayoutGrid, title: 'Все', link: 'Projects' },
   { icon: UserRound, title: 'Личные', link: 'PersonalProjects' },
@@ -17,13 +17,17 @@ const mainButtons = ref([
 const createButton = ref({ 
   icon: SquarePlus, 
   title: 'Создать проект', 
-  link: 'Maps',
+  link: 'CreateProject',
   class: 'create-btn'
 })
 
 const showCreateButton = computed(() => {
   return ['Projects', 'PersonalProjects', 'InvitedProjects'].includes(route.name)
 })
+
+const openCreateProject = () => {
+  router.push({ name: 'CreateProject' })
+}
 </script>
 
 <template>
@@ -33,17 +37,16 @@ const showCreateButton = computed(() => {
 
   <div class="mb-4 d-flex justify-content-between align-items-center navigation-container">
     <NavigationButtons :data="mainButtons" />
-    <RouterLink
+    <button
       v-if="showCreateButton"
-      :to="{ name: createButton.link }"
+      @click="openCreateProject"
       class="btn fw-bold text-center create-project-btn"
-      active-class="btn-primary"
     >
       <div class="d-flex align-items-center justify-content-center gap-1">
         <div class="icon-flex"><component :is="createButton.icon" :size="20" /></div>
         <div class="fw-bold">{{ createButton.title }}</div>
       </div>
-    </RouterLink>
+    </button>
   </div>
 
   <RouterView></RouterView>

@@ -201,7 +201,7 @@ const submitNewTask = async (columnIndex) => {
           </SlickItem>
         </SlickList>
 
-        <!-- Enhanced Task Addition Block -->
+        <!-- блок добавления подзадач -->
         <div v-if="isAddingTask === i" class="card p-3 mb-3">
           <input
             v-model="newTaskData.title"
@@ -312,7 +312,7 @@ const submitNewTask = async (columnIndex) => {
           <span class="text-nowrap">Добавить задачу</span>
         </div>
       </SlickItem>
-
+     <!-- Окончание блока с добавлением подзадач -->
       <!-- Section Addition Block -->
       <div v-if="!isAddingSection" class="add-column d-inline-flex justify-content-center gap-1 p-2" @click="startAddingSection">
     <Plus :size="24" />
