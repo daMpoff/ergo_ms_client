@@ -10,7 +10,7 @@
   <script setup>
   defineProps({
     name: String,
-    icon: Object
+    icon: [String, Object]
   })
   </script>
   

@@ -66,6 +66,36 @@ class ApiClient {
         }
     }
 
+    async upload(endpoint, formData, needToken = true) {
+        try {
+            const config = {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            };
+            if (needToken) {
+                this._addAuthToken(config);
+            }
+            const response = await this.client.post(endpoint, formData, config);
+            return this.handleResponse(response);
+        } catch (error) {
+            return this.handleError(error);
+        }
+    }
+
+    async getUploadedFiles(endpoint, needToken = true) {
+        try {
+            const config = {};
+            if (needToken) {
+                this._addAuthToken(config);
+            }
+            const response = await this.client.get(endpoint, config);
+            return this.handleResponse(response);
+        } catch (error) {
+            return this.handleError(error);
+        }
+    }
+
     // Helper method to add auth token to config
     _addAuthToken(config) {
         const token = Cookies.get('token');
@@ -85,7 +115,7 @@ class ApiClient {
 
     // Generic response handlers
     handleResponse(response) {
-        if (response.status === 200) {
+        if ([200, 201].includes(response.status)) {
             return { success: true, data: response.data };
         }
         return { success: false, errors: response.data };

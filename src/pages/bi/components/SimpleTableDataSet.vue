@@ -22,12 +22,8 @@
           >
             <!-- Название -->
             <template v-if="col.key === 'name'">
-              <span
-                class="tooltip-wrapper"
-                @mouseenter="onIconHover($event, getTooltip(getValue(row, 'storage_type')))"
-                @mouseleave="hideTooltip"
-              >
-                <component :is="getIconByStorageType(getValue(row, 'storage_type'))" class="icon" />
+              <span class="tooltip-wrapper">
+                <Table class="icon" title="Датасет" />
               </span>
               <span class="dataset-name">{{ getValue(row, col.key) ?? '—' }}</span>
             </template>
@@ -85,8 +81,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { Table, Code2, Image as ImageIcon, Star, MoreHorizontal } from 'lucide-vue-next'
+import { ref, watch, onMounted } from 'vue'
+import { Table, Image as Star, MoreHorizontal } from 'lucide-vue-next'
 
 const props = defineProps({
   cols: Array,
@@ -139,8 +135,8 @@ function onIconHover(event, text) {
   showTooltip.value = true
   const rect = event.target.getBoundingClientRect()
   tooltipStyle.value = {
-    top: `${rect.top - 32}px`,
-    left: `${rect.left + rect.width / 2}px`
+    top: `${rect.top + window.scrollY - 32}px`,
+    left: `${rect.left + rect.width / 2 + window.scrollX}px`
   }
 }
 
@@ -152,24 +148,6 @@ function formatTooltipDate(dateStr) {
   const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
   const date = new Date(dateStr)
   return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-}
-
-function getIconByStorageType(type) {
-  switch (type) {
-    case 'structured': return Table
-    case 'semi': return Code2
-    case 'unstructured': return ImageIcon
-    default: return Table
-  }
-}
-
-function getTooltip(type) {
-  switch (type) {
-    case 'structured': return 'Структурированные'
-    case 'semi': return 'Полуструктурированные (JSON, XML, логи)'
-    case 'unstructured': return 'Неструктурированные (файлы, изображения, видео)'
-    default: return 'Неизвестный тип'
-  }
 }
 </script>
 

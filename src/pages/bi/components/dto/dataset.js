@@ -4,6 +4,5 @@ export class DatasetDTO {
       this.name = name
       this.owner_username = owner_username
       this.created_at = created_at
-      this.storage_type = storage_type
     }
   }

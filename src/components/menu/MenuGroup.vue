@@ -7,15 +7,16 @@ const props = defineProps({
   isOpen: { type: Boolean, required: true },
   isCollapsed: { type: Boolean, required: true },
   isHovering: { type: Boolean, required: true },
+  currentPage: { type: String, required: true },
 })
 
 const showFull = computed(() => props.isCollapsed || props.isHovering)
 
-const emit = defineEmits(['toggle', 'action'])
+const emit = defineEmits(['toggle', 'action', 'navigate', 'reset-page'])
 
-function emitAction(item) {
-  if (item.action) {
-    emit('action', item.action)
+function emitNavigate(item) {
+  if (item.page) {
+    emit('navigate', item)
   }
 }
 </script>
@@ -27,7 +28,7 @@ function emitAction(item) {
       class="side-title nav-btn"
       active-class="side-title--active"
       exact-active-class="side-title--exact-active"
-      @click="$emit('toggle')"
+      @click="$emit('toggle'); $emit('reset-page')"
     >
       <div class="side-title__label">
         <div class="side-icon icon-flex">
@@ -53,8 +54,14 @@ function emitAction(item) {
         class="side-group__list-item"
         :style="{ transitionDelay: `${index * 50}ms` }"
       >
+        <!-- 🔷 BI-вкладки -->
         <template v-if="item.isOffcanvas">
-          <a href="#" class="side-subtitle nav-btn" @click.prevent="emitAction(item)">
+          <a
+            href="#"
+            class="side-subtitle nav-btn"
+            :class="{ 'side-subtitle--active': item.page === currentPage }"
+            @click.prevent="emitNavigate(item)"
+          >
             <div class="side-subtitle__label">
               <div class="nav-icon icon-flex"><Dot :size="20" /></div>
               <div
@@ -69,6 +76,7 @@ function emitAction(item) {
           </a>
         </template>
 
+        <!-- 🔶 Обычные Vue страницы -->
         <template v-else>
           <RouterLink
             :to="{ name: item.path }"
@@ -132,6 +140,11 @@ function emitAction(item) {
   &.side-title--active:hover {
     background-color: var(--bs-primary-border-subtle);
   }
+}
+
+.side-subtitle--active {
+  background-color: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary);
 }
 
 .side-title__name {

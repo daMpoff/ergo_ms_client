@@ -1,45 +1,169 @@
 <template>
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="name">
-            <div class="name_container">
-                <button @click="goToNewConnection" class="icon-button" title="Новое подключение"><ArrowLeft class="icon" /></button>
-                <img src="/src/assets/bi/icons/folder_windows_style.svg" class="icon_name" />
-                <div class="title">Файлы</div>
-            </div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="name">
+        <div class="name_container">
+          <button @click="goToNewConnection" class="icon-button" title="Новое подключение">
+            <ArrowLeft class="icon" />
+          </button>
+          <img src="/src/assets/bi/icons/folder_windows_style.svg" class="icon_name" />
+          <div class="title">Файлы</div>
         </div>
-        <div class="file-upload-button">
-          <div class="upload-button">
-            <button class="btn btn-outline-danger">
-                <Upload class="icon_upload" />
-                Загрузить файл
-            </button>
-          </div>
+      </div>
+
+      <div class="file-upload-button">
+        <div class="upload-button">
+          <button class="btn btn-outline-danger" @click="triggerFileUpload">
+            <Upload class="icon_upload" />
+            Загрузить файл
+          </button>
+          <input
+            type="file"
+            ref="fileInput"
+            accept=".csv,.xlsx,.txt"
+            multiple
+            @change="handleFileUpload"
+            style="display: none"
+          />
         </div>
-        <div class="file-list">
-          
-        </div>
-      </aside>
-  
-      <header class="file_area_header">
-        
-      </header>
-  
-      <main class="file_area">
-        
-      </main>
-    </div>
+      </div>
+
+      <div class="file-list">
+        <FileItem
+          v-for="file in selectedFiles"
+          :key="file.id"
+          :file="file"
+          @replace="handleFileReplace"
+          @rename="renameFile"
+          @delete="deleteFile"
+        />
+      </div>
+    </aside>
+
+    <header class="file_area_header"></header>
+    <main class="file_area"></main>
+  </div>
 </template>
   
 <script setup>
-    import { useRouter } from 'vue-router'
-    import { ArrowLeft, Upload } from 'lucide-vue-next'
+import { onMounted, ref } from 'vue'
+import FileItem from './components/FileItem.vue'
+import { useRouter } from 'vue-router'
+import { ArrowLeft, Upload } from 'lucide-vue-next'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
-    const router = useRouter()
+const router = useRouter()
+const fileInput = ref(null)
+const selectedFiles = ref([])
 
-    function goToNewConnection() {
-        router.push('/bi/connections/new/')
+const MAX_FILES = 10
+const MAX_SIZE_MB = 200
+
+function goToNewConnection() {
+  router.push('/bi/connections/new/')
+}
+
+function triggerFileUpload() {
+  fileInput.value?.click()
+}
+
+// Замена файла
+
+const replaceInput = ref(null)
+const fileToReplace = ref(null)
+
+function replaceFile(file) {
+  fileToReplace.value = file
+  replaceInput.value?.click()
+}
+
+function renameFile(file) {
+  console.log('Переименовать:', file)
+  // Открыть модалку или prompt
+}
+
+function deleteFile(file) {
+  if (confirm(`Удалить файл "${file.name}"?`)) {
+    // Вызвать API и обновить список
+    console.log('Удалено:', file)
+  }
+}
+
+async function handleFileUpload(event) {
+  const files = Array.from(event.target.files)
+
+  if (files.length > MAX_FILES) {
+    alert(`Можно выбрать не более ${MAX_FILES} файлов.`)
+    event.target.value = ''
+    return
+  }
+
+  const oversized = files.filter(file => file.size > MAX_SIZE_MB * 1024 * 1024)
+  if (oversized.length > 0) {
+    alert(`Файлы превышают ${MAX_SIZE_MB} МБ:\n${oversized.map(f => f.name).join(', ')}`)
+    event.target.value = ''
+    return
+  }
+
+  for (const file of files) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('name', file.name)
+
+    const res = await apiClient.upload(endpoints.bi.Upload, formData)
+    if (!res.success) {
+      console.error(`Ошибка загрузки файла ${file.name}:`, res.errors)
+      alert(`Ошибка загрузки файла ${file.name}`)
     }
+  }
+
+  event.target.value = ''
+  await loadUserFiles() // перезагружаем список из базы
+}
+
+async function handleFileReplace(event) {
+  const file = event.target.files[0]
+  if (!file || !fileToReplace.value) return
+
+  if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+    alert(`Файл превышает ${MAX_SIZE_MB} МБ`)
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('name', file.name)
+
+  const res = await apiClient.put(
+    `bi_analysis/bi_datasets/upload/${fileToReplace.value.id}/`,
+    formData
+  )
+
+  if (res.success) {
+    console.log('Файл заменён:', res.data)
+    await loadUserFiles()
+  } else {
+    console.error('Ошибка замены файла:', res.errors)
+    alert('Не удалось заменить файл')
+  }
+
+  event.target.value = ''
+  fileToReplace.value = null
+}
+
+onMounted(() => {
+  loadUserFiles()
+})
+
+async function loadUserFiles() {
+  const res = await apiClient.getUploadedFiles(endpoints.bi.UploadedFiles)
+  if (res.success) {
+    selectedFiles.value = res.data
+  } else {
+    console.error('Ошибка при загрузке файлов пользователя:', res.errors)
+  }
+}
 </script>
   
 <style scoped>
@@ -186,7 +310,6 @@ html, body {
     width: 100%;
     height: 2rem;
     border-radius: 6px;
-    color: #FFFAFA;
     display: flex;
     align-items: center;
     justify-content: center;

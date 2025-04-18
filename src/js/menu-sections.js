@@ -152,16 +152,18 @@ export const BIMenuSection = {
   list: [
     {
       name: 'Датасеты',
-      action: 'openDatasetSidebar',
+      page: 'datasets',
       isOffcanvas: true
     },
     {
-      path: 'StorageList',
       name: 'Подключения',
+      page: 'connections',
+      isOffcanvas: true
     },
     {
-      path: 'Warehouse',
       name: 'Чарты',
+      page: 'charts',
+      isOffcanvas: true
     },
-  ],
+  ]
 }

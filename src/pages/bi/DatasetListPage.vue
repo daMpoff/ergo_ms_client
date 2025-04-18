@@ -1,13 +1,10 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { DatasetDTO } from './components/dto/dataset'
-import axios from 'axios'
-import Cookies from 'js-cookie'
+import { endpoints } from '@/js/api/endpoints.js'
+import { apiClient } from '@/js/api/manager.js'
+import { isDatasetSidebarOpen } from '@/js/bi/useSidebarStore'
 import SimpleTableDataSet from '@/pages/bi/components/SimpleTableDataSet.vue'
-
-const props = defineProps({
-  isDatasetSidebarOpen: Boolean
-})
 
 const datasets = ref([])
 const search = ref('')
@@ -21,30 +18,23 @@ const cols = [
 ]
 
 const fetchDatasets = async () => {
-  const token = Cookies.get('token')
-  if (!token) return
+  const response = await apiClient.get(endpoints.bi_analysis.DatasetsList)
 
-  try {
-    const res = await axios.get('http://localhost:8000/api/bi_analysis/storage_data/', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-
-    datasets.value = res.data.map(item => new DatasetDTO({
+  if (response.success) {
+    datasets.value = response.data.map(item => new DatasetDTO({
       id: item.id,
       name: item.name || item.json_data?.name || '—',
       owner_username: item.owner_username,
       created_at: item.created_at,
       storage_type: item.storage_type
     }))
-  } catch (e) {
-    console.error('Ошибка при запросе:', e.response?.data || e.message)
+  } else {
+    console.error('Ошибка при получении датасетов:', response.errors)
   }
 }
 
-watch(() => props.isDatasetSidebarOpen, (newVal) => {
-  if (newVal) {
-    fetchDatasets()
-  }
+watch(isDatasetSidebarOpen, (newVal) => {
+  if (newVal) fetchDatasets()
 })
 
 const transformedData = computed(() => {
@@ -87,7 +77,7 @@ const transformedData = computed(() => {
         <button type="button" class="btn btn-primary" style="width: 10rem;">Создать датасет</button>
       </div>
       <div style="margin-top: 1rem;">
-        <SimpleTableDataSet :cols="cols" :users="transformedData" :isDatasetSidebarOpen="props.isDatasetSidebarOpen"/>
+        <SimpleTableDataSet :cols="cols" :users="transformedData" :isDatasetSidebarOpen="isDatasetSidebarOpen"/>
       </div>
     </div>
   </div>

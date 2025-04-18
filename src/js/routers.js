@@ -411,7 +411,7 @@ const biRoutes = [
   {
     path: '/bi/storage',
     name: 'BIStorage',
-    component: () => import('@/pages/bi/StorageData.vue'),
+    component: () => import('@/pages/bi/DatasetListPage.vue'),
     meta: { requiresAuth: true },
   },
   {
