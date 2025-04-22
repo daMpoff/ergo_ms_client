@@ -10,6 +10,7 @@ export const endpoints = {
     bi: {
         DatasetsList: 'bi_analysis/bi_datasets/',
         ConnectionsList: 'bi_analysis/bi_connections/',
+        CheckConnection: 'bi_analysis/bi_connections/check-connection/',
         ChartsList: 'bi_analysis/bi_charts/',
         Upload: 'bi_analysis/bi_datasets/upload/',
         UploadedFiles: 'bi_analysis/bi_datasets/user-files/',

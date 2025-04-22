@@ -77,13 +77,14 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import FileItem from './components/FileItem.vue'
-import FilePreviewPanel from './components/FilePreviewPanel.vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Upload } from 'lucide-vue-next'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
+import FileItem from './components/FileItem.vue'
+import FilePreviewPanel from './components/FilePreviewPanel.vue'
 import XlsxSheetPicker from './components/FilePreview/XlsxSheetPicker.vue'
+
 
 const router = useRouter()
 const fileInput = ref(null)

@@ -420,6 +420,24 @@ const biRoutes = [
     component: () => import('@/pages/bi/NewFile.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/bi/connections/new/clickhouse',
+    name: 'ClickHouse',
+    component: () => import('@/pages/bi/components/db-settings/ClickHouse.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/mssql',
+    name: 'MySQL',
+    component: () => import('@/pages/bi/components/db-settings/MSSQL.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/postgresql',
+    name: 'PostgreSQL',
+    component: () => import('@/pages/bi/components/db-settings/PostgreSQL.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const routes = [

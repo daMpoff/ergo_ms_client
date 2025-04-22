@@ -8,9 +8,9 @@ const router = useRouter()
 
 // Список всех карточек
 const allConnectors = [
-  { name: 'ClickHouse', icon: '/src/assets/bi/icons/clickhouse.svg', category: 'db' },
-  { name: 'Microsoft SQL Server', icon: '/src/assets/bi/icons/mssql.svg', category: 'db' },
-  { name: 'PostgreSQL', icon: '/src/assets/bi/icons/postgres.svg', category: 'db' },
+  { name: 'ClickHouse', icon: '/src/assets/bi/icons/clickhouse.svg', category: 'db', route: 'clickhouse' },
+  { name: 'Microsoft SQL Server', icon: '/src/assets/bi/icons/mssql.svg', category: 'db', route: 'mssql' },
+  { name: 'PostgreSQL', icon: '/src/assets/bi/icons/postgres.svg', category: 'db', route: 'postgresql' },
   { name: 'Файлы', icon: '/src/assets/bi/icons/folder_windows_style.svg', category: 'file', route: 'file' }
 ]
 

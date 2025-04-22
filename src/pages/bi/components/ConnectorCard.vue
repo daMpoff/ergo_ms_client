@@ -1,20 +1,29 @@
 <template>
-    <div class="card" @click="$emit('click')">
-      <a class="a_link">
-        <img :src="icon" class="card-icon" />
-        <div class="card_title">{{ name }}</div>
-      </a>
-    </div>
-  </template>
+  <div class="card" @click="handleClick">
+    <a class="a_link">
+      <img :src="icon" class="card-icon" />
+      <div class="card_title">{{ name }}</div>
+    </a>
+  </div>
+</template>
   
   <script setup>
-  defineProps({
+  import { useRouter } from 'vue-router'
+  
+  const props = defineProps({
     name: String,
-    icon: [String, Object]
+    icon: [String, Object],
+    type: String
   })
+  
+  const router = useRouter()
+  
+  function handleClick() {
+    router.push(`/bi/connections/new/${props.type}`)
+  }
   </script>
   
-  <style scoped>
+<style scoped>
   .card {
     width: 163px;
     height: 114px;
@@ -30,9 +39,9 @@
     border: 1px solid #4c4b51;
   }
   
-  .card:hover {
-    background-color: #333;
-  }
+   .card:hover {
+     background-color: #333;
+   }
   
   .card-icon {
     width: 56px;
@@ -55,4 +64,4 @@
     align-items: center;
     text-decoration: none;
   }
-  </style>
+</style>
