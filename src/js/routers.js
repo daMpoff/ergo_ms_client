@@ -403,12 +403,6 @@ const biRoutes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/bi/warehouse',
-    name: 'Warehouse',
-    component: () => import('@/pages/bi/WarehousePage.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
     path: '/bi/storage',
     name: 'BIStorage',
     component: () => import('@/pages/bi/DatasetListPage.vue'),

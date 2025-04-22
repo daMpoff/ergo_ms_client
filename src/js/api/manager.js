@@ -53,6 +53,23 @@ class ApiClient {
         }
     }
 
+    async patch(endpoint, data = {}, needToken = true) {
+        try {
+          const config = {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          };
+          if (needToken) {
+            this._addAuthToken(config);
+          }
+          const response = await this.client.patch(endpoint, data, config);
+          return this.handleResponse(response);
+        } catch (error) {
+          return this.handleError(error);
+        }
+      }
+
     async delete(endpoint, params = {}, needToken = true) {
         try {
             const config = { params };
@@ -115,11 +132,11 @@ class ApiClient {
 
     // Generic response handlers
     handleResponse(response) {
-        if ([200, 201].includes(response.status)) {
-            return { success: true, data: response.data };
+        if ([200, 201, 204].includes(response.status)) {
+          return { success: true, data: response.data || null };
         }
         return { success: false, errors: response.data };
-    }
+      }
 
     handleError(error) {
         return {
