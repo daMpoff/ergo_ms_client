@@ -178,11 +178,51 @@
       activeMenuIndex.value = null
     }
   }
+
+  async function previewCsvLocally(file) {
+  isLoading.value = true
+  errorState.value = null
+
+  try {
+    const text = await file.text()
+    const sep = delimiter.value === '\\t' ? '\t' : delimiter.value
+    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '')
+    const parsed = lines.map(line => line.split(sep))
+
+    if (parsed.length && !hasHeader.value) {
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      const colCount = parsed[0].length
+      const headers = Array.from({ length: colCount }, (_, i) =>
+        alphabet[i] || `Col ${i + 1}`
+      )
+      parsed.unshift(headers)
+    }
+
+    rawData.value = parsed
+  } catch (err) {
+    errorState.value = 'Ошибка чтения CSV: ' + err.message
+    rawData.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
   
-  onMounted(() => {
-    document.addEventListener('click', handleClickOutside)
-    if (props.file?.id) fetchFileMetaAndLoad(props.file.id)
-  })
+  onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
+  if (props.file?.originalFile instanceof File) {
+    await previewCsvLocally(props.file.originalFile)
+  } else if (props.file?.id) {
+    await fetchFileMetaAndLoad(props.file.id)
+  }
+})
+
+watch([encoding, delimiter], async () => {
+  if (props.file?.originalFile instanceof File) {
+    await previewCsvLocally(props.file.originalFile)
+  } else if (props.file?.id) {
+    await fetchFileMetaAndLoad(props.file.id)
+  }
+})
   
   onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   
