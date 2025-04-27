@@ -26,6 +26,8 @@
   
   <script setup>
   import { ref, computed, onMounted } from "vue";
+  import { endpoints } from '@/js/api/endpoints';
+  import { apiClient } from '@/js/api/manager';
   
   const technologies = ref([]); // Данные о технологиях
   const searchQuery = ref(""); // Поисковый запрос
@@ -33,16 +35,24 @@
   // Запрос данных
   const fetchData = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/learning_analytics/technologies/");
-      const result = await response.json();
-      technologies.value = result.data;
+      const response = await apiClient.get(endpoints.learning_analytics.technologies.get);
+      // Универсально: поддержка как response.data, так и response.data.data
+      if (Array.isArray(response.data)) {
+        technologies.value = response.data;
+      } else if (Array.isArray(response.data?.data)) {
+        technologies.value = response.data.data;
+      } else {
+        technologies.value = [];
+      }
     } catch (error) {
+      technologies.value = [];
       console.error("Ошибка загрузки данных:", error);
     }
   };
   
   // Фильтрация технологий по поисковому запросу
   const filteredTechnologies = computed(() => {
+    if (!Array.isArray(technologies.value)) return [];
     return technologies.value.filter((tech) =>
       tech.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       tech.description.toLowerCase().includes(searchQuery.value.toLowerCase())

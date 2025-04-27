@@ -44,7 +44,7 @@
         </div>
       </div>
 
-      <div class="alert alert-secondary border-0 d-flex align-items-center" role="alert">
+      <div class="alert alert-info" role="alert">
         <Info :size="18" class="me-2 text-primary"/>
         <span>Используйте эти инструменты для управления данными в базе данных</span>
       </div>
@@ -65,21 +65,57 @@ defineEmits(['download', 'load-example', 'clear'])
 
 <style scoped>
 .database-management {
-  background: var(--bs-body-bg);
+  background: rgba(--bs-body-bg, 0.8);
   border: 1px solid var(--bs-border-color);
+  box-shadow: 0 4px 24px 0 rgba(60, 72, 88, 0.08), 0 1.5px 4px 0 rgba(60, 72, 88, 0.04);
+  transition: box-shadow 0.2s;
+  
+}
+
+.database-management:hover {
+  box-shadow: 0 8px 32px 0 rgba(60, 72, 88, 0.16), 0 3px 8px 0 rgba(60, 72, 88, 0.08);
 }
 
 .action-btn {
-  min-width: 160px;
-  transition: all 0.15s ease;
+  min-width: 170px;
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 2px 0 rgba(60,72,88,0.04);
 }
 
-.action-btn:hover {
-  transform: translateY(-1px);
+.action-btn:not(:disabled):hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 4px 12px 0 rgba(60,72,88,0.10);
+  z-index: 1;
+}
+
+.d-flex.gap-2 {
+  gap: 1.1rem !important;
+}
+
+h3 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .alert {
   background-color: var(--bs-tertiary-bg);
   color: var(--bs-secondary-color);
+  border: none;
+  box-shadow: 0 1px 4px 0 rgba(60,72,88,0.04);
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.spinner-border {
+  animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+  to { transform: rotate(360deg); }
 }
 </style>

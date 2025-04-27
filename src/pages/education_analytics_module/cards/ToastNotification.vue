@@ -66,9 +66,19 @@ const toastClasses = (type) => {
 }
 
 const show = (message, type = 'success', duration = 3000) => {
+  // Приводим тип к допустимым ('success', 'error', 'info', 'primary')
+  if (!['success', 'error', 'info', 'primary'].includes(type)) {
+    type = 'info';
+  }
+  // Приводим message к строке, даже если это объект или html
+  let msg = message;
+  if (typeof msg !== 'string') {
+    if (msg && typeof msg.message === 'string') msg = msg.message;
+    else if (Array.isArray(msg)) msg = msg.join(', ');
+    else msg = 'Произошла ошибка';
+  }
   const id = counter++
-  const toast = { id, message, type, duration }
-  
+  const toast = { id, message: msg, type, duration }
   toasts.value.unshift(toast)
   setTimeout(() => removeToast(id), duration)
 }

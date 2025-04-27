@@ -27,12 +27,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { endpoints } from '@/js/api/endpoints'
+import { apiClient } from '@/js/api/manager'
 import DatabaseManagementCard from './cards/DatabaseManagementCard.vue'
 import DatabaseTablesCard from './cards/DatabaseTablesCard.vue'
 import ToastNotification from './cards/ToastNotification.vue'
 import ClearDatabaseModal from './cards/ClearDatabaseModal.vue'
 import TableEditor from './cards/TableEditor.vue'
+
 
 const isLoading = ref(false)
 const isDownloading = ref(false)
@@ -54,26 +56,29 @@ const showToast = (message, type = TOAST_TYPES.SUCCESS) => {
   toast.value?.show(message, type)
 }
 
+const handleApiResponse = (response, successMsg) => {
+  if (response.success) {
+    if (successMsg) showToast(successMsg, TOAST_TYPES.SUCCESS)
+    return response.data
+  } else {
+    showToast(response.errors || 'Ошибка запроса', TOAST_TYPES.ERROR)
+    return null
+  }
+}
+
 onMounted(async () => {
   await fetchTablesList()
 })
 
 const fetchTablesList = async () => {
+  isLoading.value = true
   try {
-    isLoading.value = true
-    const response = await axios.get('http://localhost:8000/api/learning_analytics/tables/')
-    console.log('API Response:', response.data)
-    
-    if (response.data?.tables) {
-      tables.value = response.data.tables
-      if (tables.value.length > 0) {
-        showToast(`Загружено ${tables.value.length} таблиц`, TOAST_TYPES.SUCCESS)
-      }
+    const response = await apiClient.get(endpoints.learning_analytics.tables)
+    const data = handleApiResponse(response)
+    tables.value = data?.tables || []
+    if (tables.value.length > 0) {
+      showToast(`Загружено ${tables.value.length} таблиц`, TOAST_TYPES.SUCCESS)
     }
-  } catch (error) {
-    console.error('Error fetching tables:', error.response || error)
-    showToast('Ошибка при загрузке списка таблиц', TOAST_TYPES.ERROR)
-    tables.value = []
   } finally {
     isLoading.value = false
   }
@@ -81,41 +86,20 @@ const fetchTablesList = async () => {
 
 const downloadAllData = async () => {
   if (isDownloading.value) return
-  
-  try {
-    isDownloading.value = true
-    showToast('Функция еще не реализована', TOAST_TYPES.INFO)
-    
-    // TODO: Добавить логику выгрузки
-    await new Promise(resolve => setTimeout(resolve, 3000)) // Имитация загрузки
-    
-    // showToast('Данные успешно выгружены', TOAST_TYPES.SUCCESS)
-  } catch (error) {
-    console.error('Error downloading data:', error)
-    showToast('Ошибка при выгрузке данных', TOAST_TYPES.ERROR)
-  } finally {
-    isDownloading.value = false
-  }
+  isDownloading.value = true
+  showToast('Функция еще не реализована', TOAST_TYPES.INFO)
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  isDownloading.value = false
 }
 
 const loadExampleData = async () => {
   if (isUploading.value) return
-
-  try {
-    isUploading.value = true
-    showToast('Загрузка тестовых данных...', TOAST_TYPES.INFO)
-    
-    // Здесь должен быть реальный API-запрос
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    await fetchTablesList() // Обновляем список таблиц
-    showToast('Тестовые данные успешно загружены', TOAST_TYPES.SUCCESS)
-  } catch (error) {
-    console.error('Error loading example data:', error)
-    showToast('Ошибка при загрузке тестовых данных', TOAST_TYPES.ERROR)
-  } finally {
-    isUploading.value = false
-  }
+  isUploading.value = true
+  showToast('Загрузка тестовых данных...', TOAST_TYPES.INFO)
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  await fetchTablesList()
+  showToast('Тестовые данные успешно загружены', TOAST_TYPES.SUCCESS)
+  isUploading.value = false
 }
 
 const showConfirmationModal = () => {
@@ -124,22 +108,13 @@ const showConfirmationModal = () => {
 
 const clearDatabase = async () => {
   if (isClearing.value) return
-
-  try {
-    isClearing.value = true
-    showToast('Очистка базы данных...', TOAST_TYPES.INFO)
-    
-    await axios.post('http://localhost:8000/api/learning_analytics/tables/clear/')
-    selectedTable.value = null // Сбрасываем выбранную таблицу
-    await fetchTablesList() // Обновляем список таблиц
-    
-    showToast('База данных успешно очищена', TOAST_TYPES.SUCCESS)
-  } catch (error) {
-    console.error('Error clearing database:', error)
-    showToast('Ошибка при очистке базы данных', TOAST_TYPES.ERROR)
-  } finally {
-    isClearing.value = false
-  }
+  isClearing.value = true
+  showToast('Очистка базы данных...', TOAST_TYPES.INFO)
+  const response = await apiClient.post(endpoints.learning_analytics.clearTables)
+  handleApiResponse(response, 'База данных успешно очищена')
+  selectedTable.value = null
+  await fetchTablesList()
+  isClearing.value = false
 }
 
 const selectTable = (tableName) => {
