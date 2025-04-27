@@ -3,9 +3,7 @@
     <aside class="sidebar">
       <div class="name">
         <div class="name_container">
-          <button @click="goToNewConnection" class="icon-button" title="Новое подключение">
-            <ArrowLeft class="icon" />
-          </button>
+          <button @click="goToNewConnection" class="icon-button" title="Новое подключение"><ArrowLeft class="icon" /></button>
           <img src="/src/assets/bi/icons/folder_windows_style.svg" class="icon_name" />
           <div class="title">Файлы</div>
         </div>
@@ -13,48 +11,23 @@
 
       <div class="file-upload-button">
         <div class="upload-button">
-          <button class="btn btn-outline-danger" @click="triggerFileUpload">
-            <Upload class="icon_upload" />
-            Загрузить файл
-          </button>
-          <input type="file" ref="fileInput" accept=".csv,.xlsx,.txt" multiple @change="handleFileUpload" style="display: none"/>
-          <input type="file" ref="replaceInput" accept=".csv,.xlsx,.txt" style="display: none" @change="handleFileReplace"/>
+          <button class="btn btn-outline-danger" @click="triggerFileUpload"><Upload class="icon_upload" />Загрузить файл</button>
+          <input type="file" ref="fileInput" accept=".csv,.xlsx,.txt" multiple @change="handleFileUpload" style="display: none" />
+          <input type="file" ref="replaceInput" accept=".csv,.xlsx,.txt" style="display: none" @change="handleFileReplace" />
         </div>
       </div>
 
       <div class="file-list">
         <div v-if="tempUploadedFiles.length">
           <div class="section-header">Новые файлы</div>
-          <FileItem
-            v-for="file in tempUploadedFiles"
-            :key="file.temp_path"
-            :file="file"
-            :isTemp="true"
-            :isActive="selectedFile === file"
-            @select="selectFile"
-            @tooltip-show="onIconHover"
-            @tooltip-hide="hideTooltipWithDelay"
-            @delete="() => removeTempFile(file)"
-            @pick-sheets="openSheetPicker"
-          />
+          <FileItem v-for="file in tempUploadedFiles" :key="file.temp_path" :file="file" :isTemp="true"
+            :isActive="selectedFile === file" @select="selectFile" @tooltip-show="onIconHover"
+            @tooltip-hide="hideTooltipWithDelay" @delete="() => removeTempFile(file)" @pick-sheets="openSheetPicker" />
         </div>
 
         <div v-if="uploadedFiles.length">
           <div class="section-header">Загруженные ранее</div>
-          <FileItem
-            v-for="file in uploadedFiles"
-            :key="file.id"
-            :file="file"
-            :isTemp="false"
-            :isActive="selectedFile === file"
-            @replace="replaceFile"
-            @rename="renameFile"
-            @delete="deleteFile"
-            @select="selectFile"
-            @tooltip-show="onIconHover"
-            @tooltip-hide="hideTooltipWithDelay"
-            @pick-sheets="openSheetPicker"
-          />
+          <FileItem v-for="file in uploadedFiles" :key="file.id" :file="file" :isTemp="false" :isActive="selectedFile === file" @replace="replaceFile" @rename="renameFile" @delete="deleteFile" @select="selectFile" @tooltip-show="onIconHover" @tooltip-hide="hideTooltipWithDelay" @pick-sheets="openSheetPicker" />
         </div>
       </div>
     </aside>
@@ -72,7 +45,7 @@
     <div v-show="showTooltip" :style="tooltipStyle" class="tooltip show">{{ tooltipText }}</div>
   </transition>
 
-  <XlsxSheetPicker :visible="isSheetPickerVisible" :filename="currentUploadFile?.name || ''" :sheets="availableSheets" :currentSheet="sheetBeingEdited" @confirm="handleSheetSelection" @cancel="isSheetPickerVisible = false"/>
+  <XlsxSheetPicker :visible="isSheetPickerVisible" :filename="currentUploadFile?.name || ''" :sheets="availableSheets" :currentSheet="sheetBeingEdited" @confirm="handleSheetSelection" @cancel="isSheetPickerVisible = false" />
 </template>
 
 <script setup>
@@ -90,7 +63,6 @@ const router = useRouter()
 const fileInput = ref(null)
 const replaceInput = ref(null)
 const fileToReplace = ref(null)
-const selectedFiles = ref([])
 const showTooltip = ref(false)
 const tooltipText = ref('')
 const tooltipStyle = ref({})
@@ -107,13 +79,6 @@ const availableSheets = ref([])
 const uploadedFiles = ref([])           // загруженные из БД
 const tempUploadedFiles = ref([])       // временно загруженные
 
-
-const isSheetPickerReady = computed(() =>
-  isSheetPickerVisible.value &&
-  currentUploadFile.value &&
-  Array.isArray(availableSheets.value) &&
-  availableSheets.value.length > 0
-)
 
 function goToNewConnection() {
   router.push('/bi/connections/new/')
@@ -219,35 +184,35 @@ async function handleFileUpload(event) {
   }
 
   for (const file of files) {
-  if (file.name.endsWith('.xlsx')) {
-    const formData = new FormData()
-    formData.append('file', file)
-    const sheetRes = await apiClient.upload('bi_analysis/bi_datasets/xlsx/sheets/', formData)
+    if (file.name.endsWith('.xlsx')) {
+      const formData = new FormData()
+      formData.append('file', file)
+      const sheetRes = await apiClient.upload('bi_analysis/bi_datasets/xlsx/sheets/', formData)
 
-    if (sheetRes.success && sheetRes.data.sheets.length > 1) {
-      const tempFile = {
-        name: file.name,
-        originalFile: file,
-        temp_path: null,
-        original_filename: file.name,
-        file_type: 'xlsx',
-        pendingSheets: sheetRes.data.sheets,
-        processedSheets: false
+      if (sheetRes.success && sheetRes.data.sheets.length > 1) {
+        const tempFile = {
+          name: file.name,
+          originalFile: file,
+          temp_path: null,
+          original_filename: file.name,
+          file_type: 'xlsx',
+          pendingSheets: sheetRes.data.sheets,
+          processedSheets: false
+        }
+        tempUploadedFiles.value.push(tempFile)
+
+        // указать текущий файл для выбора листов
+        currentUploadFile.value = tempFile
+        availableSheets.value = sheetRes.data.sheets
+        isSheetPickerVisible.value = true
+
+        event.target.value = ''
+        return
       }
-      tempUploadedFiles.value.push(tempFile)
-
-      // указать текущий файл для выбора листов
-      currentUploadFile.value = tempFile
-      availableSheets.value = sheetRes.data.sheets
-      isSheetPickerVisible.value = true
-
-      event.target.value = ''
-      return
     }
-  }
 
-  await uploadFile(file)
-}
+    await uploadFile(file)
+  }
 
   event.target.value = ''
   await loadUserFiles()
@@ -306,10 +271,10 @@ function handleSheetSelection(sheets) {
 
   currentUploadFile.value = null
 }
-  // Удалить исходный файл с множеством листов из списка
+// Удалить исходный файл с множеством листов из списка
 const index = tempUploadedFiles.value.findIndex(f => f.name === file.name)
-  if (index !== -1) tempUploadedFiles.value.splice(index, 1)
-    currentUploadFile.value = null
+if (index !== -1) tempUploadedFiles.value.splice(index, 1)
+currentUploadFile.value = null
 
 async function uploadFileRaw(formData, displayName, originalFile = null) {
   const res = await apiClient.upload('bi_analysis/bi_datasets/upload/', formData)
@@ -423,13 +388,13 @@ async function loadUserFiles() {
 }
 
 function openSheetPicker(file) {
-    console.log('[openSheetPicker]', file)
-    console.log('pendingSheets:', file.pendingSheets)
-    console.log('processedSheets:', file.processedSheets)
-    currentUploadFile.value = file
-    availableSheets.value = file.pendingSheets
-    sheetBeingEdited.value = getSheetNameFromFile(file.name)
-    isSheetPickerVisible.value = true 
+  console.log('[openSheetPicker]', file)
+  console.log('pendingSheets:', file.pendingSheets)
+  console.log('processedSheets:', file.processedSheets)
+  currentUploadFile.value = file
+  availableSheets.value = file.pendingSheets
+  sheetBeingEdited.value = getSheetNameFromFile(file.name)
+  isSheetPickerVisible.value = true
 }
 
 const showSaveChangesButton = computed(() => {
@@ -439,7 +404,7 @@ const showSaveChangesButton = computed(() => {
 const showCreateDatasetButton = computed(() => {
   return (
     selectedFile.value != null &&
-    !selectedFile.value.originalFile &&  // файл уже на сервере
+    !selectedFile.value.originalFile &&
     (selectedFile.value.id || selectedFile.value.temp_path)
   )
 })
@@ -463,12 +428,12 @@ function removeTempFile(file) {
 
 onMounted(loadUserFiles)
 </script>
-  
+
 <style scoped>
 * {
-     margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .tooltip {
@@ -480,7 +445,7 @@ onMounted(loadUserFiles)
   font-size: 0.85rem;
   white-space: nowrap;
   z-index: auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   pointer-events: none;
   opacity: 0;
   transform: translateY(-5px) translateX(-50%);
@@ -492,30 +457,31 @@ onMounted(loadUserFiles)
   transform: translateY(0) translateX(-50%);
 }
 
-html, body {
-    height: 100%;
-    font-family: sans-serif;
-    color: #fff;
+html,
+body {
+  height: 100%;
+  font-family: sans-serif;
+  color: #fff;
 }
-  
+
 .layout {
-    display: grid;
-    border-radius: 12px;
-    border: 1px solid #4c4b51;
-    grid-template-columns: 260px 1fr;
-    grid-template-rows: 56px 1fr;
-    grid-template-areas:
-      "sidebar header"
-      "sidebar chat";
-    height: 85vh;
-    background-color: transparent;
+  display: grid;
+  border-radius: 12px;
+  border: 1px solid #4c4b51;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: 56px 1fr;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar chat";
+  height: 85vh;
+  background-color: transparent;
 }
 
 .sidebar {
-    grid-area: sidebar;
-    background-color: transparent;
-    padding: 1rem;
-    border-top-left-radius: 12px;
+  grid-area: sidebar;
+  background-color: transparent;
+  padding: 1rem;
+  border-top-left-radius: 12px;
 }
 
 .file_area_header {
@@ -533,10 +499,10 @@ html, body {
 }
 
 .file_area {
-    grid-area: chat;
-    background-color: #313338;
-    padding: 1rem;
-    overflow-y: auto;
+  grid-area: chat;
+  background-color: #313338;
+  padding: 1rem;
+  overflow-y: auto;
 }
 
 .icon-button {
@@ -564,10 +530,10 @@ html, body {
   color: #fff;
 }
 
-.icon_name{
-    width: 32px;
-    height: 32px;
-    margin-right: 5px;
+.icon_name {
+  width: 32px;
+  height: 32px;
+  margin-right: 5px;
 }
 
 .icon_upload {
@@ -577,64 +543,64 @@ html, body {
   vertical-align: middle;
 }
 
-.title{
-    font-weight: bolder;
+.title {
+  font-weight: bolder;
 }
 
 .name {
-    font-size: 1.2rem;
-    margin-inline: -1rem;
-    padding-inline: 1rem;
-    border-bottom: 1px solid #4e5058;
+  font-size: 1.2rem;
+  margin-inline: -1rem;
+  padding-inline: 1rem;
+  border-bottom: 1px solid #4e5058;
 }
 
-.name_container{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding-bottom: 0.75rem;
+.name_container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-bottom: 0.75rem;
 }
 
 .file-list {
-    list-style: none;
-    line-height: 1.8;
-    font-size: 0.95rem;
-    color: #b5bac1;
-    padding-top: 5px;
+  list-style: none;
+  line-height: 1.8;
+  font-size: 0.95rem;
+  color: #b5bac1;
+  padding-top: 5px;
 }
 
-.file-upload-button{
-    position: relative;
-    margin-top: 20px;
-    margin-bottom: 20px;
+.file-upload-button {
+  position: relative;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .file-upload-button::after {
   content: '';
   position: absolute;
-  bottom: -20px; /* ⬅ отступ вниз от кнопки */
+  bottom: -20px;
   left: 0;
   right: 0;
   height: 1px;
   background-color: #4e5058;
 }
 
-.btn-outline-danger{
-    width: 100%;
-    height: 2rem;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.btn-outline-danger {
+  width: 100%;
+  height: 2rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.section-header{
+.section-header {
   margin-top: 10px;
   margin-bottom: 10px;
   font-weight: bold;
 }
 
-.btn-success{
+.btn-success {
   width: 13rem;
   height: 2rem;
   border-radius: 6px;
@@ -644,7 +610,7 @@ html, body {
   color: white;
 }
 
-.btn-outline-secondary{
+.btn-outline-secondary {
   width: 10rem;
   height: 2rem;
   border-radius: 6px;
@@ -653,5 +619,4 @@ html, body {
   justify-content: center;
   color: white;
 }
-
 </style>

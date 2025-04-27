@@ -438,6 +438,12 @@ const biRoutes = [
     component: () => import('@/pages/bi/components/db-settings/PostgreSQL.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/bi/connections/:pk',
+    name: 'connection-detail',
+    component: () => import('@/pages/bi/components/db-settings/ConnectionDetail.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const routes = [

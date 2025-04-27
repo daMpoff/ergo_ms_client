@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { endpoints } from '@/js/api/endpoints.js'
 import { apiClient } from '@/js/api/manager.js'
 import { isDatasetSidebarOpen } from '@/js/bi/useSidebarStore'
@@ -12,15 +12,14 @@ const sort = ref('new')
 
 const cols = [
   { key: 'name', label: 'Название' },
-  { key: 'connector_type_display', label: 'Тип коннектора' },
   { key: 'created_at', label: 'Дата', format: val => new Date(val).toLocaleDateString() },
   { key: 'actions', label: '' }
 ]
 
 const fetchConnections = async () => {
-  const response = await apiClient.get(endpoints.bi_analysis.ConnectionsList)
+  const response = await apiClient.get(endpoints.bi.ConnectionsList)
 
-  if (response.success) {
+  if (Array.isArray(response.data)) {
     connections.value = response.data.map(item => ({
       id: item.id,
       name: item.name || '—',
@@ -30,7 +29,7 @@ const fetchConnections = async () => {
       owner: item.owner
     }))
   } else {
-    console.error('Ошибка при загрузке подключений:', response.errors)
+    console.error('Ошибка: ответ от API не является массивом', response)
   }
 }
 
@@ -70,6 +69,8 @@ const goToCreateConnection = async () => {
   emit('close')
   await router.push('/bi/connections/new')
 }
+
+onMounted(fetchConnections)
 </script>
 
 <template>
@@ -86,10 +87,7 @@ const goToCreateConnection = async () => {
         <button type="button" class="btn btn-primary" style="width: 12.5rem;" @click="goToCreateConnection">Создать подключение</button>
       </div>
       <div style="margin-top: 1rem;">
-        <SimpleTableDataSet
-          :cols="cols"
-          :users="transformedData"
-          :isDatasetSidebarOpen="isDatasetSidebarOpen" />
+        <SimpleTableDataSet :cols="cols" :users="transformedData" :isDatasetSidebarOpen="isDatasetSidebarOpen" />
       </div>
     </div>
   </div>

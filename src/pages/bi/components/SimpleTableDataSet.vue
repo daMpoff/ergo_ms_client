@@ -7,61 +7,40 @@
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="row in props.users"
-          :key="row.id"
-          class="table-row"
-          @mouseenter="hoveredRow = row.id"
-          @mouseleave="hoveredRow = null"
-        >
-          <td
-            v-for="col in props.cols"
-            :key="col.key"
-            :style="{ position: 'relative', overflow: 'hidden' }"
-            :class="{ 'td-actions': col.key === 'actions' }"
-          >
+        <tr v-for="row in props.users" :key="row.id" class="table-row" @mouseenter="hoveredRow = row.id" @mouseleave="hoveredRow = null" @click="goToConnection(row.id)">
+          <td v-for="col in props.cols" :key="col.key" :style="{ position: 'relative', overflow: 'hidden' }" :class="{ 'td-actions': col.key === 'actions' }">
             <!-- Название -->
             <template v-if="col.key === 'name'">
-              <span class="tooltip-wrapper">
-                <Table class="icon" title="Датасет" />
-              </span>
+              <template v-if="getIconComponent(row)">
+                <img :src="getIconComponent(row).src" class="icon" @mouseenter="onIconHover($event, getIconComponent(row).tooltip)" @mouseleave="hideTooltip" />
+              </template>
+              <template v-else>
+                <Table class="icon" />
+              </template>
               <span class="dataset-name">{{ getValue(row, col.key) ?? '—' }}</span>
             </template>
 
             <!-- Дата -->
             <template v-else-if="col.key === 'created_at'">
-              <span
-                class="tooltip-wrapper"
-                @mouseenter="onIconHover($event, formatTooltipDate(getValue(row, col.key)))"
-                @mouseleave="hideTooltip"
-              >
+              <span class="tooltip-wrapper" @mouseenter="onIconHover($event, formatTooltipDate(getValue(row, col.key)))" @mouseleave="hideTooltip">
                 {{ new Date(getValue(row, col.key)).toLocaleDateString() }}
               </span>
             </template>
 
             <!-- Действия -->
             <template v-else-if="col.key === 'actions'">
-              <div
-                class="actions-cell"
-                :class="{ visible: props.isDatasetSidebarOpen && (hoveredRow === row.id || isFavorite(row.id)) }"
-              >
+              <div class="actions-cell" :class="{ visible: hoveredRow === row.id || isFavorite(row.id) }">
                 <div class="actions-inner">
-                  <button
-                    class="action-btn star"
-                    :class="{ active: isFavorite(row.id) }"
-                    @click.stop="toggleFavorite(row.id)"
-                    title="Избранное"
-                  >
+                  <button class="action-btn star" :class="{ active: isFavorite(row.id) }" @click.stop="toggleFavorite(row.id)" title="Избранное">
                     <Star class="icon-inline" />
                   </button>
-                  <button class="action-btn more" title="Еще">
-                    <MoreHorizontal class="icon-inline" />
-                  </button>
+                    <button class="action-btn more" @click="onMoreClick($event, row.id)" title="Еще">
+                      <MoreHorizontal class="icon-inline" />
+                    </button>
                 </div>
               </div>
             </template>
 
-            <!-- Остальные поля -->
             <template v-else>
               {{ typeof col.format === 'function' ? col.format(getValue(row, col.key)) : getValue(row, col.key) ?? '—' }}
             </template>
@@ -74,15 +53,31 @@
       </tbody>
     </table>
 
+    <!-- Обычный тултип -->
     <div v-if="showTooltip" class="tooltip-fixed" :style="tooltipStyle">
       {{ tooltipText }}
     </div>
+
+    <!-- Меню "Еще" -->
+    <div v-if="showMenu" class="menu-dropdown" :style="menuPosition" @mouseleave="closeMenu">
+      <div class="menu-item"><CaseSensitive :size="18" :stroke-width="2" />Переименовать</div>
+      <hr>
+      <div class="menu-item"><Link :size="18" :stroke-width="2" />Копировать ссылку</div>
+      <hr>
+      <div class="menu-item danger"><Trash2 :size="18" :stroke-width="2" />Удалить</div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { Table, Image as Star, MoreHorizontal } from 'lucide-vue-next'
+import { Table, Star, MoreHorizontal, Trash2, CaseSensitive, Link } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import ClickHouseIcon from '@/assets/bi/icons/clickhouse.svg'
+import PostgresIcon from '@/assets/bi/icons/postgres.svg'
+import MssqlIcon from '@/assets/bi/icons/mssql.svg'
+import FileIcon from '@/assets/bi/icons/folder_windows_style.svg'
 
 const props = defineProps({
   cols: Array,
@@ -92,6 +87,12 @@ const props = defineProps({
 
 const hoveredRow = ref(null)
 const favorites = ref(new Set())
+
+const router = useRouter()
+
+function goToConnection(id) {
+  router.push(`/bi/connections/${id}`)
+}
 
 // localStorage избранное
 function loadFavorites() {
@@ -144,10 +145,40 @@ function hideTooltip() {
   showTooltip.value = false
 }
 
-function formatTooltipDate(dateStr) {
+function getIconComponent(row) { // Иконки строк
+  const type = (row.connector_type_display || row.connector_type || '').toLowerCase().trim()
+
+  if (type.includes('clickhouse')) return { src: ClickHouseIcon, tooltip: 'ClickHouse' }
+  if (type.includes('postgres')) return { src: PostgresIcon, tooltip: 'PostgreSQL' }
+  if (type.includes('sql server') || type.includes('mssql')) return { src: MssqlIcon, tooltip: 'Microsoft SQL Server' }
+
+  return null
+}
+
+function formatTooltipDate(dateStr) { // Форматирование дат для тултипа
   const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
   const date = new Date(dateStr)
   return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+}
+
+//Тултип "Ещё"
+const showMenu = ref(false)
+const menuPosition = ref({ top: '0px', left: '0px' })
+const menuRowId = ref(null)
+
+function onMoreClick(event, rowId) {
+  event.stopPropagation()
+  const rect = event.currentTarget.getBoundingClientRect()
+  showMenu.value = true
+  menuRowId.value = rowId
+  menuPosition.value = {
+    top: `${rect.bottom + window.scrollY + 6}px`,
+    left: `${rect.left + window.scrollX}px`
+  }
+}
+
+function closeMenu() {
+  showMenu.value = false
 }
 </script>
 
@@ -181,6 +212,7 @@ function formatTooltipDate(dateStr) {
 
 .table-row:hover {
   background-color: #333;
+  cursor: pointer;
 }
 
 .td-actions {
@@ -191,8 +223,9 @@ function formatTooltipDate(dateStr) {
 }
 
 .icon {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
   vertical-align: middle;
   color: #dc3545;
 }
@@ -233,12 +266,14 @@ function formatTooltipDate(dateStr) {
   align-items: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(-4px);
 }
 
 .actions-cell.visible {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 
 .actions-inner {
@@ -269,5 +304,37 @@ function formatTooltipDate(dateStr) {
 .icon-inline {
   width: 18px;
   height: 18px;
+}
+
+.menu-dropdown {
+  position: fixed;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  padding: 8px 0;
+  min-width: 120px;
+  z-index: 10000;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  color: #eee;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.menu-dropdown hr {
+  margin: 4px 0;
+}
+
+.menu-item:hover {
+  background-color: #444;
+}
+
+.menu-item.danger {
+  color: #f87171;
 }
 </style>

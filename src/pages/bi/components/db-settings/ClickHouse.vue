@@ -23,7 +23,8 @@
             <div class="row_input row_input_full">
                 <label for="host" class="form-label mb-1">Имя хоста</label>
                 <div class="input-wrapper">
-                    <input v-model="host" class="form-control form-control-sm" type="text" id="host" required :disabled="loading"/>
+                    <input v-model="host" class="form-control form-control-sm" type="text" id="host" required
+                        :disabled="loading" />
                     <div class="invalid-feedback">Укажите хост</div>
                 </div>
             </div>
@@ -31,7 +32,8 @@
             <div class="row_input">
                 <label for="port" class="form-label mb-1">Порт</label>
                 <div class="input-wrapper">
-                    <input v-model="port" class="form-control form-control-port" type="number" id="port" required :disabled="loading" />
+                    <input v-model="port" class="form-control form-control-port" type="number" id="port" required
+                        :disabled="loading" />
                     <div class="invalid-feedback">Укажите порт</div>
                 </div>
             </div>
@@ -39,7 +41,8 @@
             <div class="row_input">
                 <label for="username" class="form-label mb-1">Имя пользователя</label>
                 <div class="input-wrapper">
-                    <input v-model="username" class="form-control form-control-sm form-control-wide" type="text" id="username" required :disabled="loading" />
+                    <input v-model="username" class="form-control form-control-sm form-control-wide" type="text"
+                        id="username" required :disabled="loading" />
                     <div class="invalid-feedback">Укажите имя пользователя</div>
                 </div>
             </div>
@@ -47,17 +50,27 @@
             <div class="row_input">
                 <label for="password" class="form-label mb-1">Пароль</label>
                 <div class="input-wrapper">
-                    <input v-model="password" class="form-control form-control-pass form-control-wide" type="password" id="password" required :disabled="loading" />
+                    <input v-model="password" class="form-control form-control-pass form-control-wide" type="password"
+                        id="password" required :disabled="loading" />
                     <div class="invalid-feedback">Укажите пароль</div>
                 </div>
             </div>
 
             <div class="row_btns">
-                <button type="submit" class="btn btn-outline-secondary" :disabled="loading">Проверить подключение</button>
-                <button type="button" class="btn btn-danger" :disabled="loading">Создать подключение</button>
+                <button type="submit" class="btn btn-outline-secondary" :disabled="loading">Проверить
+                    подключение</button>
+                <button type="button" class="btn btn-danger" :disabled="loading" @click="createConnection">Создать
+                    подключение</button>
             </div>
         </form>
     </div>
+    <ConnectionNameDialog v-model:visible="showDialog" :connectorType="'clickhouse'" :connectionConfig="{
+        host: host,
+        port: port,
+        user: username,
+        password: password,
+        database: database
+    }" @saved="onConnectionSaved" />
 </template>
 
 <script setup>
@@ -66,6 +79,7 @@ import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
+import ConnectionNameDialog from '@/pages/bi/components/ConnectionNameDialog.vue'
 
 const router = useRouter()
 function goToNewConnection() {
@@ -83,43 +97,49 @@ const message = ref('')
 const error = ref(false)
 const isChecked = ref(false)
 const loading = ref(false)
+const database = ref('')
+
+const showDialog = ref(false)
 
 async function checkConnection() {
-  message.value = ''
-  error.value = false
-  isChecked.value = false
-  loading.value = true
-
-  const formEl = form.value
-  if (!formEl.checkValidity()) {
-    formEl.classList.add('was-validated')
-    loading.value = false
-    return
-  }
-
-  const response = await apiClient.post(endpoints.bi.CheckConnection, {
-    type: 'clickhouse',
-    host: host.value,
-    port: port.value,
-    username: username.value,
-    password: password.value,
-  })
-
-  formEl.classList.add('was-validated')
-
-  const data = response.data || {}
-
-  if (data.success === true) {
-    message.value = data.message || 'Соединение успешно'
+    message.value = ''
     error.value = false
-  } else {
-    const raw = data.message || response.errors?.message || 'Ошибка соединения'
-    message.value = translateErrorMessage(String(raw).trim())
-    error.value = true
-  }
+    isChecked.value = false
+    loading.value = true
 
-  isChecked.value = true
-  loading.value = false
+    const formEl = form.value
+    if (!formEl.checkValidity()) {
+        formEl.classList.add('was-validated')
+        loading.value = false
+        return
+    }
+
+    try {
+        const response = await apiClient.post(endpoints.bi.CheckConnection, {
+            type: 'clickhouse',
+            host: host.value,
+            port: port.value,
+            username: username.value,
+            password: password.value,
+        })
+
+        const data = response.data || {}
+
+        formEl.classList.add('was-validated')
+
+        if (data.success === true) {
+            showAutoDismissMessage(data.message || 'Соединение успешно', false)
+        } else {
+            const translated = translateErrorMessage(String(raw).trim())
+            showAutoDismissMessage(translated, true)
+        }
+    } catch (err) {
+        message.value = 'Ошибка при выполнении запроса: ' + (err.message || 'Неизвестная ошибка')
+        error.value = true
+    }
+
+    isChecked.value = true
+    loading.value = false
 }
 
 function translateErrorMessage(raw) {
@@ -146,6 +166,42 @@ function translateErrorMessage(raw) {
     }
 
     return raw
+}
+
+async function createConnection() {
+    const prevMessage = message.value
+    message.value = ''
+
+    await checkConnection()
+
+    if (!isChecked.value || error.value) {
+        message.value = prevMessage
+        return
+    }
+
+    showDialog.value = true
+}
+
+function onConnectionSaved(data) {
+  message.value = `Подключение "${data.name}" успешно сохранено`
+  error.value = false
+  isChecked.value = true
+
+  setTimeout(() => {
+    router.push({ name: 'connection-detail', params: { pk: data.id } })
+  }, 3000)
+}
+
+function showAutoDismissMessage(msg, isError = false) {
+    message.value = msg
+    error.value = isError
+    isChecked.value = true
+
+    setTimeout(() => {
+        message.value = ''
+        isChecked.value = false
+        error.value = false
+    }, 3000)
 }
 </script>
 
