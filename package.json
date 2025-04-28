@@ -31,6 +31,7 @@
     "@fullcalendar/list": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.15",
+    "@he-tree/vue": "^2.9.4",
     "@popperjs/core": "^2.11.8",
     "@vueuse/core": "^12.4.0",
     "apexcharts": "^4.1.0",
