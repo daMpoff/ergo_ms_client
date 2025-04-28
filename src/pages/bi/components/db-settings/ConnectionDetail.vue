@@ -78,6 +78,9 @@ import { ref, onMounted, computed } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import ConnectionNameDialog from '@/pages/bi/components/ConnectionNameDialog.vue'
+import { useRedirectIfFileConnection } from '@/pages/bi/components/js/useRedirectIfFileConnection'
+
+useRedirectIfFileConnection()
 
 const route = useRoute()
 const router = useRouter()

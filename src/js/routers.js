@@ -444,6 +444,12 @@ const biRoutes = [
     component: () => import('@/pages/bi/components/db-settings/ConnectionDetail.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/bi/connections/:pk/files',
+    name: 'ConnectionFiles',
+    component: () => import('@/pages/bi/ConnectionFiles.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const routes = [

@@ -7,7 +7,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in props.users" :key="row.id" class="table-row" @mouseenter="hoveredRow = row.id" @mouseleave="hoveredRow = null" @click="goToConnection(row.id)">
+        <tr v-for="row in props.users" :key="row.id" class="table-row" @mouseenter="hoveredRow = row.id" @mouseleave="hoveredRow = null" @click="goToConnection(row)">
           <td v-for="col in props.cols" :key="col.key" :style="{ position: 'relative', overflow: 'hidden' }" :class="{ 'td-actions': col.key === 'actions' }">
             <!-- Название -->
             <template v-if="col.key === 'name'">
@@ -90,8 +90,17 @@ const favorites = ref(new Set())
 
 const router = useRouter()
 
-function goToConnection(id) {
-  router.push(`/bi/connections/${id}`)
+function goToConnection(row) {
+  if (!row || !row.id) return
+
+  const type = (row.connector_type_display || row.connector_type || '').toLowerCase().trim()
+  const isFileConnection = type === 'file' || type === 'files' || type.includes('файл')
+
+  if (isFileConnection) {
+    router.push(`/bi/connections/${row.id}/files/`)
+  } else {
+    router.push(`/bi/connections/${row.id}/`)
+  }
 }
 
 // localStorage избранное
@@ -151,6 +160,7 @@ function getIconComponent(row) { // Иконки строк
   if (type.includes('clickhouse')) return { src: ClickHouseIcon, tooltip: 'ClickHouse' }
   if (type.includes('postgres')) return { src: PostgresIcon, tooltip: 'PostgreSQL' }
   if (type.includes('sql server') || type.includes('mssql')) return { src: MssqlIcon, tooltip: 'Microsoft SQL Server' }
+  if (type.includes('file') || type.includes('files') || type.includes('файл')) return { src: FileIcon, tooltip: 'Загруженные файлы' }
 
   return null
 }
@@ -186,7 +196,7 @@ function closeMenu() {
 .scrollable-table {
   overflow-x: auto;
   overflow-y: auto;
-  max-height: 440px;
+  max-height: 75rem;
   font-size: 14px;
   color: #ccc;
 }
