@@ -7,7 +7,7 @@
 
         <!-- Редактор -->
         <div class="col-9">
-            <EditorCanvas v-model="canvasComponents" @component-click="openSettings" />
+            <EditorCanvas v-model="canvasComponents" @open-settings="openSettings" />
         </div>
 
         <!-- Предпросмотр -->
@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { selectedComponent } from './shortcodeStore'
 
 import ComponentPalette from './components/ComponentPalette.vue'
@@ -50,6 +50,28 @@ function openSettings(component) {
 }
 
 function closeSettings() {
+    selectedComponent.value = null
     isOpen.value = false
 }
+watch(
+  () => selectedComponent.value,
+  (newComp) => {
+    if (!newComp) return
+
+    const idx = canvasComponents.value.findIndex(c => c.id === newComp.id)
+    if (idx === -1) return
+    const updated = {
+      ...canvasComponents.value[idx],
+      bootstrap_classes: newComp.bootstrap_classes,
+      extra_data: { ...newComp.extra_data }
+    }
+    const newArr = [
+      ...canvasComponents.value.slice(0, idx),
+      updated,
+      ...canvasComponents.value.slice(idx + 1)
+    ]
+    canvasComponents.value = newArr
+  },
+  { deep: true }
+)
 </script>

@@ -1,5 +1,9 @@
 <template>
-  <div :class="component.bootstrap_classes" class="position-relative">
+  <div :class="[
+      'position-relative',
+      component.bootstrap_classes,
+      component.extra_data.align
+    ]">
     <p>{{ component.extra_data.text}}</p>
   </div>
 </template>
