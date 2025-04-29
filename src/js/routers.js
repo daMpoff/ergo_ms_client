@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { checkToken } from '@/js/api/services/auth-index'
+import FileManager from '@/pages/control/FileManager.vue';
 
 const mainRoutes = [
   {
@@ -20,7 +21,14 @@ const mainRoutes = [
     },
   },
 ]
-
+const fileManagerRoutes = [
+  {
+    path: '/control/filemanager',
+    name: 'FileManager',
+    component: FileManager,
+    meta: { requiresAuth: true, title: 'Файлы' }
+  } 
+]
 // Панель управления
 const dashboardRoutes = [
   {
@@ -321,6 +329,30 @@ const componentsRoutes = [
     ],
   },
 ]
+// Управление маршрутами
+const controlRoutes = [
+  {
+    path: '/control',
+    name: 'Control',
+    component: () => import('@/pages/control/ParentLayout.vue'),
+    redirect: { name: 'UploadFile' }, // или FileManager, если ты хочешь показывать его первым
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'upload-file',
+        name: 'UploadFile',
+        component: () => import('@/pages/control/UploadFile.vue'),
+        meta: { title: 'Загрузка файлов', requiresAuth: true },
+      },
+      {
+        path: 'review',
+        name: 'Review',
+        component: () => import('@/pages/control/Review.vue'),
+        meta: { title: 'Обзор файлов', requiresAuth: true },
+      },
+    ],
+  },
+]
 
 //
 const startRoutes = [
@@ -392,6 +424,7 @@ const startRoutes = [
 const routes = [
   ...startRoutes,
   ...mainRoutes,
+  ...fileManagerRoutes,
   ...dashboardRoutes,
   ...userRoutes,
   ...settingsRoutes,
@@ -406,6 +439,7 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...controlRoutes,
 ]
 
 routes.forEach((route) => {

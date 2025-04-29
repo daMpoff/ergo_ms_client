@@ -12,6 +12,7 @@ import {
   TextCursorInput,
   UserCog,
   Wallet,
+  Files
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -142,3 +143,16 @@ export const ComponentsMenuSection = {
     { path: 'Typography', name: 'Типография' },
   ],
 }
+
+// Файлы 
+export const FilesMenuSection = {
+  id: 14,
+  icon: Files,
+  routeName: 'FileManager',
+  path: '/control/filemanager',
+  title: 'Файлы',
+  list: [
+    { path: 'UploadFile', name: 'Загрузка файлов' },
+    { path: 'Review', name: 'Обзор' },
+  ],
+};
