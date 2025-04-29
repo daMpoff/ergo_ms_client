@@ -1,4 +1,4 @@
-import { settings } from "@vue/eslint-config-prettier/skip-formatting";
+
 
 export const endpoints = {
     auth: {
