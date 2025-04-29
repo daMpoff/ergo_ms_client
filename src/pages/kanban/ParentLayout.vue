@@ -2,15 +2,27 @@
 import { EllipsisVertical, GripVertical, Plus, Bell, Calendar, Flag } from 'lucide-vue-next'
 import { DragHandle, SlickItem, SlickList } from 'vue-slicksort'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import Cookies from 'js-cookie'
 import { useToast } from 'vue-toastification'
 import DropDown from '@/components/DropDown.vue'
 import KanbanTask from '@/pages/kanban/KanbanTask.vue'
 import KanbanTaskViewing from '@/pages/kanban/KanbanTaskViewing.vue'
 import { useKanbanStore } from '@/js/api/services/tasksService'
+import { useRoute } from 'vue-router'
+
+const props = defineProps({
+  project_id: {
+    type: [Number, String],
+    required: true
+  }
+})
+
+const route = useRoute()
+const projectId = ref(null)
 
 const kanbanStore = useKanbanStore()
+const toast = useToast()
 const isCopyingText = ref(true)
 const newSectionName = ref('')
 const isAddingSection = ref(false)
@@ -19,7 +31,7 @@ const newTaskData = ref({
   title: '',
   description: '',
   dueDate: null,
-  priority: 0, // Изменено на числовое значение для соответствия API
+  priority: 0,
   reminders: []
 })
 const showDatePicker = ref(false)
@@ -30,11 +42,25 @@ const priorityOptions = [
   { value: 2, label: 'важная', color: 'warning' },
   { value: 3, label: 'срочная', color: 'info' },
   { value: 4, label: 'рутинная', color: 'secondary' }
-
 ]
+// Загрузка данных канбан-доски при изменении project_id
+watch(() => props.project_id, (newVal) => {
+  if (newVal) {
+    kanbanStore.fetchColumns(newVal)
+  }
+})
+// Добавляем реактивное отслеживание изменений в хранилище
+watch(() => kanbanStore.columns, () => {
+  // Можно добавить дополнительную логику при изменении колонок
+}, { deep: true })
 
-onMounted(async () => {
-  await kanbanStore.fetchColumns()
+
+// Fetching project_id from the query parameter
+onMounted(() => {
+  projectId.value = route.query.project_id;
+  if (projectId.value) {
+    kanbanStore.fetchColumns(projectId.value)
+  }
 })
 
 const startAddingSection = () => {
@@ -44,19 +70,22 @@ const startAddingSection = () => {
 
 const submitNewSection = async () => {
   if (!newSectionName.value.trim()) {
-    kanbanStore.toast.error('Введите название раздела')
+    toast.error('Введите название раздела')
     return
   }
   
   try {
     await kanbanStore.addSection({
-      section_name: newSectionName.value.trim(), // Используем section_name
-      project_id: 1 // или динамически получаемый ID проекта
+      section_name: newSectionName.value.trim(),
+      project_id: projectId.value 
     })
     isAddingSection.value = false
     newSectionName.value = ''
+    // После успешного добавления обновляем данные
+    await kanbanStore.fetchColumns(props.project_id)
   } catch (error) {
     console.error('Ошибка при создании раздела:', error)
+    toast.error('Ошибка при создании раздела')
   }
 }
 
@@ -71,37 +100,10 @@ const startAddingTask = (columnIndex) => {
   }
 }
 
-const addReminder = () => {
-  if (reminderDate.value) {
-    newTaskData.value.reminders.push(reminderDate.value)
-    reminderDate.value = null
-    showReminderPicker.value = false
-  }
-}
-
-const removeReminder = (index) => {
-  newTaskData.value.reminders.splice(index, 1)
-}
-
-const formatDate = (date) => {
-  if (!date) return ''
-  return new Date(date).toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  })
-}
-
-const formatDateTimeForAPI = (date) => {
-  if (!date) return null;
-  const d = new Date(date);
-  return d.toISOString().split('.')[0] + 'Z'; // Правильный формат
-};
-
 const submitNewTask = async (columnIndex) => {
   if (!newTaskData.value.title?.trim()) {
-    useToast().error('Введите название задачи')
-    return
+    toast.error('Введите название задачи');
+    return;
   }
 
   const taskData = {
@@ -111,34 +113,62 @@ const submitNewTask = async (columnIndex) => {
     deadline: newTaskData.value.dueDate ? formatDateTimeForAPI(newTaskData.value.dueDate) : null,
     priority: newTaskData.value.priority || 1,
     user_id: parseInt(Cookies.get('userId')) || null,
+    project_id: props.project_id,
     isdone: false,
-    dateofcreation: new Date().toISOString() // Добавляем текущую дату
-  }
+    dateofcreation: new Date().toISOString()
+  };
 
   if (!taskData.section_id) {
-    useToast().error('Не удалось определить раздел для задачи')
-    return
+    toast.error('Не удалось определить раздел для задачи');
+    return;
   }
 
   try {
-
+    // Создание задачи через API и получение новой задачи
+    const newTask = await kanbanStore.createTask(taskData);
     
-    const createdTask = await kanbanStore.createTask(taskData)
-    useToast().success(`Задача "${createdTask.text}" создана!`)
+    // Добавляем задачу в соответствующую колонку локально
+    const column = kanbanStore.columns.find(col => col.id === taskData.section_id);
+    if (column) {
+      column.cards.push(newTask);
+    } else {
+      console.warn(`Раздел с ID ${taskData.section_id} не найден`);
+      // Если колонка не найдена, делаем полное обновление
+      await kanbanStore.fetchColumns(props.project_id);
+    }
     
-    isAddingTask.value = -1
+    // Очистка формы добавления задачи
+    isAddingTask.value = -1;
     newTaskData.value = {
       title: '',
       description: '',
       dueDate: null,
       priority: 0,
       reminders: []
-    }
-    
+    };
+
+    toast.success('Задача успешно добавлена');
   } catch (error) {
-    console.error('Ошибка создания задачи:', { error, taskData })
-    useToast().error(error.message || 'Ошибка при создании задачи')
+    console.error('Ошибка создания задачи:', error);
+    toast.error('Ошибка при создании задачи');
   }
+};
+// Вспомогательная функция для форматирования даты
+function formatDateTimeForAPI(date) {
+  return new Date(date).toISOString()
+}
+// Остальные вспомогательные функции остаются без изменений
+
+
+
+
+const formatDate = (date) => {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
 }
 </script>
 
@@ -343,7 +373,7 @@ const submitNewTask = async (columnIndex) => {
   </PerfectScrollbar>
 
   <KanbanEdit></KanbanEdit>
-  <KanbanTaskViewing />
+  <KanbanTaskViewing v-if="kanbanStore.editableTask" :task="kanbanStore.editableTask" />
 </template>
 
 <style scoped lang="scss">

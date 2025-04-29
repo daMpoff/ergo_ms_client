@@ -1,6 +1,6 @@
 <script setup>
  import { EllipsisVertical, MessagesSquare, Trash } from 'lucide-vue-next'
- import { computed } from 'vue'
+ import { computed, defineProps } from 'vue'
  
  import AvatarGroup from '@/components/AvatarGroup.vue'
  import DropDown from '@/components/DropDown.vue'
@@ -14,8 +14,14 @@
    date: { type: Object, default: () => ({ start: 0, deadline: 0 }) },
    hours: { type: Number, default: 0 },
    tasks: { type: Object, default: () => ({ current: 0, all: 0 }) },
+   project_id: { type: [Number, String], required: true },
  })
- 
+ const emit = defineEmits()
+
+ const handleClick = () => {
+  emit('selectProject', props.project_id)
+}
+
  // Форматирование даты
  const formatDate = (timestamp) => {
    if (!timestamp) return 'Не указана'
@@ -56,7 +62,7 @@
  </script>
  
  <template>
-   <div class="card">
+   <div class="card" @click="handleClick">
      <div class="d-flex align-items-center justify-content-between mb-3">
        <div class="d-flex align-items-center gap-2">
          <div class="rounded p-2 text-white icon-flex" :class="iconBackground">

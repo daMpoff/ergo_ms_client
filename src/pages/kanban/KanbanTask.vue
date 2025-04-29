@@ -1,8 +1,7 @@
 <script setup>
 import { MessageSquareText, Paperclip, Settings2 } from 'lucide-vue-next'
 import { computed } from 'vue'
-import { useKanbanStore } from '@/stores/kanbanStore.js'
-
+import { useKanbanStore } from '@/js/api/services/tasksService'
 const kanbanStore = useKanbanStore()
 
 const props = defineProps({

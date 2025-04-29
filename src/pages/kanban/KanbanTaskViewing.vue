@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { useKanbanStore } from '@/stores/kanbanStore.js'
+import { useKanbanStore } from '@/js/api/services/tasksService'
 import { SquarePlus } from 'lucide-vue-next'
 
 const kanbanStore = useKanbanStore()
@@ -228,7 +228,7 @@ const closeModal = () => {
                     @keyup.enter="addSubtask"
                     class="description-input"
                   >
-                  <button @click="addSubtask"style = "border: none; background-color: white;">+</button>
+                  <button @click="addSubtask" style ="border: none; background-color: white;">+</button>
                 </div>
               </div>
             </div>

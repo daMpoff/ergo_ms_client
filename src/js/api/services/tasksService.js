@@ -46,32 +46,39 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
   }
 
   // Загрузка данных с сервера только для текущего пользователя
-  const fetchColumns = async () => {
-    if (!currentUserId.value) {
-      toast.error('Необходимо авторизоваться')
+  const fetchColumns = async (project_id) => {
+    if (!project_id) {
       return
     }
-
+  
     isLoading.value = true
     try {
-        const response = await apiClient.get(endpoints.crm.tasks.sectionTasks, { user_id: parseInt(Cookies.get('userId'))});
-        if (!response.success) {
-          throw new Error('Ошибка при загрузке данных')
-        }
-      
+      const response = await apiClient.get(endpoints.crm.tasks.sectionTasks, { project_id: parseInt(project_id) });
+      if (!response.success) {
+        throw new Error('Ошибка при загрузке данных')
+      }
+    
       const data = response.data
       
       if (!data.data || !Array.isArray(data.data)) {
         throw new Error('Некорректный формат данных от API')
       }
-
-      // Фильтруем задачи по user_id
+  
+      // Сохраняем текущие задачи перед обновлением
+      const currentTasks = {};
+      columns.value.forEach(column => {
+        column.cards.forEach(task => {
+          currentTasks[task.id] = task;
+        });
+      });
+  
+      // Обновляем колонки, сохраняя локальные изменения
       columns.value = data.data.map(section => ({
         id: section.id,
         title: section.title,
         cards: section.cards
-          .filter(task => task.user_id === currentUserId.value)
           .map(task => ({
+            ...(currentTasks[task.id] || {}), // Сохраняем локальные изменения если есть
             id: task.id,
             title: task.title,
             priority: task.priority,
@@ -79,7 +86,7 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
             is_completed: task.is_completed || false,
             assignee_id: task.assignee_id || null,
             deadline: task.deadline || null,
-            user_id: task.user_id,
+            project_id: task.project_id,
             subtasks: task.subtasks || [],
             image: task.image,
             attachments: task.attachments,
@@ -92,13 +99,8 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
       isLoading.value = false
     }
   }
-
   // Выбор задачи (только если она принадлежит пользователю)
   const setSelectedTask = (task) => {
-    if (task.user_id !== currentUserId.value) {
-      toast.error('У вас нет доступа к этой задаче')
-      return
-    }
     
     editableTask.value = task
     const bsOffcanvas = new Offcanvas('#kanbanCanvas')
@@ -181,7 +183,7 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
     }
   };
 // Создание новой задачи
- const createTask = async (taskData) => {
+const createTask = async (taskData) => {
   if (!currentUserId.value) {
     toast.error('Необходимо авторизоваться')
     return
@@ -193,7 +195,6 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
       throw new Error('Не указаны обязательные поля (text и section_id)')
     }
 
-    // Добавляем текущую дату создания
     const requestData = {
       text: taskData.text,
       section_id: taskData.section_id,
@@ -203,39 +204,28 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
       parenttask_id: taskData.parenttask_id || 1,
       user_id: currentUserId.value,
       isdone: taskData.isdone || false,
-      dateofcreation: new Date().toISOString() // Добавляем текущую дату
+      dateofcreation: new Date().toISOString()
     }
 
     const response = await apiClient.post(endpoints.crm.tasks.add_task, 
        requestData,
     );
 
-
     const responseData = response
 
-    const createdTask = responseData
-
-    const newTask = {
-      title: createdTask.text,
-      section_id: createdTask.section_id,
-      isdone: createdTask.isdone || false,
-      dateofcreation: createdTask.dateofcreation, // Сохраняем дату создания
-      priority: createdTask.priority || 1,
-      description: createdTask.description || '',
+    // Возвращаем полный объект задачи с ID
+    return {
+      id: responseData.id,
+      title: responseData.text,
+      section_id: responseData.section_id,
+      isdone: responseData.isdone || false,
+      dateofcreation: responseData.dateofcreation,
+      priority: responseData.priority || 1,
+      description: responseData.description || '',
       user_id: currentUserId.value,
       subtasks: [],
-      deadline: createdTask.deadline || null
+      deadline: responseData.deadline || null
     }
-
-    const columnIndex = columns.value.findIndex(col => col.id === taskData.section_id)
-    if (columnIndex !== -1) {
-      columns.value[columnIndex].cards.push(newTask)
-    } else {
-      console.warn(`Раздел с ID ${taskData.section_id} не найден`)
-    }
-
-    toast.success('Задача успешно создана!')
-    return newTask
 
   } catch (error) {
     console.error('Ошибка при создании задачи:', error)

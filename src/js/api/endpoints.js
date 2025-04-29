@@ -16,6 +16,9 @@ export const endpoints = {
         projects:
         {
             allprojects:'crm/projects/project-all/',
+            personalprojects:'crm/projects/project-personal/',
+            invitedprojects:'crm/projects/project-invited/',
+
         }
     },
 }; 
