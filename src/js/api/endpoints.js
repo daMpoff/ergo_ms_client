@@ -1,3 +1,5 @@
+import { settings } from "@vue/eslint-config-prettier/skip-formatting";
+
 export const endpoints = {
     auth: {
         login: 'cms/adp/authorization/',
@@ -6,5 +8,15 @@ export const endpoints = {
         verifyCode: 'cms/adp/verify_code/',
         registration: 'cms/adp/registration/',
         protected: 'cms/adp/protected/',
+
     },
+    file: 'cms/file/',
+    settings: {
+        generalSettings: 'cms/general-settings/',
+        mediaSettings: 'cms/media-settings/',
+        permalinkSettings: 'cms/permalink-settings/',
+        emailSettings: 'cms/email-settings/',
+        securitySettings: 'cms/security-settings',
+        seoSettings: 'cms/seo-settings',
+    }
 }; 
