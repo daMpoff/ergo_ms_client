@@ -450,6 +450,12 @@ const biRoutes = [
     component: () => import('@/pages/bi/ConnectionFiles.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/bi/connections/new/dataset',
+    name: 'NewDataset',
+    component: () => import('@/pages/bi/DatasetPage.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const routes = [

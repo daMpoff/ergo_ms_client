@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { DatasetDTO } from './components/dto/dataset'
 import { endpoints } from '@/js/api/endpoints.js'
 import { apiClient } from '@/js/api/manager.js'
@@ -16,6 +17,12 @@ const cols = [
   { key: 'created_at', label: 'Дата', format: val => new Date(val).toLocaleDateString() },
   { key: 'actions', label: '' }
 ]
+
+const router = useRouter()
+
+function goToNewDataset() {
+  router.push('/bi/connections/new/dataset')
+}
 
 const fetchDatasets = async () => {
   const response = await apiClient.get(endpoints.bi_analysis.DatasetsList)
@@ -74,7 +81,7 @@ const transformedData = computed(() => {
           <option value="az">А-Я</option>
           <option value="za">Я-А</option>
         </select>
-        <button type="button" class="btn btn-primary" style="width: 10rem;">Создать датасет</button>
+        <button type="button" class="btn btn-primary" style="width: 10rem;" @click="goToNewDataset">Создать датасет</button>
       </div>
       <div style="margin-top: 1rem;">
         <SimpleTableDataSet :cols="cols" :users="transformedData" :isDatasetSidebarOpen="isDatasetSidebarOpen"/>
