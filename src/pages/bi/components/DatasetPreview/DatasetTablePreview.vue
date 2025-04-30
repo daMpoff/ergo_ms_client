@@ -90,7 +90,7 @@ input {
 
 .main-grid{
     text-align: left;
-    max-height: 330px; // или сколько нужно
+    max-height: 330px;
     overflow-y: auto;
     overflow-x: auto;
 }
