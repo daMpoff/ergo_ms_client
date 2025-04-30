@@ -253,6 +253,7 @@ body {
   overflow: auto;
   min-height: 100px;
   max-height: 400px;
+  overflow-y: hidden;
   position: relative;
   cursor: default;
 
