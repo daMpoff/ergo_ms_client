@@ -24,8 +24,11 @@
         </div>
         <hr>
         <div class="tables-list">
-            <div v-if="!selectedConnection">
+            <div v-if="!selectedConnection" class="tables-list-empty">
                 Добавьте подключение, чтобы отобразить список таблиц
+            </div>
+            <div v-else>
+                <ConnectionTables :connection-id="selectedConnection?.id" />
             </div>
         </div>
     </div>
@@ -43,6 +46,7 @@ import PostgresIcon from '@/assets/bi/icons/postgres.svg'
 import MssqlIcon from '@/assets/bi/icons/mssql.svg'
 import FileIcon from '@/assets/bi/icons/folder_windows_style.svg'
 import ConnectionsTooltip from '@/pages/bi/components/DatasetPreview/ConnectionsTooltip.vue'
+import ConnectionTables from '@/pages/bi/components/DatasetPreview/ConnectionTables.vue'
 
 const showTooltip = ref(false)
 const tooltipRef = ref(null)
@@ -118,7 +122,7 @@ onBeforeUnmount(() => {
     border: 0;
 }
 
-.tables-list {
+.tables-list-empty {
     flex: 1;
     display: flex;
     justify-content: center;
