@@ -125,29 +125,18 @@ const submitNewTask = async (columnIndex) => {
 
   try {
     // Создание задачи через API и получение новой задачи
-    const newTask = await kanbanStore.createTask(taskData);
-    
-    // Добавляем задачу в соответствующую колонку локально
-    const column = kanbanStore.columns.find(col => col.id === taskData.section_id);
-    if (column) {
-      column.cards.push(newTask);
-    } else {
-      console.warn(`Раздел с ID ${taskData.section_id} не найден`);
-      // Если колонка не найдена, делаем полное обновление
-      await kanbanStore.fetchColumns(props.project_id);
-    }
+    await kanbanStore.createTask(taskData);
+      
+    // Если колонка не найдена, делаем полное обновление
+    await kanbanStore.fetchColumns(props.project_id);
+  
     
     // Очистка формы добавления задачи
     isAddingTask.value = -1;
-    newTaskData.value = {
-      title: '',
-      description: '',
-      dueDate: null,
-      priority: 0,
-      reminders: []
-    };
 
     toast.success('Задача успешно добавлена');
+      window.location.reload();
+
   } catch (error) {
     console.error('Ошибка создания задачи:', error);
     toast.error('Ошибка при создании задачи');
