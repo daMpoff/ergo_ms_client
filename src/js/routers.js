@@ -400,7 +400,7 @@ const shortcodeRoutes = [
       {
         path: 'editor',
         name: 'ShortcodeEditor',
-        component: () => import('@/pages/shortcodes/ShortcodeEditor.vue'),
+        component: () => import('@/pages/shortcodes/editor/ShortcodeEditor.vue'),
         meta: {
           title: 'Редактор страниц',
           requiresAuth: true },
