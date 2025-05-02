@@ -1,6 +1,5 @@
 <template>
     <div class="position-relative mb-4">
-        <!-- Карточка рабочего поля -->
         <div class="card h-100 shadow-sm">
             <div class="card-header bg-primary text-white d-flex align-items-center">
                 <span class="me-2">
