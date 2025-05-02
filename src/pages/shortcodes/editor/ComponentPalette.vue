@@ -10,7 +10,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, toRaw } from 'vue'
 import { shortcodesService } from '@/js/api/services/shortcodes'
 
 const templates = ref([])
@@ -23,6 +23,7 @@ const loadTemplates = async () => {
     const res = await shortcodesService.getTemplates()
     if (res.success) {
         templates.value = res.data
+        console.log(toRaw(templates.value))
     }
     else {
         console.error('Ошибка загрузки шаблонов:', res.errors)
