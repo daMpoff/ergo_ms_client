@@ -2,20 +2,17 @@
     <div class="sources-main">
         <div class="main-connections">
             <div style="font-weight: bold; padding-left: 15px; padding-top: 15px;">Подключения</div>
-            <button v-if="!selectedConnection" type="button" class="btn btn-outline-light"
-                @click="showTooltip = !showTooltip" ref="buttonRef">
+            <button v-if="!selectedConnection" type="button" class="btn btn-outline-light" @click="showTooltip = !showTooltip" ref="buttonRef">
                 <Plus :size="20" :stroke-width="2" />Добавить
             </button>
             <div class="connections-list">
-                <div v-if="selectedConnection" class="connection-item" @mouseenter="hovered = true"
-                    @mouseleave="hovered = false">
+                <div v-if="selectedConnection" class="connection-item" @mouseenter="hovered = true" @mouseleave="hovered = false">
                     <div class="connection-left">
                         <img :src="getIconComponent(selectedConnection)?.src" class="icon" />
                         <span class="connection-name">{{ selectedConnection.name }}</span>
                     </div>
                     <div class="connection-actions">
-                        <button class="action-btn" :class="{ visible: hovered }"
-                            @click="openActionMenu(selectedConnection)">
+                        <button class="action-btn" :class="{ visible: hovered }" @click="openActionMenu(selectedConnection, $event)">
                             <MoreHorizontal :size="18" />
                         </button>
                     </div>
@@ -28,12 +25,22 @@
                 Добавьте подключение, чтобы отобразить список таблиц
             </div>
             <div v-else>
-                <ConnectionTables :connection-id="selectedConnection?.id" />
+                <ConnectionTables :connection-id="selectedConnection.id" :connection-type="selectedConnection.connector_type" />
             </div>
         </div>
     </div>
     <div v-if="showTooltip" class="tooltip-panel" ref="tooltipRef">
         <ConnectionsTooltip @select="handleSelect" />
+    </div>
+
+    <!-- Контекстное меню -->
+    <div v-if="actionMenu.visible" class="menu-dropdown" :style="{
+        top: actionMenu.y + 'px',
+        left: actionMenu.x + 'px'
+    }" @mouseleave="actionMenu.visible = false">
+        <div class="menu-item" @click="handleOpen">Открыть подключение</div>
+        <div class="menu-item" @click="handleReplace">Заменить подключение</div>
+        <div class="menu-item danger" @click="handleDelete">Удалить подключение</div>
     </div>
 </template>
 
@@ -52,21 +59,32 @@ const showTooltip = ref(false)
 const tooltipRef = ref(null)
 const buttonRef = ref(null)
 
-const selectedConnection = ref(null)
 const hovered = ref(false)
 
-function handleClickOutside(event) {
-    const clickedOutsideTooltip = tooltipRef.value && !tooltipRef.value.contains(event.target)
-    const clickedOutsideButton = buttonRef.value && !buttonRef.value.contains(event.target)
+const props = defineProps({
+  selectedConnection: Object,
+  selectedTables: Array
+})
+const emit = defineEmits(['update:selectedConnection', 'update:selectedTables'])
 
-    if (clickedOutsideTooltip && clickedOutsideButton) {
-        showTooltip.value = false
-    }
+
+function handleClickOutside(event) {
+  const clickedOutsideTooltip = tooltipRef.value && !tooltipRef.value.contains(event.target)
+  const clickedOutsideButton = buttonRef.value && !buttonRef.value.contains(event.target)
+  const clickedOutsideMenu = !event.target.closest('.menu-dropdown')
+
+  if (clickedOutsideTooltip && clickedOutsideButton) {
+    showTooltip.value = false
+  }
+
+  if (actionMenu.value.visible && clickedOutsideMenu) {
+    actionMenu.value.visible = false
+  }
 }
 
-function handleSelect(connection) { // Слушаем, какое подключение выбрал пользователь в тултипе кнопки "Создать"
-    selectedConnection.value = connection
-    showTooltip.value = false
+function handleSelect(connection) {
+  emit('update:selectedConnection', connection)
+  showTooltip.value = false
 }
 
 function getIconComponent(row) {
@@ -78,9 +96,36 @@ function getIconComponent(row) {
     return null
 }
 
-function openActionMenu(connection) {
-    // TODO: открыть контекстное меню
-    console.log('Действия для:', connection)
+const actionMenu = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  connection: null
+})
+
+function openActionMenu(connection, event) {
+  const rect = event.currentTarget.getBoundingClientRect()
+  actionMenu.value = {
+    visible: true,
+    x: rect.left,
+    y: rect.bottom + 6,
+    connection
+  }
+}
+
+function handleOpen() {
+  console.log('Открыть', actionMenu.value.connection)
+  actionMenu.value.visible = false
+}
+
+function handleReplace() {
+  console.log('Заменить', actionMenu.value.connection)
+  actionMenu.value.visible = false
+}
+
+function handleDelete() {
+  console.log('Удалить', actionMenu.value.connection)
+  actionMenu.value.visible = false
 }
 
 onMounted(() => {
@@ -120,6 +165,13 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 3px;
     border: 0;
+}
+
+.tables-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .tables-list-empty {
@@ -175,23 +227,23 @@ onBeforeUnmount(() => {
 }
 
 .connection-actions {
-  width: 32px;
-  height: 100%;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  transition: opacity 0.2s ease;
+    width: 32px;
+    height: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    transition: opacity 0.2s ease;
 }
 
 .connection-actions .action-btn {
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .connection-item:hover .connection-actions .action-btn {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
 .action-btn {
@@ -206,5 +258,31 @@ onBeforeUnmount(() => {
         background-color: #444;
         color: #fff;
     }
+}
+
+.menu-dropdown {
+  position: fixed;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  padding: 8px 0;
+  min-width: 160px;
+  z-index: 10000;
+  pointer-events: auto;
+}
+
+.menu-item {
+  padding: 8px 16px;
+  color: #eee;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.menu-item:hover {
+  background-color: #444;
+}
+
+.menu-item.danger {
+  color: #f87171;
 }
 </style>

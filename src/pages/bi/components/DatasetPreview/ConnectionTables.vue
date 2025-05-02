@@ -11,10 +11,9 @@
             </template>
 
             <template v-else>
-                <li v-for="file in uploadedFiles" :key="file.id" class="table-item" draggable="true"
-                    @dragstart="handleDragStart(file)">
+                <li v-for="file in uploadedFiles" :key="file.id" class="table-item" draggable="true" @dragstart="(event) => handleDragStart(file, event)">
                     <Table class="icon red" />
-                    <span class="table-name">{{ file.name }}</span>
+                    <span class="table-name">{{ file.name || (file.schema + '.' + file.table) }}</span>
                 </li>
             </template>
         </ul>
@@ -28,45 +27,67 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useFileList } from '@/pages/bi/components/js/useFileList'
+import { useDbTablesList } from '@/pages/bi/components/js/useDbTablesList'
 import { Table } from 'lucide-vue-next'
 
 const props = defineProps({
-    connectionId: Number
+  connectionId: Number,
+  connectionType: String
 })
 
 // Заглушки
 const tempUploadedFiles = ref([])
 const selectedFile = ref(null)
-const uploadedFiles = ref([])
 const currentUploadFile = ref(null)
 const availableSheets = ref([])
 const sheetBeingEdited = ref(null)
 const isSheetPickerVisible = ref(false)
 
 const isLoading = ref(true)
+const uploadedFiles = ref([])
 
-const { loadUserFiles } = useFileList(
-    tempUploadedFiles,
-    selectedFile,
-    uploadedFiles,
-    currentUploadFile,
-    availableSheets,
-    sheetBeingEdited,
-    isSheetPickerVisible
+const {
+  loadDbTables,
+  dbTables,
+  isDbLoading
+} = useDbTablesList()
+
+const {
+  loadUserFiles
+} = useFileList(
+  ref([]), // tempUploadedFiles
+  ref(null), // selectedFile
+  uploadedFiles,
+  ref(null), // currentUploadFile
+  ref([]),   // availableSheets
+  ref(null), // sheetBeingEdited
+  ref(false) // isSheetPickerVisible
 )
 
+function handleDragStart(file, event) {
+  event.dataTransfer.setData('application/json', JSON.stringify(file))
+}
+
 watch(() => props.connectionId, async (id) => {
-    if (id) {
-        isLoading.value = true
-        await loadUserFiles(id)
-        isLoading.value = false
-    }
+  if (!id) return
+  isLoading.value = true
+
+  if (props.connectionType === 'file') {
+    await loadUserFiles(id)
+  } else {
+    await loadDbTables(id)
+    uploadedFiles.value = dbTables.value
+  }
+
+  isLoading.value = false
 }, { immediate: true })
+
 </script>
 
 <style scoped lang="scss">
 .connection-tables {
     padding: 10px 15px;
+    width: 100%;
 }
 
 .section-title {
@@ -82,6 +103,7 @@ watch(() => props.connectionId, async (id) => {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    width: 100%;
 }
 
 .table-item {
@@ -91,7 +113,12 @@ watch(() => props.connectionId, async (id) => {
     padding: 6px 8px;
     border-radius: 6px;
     transition: background 0.2s;
-    cursor: default;
+    width: 100%;
+    cursor: grab;
+
+    &:active {
+        cursor: grabbing;
+    }
 
     &:hover {
         background-color: rgba(255, 255, 255, 0.05);
@@ -123,7 +150,6 @@ watch(() => props.connectionId, async (id) => {
     color: #777;
 }
 
-// 🔧 Skeleton loading
 .loading {
     pointer-events: none;
     background: transparent !important;

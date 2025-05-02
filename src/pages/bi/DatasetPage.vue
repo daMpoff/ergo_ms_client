@@ -36,7 +36,7 @@
         <transition name="slide">
             <div v-if="activeTab === 'sources'" class="sidebar-wrapper">
                 <aside class="sidebar" :style="{ width: sidebarWidth + 'px' }" :class="{ 'rounded-bottom': !isPreviewVisible }" @mousedown="startSidebarResize">
-                    <SourcesPage />
+                  <SourcesPage v-if="activeTab === 'sources'" v-model:selected-connection="selectedConnection" v-model:selected-tables="selectedTables"/>
                 </aside>
             </div>
         </transition>
@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import SourcesPage from '@/pages/bi/components/DatasetPreview/SourcesPage.vue'
 import SourcesPageLinks from '@/pages/bi/components/DatasetPreview/SourcesPageLinks.vue'
 import FieldsPage from '@/pages/bi/components/DatasetPreview/FieldsPage.vue'
@@ -63,6 +63,15 @@ import DatasetTablePreview from '@/pages/bi/components/DatasetPreview/DatasetTab
 
 const activeTab = ref('sources')
 const isPreviewVisible = ref(true)
+
+const STORAGE_KEY = 'bi_dataset_state'
+
+const selectedConnection = ref(null)
+const selectedTables = ref([])
+const selectedFields = ref([])
+const datasetParams = ref({})
+
+const confirmedUnload = ref(false)
 
 const getTabComponent = (tab) => {
     switch (tab) {
@@ -133,6 +142,55 @@ function stopSidebarResize() {
   document.removeEventListener('mousemove', resizeSidebar)
   document.removeEventListener('mouseup', stopSidebarResize)
 }
+
+function handleBeforeUnload(e) {
+  if (!confirmedUnload.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+function handleUnload() {
+  if (!confirmedUnload.value) {
+    localStorage.removeItem(STORAGE_KEY)
+  }
+}
+
+onMounted(() => {
+  const saved = localStorage.getItem(STORAGE_KEY)
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      selectedConnection.value = parsed.selectedConnection ?? null
+      selectedTables.value = parsed.selectedTables ?? []
+      selectedFields.value = parsed.selectedFields ?? []
+      datasetParams.value = parsed.datasetParams ?? {}
+    } catch (e) {
+      console.warn('Ошибка при чтении из localStorage:', e)
+    }
+  }
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  window.addEventListener('unload', handleUnload)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  window.removeEventListener('unload', handleUnload)
+})
+
+watch(
+  [selectedConnection, selectedTables, selectedFields, datasetParams],
+  () => {
+    const payload = {
+      selectedConnection: selectedConnection.value,
+      selectedTables: selectedTables.value,
+      selectedFields: selectedFields.value,
+      datasetParams: datasetParams.value
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+  },
+  { deep: true }
+)
 
 </script>
 
