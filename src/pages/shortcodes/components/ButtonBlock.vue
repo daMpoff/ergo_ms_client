@@ -1,22 +1,16 @@
-<template>
-  <button :class="buttonClass" type="button">
-    {{ component.label || 'Кнопка' }}
-  </button>
-</template>
-
 <script setup>
-import { computed } from 'vue'
-const props = defineProps({
-  component: {
-    type: Object,
-    required: true
-  }
-})
+import { defineProps } from 'vue'
 
-const buttonClass = computed(() => {
-  // Базовые классы + пользовательские
-  const base = 'btn'
-  const user = props.component.bootstrap_classes || ''
-  return `${base} ${user}`.trim()
+const props = defineProps({
+  component: { type: Object, required: true }
 })
 </script>
+
+<template>
+  <button
+    :class="['btn', 'btn-' + (component.extra_data.variant || 'primary'), ...component.class_list]"
+    @click="component.extra_data.onClick?.()"
+  >
+    {{ component.extra_data.text }}
+  </button>
+</template>

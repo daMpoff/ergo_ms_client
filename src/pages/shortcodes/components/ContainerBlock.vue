@@ -1,21 +1,22 @@
-<template>
-  <div :class="finalClass">
-    <slot>{{ data.extra_data?.text || 'Контейнер' }}</slot>
-  </div>
-</template>
-
 <script setup>
-const props = defineProps({
-  data: Object
-})
+import { defineProps } from 'vue'
+import RecursiveRenderer from '../editor/RecursiveRenderer.vue'
 
-const finalClass = computed(() => {
-  return `${props.data.bootstrap_classes} ${props.data.extra_data?.align || ''}`.trim()
+const {component} = defineProps({
+  component: { type: Object, required: true }
 })
 </script>
 
-<style scoped>
-div {
-  min-height: 50px;
-}
-</style>
+<template>
+  <div :class="[component.class_list,component.extra_data.align,'border']">
+    <p v-if="component.extra_data.text">{{ component.extra_data.text }}</p>
+    <!-- рекурсия по дочерним элементам -->
+    <div v-if="component.children?.length" class="border">
+      <RecursiveRenderer
+        v-for="child in component.children"
+        :key="child.uid"
+        :component="child"
+      />
+    </div>
+  </div>
+</template>
