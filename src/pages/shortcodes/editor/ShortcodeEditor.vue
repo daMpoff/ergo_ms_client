@@ -1,5 +1,5 @@
 <template>
-    <div class="row g-3 p-4">
+    <div class="row">
         <!-- Палитра компонентов -->
         <div class="col-3">
             <ComponentPalette />
@@ -33,13 +33,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { selectedComponent } from './shortcodeStore'
-
-import ComponentPalette from './components/ComponentPalette.vue'
-import EditorCanvas from './components/EditorCanvas.vue'
-import ComponentSettings from './components/ComponentSettings.vue'
-import PreviewCanvas from './components/PreviewCanvas.vue'
+import { ref } from 'vue'
+import { selectedComponent } from '../js/shortcodeStore'
+import ComponentPalette from './ComponentPalette.vue'
+import EditorCanvas from './EditorCanvas.vue'
+import ComponentSettings from './ComponentSettings.vue'
+import PreviewCanvas from './PreviewCanvas.vue'
 
 const canvasComponents = ref([])
 const isOpen = ref(false)
@@ -53,25 +52,4 @@ function closeSettings() {
     selectedComponent.value = null
     isOpen.value = false
 }
-watch(
-  () => selectedComponent.value,
-  (newComp) => {
-    if (!newComp) return
-
-    const idx = canvasComponents.value.findIndex(c => c.id === newComp.id)
-    if (idx === -1) return
-    const updated = {
-      ...canvasComponents.value[idx],
-      bootstrap_classes: newComp.bootstrap_classes,
-      extra_data: { ...newComp.extra_data }
-    }
-    const newArr = [
-      ...canvasComponents.value.slice(0, idx),
-      updated,
-      ...canvasComponents.value.slice(idx + 1)
-    ]
-    canvasComponents.value = newArr
-  },
-  { deep: true }
-)
 </script>
