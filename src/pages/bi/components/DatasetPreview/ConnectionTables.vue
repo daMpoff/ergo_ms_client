@@ -11,7 +11,7 @@
             </template>
 
             <template v-else>
-                <li v-for="file in uploadedFiles" :key="file.id" class="table-item" draggable="true" @dragstart="(event) => handleDragStart(file, event)">
+                <li v-for="file in uploadedFiles" :key="file.id" class="table-item" :class="{ linked: isLinked(file) }" draggable="true" @dragstart="(event) => handleDragStart(file, event)">
                     <Table class="icon red" />
                     <span class="table-name">{{ file.name || (file.schema + '.' + file.table) }}</span>
                 </li>
@@ -32,7 +32,11 @@ import { Table } from 'lucide-vue-next'
 
 const props = defineProps({
   connectionId: Number,
-  connectionType: String
+  connectionType: String,
+  linkedTables: {
+    type: Array,
+    default: () => []
+  }
 })
 
 // Заглушки
@@ -66,6 +70,15 @@ const {
 
 function handleDragStart(file, event) {
   event.dataTransfer.setData('application/json', JSON.stringify(file))
+}
+
+function getTableKey(table) {
+  return `${table.schema || ''}::${table.table || ''}::${table.name || ''}`
+}
+
+function isLinked(file) {
+  const fileKey = getTableKey(file)
+  return props.linkedTables.some(t => getTableKey(t) === fileKey)
 }
 
 watch(() => props.connectionId, async (id) => {
@@ -107,22 +120,27 @@ watch(() => props.connectionId, async (id) => {
 }
 
 .table-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    transition: background 0.2s;
-    width: 100%;
-    cursor: grab;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  width: 100%;
+  cursor: grab;
 
-    &:active {
-        cursor: grabbing;
-    }
+  &:active {
+    cursor: grabbing;
+  }
 
-    &:hover {
-        background-color: rgba(255, 255, 255, 0.05);
-    }
+  &:hover,
+  :deep(.linked) {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.table-item.linked {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .icon {

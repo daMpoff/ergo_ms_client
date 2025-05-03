@@ -42,7 +42,7 @@
         </transition>
 
         <main class="file_area" :class="{ 'rounded-bottom': !isPreviewVisible }">
-            <component :is="getTabComponent(activeTab)" />
+          <component :is="getTabComponent(activeTab)" v-bind="{ tables: selectedTables }" v-on="{ 'drop-table': handleDropTable, 'remove-table': handleRemoveTable }"/>
         </main>
 
         <transition name="slide-footer">
@@ -154,6 +154,20 @@ function handleUnload() {
   if (!confirmedUnload.value) {
     localStorage.removeItem(STORAGE_KEY)
   }
+}
+
+function handleDropTable(table) {
+  const exists = selectedTables.value.some(t =>
+    (t.id && table.id && t.id === table.id) ||
+    (!t.id && !table.id && t.schema === table.schema && t.table === table.table)
+  )
+  if (!exists) {
+    selectedTables.value.push(table)
+  }
+}
+
+function handleRemoveTable(index) {
+  selectedTables.value.splice(index, 1)
 }
 
 onMounted(() => {

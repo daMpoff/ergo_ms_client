@@ -25,7 +25,7 @@
                 Добавьте подключение, чтобы отобразить список таблиц
             </div>
             <div v-else>
-                <ConnectionTables :connection-id="selectedConnection.id" :connection-type="selectedConnection.connector_type" />
+                <ConnectionTables :connection-id="selectedConnection.id" :connection-type="selectedConnection.connector_type" :linked-tables="selectedTables"/>
             </div>
         </div>
     </div>
