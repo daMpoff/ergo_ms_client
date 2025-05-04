@@ -148,10 +148,4 @@ onMounted(load)
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-}
 </style>
