@@ -44,61 +44,103 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
     const allTasks = getAllTasks()
     return allTasks.length > 0 ? Math.max(...allTasks.map(t => t.id)) + 1 : 1
   }
-
-  // Загрузка данных с сервера только для текущего пользователя
-  const fetchColumns = async (project_id) => {
-    if (!project_id) {
-      return
-    }
-  
-    isLoading.value = true
-    try {
-      const response = await apiClient.get(endpoints.crm.tasks.sectionTasks, { project_id: parseInt(project_id) });
-      if (!response.success) {
-        throw new Error('Ошибка при загрузке данных')
-      }
+  const fetchSubtasks = async (parentTaskId) => {
+    if (!parentTaskId) return [];
     
-      const data = response.data
+    isLoading.value = true;
+    try {
+      const response = await apiClient.get(endpoints.crm.tasks.sectionTasks, { 
+        parenttask_id: parseInt(parentTaskId) 
+      });
+      
+      if (!response.success) {
+        throw new Error('Ошибка при загрузке подзадач');
+      }
+      
+      const data = response.data;
       
       if (!data.data || !Array.isArray(data.data)) {
-        throw new Error('Некорректный формат данных от API')
+        throw new Error('Некорректный формат данных от API');
+      }
+      
+      // Собираем все подзадачи из всех секций в один массив
+      const allSubtasks = data.data.flatMap(section => 
+        section.cards.map(task => ({
+          id: task.id,
+          title: task.title,
+          priority: task.priority,
+          description: task.description || '',
+          is_completed: task.is_completed || false,
+          parenttask_id: parentTaskId,
+          section_id: section.id,
+          user_id: task.user_id,
+          deadline: task.deadline || null
+        }))
+      );
+      
+      return allSubtasks;
+    } catch (error) {
+      toast.error('Ошибка при загрузке подзадач: ' + error.message);
+      return [];
+    } finally {
+      isLoading.value = false;
+    }
+  };
+  // Загрузка данных с сервера только для текущего пользователя
+  const fetchColumns = async (project_id) => {
+    if (!project_id) return;
+  
+    isLoading.value = true;
+    try {
+      const response = await apiClient.get(endpoints.crm.tasks.sectionTasks, { 
+        project_id: parseInt(project_id) 
+      });
+      
+      if (!response.success) {
+        throw new Error('Ошибка при загрузке данных');
+      }
+    
+      const data = response.data;
+      
+      if (!data.data || !Array.isArray(data.data)) {
+        throw new Error('Некорректный формат данных от API');
       }
   
-      // Сохраняем текущие задачи перед обновлением
-      const currentTasks = {};
-      columns.value.forEach(column => {
-        column.cards.forEach(task => {
-          currentTasks[task.id] = task;
-        });
-      });
-  
-      // Обновляем колонки, сохраняя локальные изменения
+      // Формируем структуру колонок с задачами и подзадачами
       columns.value = data.data.map(section => ({
         id: section.id,
         title: section.title,
-        cards: section.cards
-          .map(task => ({
-            ...(currentTasks[task.id] || {}), // Сохраняем локальные изменения если есть
-            id: task.id,
-            title: task.title,
-            priority: task.priority,
-            description: task.description || '',
-            is_completed: task.is_completed || false,
-            assignee_id: task.assignee_id || null,
-            deadline: task.deadline || null,
-            project_id: task.project_id,
-            subtasks: task.subtasks || [],
-            image: task.image,
-            attachments: task.attachments,
-            comments: task.comments,
-          }))
-      }))
+        cards: section.cards.map(task => ({
+          id: task.id,
+          title: task.title,
+          priority: task.priority,
+          description: task.description || '',
+          is_completed: task.is_completed || false,
+          assignee_id: task.assignee_id || null,
+          deadline: task.deadline || null,
+          project_id: task.project_id,
+          parenttask_id: task.parenttask_id,
+          subtasks: task.subtasks.map(subtask => ({
+            id: subtask.id,
+            title: subtask.text || subtask.title,
+            priority: subtask.priority,
+            description: subtask.description || '',
+            is_completed: subtask.isdone || false,
+            user_id: subtask.user_id,
+            deadline: subtask.deadline || null
+          })),
+          image: task.image,
+          attachments: task.attachments,
+          comments: task.description,
+        }))
+      }));
+  
     } catch (error) {
-      toast.error('Ошибка при загрузке данных: ' + error.message)
+      toast.error('Ошибка при загрузке данных: ' + error.message);
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
   // Выбор задачи (только если она принадлежит пользователю)
   const setSelectedTask = (task) => {
     
@@ -186,7 +228,7 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
 const createTask = async (taskData) => {
   if (!currentUserId.value) {
     toast.error('Необходимо авторизоваться')
-    return
+    return null
   }
 
   isLoading.value = true
@@ -201,31 +243,14 @@ const createTask = async (taskData) => {
       description: taskData.description || null,
       deadline: taskData.deadline || null,
       priority: taskData.priority || 1,
-      parenttask_id: taskData.parenttask_id || 1,
       user_id: currentUserId.value,
       isdone: taskData.isdone || false,
       dateofcreation: new Date().toISOString()
     }
 
-    const response = await apiClient.post(endpoints.crm.tasks.add_task, 
-       requestData,
-    );
+    await apiClient.post(endpoints.crm.tasks.add_task, requestData)
 
-    const responseData = response
-
-    // Возвращаем полный объект задачи с ID
-    return {
-      id: responseData.id,
-      title: responseData.text,
-      section_id: responseData.section_id,
-      isdone: responseData.isdone || false,
-      dateofcreation: responseData.dateofcreation,
-      priority: responseData.priority || 1,
-      description: responseData.description || '',
-      user_id: currentUserId.value,
-      subtasks: [],
-      deadline: responseData.deadline || null
-    }
+    // Проверяем структуру ответа
 
   } catch (error) {
     console.error('Ошибка при создании задачи:', error)
@@ -291,43 +316,47 @@ const createTask = async (taskData) => {
   // Удаление задачи
   const deleteTask = async (taskId) => {
     if (!currentUserId.value) {
-      toast.error('Необходимо авторизоваться')
-      return
+      toast.error('Необходимо авторизоваться');
+      return false;
     }
-
+  
     try {
-      // Проверяем, что задача принадлежит пользователю
-      const task = getTaskById(taskId)
-      if (!task || task.user_id !== currentUserId.value) {
-        toast.error('У вас нет прав для удаления этой задачи')
-        return
+      // Проверяем существование задачи
+      const task = getTaskById(taskId);
+      if (!task) {
+        toast.error('Задача не найдена');
+        return false;
       }
-
-      const response = await fetch(`http://localhost:8000/api/crm/tasks/task-delete/${taskId}/`, {
-        method: 'DELETE',
-        headers: {
-          'X-CSRFToken': Cookies.get('csrftoken') || '',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+  
+      // Подтверждение удаления
+      if (!confirm(`Удалить задачу "${task.title}"?`)) {
+        return false;
       }
-
-      // Удаляем задачу из хранилища
-      columns.value.forEach(column => {
-        const taskIndex = column.cards.findIndex(t => t.id === taskId)
-        if (taskIndex !== -1) {
-          column.cards.splice(taskIndex, 1)
-        }
-      })
-
-      toast.success('Задача удалена!')
+  
+      // Отправляем запрос на удаление
+      const response = await apiClient.delete(
+        endpoints.crm.tasks.delete_task.replace('{id}', taskId)
+      );
+  
+      if (!response.success) {
+        throw new Error(response.error || 'Не удалось удалить задачу');
+      }
+  
+      // Обновляем локальное состояние
+      columns.value = columns.value.map(section => ({
+        ...section,
+        cards: section.cards.filter(card => card.id !== taskId)
+      }));
+  
+      toast.success('Задача успешно удалена');
+      return true;
+  
     } catch (error) {
-      toast.error(`Ошибка при удалении задачи: ${error.message}`)
-      throw error
+      console.error('Delete task error:', error);
+      toast.error(error.message || 'Ошибка при удалении задачи');
+      return false;
     }
-  }
+  };
 
   // Инициализация при создании хранилища
   initialize()
@@ -347,5 +376,6 @@ const createTask = async (taskData) => {
     updateTask,
     deleteTask,
     fetchColumns,
+    fetchSubtasks
   }
 })

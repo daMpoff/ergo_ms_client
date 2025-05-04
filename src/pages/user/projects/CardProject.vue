@@ -18,10 +18,6 @@
  })
  const emit = defineEmits()
 
- const handleClick = () => {
-  emit('selectProject', props.project_id)
-}
-
  // Форматирование даты
  const formatDate = (timestamp) => {
    if (!timestamp) return 'Не указана'
@@ -58,11 +54,10 @@
  })
  
  // Цвет для отображения бюджета
- 
- </script>
- 
- <template>
-   <div class="card" @click="handleClick">
+</script>
+
+<template>
+   <div class="card">
      <div class="d-flex align-items-center justify-content-between mb-3">
        <div class="d-flex align-items-center gap-2">
          <div class="rounded p-2 text-white icon-flex" :class="iconBackground">
@@ -78,7 +73,10 @@
            </template>
            <template #list>
              <li class="dropdown-item text-danger" @click="$emit('leaveProject')">
-               <Trash :size="20" /> Покинуть
+               <Trash :size="20" /> Удалить
+             </li>
+             <li class="dropdown-item" @click="$emit('viewTasks', props.project_id)">
+               <MessagesSquare :size="20" /> Посмотреть задачи
              </li>
            </template>
          </DropDown>
@@ -86,7 +84,6 @@
      </div>
      
      <div class="d-flex align-items-center justify-content-between mb-3">
-   
        <div class="d-flex flex-column py-2">
          <div class="d-flex gap-1 justify-content-end">
            <span class="fw-bold">Создан:</span>
@@ -128,29 +125,25 @@
      
      <div class="d-flex align-items-center justify-content-between">
        <AvatarGroup />
-       <div class="icon-flex hover-outline px-2 py-1 rounded" style="cursor: pointer">
-         <MessagesSquare :size="22" />
-       </div>
      </div>
    </div>
- </template>
- 
- <style scoped lang="scss">
+</template>
+
+<style scoped lang="scss">
  .project-caption {
    @include truncate-text(2);
  }
- 
+
  .hover-outline {
    transition: all $transition;
- 
    &:hover {
      background-color: var(--color-secondary-background);
    }
  }
- 
+
  .card {
    height: 100%;
    display: flex;
    flex-direction: column;
  }
- </style>
+</style>

@@ -2,10 +2,10 @@
 import { computed, ref } from 'vue'
 import { useKanbanStore } from '@/js/api/services/tasksService'
 import { SquarePlus } from 'lucide-vue-next'
-
+import { useToast } from 'vue-toastification'
 const kanbanStore = useKanbanStore()
 const newSubtaskText = ref('')
-
+const toast = useToast()
 const currentTask = computed(() => kanbanStore.editableTask)
 
 const isChecked = computed({
@@ -108,12 +108,15 @@ const saveTask = () => {
   }
 }
 
-const deleteTask = () => {
-  if (currentTask.value?.id) {
-    kanbanStore.deleteTask(currentTask.value.id)
-    closeModal()
+const deleteTask = async () => {
+  if (!currentTask.value?.id) return;
+
+  const success = await kanbanStore.deleteTask(currentTask.value.id);
+  if (success) {
+    closeModal();
   }
-}
+};
+
 
 const closeModal = () => {
   kanbanStore.cleanSelectedTask()

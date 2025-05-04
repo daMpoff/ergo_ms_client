@@ -102,46 +102,51 @@ const startAddingTask = (columnIndex) => {
 
 const submitNewTask = async (columnIndex) => {
   if (!newTaskData.value.title?.trim()) {
-    toast.error('Введите название задачи');
-    return;
+    toast.error('Введите название задачи')
+    return
   }
 
   const taskData = {
     text: newTaskData.value.title.trim(),
     section_id: kanbanStore.columns[columnIndex]?.id,
-    description: newTaskData.value.description?.trim() || null,
+    description: newTaskData.value.description?.trim() || '',
     deadline: newTaskData.value.dueDate ? formatDateTimeForAPI(newTaskData.value.dueDate) : null,
     priority: newTaskData.value.priority || 1,
     user_id: parseInt(Cookies.get('userId')) || null,
-    project_id: props.project_id,
     isdone: false,
     dateofcreation: new Date().toISOString()
-  };
+  }
 
   if (!taskData.section_id) {
-    toast.error('Не удалось определить раздел для задачи');
-    return;
+    toast.error('Не удалось определить раздел для задачи')
+    return
   }
 
   try {
-    // Создание задачи через API и получение новой задачи
-    await kanbanStore.createTask(taskData);
-      
-    // Если колонка не найдена, делаем полное обновление
-    await kanbanStore.fetchColumns(props.project_id);
-  
+ await kanbanStore.createTask(taskData)
     
-    // Очистка формы добавления задачи
-    isAddingTask.value = -1;
+   
 
-    toast.success('Задача успешно добавлена');
-      window.location.reload();
+    // Обновляем список задач
+    await kanbanStore.fetchColumns(props.project_id)
+    
+    // Очищаем форму
+    isAddingTask.value = -1
+    newTaskData.value = {
+      title: '',
+      description: '',
+      dueDate: null,
+      priority: 0,
+      reminders: []
+    }
+
+    toast.success(`Задача создана!`)
 
   } catch (error) {
-    console.error('Ошибка создания задачи:', error);
-    toast.error('Ошибка при создании задачи');
+    console.error('Ошибка создания задачи:', error)
+    toast.error(error.message || 'Ошибка при создании задачи')
   }
-};
+}
 // Вспомогательная функция для форматирования даты
 function formatDateTimeForAPI(date) {
   return new Date(date).toISOString()
