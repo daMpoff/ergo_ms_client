@@ -21,7 +21,7 @@
                 <option value="button">button</option>
               </select>
             </div>
-            <div class="mb-4">
+            <div class="col-md-6">
               <label class="form-label">Иконка</label>
               <IconPicker v-model="form.icon_name" />
               <div class="mt-2" v-if="form.icon_name">
@@ -29,8 +29,10 @@
                 <code>{{ form.icon_name }}</code>
               </div>
             </div>
-            <div class="col-12">
-              <div class="form-check form-switch">
+
+            <!-- Переключатели: Активность и Вложенность -->
+            <div class="col-md-6">
+              <div class="form-check form-switch mb-2">
                 <input
                   class="form-check-input"
                   type="checkbox"
@@ -39,9 +41,19 @@
                 />
                 <label class="form-check-label" for="activeSwitch"> Активен </label>
               </div>
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  v-model="form.allow_children"
+                  id="nestSwitch"
+                />
+                <label class="form-check-label" for="nestSwitch"> Разрешить вложенность </label>
+              </div>
             </div>
           </div>
 
+          <!-- Поля JSON -->
           <div class="mb-4">
             <label class="form-label">CSS-классы</label>
             <textarea v-model="classListJson" class="form-control code-editor" rows="3"></textarea>
@@ -49,7 +61,6 @@
               Введите JSON-массив, например <code>["p-3","bg-light"]</code>
             </div>
           </div>
-
           <div class="mb-4">
             <label class="form-label">Extra Data</label>
             <textarea v-model="extraDataJson" class="form-control code-editor" rows="5"></textarea>
@@ -86,10 +97,13 @@ const id = isNew ? null : rawId
 const form = ref({
   name: '',
   component_type: 'container',
+  icon_name: '',
   is_active: true,
+  allow_children: false,
   class_list: [],
   extra_data: {},
 })
+
 const classListJson = ref('[]')
 const extraDataJson = ref('{}')
 
@@ -98,6 +112,7 @@ async function load() {
   const res = await shortcodesService.getTemplate(id)
   if (res.success) {
     Object.assign(form.value, res.data)
+    form.value.allow_children = res.data.allow_children
     classListJson.value = JSON.stringify(res.data.class_list || [], null, 2)
     extraDataJson.value = JSON.stringify(res.data.extra_data || {}, null, 2)
   } else {

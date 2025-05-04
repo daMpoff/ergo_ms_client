@@ -71,8 +71,7 @@ const internalTree = computed({
 })
 
 const eachDroppable = (targetStat) => {
-  console.log(targetStat)
-  return targetStat.data.component_type !== 'button'
+  return targetStat.data.allow_children === true
 }
 
 const externalDataHandler = (event) => {
