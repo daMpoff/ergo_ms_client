@@ -26,7 +26,7 @@
             :data-bs-content="getPopoverContent(template)"
           >
             <div class="tile-title text-truncate">
-              <Puzzle></Puzzle>
+              <component :is="Icons[template.icon_name] || Icons.Box" />
             </div>
           </div>
         </div>
@@ -36,10 +36,10 @@
 </template>
 
 <script setup>
-import { Puzzle } from 'lucide-vue-next'
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { shortcodesService } from '@/js/api/services/shortcodes'
 import Popover from 'bootstrap/js/dist/popover'
+import * as Icons from 'lucide-vue-next'
 
 const templates = ref([])
 const searchTerm = ref('')

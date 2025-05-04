@@ -21,6 +21,14 @@
                 <option value="button">button</option>
               </select>
             </div>
+            <div class="mb-4">
+              <label class="form-label">Иконка</label>
+              <IconPicker v-model="form.icon_name" />
+              <div class="mt-2" v-if="form.icon_name">
+                <component :is="Icons[form.icon_name] || Icons.Box" class="me-1" />
+                <code>{{ form.icon_name }}</code>
+              </div>
+            </div>
             <div class="col-12">
               <div class="form-check form-switch">
                 <input
@@ -66,6 +74,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { shortcodesService } from '@/js/api/services/shortcodes'
+import * as Icons from 'lucide-vue-next'
+import IconPicker from '../components/IconPicker.vue'
 
 const route = useRoute()
 const router = useRouter()

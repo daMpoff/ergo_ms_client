@@ -16,7 +16,10 @@
             <small>ID: {{ tpl.id }}</small>
           </div>
           <div class="card-body d-flex flex-column">
-            <h5 class="card-title">{{ tpl.name }}</h5>
+            <div class="d-flex align-items-center mb-2">
+              <h5 class="card-title mb-0 me-2">{{ tpl.name }}</h5>
+              <component :is="Icons[tpl.icon_name] || Icons.Box" />
+            </div>
             <h6 class="card-subtitle mb-3 text-capitalize">{{ tpl.component_type }}</h6>
             <div class="mb-3">
               <span :class="['badge', tpl.is_active ? 'bg-success' : 'bg-danger']">
@@ -42,6 +45,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { shortcodesService } from '@/js/api/services/shortcodes'
+import * as Icons from 'lucide-vue-next'
 
 const router = useRouter()
 const templates = ref([])
