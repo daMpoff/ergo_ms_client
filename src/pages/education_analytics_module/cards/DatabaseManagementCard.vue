@@ -8,8 +8,8 @@
           Управление данными
         </h3>
         <div class="d-flex gap-2">
-          <button 
-            @click="$emit('download')" 
+          <button
+            @click="$emit('download')"
             :disabled="isDownloading || isUploading"
             class="btn btn-primary d-flex align-items-center action-btn">
             <template v-if="isDownloading">
@@ -17,12 +17,12 @@
               Выгрузка...
             </template>
             <template v-else>
-              <ArrowDownToLine :size="18" class="me-2"/> 
+              <ArrowDownToLine :size="18" class="me-2"/>
               <span>Экспорт данных</span>
             </template>
           </button>
-          <button 
-            @click="$emit('load-example')" 
+          <button
+            @click="loadSampleData"
             :disabled="isDownloading || isUploading"
             class="btn btn-outline-primary d-flex align-items-center action-btn">
             <template v-if="isUploading">
@@ -34,8 +34,8 @@
               <span>Загрузить примеры</span>
             </template>
           </button>
-          <button 
-            @click="$emit('clear')" 
+          <button
+            @click="$emit('clear')"
             :disabled="isDownloading || isUploading"
             class="btn btn-outline-danger d-flex align-items-center action-btn">
             <Trash2 :size="18" class="me-2"/>
@@ -49,18 +49,70 @@
         <span>Используйте эти инструменты для управления данными в базе данных</span>
       </div>
     </div>
+    <ToastNotification ref="toastRef" />
   </div>
 </template>
 
 <script setup>
 import { Database, ArrowDownToLine, ArrowUpFromLine, Trash2, Info } from 'lucide-vue-next'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
+import { ref } from 'vue'
+import ToastNotification from './ToastNotification.vue'
+
+const toastRef = ref(null)
 
 defineProps({
   isDownloading: Boolean,
   isUploading: Boolean
 })
 
-defineEmits(['download', 'load-example', 'clear'])
+const emit = defineEmits(['download', 'clear', 'update:isUploading'])
+
+const loadSampleData = async () => {
+  emit('update:isUploading', true)
+  try {
+    // 1. Загрузка работодателей
+    await apiClient.post(endpoints.learning_analytics.employers.loadSampleData)
+
+    // 2. Загрузка специальностей
+    await apiClient.post(endpoints.learning_analytics.specialities.loadSampleData)
+
+    // 3. Загрузка учебных планов
+    await apiClient.post(endpoints.learning_analytics.curriculums.loadSampleData)
+
+    // 4. Загрузка технологий
+    await apiClient.post(endpoints.learning_analytics.technologies.loadSampleData)
+
+    // 5. Загрузка компетенций
+    await apiClient.post(endpoints.learning_analytics.competencies.loadSampleData)
+
+    // 6. Загрузка базовых дисциплин
+    await apiClient.post(endpoints.learning_analytics.baseDisciplines.loadSampleData)
+
+    // 7. Загрузка дисциплин
+    await apiClient.post(endpoints.learning_analytics.disciplines.loadSampleData)
+
+    // 8. Загрузка вакансий
+    await apiClient.post(endpoints.learning_analytics.vacancies.loadSampleData)
+
+    // 9. Загрузка матриц академических компетенций
+    await apiClient.post(endpoints.learning_analytics.acms.loadSampleData)
+
+    // 10. Загрузка профилей компетенций вакансий
+    await apiClient.post(endpoints.learning_analytics.vcms.loadSampleData)
+
+    // 11. Загрузка матриц компетенций пользователей
+    await apiClient.post(endpoints.learning_analytics.ucms.loadSampleData)
+
+    toastRef.value?.show('Примерные данные успешно загружены!', 'success')
+  } catch (error) {
+    console.error('Ошибка при загрузке примерных данных:', error)
+    toastRef.value?.show('Произошла ошибка при загрузке примерных данных. Проверьте консоль для получения дополнительной информации.', 'error')
+  } finally {
+    emit('update:isUploading', false)
+  }
+}
 </script>
 
 <style scoped>
@@ -69,7 +121,6 @@ defineEmits(['download', 'load-example', 'clear'])
   border: 1px solid var(--bs-border-color);
   box-shadow: 0 4px 24px 0 rgba(60, 72, 88, 0.08), 0 1.5px 4px 0 rgba(60, 72, 88, 0.04);
   transition: box-shadow 0.2s;
-  
 }
 
 .database-management:hover {

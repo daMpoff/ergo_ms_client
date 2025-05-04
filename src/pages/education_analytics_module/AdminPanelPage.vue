@@ -10,10 +10,11 @@
       @clear="showConfirmationModal"
     />
     <DatabaseTablesCard
-      :is-loading="isLoading"
+      :is-loading="isReloading || isLoading"
       :tables="tables"
       :selected-table="selectedTable"
       @select-table="selectTable"
+      @reload="delayedReload"
     />
     <TableEditor
       v-if="selectedTable"
@@ -40,6 +41,7 @@ const isLoading = ref(false)
 const isDownloading = ref(false)
 const isUploading = ref(false)
 const isClearing = ref(false)
+const isReloading = ref(false)
 const tables = ref([])
 const selectedTable = ref(null)
 
@@ -96,10 +98,19 @@ const loadExampleData = async () => {
   if (isUploading.value) return
   isUploading.value = true
   showToast('Загрузка тестовых данных...', TOAST_TYPES.INFO)
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  await fetchTablesList()
-  showToast('Тестовые данные успешно загружены', TOAST_TYPES.SUCCESS)
-  isUploading.value = false
+  try {
+    const response = await apiClient.post(endpoints.learning_analytics.loadExampleData)
+    if (response.success) {
+      await fetchTablesList()
+      showToast('Тестовые данные успешно загружены', TOAST_TYPES.SUCCESS)
+    } else {
+      showToast(response.errors || 'Ошибка при загрузке тестовых данных', TOAST_TYPES.ERROR)
+    }
+  } catch (error) {
+    showToast('Произошла ошибка при загрузке данных', TOAST_TYPES.ERROR)
+  } finally {
+    isUploading.value = false
+  }
 }
 
 const showConfirmationModal = () => {
@@ -126,5 +137,13 @@ const selectTable = (tableName) => {
 
 const handleError = (message) => {
   showToast(message, TOAST_TYPES.ERROR)
+}
+
+const delayedReload = () => {
+  isReloading.value = true
+  setTimeout(async () => {
+    await fetchTablesList()
+    isReloading.value = false
+  }, 1200)
 }
 </script>

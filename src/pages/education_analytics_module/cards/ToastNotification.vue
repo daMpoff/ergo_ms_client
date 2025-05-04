@@ -1,26 +1,26 @@
 <template>
   <div class="toast-container position-fixed">
     <TransitionGroup name="toast-list">
-      <div 
-        v-for="toast in toasts" 
+      <div
+        v-for="toast in toasts"
         :key="toast.id"
         class="toast-item alert"
         :class="toastClasses(toast.type)"
         role="alert">
         <div class="toast-content">
-          <component 
-            :is="getIcon(toast.type)" 
-            :size="20" 
+          <component
+            :is="getIcon(toast.type)"
+            :size="20"
             class="toast-icon"
           />
           <span class="toast-message">{{ toast.message }}</span>
-          <button 
+          <button
             class="toast-close"
             @click="removeToast(toast.id)">
             <X :size="16"/>
           </button>
         </div>
-        <div 
+        <div
           class="toast-progress"
           :style="{ animationDuration: `${toast.duration}ms` }"
         />
