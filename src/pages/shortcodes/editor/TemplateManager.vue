@@ -12,8 +12,8 @@
     <div v-else class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
       <div v-for="tpl in templates" :key="tpl.id" class="col">
         <div class="card h-100 shadow-sm">
-          <div class="card-header bg-light text-muted">
-            <small>ID: {{ tpl.id }}</small>
+          <div class="card-header bg-primary text-muted">
+            <small class="text-light fw-bold">ID: {{ tpl.id }}</small>
           </div>
           <div class="card-body d-flex flex-column">
             <div class="d-flex align-items-center mb-2">
