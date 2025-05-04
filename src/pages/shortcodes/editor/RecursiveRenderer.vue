@@ -5,7 +5,7 @@ import { componentMap, defaultRenderer } from '../js'
 defineOptions({ name: 'RecursiveRenderer' })
 
 const { component } = defineProps({
-  component: { type: Object, required: true }
+  component: { type: Object, required: true },
 })
 
 const SelectedRenderer = computed(() => {

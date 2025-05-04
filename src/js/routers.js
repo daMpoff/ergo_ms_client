@@ -403,8 +403,28 @@ const shortcodeRoutes = [
         component: () => import('@/pages/shortcodes/editor/ShortcodeEditor.vue'),
         meta: {
           title: 'Редактор страниц',
-          requiresAuth: true },
+          requiresAuth: true
+        },
       },
+      {
+        path: 'templates',
+        name: 'Templates',
+        component: () => import('@/pages/shortcodes/editor/TemplateManager.vue'),
+        meta: {
+          title: 'Компоненты',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'templates/:id?',
+        name: 'TemplateEditor',
+        component: import('@/pages/shortcodes/editor/TemplateEditor.vue'),
+        props: true,
+        meta: {
+          title: 'Редактор компонентов',
+          requiresAuth: true
+        },
+      }
     ],
   },
 ]

@@ -149,6 +149,7 @@ export const ShortcodesMenuSection = {
   routeName: 'Shortcodes',
   title: 'Редактор страниц',
   list: [
-    { path: 'ShortcodeEditor', name: 'Редактор' },
+    { path: 'ShortcodeEditor', name: 'Редактор страниц' },
+    { path: 'Templates', name: 'Компоненты' },
   ],
 }

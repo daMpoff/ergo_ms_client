@@ -61,8 +61,9 @@ const loadTemplates = async () => {
 // Фильтрация по ID, имени, типу
 const filteredTemplates = computed(() => {
   const term = searchTerm.value.toLowerCase().trim()
-  if (!term) return templates.value
-  return templates.value.filter((tpl) => {
+  const active = templates.value.filter((tpl) => tpl.is_active)
+  if (!term) return active
+  return active.filter((tpl) => {
     return (
       String(tpl.id).includes(term) ||
       tpl.name.toLowerCase().includes(term) ||

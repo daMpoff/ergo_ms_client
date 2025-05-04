@@ -1,0 +1,147 @@
+<template>
+  <div class="container py-4">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-danger text-white">
+        <h2 class="mb-0">
+          {{ isNew ? 'Новый шаблон' : 'Редактирование шаблона' }}
+        </h2>
+      </div>
+
+      <div class="card-body">
+        <form @submit.prevent="save">
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label">Название</label>
+              <input v-model="form.name" class="form-control" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Тип компонента</label>
+              <select v-model="form.component_type" class="form-select" required>
+                <option value="container">container</option>
+                <option value="button">button</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  v-model="form.is_active"
+                  id="activeSwitch"
+                />
+                <label class="form-check-label" for="activeSwitch"> Активен </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">CSS-классы</label>
+            <textarea v-model="classListJson" class="form-control code-editor" rows="3"></textarea>
+            <div class="form-text">
+              Введите JSON-массив, например <code>["p-3","bg-light"]</code>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Extra Data</label>
+            <textarea v-model="extraDataJson" class="form-control code-editor" rows="5"></textarea>
+            <div class="form-text">
+              JSON-объект с параметрами, например <code>{"text":"Купить"}</code>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">
+              {{ isNew ? 'Создать' : 'Сохранить' }}
+            </button>
+            <button type="button" class="btn btn-outline-secondary" @click="cancel">Отмена</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { shortcodesService } from '@/js/api/services/shortcodes'
+
+const route = useRoute()
+const router = useRouter()
+const rawId = route.params.id
+const isNew = !rawId || rawId === 'new'
+const id = isNew ? null : rawId
+
+const form = ref({
+  name: '',
+  component_type: 'container',
+  is_active: true,
+  class_list: [],
+  extra_data: {},
+})
+const classListJson = ref('[]')
+const extraDataJson = ref('{}')
+
+async function load() {
+  if (isNew) return
+  const res = await shortcodesService.getTemplate(id)
+  if (res.success) {
+    Object.assign(form.value, res.data)
+    classListJson.value = JSON.stringify(res.data.class_list || [], null, 2)
+    extraDataJson.value = JSON.stringify(res.data.extra_data || {}, null, 2)
+  } else {
+    alert('Ошибка загрузки: ' + JSON.stringify(res.errors))
+  }
+}
+
+async function save() {
+  try {
+    form.value.class_list = JSON.parse(classListJson.value)
+    form.value.extra_data = JSON.parse(extraDataJson.value)
+  } catch {
+    return alert('Неверный JSON в полях')
+  }
+
+  let res
+  if (isNew) {
+    res = await shortcodesService.createTemplate(form.value)
+  } else {
+    res = await shortcodesService.updateTemplate(id, form.value)
+  }
+
+  if (res.success) {
+    router.push({ name: 'Templates' })
+  } else {
+    alert('Ошибка сохранения: ' + JSON.stringify(res.errors))
+  }
+}
+
+function cancel() {
+  router.push({ name: 'Templates' })
+}
+
+onMounted(load)
+</script>
+
+<style scoped>
+.code-editor {
+  font-family: Menlo, Consolas, monospace;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+.code-editor:focus {
+  background-color: #fff;
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+</style>
