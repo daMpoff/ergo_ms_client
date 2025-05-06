@@ -14,13 +14,16 @@
               <label class="form-label">Название</label>
               <input v-model="form.name" class="form-control" required />
             </div>
+
             <div class="col-md-6">
               <label class="form-label">Тип компонента</label>
               <select v-model="form.component_type" class="form-select" required>
-                <option value="container">container</option>
-                <option value="button">button</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.name">
+                  {{ cat.name }}
+                </option>
               </select>
             </div>
+
             <div class="col-md-6">
               <label class="form-label">Иконка</label>
               <IconPicker v-model="form.icon_name" />
@@ -30,7 +33,6 @@
               </div>
             </div>
 
-            <!-- Переключатели: Активность и Вложенность -->
             <div class="col-md-6">
               <div class="form-check form-switch mb-2">
                 <input
@@ -53,20 +55,16 @@
             </div>
           </div>
 
-          <!-- Поля JSON -->
+          <!-- JSON-поля -->
           <div class="mb-4">
             <label class="form-label">CSS-классы</label>
             <textarea v-model="classListJson" class="form-control code-editor" rows="3"></textarea>
-            <div class="form-text">
-              Введите JSON-массив, например <code>["p-3","bg-light"]</code>
-            </div>
+            <div class="form-text">JSON-массив, например <code>["p-3","bg-light"]</code></div>
           </div>
           <div class="mb-4">
             <label class="form-label">Extra Data</label>
             <textarea v-model="extraDataJson" class="form-control code-editor" rows="5"></textarea>
-            <div class="form-text">
-              JSON-объект с параметрами, например <code>{"text":"Купить"}</code>
-            </div>
+            <div class="form-text">JSON-объект, например <code>{"text":"Купить"}</code></div>
           </div>
 
           <div class="d-flex gap-2">
@@ -85,6 +83,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { shortcodesService } from '@/js/api/services/shortcodes'
+import { categoryService } from '@/js/api/services/shortcodeCategoryService'
 import * as Icons from 'lucide-vue-next'
 import IconPicker from '../components/IconPicker.vue'
 
@@ -94,9 +93,12 @@ const rawId = route.params.id
 const isNew = !rawId || rawId === 'new'
 const id = isNew ? null : rawId
 
+// Список категорий из API
+const categories = ref([])
+
 const form = ref({
   name: '',
-  component_type: 'container',
+  component_type: '',
   icon_name: '',
   is_active: true,
   allow_children: false,
@@ -107,19 +109,36 @@ const form = ref({
 const classListJson = ref('[]')
 const extraDataJson = ref('{}')
 
-async function load() {
-  if (isNew) return
-  const res = await shortcodesService.getTemplate(id)
+// Загрузка списка категорий
+async function loadCategories() {
+  const res = await categoryService.getCategories()
   if (res.success) {
-    Object.assign(form.value, res.data)
-    form.value.allow_children = res.data.allow_children
-    classListJson.value = JSON.stringify(res.data.class_list || [], null, 2)
-    extraDataJson.value = JSON.stringify(res.data.extra_data || {}, null, 2)
+    categories.value = res.data
+    // по-умолчанию выбираем первый, если новый шаблон
+    if (isNew && categories.value.length) {
+      form.value.component_type = categories.value[0].name
+    }
   } else {
-    alert('Ошибка загрузки: ' + JSON.stringify(res.errors))
+    alert('Ошибка загрузки категорий: ' + JSON.stringify(res.errors))
   }
 }
 
+// Загрузка данных шаблона и категорий
+async function load() {
+  await loadCategories()
+  if (!isNew) {
+    const res = await shortcodesService.getTemplate(id)
+    if (res.success) {
+      Object.assign(form.value, res.data)
+      classListJson.value = JSON.stringify(res.data.class_list || [], null, 2)
+      extraDataJson.value = JSON.stringify(res.data.extra_data || {}, null, 2)
+    } else {
+      alert('Ошибка загрузки: ' + JSON.stringify(res.errors))
+    }
+  }
+}
+
+// Сохранение
 async function save() {
   try {
     form.value.class_list = JSON.parse(classListJson.value)
@@ -128,12 +147,10 @@ async function save() {
     return alert('Неверный JSON в полях')
   }
 
-  let res
-  if (isNew) {
-    res = await shortcodesService.createTemplate(form.value)
-  } else {
-    res = await shortcodesService.updateTemplate(id, form.value)
-  }
+  const payload = { ...form.value }
+  const res = isNew
+    ? await shortcodesService.createTemplate(payload)
+    : await shortcodesService.updateTemplate(id, payload)
 
   if (res.success) {
     router.push({ name: 'Templates' })

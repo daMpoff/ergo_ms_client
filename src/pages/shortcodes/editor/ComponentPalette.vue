@@ -2,7 +2,7 @@
   <div class="card shadow-sm mb-4">
     <div class="card-header bg-primary text-white align-items-center">
       <div class="d-flex align-items-center pb-2">
-        <Puzzle class="me-2" />
+        <Icons.Puzzle class="me-2" />
         <h5 class="mb-0">Компоненты</h5>
       </div>
       <input
