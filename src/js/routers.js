@@ -388,6 +388,25 @@ const startRoutes = [
     },
   },
 ]
+const expertSystemRoutes = [
+  {
+    path: '/expert-system',
+    name: 'ExpertSystem',
+    component: () => import('@/pages/expert-system/ParentLayout.vue'),
+    meta: {
+      requiresAuth: false,
+    },
+    redirect: { name: 'ChoiceRole' },
+    children: [
+      {
+        path: 'choice-role',
+        name: 'ChoiceRole',
+        component: () => import('@/pages/expert-system/ChoiceRole.vue'),
+        meta: { title: 'Выбор роли', requiresAuth: true },
+      },
+    ]
+  },
+]
 
 const routes = [
   ...startRoutes,
@@ -406,6 +425,7 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...expertSystemRoutes,
 ]
 
 routes.forEach((route) => {
