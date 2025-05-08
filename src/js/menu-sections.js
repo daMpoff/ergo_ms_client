@@ -149,10 +149,10 @@ export const FilesMenuSection = {
   id: 14,
   icon: Files,
   routeName: 'FileManager',
-  path: '/control/filemanager',
+  path: '/files',
   title: 'Файлы',
   list: [
-    { path: 'UploadFile', name: 'Загрузка файлов' },
-    { path: 'Review', name: 'Обзор' },
+    { path: 'FileManager', name: 'Обзор файлов' },
+    { path: 'UploadFile', name: 'Загрузка файлов' }
   ],
 };
