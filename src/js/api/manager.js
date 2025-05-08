@@ -7,9 +7,6 @@ class ApiClient {
         this.apiPath = 'api/';
         this.client = axios.create({
             baseURL: `${this.baseUrl}${this.apiPath}`,
-            headers: {
-                'Content-Type': 'application/json',
-            },
         });
     }
 
@@ -29,16 +26,24 @@ class ApiClient {
 
     async post(endpoint, data = {}, needToken = true) {
         try {
-            const config = {};
-            if (needToken) {
-                this._addAuthToken(config);
-            }
-            const response = await this.client.post(endpoint, data, config);
-            return this.handleResponse(response);
+          const config = {};
+      
+          if (needToken) {
+            this._addAuthToken(config);
+          }
+          if (!(data instanceof FormData)) {
+            config.headers = {
+              ...(config.headers || {}),
+              'Content-Type': 'application/json',
+            };
+          }
+          const response = await this.client.post(endpoint, data, config);
+          return this.handleResponse(response);
         } catch (error) {
-            return this.handleError(error);
+          return this.handleError(error);
         }
-    }
+      }
+      
 
     async put(endpoint, data = {}, needToken = true) {
         try {

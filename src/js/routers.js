@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { checkToken } from '@/js/api/services/auth-index'
-import FileManager from '@/pages/control/FileManager.vue';
 
 const mainRoutes = [
   {
@@ -20,14 +19,6 @@ const mainRoutes = [
       requiresAuth: true,
     },
   },
-]
-const fileManagerRoutes = [
-  {
-    path: '/control/filemanager',
-    name: 'FileManager',
-    component: FileManager,
-    meta: { requiresAuth: true, title: 'Файлы' }
-  } 
 ]
 // Панель управления
 const dashboardRoutes = [
@@ -332,24 +323,24 @@ const componentsRoutes = [
 // Управление маршрутами
 const controlRoutes = [
   {
-    path: '/control',
-    name: 'Control',
-    component: () => import('@/pages/control/ParentLayout.vue'),
-    redirect: { name: 'UploadFile' }, // или FileManager, если ты хочешь показывать его первым
+    path: '/files',
+    name: 'Files',
+    component: () => import('@/pages/controlFiles/ParentLayout.vue'),
+    redirect: { name: 'FileManager' },
     meta: { requiresAuth: true },
     children: [
       {
         path: 'upload-file',
         name: 'UploadFile',
-        component: () => import('@/pages/control/UploadFile.vue'),
+        component: () => import('@/pages/controlFiles/UploadFile.vue'),
         meta: { title: 'Загрузка файлов', requiresAuth: true },
       },
       {
-        path: 'review',
-        name: 'Review',
-        component: () => import('@/pages/control/Review.vue'),
-        meta: { title: 'Обзор файлов', requiresAuth: true },
-      },
+        path: 'filemanager',
+        name: 'FileManager',
+        component: () => import('@/pages/controlFiles/FileManager.vue'),
+        meta: { requiresAuth: true, title: 'Файлы' }
+      }
     ],
   },
 ]
@@ -424,7 +415,6 @@ const startRoutes = [
 const routes = [
   ...startRoutes,
   ...mainRoutes,
-  ...fileManagerRoutes,
   ...dashboardRoutes,
   ...userRoutes,
   ...settingsRoutes,
