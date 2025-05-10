@@ -394,7 +394,7 @@ const expertSystemRoutes = [
     name: 'ExpertSystem',
     component: () => import('@/pages/expert-system/ParentLayout.vue'),
     meta: {
-      requiresAuth: false,
+      requiresAuth: true,
     },
     redirect: { name: 'ChoiceRole' },
     children: [
