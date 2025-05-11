@@ -394,7 +394,7 @@ const expertSystemRoutes = [
     name: 'ExpertSystem',
     component: () => import('@/pages/expert-system/ParentLayout.vue'),
     meta: {
-      requiresAuth: false,
+      requiresAuth: true,
     },
     redirect: { name: 'ChoiceRole' },
     children: [
@@ -402,6 +402,12 @@ const expertSystemRoutes = [
         path: 'choice-role',
         name: 'ChoiceRole',
         component: () => import('@/pages/expert-system/ChoiceRole.vue'),
+        meta: { title: 'Выбор роли', requiresAuth: true },
+      },
+      {
+        path: 'account',
+        name: 'Profile',
+        component: () => import('@/pages/expert-system/ProfileDashboard.vue'),
         meta: { title: 'Выбор роли', requiresAuth: true },
       },
     ]
