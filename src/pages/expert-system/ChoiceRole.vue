@@ -3,7 +3,7 @@
     <h1 class="text-center mb-5">Система подбора вакансий</h1>
     <div class="row justify-content-center gy-4">
       <div class="col-12 col-md-5">
-        <div class="card border-secondary shadow-sm pointer" @click="select('student')">
+        <div class="card border-secondary shadow-sm pointer" @click="select('Components')">
           <div class="card-body d-flex justify-content-center align-items-center">
             <h2 class="card-title text-secondary mb-0">Студент/Выпускник</h2>
           </div>
@@ -26,8 +26,7 @@ export default {
   methods: {
     select(role) {
       console.log('Выбран:', role)
-      // например, переход по маршруту:
-      // this.$router.push({ name: role })
+      this.$router.push({ name: role })
     },
   },
 }

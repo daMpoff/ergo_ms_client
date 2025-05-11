@@ -404,6 +404,12 @@ const expertSystemRoutes = [
         component: () => import('@/pages/expert-system/ChoiceRole.vue'),
         meta: { title: 'Выбор роли', requiresAuth: true },
       },
+      {
+        path: 'account',
+        name: 'Profile',
+        component: () => import('@/pages/expert-system/ProfileDashboard.vue'),
+        meta: { title: 'Выбор роли', requiresAuth: true },
+      },
     ]
   },
 ]
