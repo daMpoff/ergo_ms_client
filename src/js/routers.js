@@ -408,8 +408,38 @@ const expertSystemRoutes = [
         path: 'account',
         name: 'Profile',
         component: () => import('@/pages/expert-system/ProfileDashboard.vue'),
-        meta: { title: 'Выбор роли', requiresAuth: true },
+        meta: { title: 'Профиль', requiresAuth: true },
       },
+      {
+        path: 'skills',
+        name: 'Skills',
+        component: () => import('@/pages/expert-system/SkillManager.vue'),
+        meta: { title: 'Навыки', requiresAuth: true },
+      },
+      {
+        path: 'student-register',
+        name: 'StudentRegister',
+        component:() => import ('@/pages/expert-system/StudentRegister.vue'),
+        meta: { title: 'Регистрация студента', requiresAuth: false }
+      },
+      {
+        path: 'employer-auth',
+        name: 'EmployerAuth',
+        component:() => import ('@/pages/expert-system/EmployerAuth.vue'),
+        meta: { title: 'Вход / Регистрация работодателя', requiresAuth: false }
+      },
+      {
+        path: 'group-manager',
+        name: 'Groups',
+        component:() => import ('@/pages/expert-system/GroupManager.vue'),
+        meta: { title: 'Группы обучения', requiresAuth: true }
+      },
+      {
+        path: 'proforientaion',
+        name: 'Proforientaion',
+        component:() => import ('@/pages/expert-system/ProforientationTest.vue'),
+        meta: { title: 'Профориентация', requiresAuth: true }
+      }
     ]
   },
 ]
