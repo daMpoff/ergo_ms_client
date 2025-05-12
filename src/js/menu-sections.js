@@ -1,6 +1,7 @@
 import {
   AtSign,
   Calendar,
+  ChartBarStacked,
   ChartSpline,
   CircleUserRound,
   Component,
@@ -140,5 +141,18 @@ export const ComponentsMenuSection = {
     { path: 'Carousel', name: 'Карусель' },
     { path: 'ListGroups', name: 'Группы списков' },
     { path: 'Typography', name: 'Типография' },
+  ],
+}
+
+export const ExpertSystemSection = {
+  id: 14,
+  icon: ChartBarStacked,
+  routeName: 'ExpertSystem',
+  title: 'Экспертная система вакансий',
+  list: [
+    { path: 'ChoiceRole', name: 'Экспертная система' },
+    { path: 'Profile', name: 'Профиль' },
+    { path: 'Skills', name: 'Навыки' },
+    { path: 'Groups', name: 'Группы'},
   ],
 }
