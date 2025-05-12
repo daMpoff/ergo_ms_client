@@ -1,6 +1,7 @@
 import {
   AtSign,
   Calendar,
+  ChartBarStacked,
   ChartSpline,
   CircleUserRound,
   Component,
@@ -161,15 +162,17 @@ export const AdminPanelMenuSection = {
   ],
 }
 
-// Экспертная система
-export const ExpSysMenuSection = {
+export const ExpertSystemSection = {
   id: 15,
-  icon: BookOpen,
-  routeName: 'TestAddSkill',
-  title: 'Экспертная система',
+  icon: ChartBarStacked,
+  routeName: 'ExpertSystem',
+  title: 'Экспертная система вакансий',
   list: [
-    { path: 'TestAddSkill', name: 'Тестовая добавление навыка' },
-    {path:'PageWithVideo', name:'Страница с видео'}
+    { path: 'ChoiceRole', name: 'Экспертная система' },
+    { path: 'Profile', name: 'Профиль' },
+    { path: 'Skills', name: 'Навыки' },
+    { path: 'Groups', name: 'Группы'},
   ],
 }
+
 

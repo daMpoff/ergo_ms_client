@@ -40,11 +40,27 @@ export const endpoints = {
         getPermissionsByCategory: 'cms/get_permissions_by_category/',
         getUserName: 'cms/get_user_name/',
     },
-    expsys: {
-        getSkills: 'expsys_module/get-skills',
-        addUserSkill: 'expsys_module/add-user-skill',
-        getUserSkills: 'expsys_module/get-user-skills',
-        getUserNewSkills: 'expsys_module/get-user-new-skills',
-        putskillresult: 'expsys_module/put-skill-result'
+    expert_system: {
+        studyGroups: 'expert_system/study-groups/',
+        students: 'expert_system/students/',
+        studentsMe: 'expert_system/students/me/',
+        companies: 'expert_system/companies/',
+        companiesMe: 'expert_system/companies/me/',
+        skills: 'expert_system/skills/',
+        userSkills: 'expert_system/user-skills/',
+        roles: 'expert_system/roles/',
+        trajectorySteps: 'expert_system/trajectory-steps/',
+        orientationTests: 'expert_system/orientation-tests/',
+        orientationQuestions: 'expert_system/orientation-questions/',
+        orientationAnswers: 'expert_system/orientation-answers/',
+        skillTests: 'expert_system/skill-tests/',
+        skillQuestions: 'expert_system/skill-questions/',
+        skillAnswers: 'expert_system/skill-answers/',
+        testResults: 'expert_system/test-results/',
+        vacancies: 'expert_system/vacancies/',
+        vacancySkills: 'expert_system/vacancy-skills/',
+        applications: 'expert_system/applications/',
+        orientationResults: 'expert_system/orientation-results/',
+        orientationUserAnswers: 'expert_system/orientation-answers/'
     }
-}; 
+};

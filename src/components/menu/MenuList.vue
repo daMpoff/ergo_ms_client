@@ -16,7 +16,7 @@ import {
   TablesMenuSection,
   ModalWindowsMenuSection,
   AdminPanelMenuSection,
-  ExpSysMenuSection,
+  ExpertSystemSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -93,19 +93,7 @@ const menuSections = ref([
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
-  ExpSysMenuSection,
 ])
-
-onMounted(async () => {
-  try {
-    const accessed = await CheckAccessToAdminPanel();
-    if (accessed) {
-      menuSections.value = [...menuSections.value, AdminPanelMenuSection];
-    }
-  } catch (error) {
-    console.error('Error checking admin panel access:', error)
-  }
-})
 
 // Список разделителей
 const separators = (index) => {
