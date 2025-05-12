@@ -151,6 +151,8 @@ export const ExpertSystemSection = {
   title: 'Экспертная система вакансий',
   list: [
     { path: 'ChoiceRole', name: 'Экспертная система' },
-    { path: 'Profile', name: 'Профиль' }
-  ]
+    { path: 'Profile', name: 'Профиль' },
+    { path: 'Skills', name: 'Навыки' },
+    { path: 'Groups', name: 'Группы'},
+  ],
 }
