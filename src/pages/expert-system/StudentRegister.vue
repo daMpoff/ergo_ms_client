@@ -124,8 +124,14 @@ export default {
         }
 
         // по успеху — просто закрываем модалку (можно редиректить куда нужно)
-        this.close()
-        this.$router.push({ name: ''})
+        console.log(this.form.has_experience)
+        if(this.form.has_experience){
+          this.$router.push({ name: 'Addskillforstudent'})
+        }
+        else{
+          this.close()
+        }
+          
 
       } catch (err) {
         this.error = err.message || 'Ошибка при сохранении профиля'

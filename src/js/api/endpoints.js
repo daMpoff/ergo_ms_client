@@ -61,6 +61,9 @@ export const endpoints = {
         vacancySkills: 'expert_system/vacancy-skills/',
         applications: 'expert_system/applications/',
         orientationResults: 'expert_system/orientation-results/',
-        orientationUserAnswers: 'expert_system/orientation-answers/'
+        orientationUserAnswers: 'expert_system/orientation-answers/',
+        setUserSkillTest: 'expert_system/set-user-skill-test',
+        getUserSkillTest: 'expert_system/get-user-skill-test'
+
     }
 };

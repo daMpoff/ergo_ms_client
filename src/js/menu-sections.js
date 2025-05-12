@@ -31,7 +31,6 @@ export const UserMenuSection = {
     { path: 'Projects', name: 'Проекты' },
     { path: 'Connections', name: 'Связи' },
     { path: 'Analytics', name: 'Статистика' },
-    {path: 'Tests', name: 'Тесты'}
   ],
 }
 

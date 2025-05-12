@@ -95,14 +95,6 @@ const userRoutes = [
           requiresAuth: true,
         },
       },
-      {
-        path: 'tests',
-        name: 'Tests',
-        component: ()=> import('@/pages/user/Tests/ParentLayout.vue'),
-        meta:{
-          requiresAuth:true,
-        }
-      }
     ],
   },
 ]
@@ -479,6 +471,12 @@ const expertSystemRoutes = [
         component:() => import ('@/pages/expert-system/GroupManager.vue'),
         meta: { title: 'Группы обучения', requiresAuth: true }
       },
+      {
+        path: 'add-skills-for-student',
+        name: 'Addskillforstudent',
+        component:()=> import('@/pages/expert-system/AddSkillForStudentsWithExpirience.vue'),
+        meta:{title:'добавление тестов по навыкам для студента',requiresAuth: true}
+      }
     ]
   },
 ]

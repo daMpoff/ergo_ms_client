@@ -125,6 +125,39 @@
         </div>
       </div>
 
+      <!--Спискок тестов умений-->
+      <div
+          class="tab-pane fade"
+          :class="{ 'show active': activeTab === 'skilltests' }"
+          role="tabpanel"
+        >
+        <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-3 mb-4" v-for="(item, index) in items" :key="index">
+        <TestCard
+          :name="item.test"
+          :confirmed="item.status"
+          :correctPercentage="item.result"
+          :description="item.description"
+        />
+      </div>
+      <div class="col-md-3 mb-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body d-flex justify-content-center align-items-center" data-bs-toggle="modal"
+          data-bs-target="#EditSkills">
+              <Plus class="text-primary" style="width: 40%; height: 40%;" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ModalCenter title="Добавление новых умений" modalId="EditSkills">
+              <AddSkillModal />
+            </ModalCenter>
+      </div>
+
+
+
       <!-- Кнопки сохранения -->
       <div v-if="editMode" class="mt-3 text-end">
         <button
@@ -146,6 +179,18 @@
 import { ref, reactive } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
+import ModalCenter from '@/components/ModalCenter.vue'
+import AddSkillModal from './StudentProfileComponents/AddSkillModal.vue'
+import TestCard from './StudentProfileComponents/TestCard.vue'
+import { Plus } from 'lucide-vue-next'
+import { onMounted } from 'vue'
+const items = ref([])
+onMounted(async ()=>{
+  let f = await apiClient.get(endpoints.expert_system.getUserSkillTest)
+  console.log(f)
+  items.value = f.data 
+  console.log(items.value)
+})
 
 // Принимаем пропс student (должен содержать id, first_name, last_name, group_name, has_experience и остальные поля)
 const props = defineProps({
@@ -166,7 +211,8 @@ const apiError = ref(null)
 const tabs = [
   { name: 'main', label: 'Основное' },
   { name: 'experience', label: 'Опыт' },
-  { name: 'contacts', label: 'Контакты' }
+  { name: 'contacts', label: 'Контакты' },
+  {name: 'skilltests', label: 'Навыки'}
 ]
 
 function toggleEdit() {
