@@ -12,6 +12,9 @@ import {
   TextCursorInput,
   UserCog,
   Wallet,
+  KeySquare,
+  BookOpen,
+  NotepadTextDashed
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -26,6 +29,7 @@ export const UserMenuSection = {
     { path: 'Projects', name: 'Проекты' },
     { path: 'Connections', name: 'Связи' },
     { path: 'Analytics', name: 'Статистика' },
+    {path: 'Tests', name: 'Тесты'}
   ],
 }
 
@@ -142,3 +146,30 @@ export const ComponentsMenuSection = {
     { path: 'Typography', name: 'Типография' },
   ],
 }
+
+// Админ-панель
+export const AdminPanelMenuSection = {
+  id: 14,
+  icon: KeySquare,
+  routeName: 'AdminPanel',
+  title: 'Админ-панель',
+  list: [
+    { path: 'CategoriesPanel', name: 'Настройка категорий' },
+    { path: 'GroupsPanel', name: 'Настройка групп' },
+    { path: 'PermissionsPanel', name: 'Настройка прав' },
+    { path: 'UsersPanel', name: 'Настройка пользователей' },
+  ],
+}
+
+// Экспертная система
+export const ExpSysMenuSection = {
+  id: 15,
+  icon: BookOpen,
+  routeName: 'TestAddSkill',
+  title: 'Экспертная система',
+  list: [
+    { path: 'TestAddSkill', name: 'Тестовая добавление навыка' },
+    {path:'PageWithVideo', name:'Страница с видео'}
+  ],
+}
+

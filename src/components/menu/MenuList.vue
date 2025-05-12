@@ -15,12 +15,15 @@ import {
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  AdminPanelMenuSection,
+  ExpSysMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
 import { useRoute } from 'vue-router'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-
+import { onMounted } from 'vue'
+import { CheckAccessToAdminPanel } from '@/js/GroupsPolitics.js'
 const props = defineProps({
   isVisible: Boolean,
 })
@@ -61,7 +64,7 @@ const openGroupId = ref(null)
 watch(
   () => route.matched,
   (newMatched) => {
-    for (let i of menuSections) {
+    for (let i of menuSections.value) {
       if (i.routeName === newMatched[0].name) {
         openGroupId.value = i.id
       }
@@ -74,8 +77,9 @@ const toggleGroup = (id) => {
   openGroupId.value = openGroupId.value === id ? null : id
 }
 
+
 // Список секций меню
-const menuSections = [
+const menuSections = ref([
   UserMenuSection,
   SettingsMenuSection,
   EmailMenuSection,
@@ -89,7 +93,19 @@ const menuSections = [
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
-]
+  ExpSysMenuSection,
+])
+
+onMounted(async () => {
+  try {
+    const accessed = await CheckAccessToAdminPanel();
+    if (accessed) {
+      menuSections.value = [...menuSections.value, AdminPanelMenuSection];
+    }
+  } catch (error) {
+    console.error('Error checking admin panel access:', error)
+  }
+})
 
 // Список разделителей
 const separators = (index) => {

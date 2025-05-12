@@ -95,6 +95,14 @@ const userRoutes = [
           requiresAuth: true,
         },
       },
+      {
+        path: 'tests',
+        name: 'Tests',
+        component: ()=> import('@/pages/user/Tests/ParentLayout.vue'),
+        meta:{
+          requiresAuth:true,
+        }
+      }
     ],
   },
 ]
@@ -389,6 +397,63 @@ const startRoutes = [
   },
 ]
 
+const adminpanelRoutes = [
+  {
+    path: '/AdminPanel',
+    name: 'AdminPanel',
+    component: () => import('@/pages/AdminPanel/ParentLayout.vue'),
+    redirect: { name: 'CategoriesPanel' },
+    meta: { title: 'Админ-панель', requiresAuth: true },
+    children: [
+      {
+        path: 'CategoriesPanel',
+        name: 'CategoriesPanel',
+        component: () => import('@/pages/AdminPanel/Categories.vue'),
+        meta: { title: 'Панель категорий', requiresAuth: true },
+      },
+      {
+        path: 'GroupsPanel',
+        name: 'GroupsPanel',
+        component: () => import('@/pages/AdminPanel/Groups.vue'),
+        meta: { title: 'Панель групп', requiresAuth: true },
+      },
+      {
+        path: 'PermissionsPanel',
+        name: 'PermissionsPanel',
+        component: () => import('@/pages/AdminPanel/Permissions.vue'),
+        meta: { title: 'Панель прав', requiresAuth: true },
+      },
+      {
+        path: 'UsersPanel',
+        name: 'UsersPanel',
+        component: () => import('@/pages/AdminPanel/Users.vue'),
+        meta: { title: 'Панель пользователей', requiresAuth: true },
+      },
+    ],
+  },
+]
+
+const expRoutes = [
+  {
+    path: '/exp',
+    name: 'Exp',
+    component: () => import('@/pages/ExpSys/ParentLayout.vue'),
+    meta: { title: 'Экспертная система', requiresAuth: true },
+    children: [
+      {
+        path: 'TestAddSkill',
+        name: 'TestAddSkill',
+        component: () => import('@/pages/ExpSys/TestAddSkill.vue'),
+      },
+      {
+        path: 'PageWithVideo',
+        name: 'PageWithVideo',
+        component:() => import('@/pages/ExpSys/PageWithVideo.vue')
+      }
+    ],
+  },
+]
+
 const routes = [
   ...startRoutes,
   ...mainRoutes,
@@ -406,6 +471,8 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...adminpanelRoutes,
+  ...expRoutes,
 ]
 
 routes.forEach((route) => {

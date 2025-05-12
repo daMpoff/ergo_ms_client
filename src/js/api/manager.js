@@ -53,18 +53,17 @@ class ApiClient {
         }
     }
 
-    async delete(endpoint, params = {}, needToken = true) {
-        try {
-            const config = { params };
-            if (needToken) {
-                this._addAuthToken(config);
-            }
-            const response = await this.client.delete(endpoint, config);
-            return this.handleResponse(response);
-        } catch (error) {
-            return this.handleError(error);
+   async delete(endpoint, config = {}, needToken = true) {
+    try {
+        if (needToken) {
+            this._addAuthToken(config);
         }
+        const response = await this.client.delete(endpoint, config);
+        return this.handleResponse(response);
+    } catch (error) {
+        return this.handleError(error);
     }
+}
 
     // Helper method to add auth token to config
     _addAuthToken(config) {
