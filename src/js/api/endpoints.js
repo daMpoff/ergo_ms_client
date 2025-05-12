@@ -10,7 +10,9 @@ export const endpoints = {
     expert_system: {
         studyGroups: 'expert_system/study-groups/',
         students: 'expert_system/students/',
+        studentsMe: 'expert_system/students/me/',
         companies: 'expert_system/companies/',
+        companiesMe: 'expert_system/companies/me/',
         skills: 'expert_system/skills/',
         userSkills: 'expert_system/user-skills/',
         roles: 'expert_system/roles/',
