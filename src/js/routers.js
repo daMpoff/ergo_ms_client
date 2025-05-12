@@ -479,13 +479,18 @@ const expertSystemRoutes = [
         component:() => import ('@/pages/expert-system/GroupManager.vue'),
         meta: { title: 'Группы обучения', requiresAuth: true }
       },
-      {
-        path: 'proforientaion',
-        name: 'Proforientaion',
-        component:() => import ('@/pages/expert-system/ProforientationTest.vue'),
-        meta: { title: 'Профориентация', requiresAuth: true }
-      }
     ]
+  },
+]
+
+const waterMarkvideoRoute = [
+  {
+    path: '/watermarked-video',
+    name: 'Watermarked-Video',
+    component: () => import('@/pages/WatermarkVideo/ParentLayout.vue'),
+    meta: {
+      requiresAuth: true,
+    },
   },
 ]
 
@@ -508,6 +513,7 @@ const routes = [
   ...componentsRoutes,
   ...adminpanelRoutes,
   ...expertSystemRoutes,
+  ...waterMarkvideoRoute
 ]
 
 routes.forEach((route) => {

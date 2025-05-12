@@ -15,7 +15,8 @@ import {
   Wallet,
   KeySquare,
   BookOpen,
-  NotepadTextDashed
+  NotepadTextDashed,
+  Video
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -174,5 +175,13 @@ export const ExpertSystemSection = {
     { path: 'Groups', name: 'Группы'},
   ],
 }
+export const WatermarkedVideoSection = {
+  id: 16,
+  icon: Video,
+  routeName: 'Watermarked-Video',
+  title: 'Видео с вотермаркой',
+}
+
+
 
 

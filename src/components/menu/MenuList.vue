@@ -17,6 +17,7 @@ import {
   ModalWindowsMenuSection,
   AdminPanelMenuSection,
   ExpertSystemSection,
+  WatermarkedVideoSection
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -93,6 +94,9 @@ const menuSections = ref([
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  AdminPanelMenuSection,
+  ExpertSystemSection,
+  WatermarkedVideoSection,
 ])
 
 // Список разделителей
