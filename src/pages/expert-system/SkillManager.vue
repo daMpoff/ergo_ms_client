@@ -2,7 +2,6 @@
   <div class="container py-4">
     <h2 class="mb-4">Управление навыками</h2>
 
-    <!-- Поисковая строка -->
     <div class="mb-3">
       <input
         v-model="filterTerm"
@@ -97,20 +96,18 @@ import { endpoints } from '@/js/api/endpoints'
 const SKILLS_EP = endpoints.expert_system.skills
 
 const skills = ref([])
-const filterTerm = ref('')        // <-- поисковая строка
+const filterTerm = ref('')
 const newSkillName = ref('')
 const editSkillId = ref(null)
 const editSkillName = ref('')
 const error = ref('')
 
-// Отсортированный по алфавиту массив
 const sortedSkills = computed(() =>
   [...skills.value].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
   )
 )
 
-// Применяем фильтр по поисковой строке
 const filteredSkills = computed(() => {
   const term = filterTerm.value.trim().toLowerCase()
   if (!term) return sortedSkills.value
