@@ -3,9 +3,6 @@
       <!-- Навигационное меню -->
       <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
         <div class="container">
-          <a class="navbar-brand" href="#" @click.prevent="currentTab = 'dashboard'">
-            Мониторинг компетенций
-          </a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -22,7 +19,7 @@
                 <a class="nav-link" href="#" 
                    :class="{active: currentTab === 'competences'}"
                    @click.prevent="currentTab = 'competences'">
-                  Компетенции
+                  Предметы
                 </a>
               </li>
               <li class="nav-item">
@@ -139,7 +136,7 @@
   </template>
   
   <script>
-  import CompetenceManager from '@/pages/competencies/CompetenceManager.vue'
+  import CompetenceManager from '@/pages/competencies/SubjectsManager.vue'
   import StudentProgress from '@/pages/competencies/StudentProgress.vue'
   import DevelopmentPlan from '@/pages/competencies/DevelopmentPlan.vue'
   

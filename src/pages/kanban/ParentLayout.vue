@@ -126,9 +126,9 @@ const submitNewTask = async (columnIndex) => {
  await kanbanStore.createTask(taskData)
     
    
-
+    props.project_id==route.query.project_id;
     // Обновляем список задач
-    await kanbanStore.fetchColumns(props.project_id)
+    await kanbanStore.fetchColumns(route.query.project_id)
     
     // Очищаем форму
     isAddingTask.value = -1

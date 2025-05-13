@@ -155,5 +155,5 @@ export const CompetenciesMenuSection = {
   id: 15,
   icon: HandHeart,
   routeName: 'Competencies',
-  title: 'ЭС_компетенции',
+  title: 'Экспертная система',
 }

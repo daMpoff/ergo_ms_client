@@ -22,4 +22,11 @@ export const endpoints = {
 
         }
     },
+    expsys: {
+        subjects: {
+            allsubjects: '/expsys_module/subjects-all/',
+            create:'/expsys_module/subject-create/'
+        },
+    
+    },   
 }; 
