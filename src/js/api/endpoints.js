@@ -17,7 +17,6 @@ export const endpoints = {
     userSkills: 'expert_system/user-skills/',
     roles: 'expert_system/roles/',
     trajectorySteps: 'expert_system/trajectory-steps/',
-
     orientationTests: 'expert_system/orientation-tests/',
     orientationQuestions: 'expert_system/orientation-questions/',
     orientationAnswers: 'expert_system/orientation-answers/',
@@ -32,5 +31,8 @@ export const endpoints = {
     vacancies: 'expert_system/vacancies/',
     vacancySkills: 'expert_system/vacancy-skills/',
     applications: 'expert_system/applications/',
+
+    setUserSkills: 'expert_system/set-user-skills',
+    getUserSkills: 'expert_system/get-user-skills',
   }
-}
+};
