@@ -420,13 +420,13 @@ const expertSystemRoutes = [
         path: 'student-register',
         name: 'StudentRegister',
         component:() => import ('@/pages/expert-system/StudentRegister.vue'),
-        meta: { title: 'Регистрация студента', requiresAuth: false }
+        meta: { title: 'Регистрация студента', requiresAuth: true }
       },
       {
-        path: 'employer-auth',
-        name: 'EmployerAuth',
-        component:() => import ('@/pages/expert-system/EmployerAuth.vue'),
-        meta: { title: 'Вход / Регистрация работодателя', requiresAuth: false }
+        path: 'company-register',
+        name: 'CompanyRegister',
+        component:() => import ('@/pages/expert-system/CompanyRegister.vue'),
+        meta: { title: 'Вход / Регистрация работодателя', requiresAuth: true }
       },
       {
         path: 'group-manager',
