@@ -19,7 +19,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 function goRegister() {
-  router.push({ name: 'StudentRegister' })
+  router.push({ name: 'ChoiceRole' })
 }
 </script>
 
