@@ -12,7 +12,7 @@
                 </div>
                 </div>
                 <br/>
-                <button type="submit" class="btn btn-primary">Добавить навыки</button>
+                <button type="submit" class="btn btn-primary" :data-bs-dismiss="'modal'">Добавить навыки</button>
             </div>
         </div>
     </div>
@@ -20,22 +20,31 @@
 </template>
   
   <script setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted , defineExpose} from 'vue';
   import { endpoints } from '@/js/api/endpoints';
   import { apiClient } from '@/js/api/manager';
-  import router from '@/js/routers';
   const skills = ref([]);
  const emits = defineEmits(['AddSkillTest'])
-  onMounted(async () => {
+
+ const loadallskills = async()=>{
   try {
     const skillsResponse = await apiClient.get(endpoints.expert_system.getUserSkills);
     const userSkills = skillsResponse.data.map(item => item);
     const allSkillsResponse = await apiClient.get(endpoints.expert_system.skills);  
     skills.value = allSkillsResponse.data;
-    skills.value = skills.value.filter(skill => !userSkills.includes(skill.name));
+    for (let i=0; i< userSkills.length; i++ ){
+      for( let j=0; j<skills.value.length;j++){
+        if (userSkills[i].name == skills.value[j].name){
+          skills.value.splice(j,1)
+        }
+      }
+    }
   } catch (error) {
     console.error('Error fetching skills:', error);
   }
+ }
+  onMounted(async () => {
+  await loadallskills()
 });
   
   const submitForm = async () => {
@@ -45,11 +54,15 @@
       skill = skill.children[0].children[0];
       if (skill.checked) {
         skillsArray.push(skill.value);
-      }
+      } 
     });
     emits('AddSkillTest', skillsArray)
+    skills.value = skills.value.filter(skill => !skillsArray.includes(skill.name));
   };
+defineExpose({loadallskills})
   </script>
+  
+
   
   <style lang="scss" scoped>
   .scroll-container {
