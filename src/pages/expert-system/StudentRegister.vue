@@ -179,8 +179,15 @@ export default {
             : Object.values(resp.errors).flat().join(' ')
           throw new Error(msg)
         }
-        this.close()
-        //this.$router.push({ name: 'StudentExperience' })
+        console.log(this.form.has_experience)
+        if(this.form.has_experience){
+          this.$router.push({ name: 'Addstudentskills' })
+        }
+        else{
+          this.close()
+        }
+        
+        
       } catch (err) {
         this.error = err.message || 'Ошибка при сохранении профиля'
       } finally {
