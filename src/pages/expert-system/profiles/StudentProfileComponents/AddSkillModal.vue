@@ -21,13 +21,24 @@
   
   <script setup>
   import { ref, onMounted } from 'vue';
-  
+  import { endpoints } from '@/js/api/endpoints';
+  import { apiClient } from '@/js/api/manager';
+  import router from '@/js/routers';
   const skills = ref([]);
+ const emits = defineEmits(['AddSkillTest'])
+  onMounted(async () => {
+  try {
+    const skillsResponse = await apiClient.get(endpoints.expert_system.getUserSkills);
+    const userSkills = skillsResponse.data.map(item => item);
+    const allSkillsResponse = await apiClient.get(endpoints.expert_system.skills);  
+    skills.value = allSkillsResponse.data;
+    skills.value = skills.value.filter(skill => !userSkills.includes(skill.name));
+  } catch (error) {
+    console.error('Error fetching skills:', error);
+  }
+});
+  
   const submitForm = async () => {
-    await addUserSkill()
-    }
-
-  const addUserSkill = async () => {
     const skillslist = document.querySelectorAll('#skillslist');
     const skillsArray = [];
     skillslist.forEach(skill => {
@@ -36,8 +47,7 @@
         skillsArray.push(skill.value);
       }
     });
-    const response = await Expsys.addUserSkill(skillsArray);
-    console.log(response);
+    emits('AddSkillTest', skillsArray)
   };
   </script>
   

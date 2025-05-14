@@ -135,13 +135,17 @@
     <div class="row">
       <div class="col-md-3 mb-4" v-for="(item, index) in items" :key="index">
         <TestCard
-          :name="item.test"
+          :testname="item.test"
           :confirmed="item.status"
           :correctPercentage="item.result"
           :description="item.description"
+          :isredact="editMode"
+          :resultid="item.id"
+
+          @DeleteTest = "AddDeleteSkillList"
         />
       </div>
-      <div class="col-md-3 mb-4">
+      <div class="col-md-3 mb-4" v-if = "editMode">
         <div class="card shadow-sm h-100">
           <div class="card-body d-flex justify-content-center align-items-center" data-bs-toggle="modal"
           data-bs-target="#EditSkills">
@@ -151,8 +155,8 @@
       </div>
     </div>
   </div>
-  <ModalCenter title="Добавление новых умений" modalId="EditSkills">
-              <AddSkillModal />
+  <ModalCenter title="Добавление новых умений" modalId="EditSkills" >
+              <AddSkillModal @AddSkillTest="setskilladdlist" />
             </ModalCenter>
       </div>
 
@@ -185,11 +189,14 @@ import TestCard from './StudentProfileComponents/TestCard.vue'
 import { Plus } from 'lucide-vue-next'
 import { onMounted } from 'vue'
 const items = ref([])
+let addskilllist
+let deleteskillliest
 onMounted(async ()=>{
   let f = await apiClient.get(endpoints.expert_system.getUserSkillTest)
-  console.log(f)
   items.value = f.data 
   console.log(items.value)
+  addskilllist =[]
+  deleteskillliest =[]
 })
 
 // Принимаем пропс student (должен содержать id, first_name, last_name, group_name, has_experience и остальные поля)
@@ -223,7 +230,12 @@ function toggleEdit() {
     apiError.value = null
   }
 }
-
+function setskilladdlist(skills){
+  addskilllist.value.append(skills)
+}
+function AddDeleteSkillList(id){
+  deleteskillliest.push(id)
+}
 async function saveProfile() {
   apiError.value = null
   saving.value = true

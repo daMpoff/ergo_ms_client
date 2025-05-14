@@ -63,7 +63,8 @@ export const endpoints = {
         orientationResults: 'expert_system/orientation-results/',
         orientationUserAnswers: 'expert_system/orientation-answers/',
         setUserSkillTest: 'expert_system/set-user-skill-test',
-        getUserSkillTest: 'expert_system/get-user-skill-test'
+        getUserSkillTest: 'expert_system/get-user-skill-tests',
+        getUserSkills: 'expert_system/get-user-skills'
 
     }
 };
