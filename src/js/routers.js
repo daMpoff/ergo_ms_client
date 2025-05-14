@@ -439,6 +439,12 @@ const expertSystemRoutes = [
         name: 'Proforientaion',
         component:() => import ('@/pages/expert-system/ProforientationTest.vue'),
         meta: { title: 'Профориентация', requiresAuth: true }
+      },
+      {
+        path: 'Professions',
+        name: 'Profession',
+        component:() => import ('@/pages/expert-system/ProfessionManager.vue'),
+        meta: { title: 'Менеджер профессий', requiresAuth: true }
       }
     ]
   },
