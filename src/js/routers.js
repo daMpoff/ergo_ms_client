@@ -445,8 +445,13 @@ const expertSystemRoutes = [
         name: 'Addstudentskills',
         component:()=>import ('@/pages/expert-system/AddSkillForStudentsWithExpirience.vue'),
         meta: { title: 'Добавление навыков студенту', requiresAuth: true }
+      },
+      {
+        path: 'Professions',
+        name: 'Profession',
+        component:() => import ('@/pages/expert-system/ProfessionManager.vue'),
+        meta: { title: 'Менеджер профессий', requiresAuth: true }
       }
-      
     ]
   },
 ]
