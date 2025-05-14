@@ -12,7 +12,7 @@
                 v-model="filterTerm"
                 type="text"
                 class="form-control"
-                placeholder="Фильтр по названию"
+                placeholder="Поиск по названию группы"
               />
               <button class="btn btn-outline-secondary" @click="filterTerm = ''">
                 ✕
