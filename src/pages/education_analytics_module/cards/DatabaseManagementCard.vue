@@ -67,47 +67,82 @@ defineProps({
   isUploading: Boolean
 })
 
-const emit = defineEmits(['download', 'clear', 'update:isUploading'])
+const emit = defineEmits(['download', 'clear', 'update:isUploading', 'reload'])
 
 const loadSampleData = async () => {
   emit('update:isUploading', true)
   try {
-    // 1. Загрузка работодателей
-    await apiClient.post(endpoints.learning_analytics.employers.loadSampleData)
+    // Используем последовательную загрузку данных с ожиданием каждого запроса
 
-    // 2. Загрузка специальностей
-    await apiClient.post(endpoints.learning_analytics.specialities.loadSampleData)
+    const steps = [
+      // Сначала загрузим базовые данные
+      { name: 'работодателей', endpoint: endpoints.learning_analytics.employers.loadSampleData },
+      { delay: 500, message: 'Пауза после загрузки работодателей' },
 
-    // 3. Загрузка учебных планов
-    await apiClient.post(endpoints.learning_analytics.curriculums.loadSampleData)
+      { name: 'специальностей', endpoint: endpoints.learning_analytics.specialities.loadSampleData },
+      { delay: 500, message: 'Пауза после загрузки специальностей' },
 
-    // 4. Загрузка технологий
-    await apiClient.post(endpoints.learning_analytics.technologies.loadSampleData)
+      { name: 'учебных планов', endpoint: endpoints.learning_analytics.curriculums.loadSampleData },
+      { delay: 500, message: 'Пауза после загрузки учебных планов' },
 
-    // 5. Загрузка компетенций
-    await apiClient.post(endpoints.learning_analytics.competencies.loadSampleData)
+      { name: 'технологий', endpoint: endpoints.learning_analytics.technologies.loadSampleData },
+      { delay: 500, message: 'Пауза после загрузки технологий' },
 
-    // 6. Загрузка базовых дисциплин
-    await apiClient.post(endpoints.learning_analytics.baseDisciplines.loadSampleData)
+      { name: 'компетенций', endpoint: endpoints.learning_analytics.competencies.loadSampleData },
+      { delay: 500, message: 'Пауза после загрузки компетенций' },
 
-    // 7. Загрузка дисциплин
-    await apiClient.post(endpoints.learning_analytics.disciplines.loadSampleData)
+      // Теперь загрузим данные, которые зависят от предыдущих
+      { name: 'базовых дисциплин', endpoint: endpoints.learning_analytics.baseDisciplines.loadSampleData },
+      { delay: 500, message: 'Пауза после загрузки базовых дисциплин' },
 
-    // 8. Загрузка вакансий
-    await apiClient.post(endpoints.learning_analytics.vacancies.loadSampleData)
+      { name: 'дисциплин', endpoint: endpoints.learning_analytics.disciplines.loadSampleData },
+      { delay: 800, message: 'Пауза после загрузки дисциплин' },
 
-    // 9. Загрузка матриц академических компетенций
-    await apiClient.post(endpoints.learning_analytics.acms.loadSampleData)
+      { name: 'вакансий', endpoint: endpoints.learning_analytics.vacancies.loadSampleData },
+      { delay: 1000, message: 'Пауза для гарантии загрузки вакансий' },
 
-    // 10. Загрузка профилей компетенций вакансий
-    await apiClient.post(endpoints.learning_analytics.vcms.loadSampleData)
+      // Загрузка данных с самыми сложными зависимостями
+      { name: 'матриц академических компетенций', endpoint: endpoints.learning_analytics.acms.loadSampleData },
+      { delay: 800, message: 'Пауза после загрузки ACM' },
 
-    // 11. Загрузка матриц компетенций пользователей
-    await apiClient.post(endpoints.learning_analytics.ucms.loadSampleData)
+      { name: 'профилей компетенций вакансий', endpoint: endpoints.learning_analytics.vcms.loadSampleData },
+      { delay: 800, message: 'Пауза после загрузки VCM' },
 
-    toastRef.value?.show('Примерные данные успешно загружены!', 'success')
+      { name: 'матриц компетенций пользователей', endpoint: endpoints.learning_analytics.ucms.loadSampleData }
+    ]
+
+
+    for (const step of steps) {
+      if (step.delay) {
+        // Добавляем задержку между шагами, если указана
+        await new Promise(resolve => setTimeout(resolve, step.delay))
+        console.log(`Добавлена задержка ${step.delay}ms: ${step.message || 'для гарантии завершения предыдущих запросов'}`)
+        continue
+      }
+
+      try {
+        console.log(`Загрузка ${step.name}...`)
+        const response = await apiClient.post(step.endpoint)
+        console.log(`✓ Загрузка ${step.name} успешно завершена`, response.data)
+
+
+        // Небольшая пауза после каждого шага для снижения нагрузки
+        await new Promise(resolve => setTimeout(resolve, 200))
+      } catch (error) {
+        console.error(`✗ Ошибка при загрузке ${step.name}:`, error.response?.data || error.message)
+        // Показываем уведомление, но продолжаем загрузку других данных
+        toastRef.value?.show(`Ошибка при загрузке ${step.name}. Проверьте консоль для деталей.`, 'warning')
+
+        // Добавляем увеличенную паузу после ошибки
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
+
+    toastRef.value?.show(`Примерные данные успешно загружены`, 'success')
+    // Обновляем таблицы после успешной загрузки
+    emit('reload')
   } catch (error) {
-    console.error('Ошибка при загрузке примерных данных:', error)
+    console.error('Общая ошибка при загрузке примерных данных:', error)
     toastRef.value?.show('Произошла ошибка при загрузке примерных данных. Проверьте консоль для получения дополнительной информации.', 'error')
   } finally {
     emit('update:isUploading', false)

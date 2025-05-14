@@ -4,10 +4,10 @@
     <router-view />
     <DatabaseManagementCard
       :is-downloading="isDownloading"
-      :is-uploading="isUploading"
+      v-model:is-uploading="isUploading"
       @download="downloadAllData"
-      @load-example="loadExampleData"
       @clear="showConfirmationModal"
+      @reload="delayedReload"
     />
     <DatabaseTablesCard
       :is-loading="isReloading || isLoading"
@@ -92,25 +92,6 @@ const downloadAllData = async () => {
   showToast('Функция еще не реализована', TOAST_TYPES.INFO)
   await new Promise(resolve => setTimeout(resolve, 1000))
   isDownloading.value = false
-}
-
-const loadExampleData = async () => {
-  if (isUploading.value) return
-  isUploading.value = true
-  showToast('Загрузка тестовых данных...', TOAST_TYPES.INFO)
-  try {
-    const response = await apiClient.post(endpoints.learning_analytics.loadExampleData)
-    if (response.success) {
-      await fetchTablesList()
-      showToast('Тестовые данные успешно загружены', TOAST_TYPES.SUCCESS)
-    } else {
-      showToast(response.errors || 'Ошибка при загрузке тестовых данных', TOAST_TYPES.ERROR)
-    }
-  } catch (error) {
-    showToast('Произошла ошибка при загрузке данных', TOAST_TYPES.ERROR)
-  } finally {
-    isUploading.value = false
-  }
 }
 
 const showConfirmationModal = () => {

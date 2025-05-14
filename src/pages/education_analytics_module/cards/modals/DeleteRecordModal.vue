@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-mask" v-if="visible">
+  <div class="modal-mask" v-if="show">
     <div class="modal-wrapper">
       <div class="modal-container border border-2 border-danger">
         <div class="modal-header bg-danger text-white rounded-top">
@@ -10,6 +10,12 @@
         <div class="modal-body">
           <slot name="body">
             <p>Вы действительно хотите удалить эту запись? Это действие нельзя отменить.</p>
+            <div v-if="row" class="record-details">
+              <p class="record-id">ID: {{ row.id }}</p>
+              <div v-for="(value, key) in getDisplayedDetails()" :key="key" class="record-field">
+                <strong>{{ key }}:</strong> {{ formatValue(value) }}
+              </div>
+            </div>
           </slot>
         </div>
         <div class="modal-footer d-flex justify-content-end gap-2">
@@ -23,10 +29,45 @@
 
 <script setup>
 import { defineProps, defineEmits } from 'vue'
-defineProps({
-  visible: Boolean,
+
+const props = defineProps({
+  show: Boolean,
+  row: Object,
   isDark: Boolean
 })
+
+// Определяем какие поля показывать в модальном окне для подтверждения
+const getDisplayedDetails = () => {
+  if (!props.row) return {};
+
+  // Выбираем только нужные поля для отображения
+  const result = {};
+  const keysToShow = ['name', 'title', 'code', 'description'].filter(key => key in props.row);
+
+  // Если нет подходящих полей, берем первые 2-3 поля из объекта
+  if (keysToShow.length === 0) {
+    const allKeys = Object.keys(props.row).filter(key => key !== 'id');
+    const displayKeys = allKeys.slice(0, Math.min(3, allKeys.length));
+    displayKeys.forEach(key => {
+      result[key] = props.row[key];
+    });
+  } else {
+    keysToShow.forEach(key => {
+      result[key] = props.row[key];
+    });
+  }
+
+  return result;
+};
+
+// Форматирование значений для отображения
+const formatValue = (value) => {
+  if (value === null || value === undefined) return '-';
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value === 'object') return JSON.stringify(value);
+  return value;
+};
+
 defineEmits(['confirm', 'cancel'])
 </script>
 
@@ -81,6 +122,21 @@ defineEmits(['confirm', 'cancel'])
 .modal-body {
   padding: 18px 24px 0 24px;
   font-size: 1.08em;
+}
+.record-details {
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(220,53,69,0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(220,53,69,0.1);
+}
+.record-id {
+  font-weight: bold;
+  color: var(--color-danger, #dc3545);
+  margin-bottom: 8px;
+}
+.record-field {
+  margin-bottom: 5px;
 }
 .modal-footer {
   margin-top: 18px;

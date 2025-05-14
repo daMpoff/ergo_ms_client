@@ -15,8 +15,17 @@
   <div class="table-editor-full">
     <!-- Добавляем импорт шрифта -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Заголовок таблицы -->
-    <h2>{{ tableTitle }}</h2>
+    <!-- Заголовок таблицы с кнопкой обновления -->
+    <div class="table-header">
+      <h2>{{ tableTitle }}</h2>
+      <button class="refresh-button" @click="refreshData" title="Обновить данные таблицы" :disabled="isLoading">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M1 4v6h6"/>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>
+        <span v-if="isRefreshing">Обновление...</span>
+      </button>
+    </div>
 
     <!-- Поле поиска (улучшенная версия) -->
     <div class="search-container">
@@ -94,10 +103,16 @@
                   {{ formatJsonField(row[col]) }}
                 </span>
                 <span
-                  v-else
-                  :title="row[col] || '-'"
+                  v-else-if="typeof row[col] === 'boolean'"
+                  :title="String(row[col])"
                 >
-                  {{ row[col] || '-' }}
+                  {{ row[col] }}
+                </span>
+                <span
+                  v-else
+                  :title="row[col] !== null && row[col] !== undefined ? row[col] : '-'"
+                >
+                  {{ row[col] !== null && row[col] !== undefined ? row[col] : '-' }}
                 </span>
               </td>
               <td v-if="!isRelationTable" class="actions-cell">
@@ -188,6 +203,7 @@
         @save="saveEditInModal"
         @cancelEdit="cancelEditInModal"
         @close="closeDetails"
+        @delete="onDeleteFromDetails"
         @update:editBuffer="val => editBuffer = val"
       />
       <ConfirmModal
@@ -247,6 +263,7 @@ const tableTitle = computed(() => props.selectedTable);
 const rows = ref([]);
 const columns = ref([]);
 const isLoading = ref(false);
+const isRefreshing = ref(false); // Новое состояние для индикации обновления
 const searchQuery = ref('');
 const editBuffer = ref({});
 const toastRef = ref(null);
@@ -734,6 +751,21 @@ const tableJsonHints = {
     },
     required: ['vacancy_name', 'competencies_stack', 'technology_stack', 'description']
   },
+  la_df_competency_profile_of_vacancy: {
+    example: {
+      vacancy: 7,
+      technologies: [13, 14],
+      competencies: [15, 16],
+      description: "Профиль компетенций для позиции Android-разработчика. Требуется опыт работы с Kotlin, Android SDK, знание принципов Material Design."
+    },
+    required: ['vacancy', 'technologies', 'competencies', 'description'],
+    description: {
+      vacancy: 'ID вакансии',
+      technologies: 'Массив ID требуемых технологий',
+      competencies: 'Массив ID требуемых компетенций',
+      description: 'Описание профиля компетенций'
+    }
+  },
   la_df_ucm: {
     example: {
       user_id: 1,
@@ -761,6 +793,72 @@ const tableJsonHints = {
 function showDetails(row) {
   selectedRow.value = row;
   showDetailsModal.value = true;
+
+  // Проверяем, можем ли мы получить API для текущей таблицы
+  const api = getApi();
+  if (api && api.get && row.id) {
+    // Автоматически загружаем детали записи при открытии окна
+    fetchRecordDetails(row.id, api);
+  }
+}
+
+// Новая функция для загрузки деталей записи
+async function fetchRecordDetails(id, api) {
+  if (!id || !api || !api.get) return;
+
+  try {
+    // Формируем URL запроса
+    const endpoint = typeof api.get === 'function'
+      ? api.get(id)
+      : `${api.get}?id=${id}`;
+
+    console.log(`Загрузка деталей записи ID=${id}:`, endpoint);
+    const response = await apiClient.get(endpoint);
+
+    let data = null;
+
+    // Получаем данные из ответа, но сохраняем исходный ID
+    if (response.data && response.data.data) {
+      if (Array.isArray(response.data.data)) {
+        if (response.data.data.length > 0) {
+          // Используем первый элемент или элемент с нужным ID
+          const foundItem = response.data.data.find(item =>
+            item.id === id || item.id === Number(id)
+          ) || response.data.data[0];
+
+          // Гарантируем сохранение исходного ID
+          data = { ...foundItem, id };
+        }
+      } else {
+        // Если data не массив, а объект
+        data = { ...response.data.data, id };
+      }
+    } else if (Array.isArray(response.data)) {
+      if (response.data.length > 0) {
+        // Используем первый элемент или элемент с нужным ID
+        const foundItem = response.data.find(item =>
+          item.id === id || item.id === Number(id)
+        ) || response.data[0];
+
+        // Гарантируем сохранение исходного ID
+        data = { ...foundItem, id };
+      }
+    } else if (response.data) {
+      // Если данные напрямую в ответе
+      data = { ...response.data, id };
+    }
+
+    // Обновляем данные только если что-то получили
+    if (data) {
+      console.log('Получены детали записи:', data);
+      selectedRow.value = data;
+    } else {
+      console.warn(`Не найдены данные для записи с ID=${id}`);
+    }
+  } catch (error) {
+    console.error('Ошибка при загрузке деталей записи:', error);
+    toastRef.value?.show(`Ошибка при загрузке записи: ${error.message}`, 'error');
+  }
 }
 
 function closeDetails() {
@@ -818,12 +916,30 @@ const fieldTypes = computed(() => {
 
 // Модифицируем функцию startEditInModal
 function startEditInModal() {
-  isEditing.value = true;
-  // Копируем только редактируемые поля
-  editBuffer.value = {};
-  editableFields.value.forEach(field => {
-    editBuffer.value[field] = selectedRow.value[field];
-  });
+  if (isRelationTable.value) {
+    toastRef.value?.show('Редактирование записей в таблицах связей не поддерживается', 'warning');
+    return;
+  }
+
+  if (isEditDisabled.value) {
+    toastRef.value?.show('Редактирование записей в этой таблице отключено', 'warning');
+    return;
+  }
+
+  // Загружаем актуальные данные перед редактированием
+  const api = getApi();
+  if (api && api.get && selectedRow.value && selectedRow.value.id) {
+    // Переходим в режим редактирования
+    isEditing.value = true;
+
+    // Инициализируем буфер редактирования текущими данными записи
+    // (они будут обновлены после загрузки с сервера)
+    editBuffer.value = { ...selectedRow.value };
+
+    console.log('Переход в режим редактирования с данными:', editBuffer.value);
+  } else {
+    toastRef.value?.show('Не удалось получить данные для редактирования', 'error');
+  }
 }
 
 // Модифицируем функцию saveEditInModal
@@ -833,118 +949,45 @@ async function saveEditInModal() {
     return;
   }
 
-  // Проверяем, были ли изменения только в редактируемых полях
-  const changedFields = {};
-  editableFields.value.forEach(field => {
-    const oldValue = selectedRow.value[field];
-    const newValue = editBuffer.value[field];
-
-    // Особая обработка для разных типов данных
-    if (Array.isArray(oldValue) || Array.isArray(newValue)) {
-      // Для массивов сравниваем содержимое
-      if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-        changedFields[field] = Array.isArray(newValue) ? newValue : [];
-      }
-    } else if (typeof oldValue === 'number' || fieldTypes.value[field] === 'decimal' || fieldTypes.value[field] === 'integer') {
-      // Для чисел преобразуем строки в числа перед сравнением
-      const oldNum = Number(oldValue);
-      const newNum = Number(newValue);
-      if (!isNaN(newNum) && oldNum !== newNum) {
-        changedFields[field] = newNum;
-      }
-    } else if (typeof oldValue === 'boolean' || fieldTypes.value[field] === 'boolean') {
-      // Для булевых значений
-      const oldBool = Boolean(oldValue);
-      const newBool = typeof newValue === 'boolean' ? newValue : newValue === 'true';
-      if (oldBool !== newBool) {
-        changedFields[field] = newBool;
-      }
-    } else if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-      changedFields[field] = newValue || null; // Используем null вместо undefined
-    }
-  });
-
-  if (Object.keys(changedFields).length === 0) {
-    toastRef.value?.show('Нет изменений для сохранения', 'info');
+  // Убедимся, что у нас есть данные для редактирования
+  if (!selectedRow.value || !selectedRow.value.id) {
+    toastRef.value?.show('Ошибка: не найдена запись для редактирования', 'error');
     return;
   }
 
-  // Валидация обязательных полей
-  const hint = tableJsonHints[props.selectedTable];
-  if (hint?.required) {
-    const missingRequired = hint.required.filter(field => {
-      const value = changedFields[field] ?? selectedRow.value[field];
-      return value === null || value === undefined || value === '';
-    });
-    if (missingRequired.length > 0) {
-      toastRef.value?.show(`Не заполнены обязательные поля: ${missingRequired.join(', ')}`, 'error');
+  // Сохраняем оригинальный ID записи для запроса
+  const originalId = selectedRow.value.id;
+
+  // Используем данные из буфера редактирования
+  const updatedData = { ...editBuffer.value };
+
+  // ID всегда берем из оригинальной записи, а не из редактируемых данных
+  // В редактируемых данных ID не должно быть, оно используется только для API
+
+  try {
+    const api = getApi();
+    if (!api || !api.update) {
+      toastRef.value?.show('API для обновления записи не настроен', 'error');
       return;
     }
+
+    console.log(`Отправляемые данные для записи с ID=${originalId}:`, updatedData);
+    console.log('URL запроса:', api.update(originalId));
+
+    // Отправляем запрос
+    await apiClient.put(api.update(originalId), updatedData);
+    toastRef.value?.show('Изменения сохранены', 'success');
+    isEditing.value = false;
+    await fetchData();
+    closeDetails();
+  } catch (error) {
+    console.error('Ошибка при сохранении:', error);
+    console.error('Данные ответа:', error.response?.data);
+    toastRef.value?.show(
+      `Ошибка при сохранении: ${error.response?.data?.message || error.response?.data?.error || error.message}`,
+      'error'
+    );
   }
-
-  // Форматируем данные в соответствии с типами полей
-  const formattedData = {};
-  Object.entries(changedFields).forEach(([field, value]) => {
-    const type = fieldTypes.value[field];
-    switch (type) {
-      case 'array':
-        formattedData[field] = Array.isArray(value) ? value : [];
-        break;
-      case 'integer':
-        formattedData[field] = Number.isInteger(Number(value)) ? Number(value) : Math.round(Number(value));
-        break;
-      case 'decimal':
-        formattedData[field] = Number.isFinite(Number(value)) ? Number(value) : null;
-        break;
-      case 'boolean':
-        formattedData[field] = Boolean(value);
-        break;
-      default:
-        formattedData[field] = value === undefined ? null : value;
-    }
-  });
-
-  // Показываем модальное окно подтверждения
-  confirmModalData.value = {
-    title: 'Подтверждение изменений',
-    message: 'Вы действительно хотите сохранить следующие изменения?',
-    changes: Object.entries(formattedData).map(([key, value]) => ({
-      field: key,
-      oldValue: selectedRow.value[key],
-      newValue: value
-    })),
-    confirmAction: async () => {
-      try {
-        const api = getApi();
-        console.log('Отправляемые данные:', formattedData);
-        console.log('URL запроса:', api.update(selectedRow.value.id));
-
-        // Добавляем все обязательные поля, даже если они не изменились
-        if (hint?.required) {
-          hint.required.forEach(field => {
-            if (!(field in formattedData)) {
-              formattedData[field] = selectedRow.value[field];
-            }
-          });
-        }
-
-        await apiClient.put(api.update(selectedRow.value.id), formattedData);
-        toastRef.value?.show('Изменения сохранены', 'success');
-        isEditing.value = false;
-        showConfirmModal.value = false;
-        await fetchData();
-        closeDetails();
-      } catch (error) {
-        console.error('Save error:', error);
-        console.error('Response data:', error.response?.data);
-        toastRef.value?.show(
-          `Ошибка при сохранении: ${error.response?.data?.message || error.response?.data?.error || error.message}`,
-          'error'
-        );
-      }
-    }
-  };
-  showConfirmModal.value = true;
 }
 
 const isJsonField = (value) => {
@@ -992,12 +1035,77 @@ const jsonPlaceholder = computed(() => {
 // Таблицы, для которых редактирование запрещено
 const editDisabledTables = [
   'la_df_academic_competence_matrix',
+  'la_df_competency_profile_of_vacancy',
+  'la_df_vcm',
 ];
 
 const isEditDisabled = computed(() => editDisabledTables.includes(props.selectedTable));
 
 // Добавляем алиас для la_df_academic_competence_matrix
 tableJsonHints.la_df_academic_competence_matrix = tableJsonHints.la_df_acm;
+
+// Добавляем алиас для la_df_competency_profile_of_vacancy
+tableJsonHints.la_df_vcm = tableJsonHints.la_df_competency_profile_of_vacancy;
+
+// Добавляем функцию onDeleteFromDetails
+function onDeleteFromDetails(id) {
+  if (isRelationTable.value) {
+    toastRef.value?.show('Удаление записей в таблицах связей не поддерживается', 'warning');
+    return;
+  }
+
+  const row = rows.value.find(r => r.id === id);
+  if (!row) {
+    toastRef.value?.show('Запись не найдена', 'error');
+    return;
+  }
+
+  deleteConfirmData.value = {
+    row,
+    confirmAction: async () => {
+      try {
+        const api = getApi();
+        await apiClient.delete(api.delete(id));
+        toastRef.value?.show('Запись удалена', 'success');
+        showDeleteConfirmModal.value = false;
+        showDetailsModal.value = false; // Закрываем модальное окно деталей после успешного удаления
+        await fetchData();
+        nextTick(() => {
+          if (filteredRows.value.length === 0 && currentPage.value > 1) {
+            currentPage.value--;
+          }
+        });
+      } catch (error) {
+        console.error('Delete error:', error);
+        toastRef.value?.show(
+          `Ошибка при удалении: ${error.response?.data?.message || error.response?.data?.error || error.message}`,
+          'error'
+        );
+      }
+    }
+  };
+  showDeleteConfirmModal.value = true;
+}
+
+// Добавляем функцию refreshData для принудительного обновления данных таблицы
+async function refreshData() {
+  if (isRefreshing.value) return; // Предотвращаем повторные клики
+
+  isRefreshing.value = true;
+
+  try {
+    await fetchData();
+    toastRef.value?.show('Данные успешно обновлены', 'success');
+  } catch (error) {
+    console.error('Ошибка при обновлении данных:', error);
+    toastRef.value?.show('Ошибка при обновлении данных', 'error');
+  } finally {
+    // Устанавливаем таймер, чтобы кнопка показывала состояние обновления хотя бы секунду
+    setTimeout(() => {
+      isRefreshing.value = false;
+    }, 1000);
+  }
+}
 </script>
 
 <style scoped>
@@ -1019,6 +1127,58 @@ tableJsonHints.la_df_academic_competence_matrix = tableJsonHints.la_df_acm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+}
+
+/* Стили для заголовка таблицы с кнопкой обновления */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.table-header h2 {
+  margin: 0;
+  padding: 0;
+  font-size: 24px;
+  color: var(--color-primary-text);
+  font-weight: 600;
+}
+
+.refresh-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(80, 120, 255, 0.1);
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  box-shadow: 0 4px 12px rgba(80, 120, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--color-secondary-text);
+}
+
+.refresh-button svg {
+  transition: transform 0.5s ease;
+}
+
+.refresh-button:not(:disabled):active svg {
+  transform: rotate(180deg);
 }
 
 .table-responsive-x {
@@ -2117,3 +2277,4 @@ button:hover {
   margin: 12px 0;
 }
 </style>
+
