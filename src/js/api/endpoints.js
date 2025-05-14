@@ -25,7 +25,8 @@ export const endpoints = {
     expsys: {
         subjects: {
             allsubjects: '/expsys_module/subjects-all/',
-            create:'/expsys_module/subject-create/'
+            create:'/expsys_module/subject-create/',
+            allcompenencies:'/expsys_module/competencies/',
         },
     
     },   

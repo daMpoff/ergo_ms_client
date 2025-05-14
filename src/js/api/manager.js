@@ -83,14 +83,21 @@ class ApiClient {
         Cookies.remove('refresh');
         Cookies.remove('userId');
     }
-
+//***изменила */
     // Generic response handlers
-    handleResponse(response) {
-        if (response.status === 200) {
-            return { success: true, data: response.data };
-        }
-        return { success: false, errors: response.data };
+   handleResponse(response) {
+    if (response.status >= 200 && response.status < 300) {
+        return {
+            success: true,
+            data: response.data
+        };
     }
+
+    return {
+        success: false,
+        errors: response.data
+    };
+}
 
     handleError(error) {
         return {

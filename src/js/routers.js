@@ -429,7 +429,23 @@ const startRoutes = [
     },
   },
 ]
-
+// экспертная система
+const expsysRoutes = [
+  {
+    path: '/expsys',
+    name: 'Expsys',
+    component: () => import('@/pages/competencies/ParentLayout1.vue'),
+    redirect: { name: 'Предметы' },
+    children: [
+      {
+        path: 'subjects',
+        name: 'Subjects',
+        component: () => import('@/pages/competencies/SubjectsManager.vue'),
+        meta: { title: 'Предметы', requiresAuth: true },
+      },
+    ],
+  },
+]
 const routes = [
   ...startRoutes,
   ...mainRoutes,
@@ -449,7 +465,7 @@ const routes = [
   ...componentsRoutes,
   ...teambuildingRoutes,
   ...competenciesRoutes,
-  
+  ...expsysRoutes,
 ]
 
 routes.forEach((route) => {
