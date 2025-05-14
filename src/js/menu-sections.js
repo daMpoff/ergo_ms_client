@@ -163,7 +163,7 @@ export const AdminPanelMenuSection = {
 }
 
 export const WatermarkedVideoSection = {
-  id: 16,
+  id: 15,
   icon: Video,
   routeName: 'Watermarked-Video',
   title: 'Видео с вотермаркой',
