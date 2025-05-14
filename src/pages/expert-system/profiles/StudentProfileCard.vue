@@ -1,8 +1,6 @@
 <template>
   <div class="card mb-4">
-    <div
-      class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
-    >
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
       <h4 class="mb-0">Личный кабинет студента</h4>
       <button class="btn btn-light btn-sm" @click="toggleEdit">
         {{ editMode ? 'Отменить' : 'Редактировать' }}
@@ -58,7 +56,6 @@
 
             <dt class="col-sm-3">Группа</dt>
             <dd class="col-sm-9">
-              <!-- Для простоты здесь оставляем только текстовое имя группы -->
               <span v-if="!editMode">{{ studentData.group_name || 'Не указана' }}</span>
               <input
                 v-else
@@ -125,6 +122,55 @@
         </div>
       </div>
 
+      <!-- Таблица навыков -->
+      <div class="mt-4">
+
+
+<h5>Навыки</h5>
+        <table class="table table-bordered mt-2">
+          <thead>
+            <tr>
+              <th>Название навыка</th>
+              <th>Статус</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in items" :key="index">
+              <td>{{ item.name }}</td>
+              <td>
+                {{ item.status != 'unconfirmed' ? 'Подтверждён' : 'Не подтверждён' }}
+              </td>
+              <td>
+                <button 
+                  class="btn btn-sm btn-primary me-2" 
+                  :disabled="item.status"
+                >
+                  Пройти тест
+                </button>
+                <button 
+                  class="btn btn-sm btn-danger" 
+                  @click="DeleteSkill(item.id)"
+                >
+                  Удалить
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Кнопка добавления навыка -->
+        <div class="d-flex justify-content-end mt-2">
+          <button 
+            class="btn btn-success" 
+            data-bs-toggle="modal"
+            data-bs-target="#EditSkills"
+          >
+            Добавить навык
+          </button>
+        </div>
+      </div>
+
       <!-- Кнопки сохранения -->
       <div v-if="editMode" class="mt-3 text-end">
         <button
@@ -140,14 +186,30 @@
       </div>
     </div>
   </div>
+
+  <!-- Модальное окно для добавления навыков -->
+  <ModalCenter title="Добавление новых умений" modalId="EditSkills">
+    <AddSkillModal @AddSkillTest="AddSkills"  ref="addSkillModalRef"/>
+  </ModalCenter>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
+import ModalCenter from '@/components/ModalCenter.vue'
+import AddSkillModal from './StudentProfileComponents/AddSkillModal.vue'
 
-// Принимаем пропс student (должен содержать id, first_name, last_name, group_name, has_experience и остальные поля)
+
+const addSkillModalRef = ref(null);
+
+
+// Состояния
+const items = ref([])
+const addskilllist = ref([])
+const deleteskillliest = ref([])
+
+// Принимаем пропс student
 const props = defineProps({
   student: { type: Object, required: true }
 })
@@ -169,21 +231,59 @@ const tabs = [
   { name: 'contacts', label: 'Контакты' }
 ]
 
+// Получение данных навыков
+async function loadskills(){
+  try {
+    const response = await apiClient.get(endpoints.expert_system.getUserSkills)
+    items.value = response.data
+  } catch (error) {
+    console.error('Ошибка загрузки навыков:', error)
+  }
+} 
+onMounted(async () => {
+await loadskills()
+})
+
+// Переключение режима редактирования
 function toggleEdit() {
   editMode.value = !editMode.value
   if (editMode.value) {
-    // при входе в режим редактирования сбрасываем форму к текущим данным
     Object.assign(form, studentData)
     apiError.value = null
   }
 }
 
+// Обработка добавления навыков
+async function AddSkills(skills) {
+  await apiClient.post(endpoints.expert_system.setUserSkills, {Skills:skills})
+  await loadskills()
+}
+
+async function DeleteSkill  (id) {
+  let index = items.value.findIndex(item=> item.id == id)
+  let deletedskill = items.value[index].name
+  items.value.splice(index,1)
+  
+  let url = `${endpoints.expert_system.userSkills}${id}/`
+  const resp = await apiClient.delete(url)
+
+    if (!resp.success) {
+      throw new Error(
+        typeof resp.errors === 'string'
+          ? resp.errors
+          : JSON.stringify(resp.errors)
+      )
+    }
+    await addSkillModalRef.value.loadallskills()
+}
+
+// Сохранение профиля
 async function saveProfile() {
   apiError.value = null
   saving.value = true
 
   try {
-    // Собираем тело запроса — убираем те поля, которых нет на бэке
+    // Обновление основных данных студента
     const payload = {
       first_name: form.first_name,
       last_name: form.last_name,
@@ -191,10 +291,8 @@ async function saveProfile() {
       email: form.email,
       phone: form.phone,
       ...(form.study_group ? { study_group: form.study_group } : {})
-      // можно добавить email/phone, если их поддерживает ваш сериализатор
     }
-
-    const url = `${endpoints.expert_system.students}${studentData.id}/`
+    const url =`${endpoints.expert_system.students}${studentData.id}/`
     const resp = await apiClient.patch(url, payload)
 
     if (!resp.success) {
@@ -205,10 +303,32 @@ async function saveProfile() {
       )
     }
 
-    // Обновляем локальные данные ответом сервера
+    // Обработка удаления навыков
+    if (deleteskillliest.value.length > 0) {
+      // Предположим, что есть эндпоинт для удаления навыков по ID
+      await apiClient.delete(`${endpoints.expert_system.deleteSkill}`, {
+        data: { skill_ids: deleteskillliest.value }
+      })
+    }
+
+    // Обработка добавления навыков
+    if (addskilllist.value.length > 0) {
+      // Предположим, что есть эндпоинт для добавления навыков
+      await apiClient.post(`${endpoints.expert_system.addSkill}`, {
+        skill_ids: addskilllist.value
+      })
+    }
+
+    // Обновление локальных данных
     Object.assign(studentData, resp.data)
-    // Переключаемся обратно в режим просмотра
+    // Обновление списка навыков
+    const updatedSkills = await apiClient.get(endpoints.expert_system.getUserSkillTest)
+    items.value = updatedSkills.data
+    
+    // Сброс состояний
     editMode.value = false
+    addskilllist.value = []
+    deleteskillliest.value = []
 
   } catch (err) {
     apiError.value = err.message || 'Ошибка при сохранении профиля'
@@ -217,8 +337,8 @@ async function saveProfile() {
   }
 }
 
+// Отмена редактирования
 function cancelEdit() {
-  // Отменяем изменения
   Object.assign(form, studentData)
   apiError.value = null
   editMode.value = false

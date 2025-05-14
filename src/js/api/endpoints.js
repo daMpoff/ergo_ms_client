@@ -28,6 +28,8 @@ export const endpoints = {
         vacancySkills: 'expert_system/vacancy-skills/',
         applications: 'expert_system/applications/',
         orientationResults: 'expert_system/orientation-results/',
-        orientationUserAnswers: 'expert_system/orientation-answers/'
+        orientationUserAnswers: 'expert_system/orientation-answers/',
+        setUserSkills:'expert_system/set-user-skills',
+        getUserSkills:'expert_system/get-user-skills'
     }
 };
