@@ -1,26 +1,63 @@
 <template>
   <div>
     <h2 class="mb-4">Админ-панель</h2>
+
+    <div class="tabs-container mb-4">
+      <ul class="nav nav-tabs">
+        <li class="nav-item" v-for="tab in tabs" :key="tab.id">
+          <a class="nav-link" :class="{ active: activeTab === tab.id }" @click="switchTab(tab.id)">
+            {{ tab.name }}
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="tab-content">
+      <!-- Вкладка "БД" -->
+      <div v-if="activeTab === 'database'" class="tab-pane active">
+        <DatabaseManagementCard
+          :is-downloading="isDownloading"
+          v-model:is-uploading="isUploading"
+          @download="downloadAllData"
+          @clear="showConfirmationModal"
+          @reload="delayedReload"
+          :is-clearing="isClearing"
+        />
+        <DatabaseTablesCard
+          :is-loading="isReloading || isLoading"
+          :tables="tables"
+          :selected-table="selectedTable"
+          @select-table="selectTable"
+          @reload="delayedReload"
+        />
+        <TableEditor
+          v-if="selectedTable"
+          :selected-table="selectedTable"
+          @error="handleError"
+        />
+      </div>
+
+      <!-- Вкладка "Извлечение данных" -->
+      <div v-if="activeTab === 'data_extraction'" class="tab-pane active">
+        <h3>Извлечение данных</h3>
+        <p></p>
+      </div>
+
+      <!-- Вкладка "Настройки" -->
+      <div v-if="activeTab === 'settings'" class="tab-pane active">
+        <h3>Настройки</h3>
+        <p>Настройки аналитического модуля образования.</p>
+      </div>
+
+      <!-- Вкладка "Справка" -->
+      <div v-if="activeTab === 'info'" class="tab-pane active">
+        <h3>Справка</h3>
+        <p>Справка по использованию аналитического модуля образования.</p>
+        <p>В разработке...</p>
+      </div>
+    </div>
+
     <router-view />
-    <DatabaseManagementCard
-      :is-downloading="isDownloading"
-      v-model:is-uploading="isUploading"
-      @download="downloadAllData"
-      @clear="showConfirmationModal"
-      @reload="delayedReload"
-    />
-    <DatabaseTablesCard
-      :is-loading="isReloading || isLoading"
-      :tables="tables"
-      :selected-table="selectedTable"
-      @select-table="selectTable"
-      @reload="delayedReload"
-    />
-    <TableEditor
-      v-if="selectedTable"
-      :selected-table="selectedTable"
-      @error="handleError"
-    />
     <ToastNotification ref="toast"/>
     <ClearDatabaseModal ref="clearModal" @confirm="clearDatabase"/>
   </div>
@@ -47,6 +84,19 @@ const selectedTable = ref(null)
 
 const toast = ref(null)
 const clearModal = ref(null)
+
+// Конфигурация вкладок
+const tabs = ref([
+  { id: 'database', name: 'БД' },
+  { id: 'data_extraction', name: 'Извлечение данных' },
+  { id: 'settings', name: 'Настройки' },
+  { id: 'info', name: 'Справка' }
+])
+const activeTab = ref('database')
+
+const switchTab = (tabId) => {
+  activeTab.value = tabId
+}
 
 const TOAST_TYPES = {
   SUCCESS: 'success',
@@ -128,3 +178,55 @@ const delayedReload = () => {
   }, 1200)
 }
 </script>
+
+<style scoped>
+.tabs-container {
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  margin-bottom: 1.5rem;
+}
+
+.nav-tabs {
+  border-bottom-color: var(--bs-border-color, #dee2e6);
+}
+
+.nav-tabs .nav-item {
+  margin-bottom: -1px;
+}
+
+.nav-tabs .nav-link {
+  cursor: pointer;
+  color: var(--bs-secondary, #6c757d);
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  font-weight: 500;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--bs-primary, #0d6efd);
+  border-color: var(--bs-border-color, #dee2e6) var(--bs-border-color, #dee2e6) transparent;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--bs-primary, #0d6efd);
+  background-color: var(--bs-body-bg, #fff);
+  border-color: var(--bs-border-color, #dee2e6) var(--bs-border-color, #dee2e6) var(--bs-body-bg, #fff);
+}
+
+.tab-content {
+  padding-top: 1.5rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.tab-pane {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
