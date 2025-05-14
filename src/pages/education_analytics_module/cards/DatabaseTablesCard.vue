@@ -1,4 +1,4 @@
-// Компонент отображает список таблиц модуля и позволяет выбрать таблицу для редактирования
+
 <template>
   <div class="database-tables card rounded-3 p-4 mb-4">
     <div class="container">
@@ -8,7 +8,7 @@
           <i class="bi bi-table me-2"></i>Таблицы модуля
           <!-- Кнопка перезагрузки -->
           <button
-            class="btn btn-link btn-sm ms-2 p-0"
+            class="btn btn-link btn-sm ms-2 p-0 reload-button"
             :disabled="isLoading"
             @click="$emit('reload')"
             title="Обновить таблицы"
@@ -57,8 +57,8 @@
                         ? 'btn-primary'
                         : 'btn-outline-primary'
                       ]">
-                      <Edit :size="16" class="me-1"/>
-                      {{ selectedTable === table.name ? 'Редактируется' : 'Редактировать' }}
+                      <Eye :size="16" class="me-1"/>
+                      {{ selectedTable === table.name ? 'Просматривается' : 'Просмотреть' }}
                     </button>
                   </td>
                 </tr>
@@ -79,7 +79,7 @@
 
 <script setup>
 // Импорт иконки для кнопки редактирования
-import { Edit, RefreshCcw } from 'lucide-vue-next'
+import { Eye, RefreshCcw } from 'lucide-vue-next'
 
 // Описание входных параметров компонента
 // isLoading: флаг загрузки
@@ -104,14 +104,33 @@ defineEmits(['select-table', 'reload'])
 .table-active {
   background-color: rgba(var(--bs-primary-rgb), 0.1);
 }
+
+.reload-button {
+  color: var(--bs-primary);
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+
+.reload-button:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.reload-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .reload-icon {
   transition: transform 0.3s;
   display: inline-block;
   transform-origin: 50% 50%;
 }
+
 .spinning {
   animation: spin 2s linear infinite;
 }
+
 @keyframes spin {
   100% { transform: rotate(360deg); }
 }

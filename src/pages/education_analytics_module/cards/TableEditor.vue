@@ -18,13 +18,32 @@
     <!-- Заголовок таблицы -->
     <h2>{{ tableTitle }}</h2>
 
-    <!-- Поле поиска -->
-    <input
-      v-model="searchQuery"
-      type="text"
-      placeholder="Поиск..."
-      class="search-input"
-    />
+    <!-- Поле поиска (улучшенная версия) -->
+    <div class="search-container">
+      <div class="search-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Поиск по записям..."
+        class="search-input"
+      />
+      <button
+        v-if="searchQuery"
+        @click="searchQuery = ''"
+        class="clear-search-btn"
+        title="Очистить поиск"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
 
     <!-- Индикатор загрузки -->
     <div v-if="isLoading" class="loading-block">Загрузка...</div>
@@ -138,239 +157,62 @@
 
       <!-- Модальные окна -->
       <!-- Модальное окно для добавления записи -->
-      <div v-if="showAddModal" class="modal-overlay">
-        <div class="modal-content">
-          <h3>Добавить запись (JSON)</h3>
-          <textarea
-            v-model="jsonInput"
-            ref="jsonTextarea"
-            class="json-textarea"
-            rows="10"
-            placeholder='{"field1": "value", ...}'
-            @paste="onPasteJson"
-          ></textarea>
-          <div v-if="jsonError" class="json-error">{{ jsonError }}</div>
-          <div v-if="currentTableHint" class="json-hint-block">
-            <div class="json-hint-title">Пример объекта для этой таблицы:</div>
-            <pre class="json-hint-pre">{{ JSON.stringify(currentTableHint.example, null, 2) }}</pre>
-            <div class="json-hint-title">Обязательные поля:</div>
-            <ul class="json-hint-list">
-              <li v-for="f in currentTableHint.required" :key="f">
-                <span :style="missingRequiredFields.includes(f) ? 'color: var(--color-danger); font-weight: 600;' : ''">{{ f }}</span>
-              </li>
-            </ul>
-            <div v-if="missingRequiredFields.length" class="json-error" style="margin-top: 4px;">
-              Внимание: не заполнены обязательные поля!
-            </div>
-          </div>
-          <div class="modal-actions">
-            <button @click="saveAddJsonDebounced" :disabled="!isJsonValid">Сохранить</button>
-            <button @click="cancelAdd">Отмена</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Модальное окно для детализации записи -->
-      <div v-if="showDetailsModal" class="modal-overlay" @click="closeDetails">
-        <div class="modal-content details-modal" @click.stop>
-          <div class="modal-header">
-            <h3>Детали записи</h3>
-            <div class="modal-actions">
-              <button v-if="!isEditing && !isRelationTable" @click="startEditInModal" class="edit-button">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z"/>
-                </svg>
-                Редактировать
-              </button>
-              <template v-else-if="!isRelationTable">
-                <button @click="saveEditInModal" class="save-button">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  Сохранить
-                </button>
-                <button @click="cancelEditInModal" class="cancel-button">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                  Отмена
-                </button>
-              </template>
-              <button class="close-button" @click="closeDetails" title="Закрыть">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="details-content">
-            <div v-for="col in columns" :key="col" class="detail-row">
-              <div class="detail-label">{{ col }}:</div>
-              <div class="detail-value">
-                <template v-if="isEditing && !isRelationTable && editableFields.includes(col)">
-                  <template v-if="fieldTypes[col] === 'boolean'">
-                    <input
-                      type="checkbox"
-                      v-model="editBuffer[col]"
-                      class="edit-input"
-                    />
-                  </template>
-                  <template v-else-if="fieldTypes[col] === 'array'">
-                    <select
-                      v-model="editBuffer[col]"
-                      multiple
-                      class="edit-input"
-                    >
-                      <!-- Здесь нужно добавить options в зависимости от типа поля -->
-                    </select>
-                  </template>
-                  <template v-else>
-                    <input
-                      v-model="editBuffer[col]"
-                      :type="fieldTypes[col] === 'integer' || fieldTypes[col] === 'decimal' ? 'number' : 'text'"
-                      :step="fieldTypes[col] === 'decimal' ? '0.01' : '1'"
-                      class="edit-input"
-                      :placeholder="col"
-                    />
-                  </template>
-                </template>
-                <template v-else>
-                  {{ selectedRow[col] }}
-                </template>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Модальное окно подтверждения изменений -->
-      <div v-if="showConfirmModal" class="modal-overlay" @click.stop>
-        <div class="modal-content confirm-modal" @click.stop>
-          <h3>{{ confirmModalData.title }}</h3>
-          <p>{{ confirmModalData.message }}</p>
-
-          <!-- Таблица изменений -->
-          <div class="changes-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Поле</th>
-                  <th>Старое значение</th>
-                  <th>Новое значение</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="change in confirmModalData.changes" :key="change.field">
-                  <td>{{ change.field }}</td>
-                  <td>
-                    <span v-if="Array.isArray(change.oldValue)">
-                      {{ change.oldValue.join(', ') }}
-                    </span>
-                    <span v-else>
-                      {{ change.oldValue }}
-                    </span>
-                  </td>
-                  <td>
-                    <span v-if="Array.isArray(change.newValue)">
-                      {{ change.newValue.join(', ') }}
-                    </span>
-                    <span v-else>
-                      {{ change.newValue }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="modal-actions">
-            <button class="confirm-btn" @click="confirmModalData.confirmAction()">
-              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              Сохранить
-            </button>
-            <button class="cancel-btn" @click="showConfirmModal = false">
-              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-              Отмена
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Модальное окно подтверждения выхода -->
-      <div v-if="showExitConfirmModal" class="modal-overlay" @click.stop>
-        <div class="modal-content exit-confirm-modal" @click.stop>
-          <h3>Несохраненные изменения</h3>
-          <p>У вас есть несохраненные изменения. Вы действительно хотите выйти без сохранения?</p>
-          <div class="exit-confirm-actions">
-            <button class="cancel-btn" @click="exitConfirmData.action()">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                <line x1="12" y1="2" x2="12" y2="12"/>
-              </svg>
-              Выйти
-            </button>
-            <button class="confirm-btn" @click="showExitConfirmModal = false">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-              Продолжить
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Модальное окно подтверждения удаления -->
-      <div v-if="showDeleteConfirmModal" class="modal-overlay" @click.stop>
-        <div class="modal-content delete-confirm-modal" @click.stop>
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            Подтверждение удаления
-          </h3>
-          <p>Вы действительно хотите удалить эту запись? Это действие нельзя будет отменить.</p>
-
-          <div class="delete-details">
-            <div v-for="(value, key) in deleteConfirmData.row"
-                 :key="key"
-                 class="delete-details-row">
-              <div class="delete-details-label">{{ key }}:</div>
-              <div class="delete-details-value">
-                <span v-if="Array.isArray(value)">{{ value.join(', ') }}</span>
-                <span v-else>{{ value }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="delete-confirm-actions">
-            <button class="confirm-btn" @click="showDeleteConfirmModal = false">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-              Отмена
-            </button>
-            <button class="cancel-btn" @click="deleteConfirmData.confirmAction()">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-              </svg>
-              Удалить
-            </button>
-          </div>
-        </div>
-      </div>
+      <AddRecordModal
+        v-if="showAddModal"
+        :show="showAddModal"
+        :tableTitle="tableTitle"
+        :jsonInput="jsonInput"
+        :jsonPlaceholder="jsonPlaceholder"
+        :jsonError="jsonError"
+        :isJsonValid="isJsonValid"
+        :isAdding="isAdding"
+        :currentTableHint="currentTableHint"
+        :missingRequiredFields="missingRequiredFields"
+        @save="saveAddJson"
+        @cancel="cancelAdd"
+                @paste="onPasteJson"
+        @update:jsonInput="val => jsonInput = val"
+      />
+      <DetailsModal
+        v-if="showDetailsModal"
+        :show="showDetailsModal"
+        :isEditing="isEditing"
+        :isRelationTable="isRelationTable"
+        :isEditDisabled="isEditDisabled"
+        :columns="columns"
+        :editableFields="editableFields"
+        :fieldTypes="fieldTypes"
+        :editBuffer="editBuffer"
+        :selectedRow="selectedRow"
+        @edit="startEditInModal"
+        @save="saveEditInModal"
+        @cancelEdit="cancelEditInModal"
+        @close="closeDetails"
+        @update:editBuffer="val => editBuffer = val"
+      />
+      <ConfirmModal
+        v-if="showConfirmModal"
+        :show="showConfirmModal"
+        :title="confirmModalData.title"
+        :message="confirmModalData.message"
+        :changes="confirmModalData.changes"
+        @confirm="confirmModalData.confirmAction"
+        @cancel="showConfirmModal = false"
+      />
+      <ExitConfirmModal
+        v-if="showExitConfirmModal"
+        :show="showExitConfirmModal"
+        @exit="exitConfirmData.action"
+        @cancel="showExitConfirmModal = false"
+      />
+      <!-- DeleteRecordModal подключается отдельно -->
+      <DeleteRecordModal
+        v-if="showDeleteConfirmModal"
+        :show="showDeleteConfirmModal"
+        :row="deleteConfirmData.row"
+        @confirm="deleteConfirmData.confirmAction"
+        @cancel="showDeleteConfirmModal = false"
+      />
     </div>
 
     <!-- Компонент уведомлений -->
@@ -383,6 +225,11 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { endpoints } from '@/js/api/endpoints';
 import { apiClient } from '@/js/api/manager';
 import ToastNotification from './ToastNotification.vue';
+import AddRecordModal from './modals/AddRecordModal.vue';
+import DetailsModal from './modals/DetailsModal.vue';
+import ConfirmModal from './modals/ConfirmModal.vue';
+import ExitConfirmModal from './modals/ExitConfirmModal.vue';
+import DeleteRecordModal from './modals/DeleteRecordModal.vue';
 
 /**
  * Props компонента
@@ -449,6 +296,8 @@ const deleteConfirmData = ref({
   row: null,
   confirmAction: null
 });
+
+const isAdding = ref(false);
 
 /**
  * Маппинг API endpoints для различных таблиц
@@ -531,7 +380,11 @@ const filteredRowsUnpaged = computed(() => {
   let arr = rows.value;
   if (searchQuery.value) {
     arr = arr.filter(row =>
-      columns.value.some(col => String(row[col] || '').toLowerCase().includes(searchQuery.value.toLowerCase()))
+      columns.value.some(col => {
+        const value = row[col];
+        if (value === null || value === undefined) return false;
+        return String(value).toLowerCase().includes(searchQuery.value.toLowerCase());
+      })
     );
   }
   if (sortKey.value && sortOrder.value) {
@@ -680,25 +533,13 @@ function cancelAdd() {
   jsonError.value = '';
 }
 
-function debounce(fn, delay) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn.apply(this, args), delay);
-  };
-}
-
-const saveAddJsonDebounced = debounce(saveAddJson, 120);
-
-function onPasteJson() {
-  nextTick(() => {});
-}
-
 async function saveAddJson() {
   if (isRelationTable.value) {
-    toastRef.value?.show('Добавление записей в таблицы связей не поддерживается', 'warning');
+    toastRef.value?.show('Добавление записей в таблицах связей не поддерживается', 'warning');
     return;
   }
+  if (isAdding.value) return;
+
   jsonError.value = '';
   let payload;
   try {
@@ -707,20 +548,56 @@ async function saveAddJson() {
     jsonError.value = 'Ошибка парсинга JSON: ' + e.message;
     return;
   }
+
   const api = getApi();
+  if (!api || !api.create) {
+    toastRef.value?.show('API для создания записи не настроен', 'error');
+    return;
+  }
+
+  isAdding.value = true;
   try {
     const resp = await apiClient.post(api.create, payload);
-    if (resp.data && (resp.data.id || resp.data.pk || resp.data.added || resp.data.message)) {
-      toastRef.value?.show('Запись(и) добавлены', 'success');
+    console.log('Ответ сервера:', resp.data); // Для отладки
+
+    // Проверяем наличие ответа
+    if (!resp) {
+      toastRef.value?.show('Ошибка: пустой ответ сервера', 'error');
+      return;
+    }
+
+    const responseData = resp.data;
+
+    // Показываем только сообщение из ответа сервера
+    if (responseData && typeof responseData.message === 'string') {
+      // Определяем тип уведомления на основе содержания сообщения
+      const notificationType = responseData.message.toLowerCase().includes('ошибка') ? 'error' :
+                               responseData.message.toLowerCase().includes('пропущено') && !responseData.message.toLowerCase().includes('добавлено') ? 'warning' :
+                               'success';
+
+      toastRef.value?.show(responseData.message, notificationType);
+      showAddModal.value = false;
+      jsonInput.value = '';
+      await fetchData(); // Всегда обновляем данные после взаимодействия с сервером
+    } else {
+      // Если сообщения нет, показываем стандартное уведомление
+      toastRef.value?.show('Операция выполнена', 'success');
       showAddModal.value = false;
       jsonInput.value = '';
       await fetchData();
-    } else {
-      toastRef.value?.show('Ошибка при добавлении', 'error');
     }
   } catch (e) {
-    jsonError.value = 'Ошибка при добавлении: ' + (e?.response?.data?.message || e.message || '');
+    console.error('Ошибка при добавлении:', e);
+    const errorMessage = e?.response?.data?.message || e?.response?.data?.error || e.message || 'Неизвестная ошибка';
+    jsonError.value = 'Ошибка при добавлении: ' + errorMessage;
+    toastRef.value?.show('Ошибка при добавлении: ' + errorMessage, 'error');
+  } finally {
+    isAdding.value = false;
   }
+}
+
+function onPasteJson() {
+  nextTick(() => {});
 }
 
 /**
@@ -744,11 +621,11 @@ onMounted(fetchData);
 const tableJsonHints = {
   la_df_speciality: {
     example: {
-      code: '09.03.01',
-      name: 'Информатика и вычислительная техника',
-      specialization: 'Программное обеспечение',
-      department: 'Кафедра информатики',
-      faculty: 'Факультет информационных технологий'
+      code: "09.03.01",
+      name: "Информатика и вычислительная техника",
+      specialization: "Программное обеспечение информационных систем",
+      department: "Кафедра информатики и вычислительной техники",
+      faculty: "Факультет информационных технологий"
     },
     required: ['code', 'name', 'specialization', 'department', 'faculty']
   },
@@ -756,15 +633,15 @@ const tableJsonHints = {
     example: {
       speciality: 1,
       education_duration: 4,
-      year_of_admission: '2023',
+      year_of_admission: "2023",
       is_active: true
     },
     required: ['speciality', 'education_duration', 'year_of_admission']
   },
   la_df_technology: {
     example: {
-      name: 'Python',
-      description: 'Язык программирования',
+      name: "Python",
+      description: "Высокоуровневый язык программирования общего назначения",
       popularity: 95.5,
       rating: 4.85
     },
@@ -772,14 +649,14 @@ const tableJsonHints = {
   },
   la_df_competency: {
     example: {
-      code: 'ПК-1',
-      name: 'Разработка ПО',
-      description: 'Умеет разрабатывать ПО',
-      know_level: 'Знать основы',
-      can_level: 'Уметь программировать',
-      master_level: 'Владеть современными инструментами',
-      blooms_level: 'APPLY',
-      blooms_verbs: 'анализировать, проектировать',
+      code: "ПК-1",
+      name: "Разработка программного обеспечения",
+      description: "Способность разрабатывать программное обеспечение с использованием современных технологий",
+      know_level: "Знать основные принципы разработки ПО",
+      can_level: "Уметь применять современные технологии разработки",
+      master_level: "Владеть навыками разработки ПО на профессиональном уровне",
+      blooms_level: "APPLY",
+      blooms_verbs: "разрабатывать, проектировать, тестировать",
       complexity: 5,
       demand: 7
     },
@@ -787,9 +664,9 @@ const tableJsonHints = {
   },
   la_df_basediscipline: {
     example: {
-      code: 'БД-1',
-      name: 'Математика',
-      description: 'Базовая математика'
+      code: "БД-1",
+      name: "Математика",
+      description: "Базовая математическая подготовка"
     },
     required: ['code', 'name', 'description']
   },
@@ -797,39 +674,39 @@ const tableJsonHints = {
     example: {
       curriculum: 1,
       base_discipline: 1,
-      code: 'Д-1',
-      name: 'Математический анализ',
-      semesters: '1,2',
+      code: "Д-1",
+      name: "Математический анализ",
+      semesters: "1,2",
       contact_work_hours: 32,
       independent_work_hours: 16,
       control_work_hours: 8,
-      technologies: [1,2],
-      competencies: [1,2]
+      technologies: [1, 2, 3],
+      competencies: [1, 2, 3]
     },
     required: ['curriculum', 'base_discipline', 'code', 'name', 'semesters', 'contact_work_hours', 'independent_work_hours', 'control_work_hours']
   },
   la_df_vacancy: {
     example: {
       employer: 1,
-      title: 'Python Developer',
-      description: 'Разработка backend...',
-      requirements: 'Опыт работы с Django',
-      responsibilities: 'Разработка и поддержка сервисов',
-      salary_min: 100000,
-      salary_max: 200000,
+      title: "Python Developer",
+      description: "Разработка backend-сервисов на Python",
+      requirements: "Опыт работы с Django, FastAPI, PostgreSQL",
+      responsibilities: "Разработка и поддержка микросервисов",
+      salary_min: 150000,
+      salary_max: 250000,
       is_active: true,
-      location: 'Москва',
-      employment_type: 'FULL',
-      technologies: [1,2],
-      competencies: [1,2]
+      location: "Москва",
+      employment_type: "FULL",
+      technologies: [1, 2, 3],
+      competencies: [1, 2, 3]
     },
     required: ['employer', 'title', 'description']
   },
   la_employer: {
     example: {
-      company_name: 'Tech Innovations Inc.',
-      description: 'Компания, специализирующаяся на ИИ',
-      email: 'info@techinnovations.com',
+      company_name: "Tech Innovations Inc.",
+      description: "Компания, специализирующаяся на разработке инновационных IT-решений",
+      email: "hr@techinnovations.com",
       rating: 4.75
     },
     required: ['company_name', 'description', 'email', 'rating']
@@ -837,28 +714,46 @@ const tableJsonHints = {
   la_df_acm: {
     example: {
       curriculum: 1,
-      discipline_list: [1,2,3],
-      technology_stack: [1,2,3]
+      discipline_list: [1, 2, 3],
+      technology_stack: [1, 2, 3]
     },
-    required: ['curriculum', 'discipline_list', 'technology_stack']
+    required: ['curriculum', 'discipline_list', 'technology_stack'],
+    description: {
+      curriculum: 'ID учебного плана',
+      discipline_list: 'Массив ID дисциплин',
+      technology_stack: 'Массив ID технологий'
+    }
   },
   la_df_vcm: {
     example: {
-      vacancy_name: 'Data Scientist',
+      vacancy_name: "Data Scientist",
       vacancy: 1,
-      competencies_stack: [1,2],
-      technology_stack: [1,2],
-      description: 'Профиль вакансии для DS'
+      competencies_stack: [1, 2, 3],
+      technology_stack: [1, 2, 3],
+      description: "Профиль компетенций для позиции Data Scientist"
     },
     required: ['vacancy_name', 'competencies_stack', 'technology_stack', 'description']
   },
   la_df_ucm: {
     example: {
       user_id: 1,
-      competencies_stack: [1,2],
-      technology_stack: [1,2]
+      competencies_stack: [1, 2, 3],
+      technology_stack: [1, 2, 3]
     },
     required: ['user_id', 'competencies_stack', 'technology_stack']
+  },
+  la_df_academic_competence_matrix: {
+    example: {
+      curriculum: 1,
+      discipline_list: [1, 2, 3],
+      technology_stack: [1, 2, 3]
+    },
+    required: ['curriculum', 'discipline_list', 'technology_stack'],
+    description: {
+      curriculum: 'ID учебного плана',
+      discipline_list: 'Массив ID дисциплин',
+      technology_stack: 'Массив ID технологий'
+    }
   }
 };
 
@@ -1084,6 +979,25 @@ function cancelEditInModal() {
     editBuffer.value = {};
   }
 }
+
+const jsonPlaceholder = computed(() => {
+  if (!props.selectedTable || isRelationTable.value) return '{"field1": "value", ...}';
+
+  const hint = tableJsonHints[props.selectedTable];
+  if (!hint) return '{"field1": "value", ...}';
+
+  return JSON.stringify(hint.example, null, 2);
+});
+
+// Таблицы, для которых редактирование запрещено
+const editDisabledTables = [
+  'la_df_academic_competence_matrix',
+];
+
+const isEditDisabled = computed(() => editDisabledTables.includes(props.selectedTable));
+
+// Добавляем алиас для la_df_academic_competence_matrix
+tableJsonHints.la_df_academic_competence_matrix = tableJsonHints.la_df_acm;
 </script>
 
 <style scoped>
@@ -1277,10 +1191,85 @@ function cancelEditInModal() {
   background: var(--color-accent);
 }
 
+.search-container {
+  position: relative;
+  margin-bottom: 20px;
+  max-width: auto;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-secondary-text);
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
 .search-input {
+  width: 100%;
+  padding: 12px 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   font-family: var(--font-family-base);
   font-size: 15px;
   letter-spacing: -0.011em;
+  color: var(--color-primary-text);
+  background: var(--color-primary-background);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.15);
+}
+
+.search-input:focus + .search-icon {
+  color: var(--color-accent);
+}
+
+.search-input::placeholder {
+  color: var(--color-secondary-text);
+  opacity: 0.7;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--color-secondary-text);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.clear-search-btn:hover {
+  color: var(--color-danger);
+  background: rgba(208, 50, 45, 0.1);
+}
+
+/* Анимация для поля поиска */
+@keyframes searchPulse {
+  0% { box-shadow: 0 0 0 0 rgba(var(--color-accent-rgb), 0.4); }
+  70% { box-shadow: 0 0 0 5px rgba(var(--color-accent-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--color-accent-rgb), 0); }
+}
+
+.search-input:focus {
+  animation: searchPulse 1.5s;
 }
 
 .loading-block {
@@ -1480,6 +1469,8 @@ button:hover {
   color: var(--color-primary-text);
   transition: border 0.2s, background 0.2s;
   box-sizing: border-box;
+  min-height: 40px;
+  height: auto;
 }
 
 .modal-field input:focus {
@@ -1505,6 +1496,8 @@ button:hover {
   color: var(--color-primary-text);
   margin-bottom: 8px;
   resize: vertical;
+  min-height: 200px;
+  height: auto;
 }
 
 .json-error {
@@ -1679,6 +1672,8 @@ button:hover {
   transition: all 0.2s ease;
   box-sizing: border-box;
   outline: none;
+  min-height: 40px;
+  height: auto;
 }
 
 .edit-input:focus {
@@ -2012,5 +2007,113 @@ button:hover {
 .delete-confirm-actions button svg {
   width: 16px;
   height: 16px;
+}
+
+.field-description {
+  color: var(--color-secondary-text);
+  font-size: 0.9em;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+.modal-body {
+  margin: 20px 0;
+}
+
+.json-input-section {
+  margin-bottom: 20px;
+}
+
+.json-input-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-secondary-text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.json-textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--color-primary-background);
+  color: var(--color-primary-text);
+  margin-bottom: 8px;
+  resize: vertical;
+  min-height: 150px;
+  height: auto;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.json-textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb), 0.1);
+  outline: none;
+}
+
+.json-hint-block {
+  background: var(--color-table-header);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.json-hint-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--color-primary-text);
+  font-size: 14px;
+}
+
+.json-hint-pre {
+  background: var(--color-primary-background);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+  margin: 0 0 16px 0;
+  color: var(--color-primary-text);
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+}
+
+.json-hint-list {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: none;
+}
+
+.json-hint-list li {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--color-primary-text);
+}
+
+.json-hint-list li:last-child {
+  margin-bottom: 0;
+}
+
+.field-description {
+  color: var(--color-secondary-text);
+  font-size: 0.9em;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+.json-error {
+  color: var(--color-danger);
+  margin-top: 8px;
+  font-size: 14px;
+  padding: 8px 12px;
+  background: rgba(var(--color-danger-rgb), 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(var(--color-danger-rgb), 0.2);
+}
+
+.edit-disabled-message {
+  color: var(--color-danger);
+  margin: 12px 0;
 }
 </style>
