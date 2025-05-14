@@ -59,7 +59,6 @@ const moveItem = (fromList, toList, index) => {
 }
 
 const loadPermissions = async (prop) => {
-  console.log(prop)
   category.value = prop.category
   group_name.value = prop.group_name
   list2.value = prop.list

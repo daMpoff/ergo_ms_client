@@ -194,7 +194,6 @@ let deleteskillliest
 onMounted(async ()=>{
   let f = await apiClient.get(endpoints.expert_system.getUserSkillTest)
   items.value = f.data 
-  console.log(items.value)
   addskilllist =[]
   deleteskillliest =[]
 })
@@ -231,10 +230,16 @@ function toggleEdit() {
   }
 }
 function setskilladdlist(skills){
-  addskilllist.value.append(skills)
+  addskilllist.value.push(skills)
+  
 }
 function AddDeleteSkillList(id){
-  deleteskillliest.push(id)
+  let it = items.value
+  let index = it.findIndex(item => item.id == id)
+  deleteskillliest.push(it[index])
+console.log(deleteskillliest)
+  it.splice(index,1)
+  items.value = it
 }
 async function saveProfile() {
   apiError.value = null
@@ -280,6 +285,8 @@ function cancelEdit() {
   Object.assign(form, studentData)
   apiError.value = null
   editMode.value = false
+  items.value = [...items.value, ...deleteskillliest]
+  deleteskillliest =[]
 }
 </script>
 

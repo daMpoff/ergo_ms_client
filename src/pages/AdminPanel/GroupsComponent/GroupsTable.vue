@@ -24,7 +24,6 @@ const rowselected = ref({
 
 const changingrow = (row)=>{
   try {
-    console.log(row)
 
     rowselected.value ={
       name: row.name,

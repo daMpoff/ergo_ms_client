@@ -39,7 +39,7 @@
   
   <script setup>
   import { ref, watch, defineExpose } from 'vue'
-  import { GetPermissionsByCategory, AddGroupsPermissions, RemoveGroupsPermissions } from '@/js/GroupsPolitics'
+  import { GetPermissionsByCategory, AddGroupsPermissions} from '@/js/GroupsPolitics'
   
   const list2 = ref([])
   const list1 = ref([])
