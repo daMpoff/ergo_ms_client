@@ -37,7 +37,7 @@
         <div class="col-12 col-md-5">
           <div
             class="card shadow-sm pointer"
-            @click="goEmployerAuth"
+            @click="goEmployerRegister"
           >
             <div class="card-body d-flex flex-column align-items-center">
               <briefcase-icon class="mb-3" size="48" color="#28a745" />
@@ -63,10 +63,10 @@ export default {
   },
   data() {
     return {
-      bubblesData: Array.from({ length: 25 }, () => ({
+      bubblesData: Array.from({ length: 50 }, () => ({
         left: Math.random() * 100,
         top: -100 - Math.random() * 100,
-        size: 40 + Math.random() * 60,
+        size: 50 + Math.random() * 60,
         duration: 8 + Math.random() * 8,
         delay: Math.random() * 5
       }))
@@ -76,8 +76,8 @@ export default {
     goStudentRegister() {
       this.$router.push({ name: 'StudentRegister' })
     },
-    goEmployerAuth() {
-      this.$router.push({ name: 'EmployerAuth' })
+    goEmployerRegister() {
+      this.$router.push({ name: 'CompanyRegister' })
     }
   }
 }
@@ -90,7 +90,6 @@ export default {
   min-height: 100vh;
 }
 
-/* Пузыри — занимают весь экран */
 .bubbles {
   position: fixed;
   top: 0;
@@ -102,7 +101,6 @@ export default {
   z-index: 0;
 }
 
-/* Пузыри начинаются сверху и падают вниз */
 .bubble {
   position: absolute;
   border-radius: 50%;
@@ -111,7 +109,6 @@ export default {
   animation: pop-fall infinite linear;
 }
 
-/* Анимация падения и "лопания" */
 @keyframes pop-fall {
   0% {
     transform: translateY(0) scale(1);
