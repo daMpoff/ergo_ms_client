@@ -162,18 +162,6 @@ export const AdminPanelMenuSection = {
   ],
 }
 
-export const ExpertSystemSection = {
-  id: 15,
-  icon: ChartBarStacked,
-  routeName: 'ExpertSystem',
-  title: 'Экспертная система вакансий',
-  list: [
-    { path: 'ChoiceRole', name: 'Экспертная система' },
-    { path: 'Profile', name: 'Профиль' },
-    { path: 'Skills', name: 'Навыки' },
-    { path: 'Groups', name: 'Группы'},
-  ],
-}
 export const WatermarkedVideoSection = {
   id: 16,
   icon: Video,

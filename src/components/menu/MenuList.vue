@@ -16,7 +16,6 @@ import {
   TablesMenuSection,
   ModalWindowsMenuSection,
   AdminPanelMenuSection,
-  ExpertSystemSection,
   WatermarkedVideoSection
 } from '@/js/menu-sections.js'
 
@@ -95,7 +94,6 @@ const menuSections = ref([
   TablesMenuSection,
   ModalWindowsMenuSection,
   AdminPanelMenuSection,
-  ExpertSystemSection,
   WatermarkedVideoSection,
 ])
 
