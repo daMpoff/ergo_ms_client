@@ -3,7 +3,6 @@
     <h2 class="mb-4">Управление учебными группами</h2>
 
     <div class="row">
-      <!-- Левый столбец: только список -->
       <div class="col-lg-5 mb-4">
         <div class="card">
           <div class="card-header">Список групп</div>
@@ -58,7 +57,6 @@
           </div>
         </div>
 
-        <!-- Блок редактирования -->
         <div v-if="selectedGroup" class="card mb-3">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>Редактирование «{{ selectedGroup.name }}»</span>
@@ -91,8 +89,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Подсказка, если ничего не выбрано -->
         <div v-else class="alert alert-info">
           Выберите группу в списке слева, чтобы отредактировать.
         </div>

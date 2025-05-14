@@ -33,6 +33,28 @@
           </div>
 
           <div class="mb-2">
+            <label class="form-label">Email</label>
+            <input
+              v-model="form.email"
+              type="email"
+              class="form-control"
+              required
+            />
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Телефон</label>
+            <input
+              v-model="form.phone"
+              type="tel"
+              class="form-control"
+              placeholder="+7 (___) ___-__-__"
+              @focus="onPhoneFocus"
+              @input="onPhoneInput"
+              @blur="onPhoneBlur"
+            />
+          </div>
+          <div class="mb-2">
             <label class="form-label">Учебная группа</label>
             <select
               v-model="form.study_group"
@@ -49,7 +71,6 @@
               </option>
             </select>
           </div>
-
           <div class="form-check mb-3">
             <input
               class="form-check-input"
@@ -61,7 +82,6 @@
               Есть опыт в IT
             </label>
           </div>
-
           <button
             type="submit"
             class="btn btn-primary w-100"
@@ -86,6 +106,8 @@ export default {
       form: {
         first_name: '',
         last_name: '',
+        email: '',
+        phone: '',
         study_group: null,
         has_experience: false
       },
@@ -95,7 +117,6 @@ export default {
     }
   },
   async created() {
-    // подгружаем список групп для селекта
     const res = await apiClient.get(endpoints.expert_system.studyGroups)
     if (res.success) {
       this.groups = res.data
@@ -105,24 +126,59 @@ export default {
     close() {
       this.$router.back()
     },
+
+    onPhoneFocus(e) {
+      if (!this.form.phone.startsWith('+7')) {
+        this.form.phone = '+7'
+      }
+      this.$nextTick(() => {
+        e.target.setSelectionRange(this.form.phone.length, this.form.phone.length)
+      })
+    },
+    onPhoneInput(e) {
+      let val = e.target.value
+      val = val.replace(/[^\d+]/g, '')
+      if (!val.startsWith('+7')) {
+        let digits = val.replace(/\D/g, '')
+        if (digits.startsWith('7')) digits = digits.substr(1)
+        val = '+7' + digits
+      }
+
+      this.form.phone = val
+    },
+    onPhoneBlur() {
+      let digits = this.form.phone.replace(/\D/g, '')
+      if (!digits) {
+        this.form.phone = ''
+        return
+      }
+      if (!digits.startsWith('7')) digits = '7' + digits
+      digits = digits.substr(0, 11)
+
+      let res = '+7'
+      if (digits.length > 1)  res += ' (' + digits.substr(1, Math.min(3, digits.length - 1))
+      if (digits.length >= 4) res += ') ' + digits.substr(4, Math.min(3, digits.length - 4))
+      if (digits.length >= 7) res += '-' + digits.substr(7, Math.min(2, digits.length - 7))
+      if (digits.length >= 9) res += '-' + digits.substr(9, Math.min(2, digits.length - 9))
+
+      this.form.phone = res
+    },
+
     async onSubmit() {
       this.error = null
       this.loading = true
 
       try {
-        // POST-создание профиля. Поле `user` берётся автоматически на бэкенде
         const resp = await apiClient.post(
           endpoints.expert_system.students,
           this.form
         )
-
         if (!resp.success) {
           const msg = typeof resp.errors === 'string'
             ? resp.errors
             : Object.values(resp.errors).flat().join(' ')
           throw new Error(msg)
         }
-
         // по успеху — просто закрываем модалку (можно редиректить куда нужно)
         console.log(this.form.has_experience)
         if(this.form.has_experience){
@@ -131,8 +187,8 @@ export default {
         else{
           this.close()
         }
-          
-
+        this.close()
+        //this.$router.push({ name: 'StudentExperience' })
       } catch (err) {
         this.error = err.message || 'Ошибка при сохранении профиля'
       } finally {

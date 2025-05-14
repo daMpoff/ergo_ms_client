@@ -168,9 +168,8 @@ export const ExpertSystemSection = {
   routeName: 'ExpertSystem',
   title: 'Экспертная система вакансий',
   list: [
-    { path: 'ChoiceRole', name: 'Экспертная система' },
-    { path: 'Profile', name: 'Профиль' },
     { path: 'Skills', name: 'Навыки' },
+    { path: 'Profile', name: 'Профиль' },
     { path: 'Groups', name: 'Группы'},
   ],
 }

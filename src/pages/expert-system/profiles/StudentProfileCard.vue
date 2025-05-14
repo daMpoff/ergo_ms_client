@@ -246,8 +246,8 @@ async function saveProfile() {
       first_name: form.first_name,
       last_name: form.last_name,
       has_experience: form.has_experience,
-      // если хотите обновлять группу по имени, нужны доработки на бэке;
-      // пока передаём ID, если он есть:
+      email: form.email,
+      phone: form.phone,
       ...(form.study_group ? { study_group: form.study_group } : {})
       // можно добавить email/phone, если их поддерживает ваш сериализатор
     }

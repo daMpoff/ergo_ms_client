@@ -4,14 +4,14 @@
       <h4 class="mb-0">Личный кабинет компании</h4>
     </div>
     <div class="card-body">
-      <p><strong>Компания:</strong> {{ company.company_name }}</p>
-      <p><strong>Описание:</strong> {{ company.description }}</p>
+      <p><strong>Компания:</strong> {{ props.company.company_name }}</p>
+      <p><strong>Описание:</strong> {{ props.company.description }}</p>
       <p>
         <strong>Сайт:</strong>
-        <a :href="company.website" target="_blank">{{ company.website }}</a>
+        <a :href="company.website" target="_blank">{{ props.company.website }}</a>
       </p>
-      <p><strong>Контактное лицо:</strong> {{ company.contact_person }}</p>
-      <p><strong>E-mail:</strong> {{ company.contact_email }}</p>
+      <p><strong>Контактное лицо:</strong> {{ props.company.contact_person }}</p>
+      <p><strong>E-mail:</strong> {{ props.company.contact_email }}</p>
       <p>
         <strong>Статус подтверждения:</strong>
         {{ company.is_verified ? 'Подтверждён' : 'Не подтверждён' }}
