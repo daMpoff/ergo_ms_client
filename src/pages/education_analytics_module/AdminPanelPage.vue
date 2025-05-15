@@ -39,8 +39,9 @@
 
       <!-- Вкладка "Извлечение данных" -->
       <div v-if="activeTab === 'data_extraction'" class="tab-pane active">
-        <h3>Извлечение данных</h3>
-        <p></p>
+        <h3 class="mb-4">Извлечение данных</h3>
+        <ExcelUploadCard />
+        <ImportResultsCard />
       </div>
 
       <!-- Вкладка "Настройки" -->
@@ -72,7 +73,8 @@ import DatabaseTablesCard from './cards/DatabaseTablesCard.vue'
 import ToastNotification from './cards/ToastNotification.vue'
 import ClearDatabaseModal from './cards/ClearDatabaseModal.vue'
 import TableEditor from './cards/TableEditor.vue'
-
+import ExcelUploadCard from './cards/ExcelUploadCard.vue'
+import ImportResultsCard from './cards/ImportResultsCard.vue'
 
 const isLoading = ref(false)
 const isDownloading = ref(false)
