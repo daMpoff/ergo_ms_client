@@ -16,6 +16,7 @@ import {
   TablesMenuSection,
   ModalWindowsMenuSection,
   ExpertSystemSection,
+  ExpertSystemTestsSection
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -90,7 +91,8 @@ const menuSections = [
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
-  ExpertSystemSection
+  ExpertSystemSection,
+  ExpertSystemTestsSection
 ]
 
 // Список разделителей

@@ -13,6 +13,7 @@ import {
   TextCursorInput,
   UserCog,
   Wallet,
+FileJson
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -159,4 +160,15 @@ export const ExpertSystemSection = {
     { path: 'OrientationQuestion', name: 'Менеджер управление ориентационными вопросами'},
     { path: 'OrientationAnswer', name: 'Менеджер управление вариантов ответов на вопросы'}
   ],
+}
+
+export const ExpertSystemTestsSection ={
+  id: 15,
+  icon: FileJson,
+  routeName: 'ExpertSystemTests',
+  title: 'Работа с тестами',
+  list: [
+    { path: 'AllTests', name: 'Тесты' },
+  ],
+
 }

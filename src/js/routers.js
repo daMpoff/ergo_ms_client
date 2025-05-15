@@ -474,6 +474,41 @@ const expertSystemRoutes = [
   },
 ]
 
+const expertSystemTestsRoutes = [
+  {
+    path: '/expert-system-tests',
+    name: 'ExpertSystemTests',
+    component: () => import('@/pages/expert-system-tests/ParenLayout.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+    redirect: { name: 'AllTests' },
+    children: [
+      {
+        path: 'all-tests',
+        name: 'AllTests',
+        component: () => import('@/pages/expert-system-tests/AllTestsPage.vue'),
+        meta: { title: 'Тесты', requiresAuth: true },
+      },
+      {
+        path: 'test-creation',
+        name: 'TestCreation',
+        component: () => import('@/pages/expert-system-tests/TestCreation.vue'),
+        meta: { title: 'Создание тестов', requiresAuth: true },
+      },
+      {
+        path: 'test',
+        name: 'Test',
+        component: () => import('@/pages/expert-system-tests/TestPage.vue'),
+        meta: { title: 'Тест', requiresAuth: true },
+      },
+      
+     
+    ]
+  },
+]
+
+
 const routes = [
   ...startRoutes,
   ...mainRoutes,
@@ -492,6 +527,7 @@ const routes = [
   ...inputsRoutes,
   ...componentsRoutes,
   ...expertSystemRoutes,
+  ...expertSystemTestsRoutes
 ]
 
 routes.forEach((route) => {

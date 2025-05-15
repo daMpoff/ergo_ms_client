@@ -34,5 +34,9 @@ export const endpoints = {
 
     setUserSkills: 'expert_system/set-user-skills',
     getUserSkills: 'expert_system/get-user-skills',
+
+    getAllTests: 'expert_system/get-all-tests',
+    createTest: 'expert_system/create-test',
+    deleteTest:'expert_system/delete-test'
   }
 };
