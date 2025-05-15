@@ -451,6 +451,24 @@ const expertSystemRoutes = [
         name: 'Profession',
         component:() => import ('@/pages/expert-system/ProfessionManager.vue'),
         meta: { title: 'Менеджер профессий', requiresAuth: true }
+      },
+      {
+        path: 'OrientationTest',
+        name: 'OrientationTest',
+        component:() => import ('@/pages/expert-system/OrientationTestManager.vue'),
+        meta: { title: 'Менеджер ориентационных тестов', requiresAuth: true }
+      },
+      {
+        path: 'OrientationQuestion',
+        name: 'OrientationQuestion',
+        component:() => import ('@/pages/expert-system/OrientationQuestionManager.vue'),
+        meta: { title: 'Менеджер управление ориентационными вопросами', requiresAuth: true }
+      },
+      {
+        path: 'OrientationAnswer',
+        name: 'OrientationAnswer',
+        component:() => import ('@/pages/expert-system/OrientationAnswerManager.vue'),
+        meta: { title: 'Менеджер управление вариантов ответов на вопросы', requiresAuth: true }
       }
     ]
   },

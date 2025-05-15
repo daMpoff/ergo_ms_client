@@ -155,5 +155,8 @@ export const ExpertSystemSection = {
     { path: 'Groups', name: 'Группы'},
     { path: 'Proforientaion', name: 'Профориентация'},
     { path: 'Profession', name: 'Менеджер профессий'},
+    { path: 'OrientationTest', name: 'Менеджер ориентационных тестов'},
+    { path: 'OrientationQuestion', name: 'Менеджер управление ориентационными вопросами'},
+    { path: 'OrientationAnswer', name: 'Менеджер управление вариантов ответов на вопросы'}
   ],
 }
