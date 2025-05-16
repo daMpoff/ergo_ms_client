@@ -4,7 +4,7 @@ import { ref, onMounted } from 'vue';
 import { fetchTeacherSubjects, createSubject } from '@/js/api/services/expsysService';
 import CompetenciesManager from '@/pages/expsys/IndicatorsManager.vue';
 import DropDown from '@/components/DropDown.vue';
-import { EllipsisVertical, MessagesSquare, Trash } from 'lucide-vue-next';
+import { EllipsisVertical, MessagesSquare, Trash, SquarePlus } from 'lucide-vue-next';
 
 // Reactive state
 const subjects = ref([]);
@@ -142,10 +142,11 @@ onMounted(() => {
     <div v-if="!showCompetencies">
       <div class="row mb-4">
         <div class="col">
-          <h2>Управление предметами</h2>
-          <button class="btn btn-primary" @click="addSubject">
-            Добавить предмет
-          </button>
+      <h2>Управление предметами</h2>
+        <button class="btn fw-bold text-center d-flex align-items-center gap-2" @click="addSubject">
+          <SquarePlus class="icon" />
+          Добавить предмет
+        </button>
         </div>
       </div>
       
@@ -201,17 +202,12 @@ onMounted(() => {
                   <span>{{ subject.stats.tasks }} заданий</span>
                 </div>
               </div>
-              <div class="btn-group mt-3">
-                <button class="btn btn-sm btn-outline-primary" @click="editSubject(subject)">
-                  Редактировать
-                </button>
-                <button class="btn btn-sm btn-outline-danger" @click="confirmDelete(subject)">
-                  Удалить
-                </button>
-                <button class="btn btn-sm btn-outline-info" @click="openCompetencies(subject)">
-                  Индикаторы
-                </button>
-              </div>
+                <div class="text-center mt-3">
+                  <button class="btn btn-primary" @click="openCompetencies(subject)">
+                     Индикаторы
+                  </button>
+                </div>
+
             </div>
           </div>
         </div>
@@ -276,4 +272,15 @@ onMounted(() => {
       <div class="modal-backdrop fade show" v-if="showDeleteModal"></div>
     </div>
   </div>
+
 </template>
+
+<style>
+.btn fw-bold text-center d-flex align-items-center gap-2{
+   &:not(.btn-primary):hover {
+    background-color: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary);
+  }
+}
+
+</style>
