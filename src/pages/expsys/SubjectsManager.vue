@@ -1,12 +1,143 @@
 <!-- SubjectManager.vue -->
+<script setup>
+import { ref, onMounted } from 'vue';
+import { fetchTeacherSubjects, createSubject } from '@/js/api/services/expsysService';
+import CompetenciesManager from '@/pages/expsys/IndicatorsManager.vue';
+import DropDown from '@/components/DropDown.vue';
+import { EllipsisVertical, MessagesSquare, Trash } from 'lucide-vue-next';
+
+// Reactive state
+const subjects = ref([]);
+const loading = ref(false);
+const error = ref(null);
+const showAddModal = ref(false);
+const showDeleteModal = ref(false);
+const editingSubject = ref(getEmptySubject());
+const subjectToDelete = ref(null);
+const saving = ref(false);
+const deleting = ref(false);
+const showCompetencies = ref(false);
+const selectedSubjectId = ref(null);
+const selectedSubjectName = ref(null);
+
+// Methods
+const loadSubjects = async () => {
+  loading.value = true;
+  error.value = null;
+  try {
+    const fetchedSubjects = await fetchTeacherSubjects();
+    if (Array.isArray(fetchedSubjects)) {
+      subjects.value = fetchedSubjects;
+    } else {
+      throw new Error('Получены некорректные данные');
+    }
+  } catch (err) {
+    console.error('Ошибка при загрузке предметов:', err);
+    error.value = err.message || 'Не удалось загрузить предметы';
+  } finally {
+    loading.value = false;
+  }
+};
+
+function getEmptySubject() {
+  return {
+    id: null,
+    name: '',
+    description: '',
+    icon: 'book',
+    iconBackground: 'bg-blue',
+    stats: {
+      students: 0,
+      lessons: 0,
+      tasks: 0
+    }
+  };
+}
+
+const addSubject = () => {
+  editingSubject.value = getEmptySubject();
+  showAddModal.value = true;
+};
+
+const editSubject = (subject) => {
+  editingSubject.value = { ...subject };
+  showAddModal.value = true;
+};
+
+const saveSubject = async () => {
+  if (!editingSubject.value.name?.trim()) {
+    error.value = 'Введите название предмета';
+    return;
+  }
+  saving.value = true;
+  error.value = null;
+  try {
+    const createdSubject = await createSubject({
+      name: editingSubject.value.name.trim(),
+      description: editingSubject.value.description?.trim() || ''
+    });
+    subjects.value.unshift(createdSubject);
+    closeModal();
+  } catch (err) {
+    console.error('Ошибка сохранения предмета:', {
+      error: err.message,
+      component: editingSubject.value
+    });
+    error.value = err.message;
+  } finally {
+    saving.value = false;
+  }
+};
+
+const confirmDelete = (subject) => {
+  subjectToDelete.value = subject;
+  showDeleteModal.value = true;
+};
+
+const deleteSubject = async () => {
+  deleting.value = true;
+  try {
+    subjects.value = subjects.value.filter(s => s.id !== subjectToDelete.value.id);
+    showDeleteModal.value = false;
+  } catch (err) {
+    console.error('Ошибка при удалении предмета:', err);
+    error.value = err.message || 'Не удалось удалить предмет';
+  } finally {
+    deleting.value = false;
+  }
+};
+
+const closeModal = () => {
+  showAddModal.value = false;
+  editingSubject.value = getEmptySubject();
+};
+
+const openCompetencies = (subject) => {
+  selectedSubjectId.value = subject.id;
+  selectedSubjectName.value = subject.name;
+  showCompetencies.value = true;
+};
+
+const backToSubjects = () => {
+  showCompetencies.value = false;
+  selectedSubjectId.value = null;
+  selectedSubjectName.value = null;
+};
+
+// Lifecycle hook
+onMounted(() => {
+  loadSubjects();
+});
+</script>
+
 <template>
   <div class="subject-management">
-<CompetenciesManager 
-  v-if="showCompetencies"
-  :subject-id="selectedSubjectId"
-  :subject-name="selectedSubjectName"
-  @back="backToSubjects"
-/>
+    <CompetenciesManager 
+      v-if="showCompetencies"
+      :subject-id="selectedSubjectId"
+      :subject-name="selectedSubjectName"
+      @back="backToSubjects"
+    />
     
     <div v-if="!showCompetencies">
       <div class="row mb-4">
@@ -31,7 +162,24 @@
       <div v-else class="row">
         <div class="col-md-4 mb-3" v-for="subject in subjects" :key="subject.id">
           <div class="card subject-card h-100">
-            <div class="card-body">
+            <div class="card-body position-relative"> <!-- Добавлен position-relative -->
+              <!-- Выпадающее меню в правом верхнем углу -->
+              <div class="position-absolute top-0 end-0 mt-2 me-2">
+                <DropDown dropdownMenuClass="dropdown-menu-end">
+                  <template #main>
+                    <EllipsisVertical :size="20" />
+                  </template>
+                  <template #list>
+                    <li class="dropdown-item" @click="editSubject(subject)">
+                      <Trash :size="20" class="me-2" /> Редактировать
+                    </li>
+                    <li class="dropdown-item text-danger" @click="confirmDelete(subject)">
+                      <MessagesSquare :size="20" class="me-2" /> Удалить
+                    </li>
+                  </template>
+                </DropDown>
+              </div>
+
               <div class="d-flex align-items-center mb-3">
                 <div class="icon-container" :class="subject.iconBackground">
                   <i class="bi" :class="`bi-${subject.icon}`"></i>
@@ -61,7 +209,7 @@
                   Удалить
                 </button>
                 <button class="btn btn-sm btn-outline-info" @click="openCompetencies(subject)">
-                  Компетенции
+                  Индикаторы
                 </button>
               </div>
             </div>
@@ -129,189 +277,3 @@
     </div>
   </div>
 </template>
-
-<script>
-import { fetchTeacherSubjects, createSubject } from '@/js/api/services/expsysService';
-import CompetenciesManager from '@/pages/competencies/CompetenciesManager.vue';
-
-export default {
-  name: 'SubjectManager',
-  components: {
-    CompetenciesManager
-  },
-  data() {
-    return {
-      subjects: [],
-      loading: false,
-      error: null,
-      showAddModal: false,
-      showDeleteModal: false,
-      editingSubject: this.getEmptySubject(),
-      subjectToDelete: null,
-      saving: false,
-      deleting: false,
-      showCompetencies: false,
-      selectedSubjectId: null,
-      selectedSubjectName: null, 
-
-    };
-  },
-  created() {
-    this.loadSubjects();
-  },
-  methods: {
-    async loadSubjects() {
-      this.loading = true;
-      this.error = null;
-      try {
-        const subjects = await fetchTeacherSubjects();
-        if (Array.isArray(subjects)) {
-          this.subjects = subjects;
-        } else {
-          throw new Error('Получены некорректные данные');
-        }
-      } catch (error) {
-        console.error('Ошибка при загрузке предметов:', error);
-        this.error = error.message || 'Не удалось загрузить предметы';
-      } finally {
-        this.loading = false;
-      }
-    },
-    getEmptySubject() {
-      return {
-        id: null,
-        name: '',
-        description: '',
-        icon: 'book',
-        iconBackground: 'bg-blue',
-        stats: {
-          students: 0,
-          lessons: 0,
-          tasks: 0
-        }
-      };
-    },
-    addSubject() {
-      this.editingSubject = this.getEmptySubject();
-      this.showAddModal = true;
-    },
-    editSubject(subject) {
-      this.editingSubject = { ...subject };
-      this.showAddModal = true;
-    },
-    async saveSubject() {
-      if (!this.editingSubject.name?.trim()) {
-        this.error = 'Введите название предмета';
-        return;
-      }
-      this.saving = true;
-      this.error = null;
-      try {
-        const createdSubject = await createSubject({
-          name: this.editingSubject.name.trim(),
-          description: this.editingSubject.description?.trim() || ''
-        });
-        this.subjects.unshift(createdSubject);
-        this.closeModal();
-      } catch (error) {
-        console.error('Ошибка сохранения предмета:', {
-          error: error.message,
-          component: this.editingSubject
-        });
-        this.error = error.message;
-      } finally {
-        this.saving = false;
-      }
-    },
-    confirmDelete(subject) {
-      this.subjectToDelete = subject;
-      this.showDeleteModal = true;
-    },
-    async deleteSubject() {
-      this.deleting = true;
-      try {
-        this.subjects = this.subjects.filter(s => s.id !== this.subjectToDelete.id);
-        this.showDeleteModal = false;
-      } catch (error) {
-        console.error('Ошибка при удалении предмета:', error);
-        this.error = error.message || 'Не удалось удалить предмет';
-      } finally {
-        this.deleting = false;
-      }
-    },
-    closeModal() {
-      this.showAddModal = false;
-      this.editingSubject = this.getEmptySubject();
-    },
-    openCompetencies(subject) {
-      this.selectedSubjectId = subject.id;
-       this.selectedSubjectName = subject.name;
-      this.showCompetencies = true;
-    },
-    backToSubjects() {
-      this.showCompetencies = false;
-      this.selectedSubjectId = null;
-      this.selectedSubjectName = null;
-    }
-  }
-};
-</script>
-
-<style scoped>
-.subject-management {
-  padding: 20px;
-}
-
-.subject-card {
-  transition: transform 0.2s;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.subject-card:hover {
-  transform: translateY(-5px);
-}
-
-.btn-outline-info {
-  color: #0dcaf0;
-  border-color: #0dcaf0;
-}
-
-.btn-outline-info:hover {
-  color: #fff;
-  background-color: #0dcaf0;
-  border-color: #0dcaf0;
-}
-
-.icon-container {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.bg-blue {
-  background-color: #0d6efd;
-}
-
-.subject-stats {
-  display: flex;
-  gap: 15px;
-  margin-top: 15px;
-  font-size: 0.9rem;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.modal-backdrop {
-  opacity: 0.5;
-}
-</style>

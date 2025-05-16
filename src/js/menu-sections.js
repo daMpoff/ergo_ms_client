@@ -151,9 +151,12 @@ export const TeamBuildingMenuSection = {
   title: 'Формирование команды',
 }
 // ЭС компетенции
-export const CompetenciesMenuSection = {
+export const ExpsysMenuSection = {
   id: 15,
   icon: HandHeart,
-  routeName: 'Competencies',
+  routeName: 'Expsys',
   title: 'Экспертная система',
+    list: [
+    { path: 'Subjects', name: 'Предметы' },
+  ],
 }

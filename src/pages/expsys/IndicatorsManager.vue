@@ -1,11 +1,11 @@
 <script >
-import {fetchSubjectCompetencies} from '@/js/api/services/expsysService';
-import CompetenceDetailsModal from './CompetenceDetailsModal.vue';
+import {fetchSubjectCompetencies,fetchCompetencies} from '@/js/api/services/expsysService';
+import IndicatorDetailsModal from './IndicatorDetailsModal.vue';
 
 export default {
   name: 'CompetenciesManager',
   components: {
-    CompetenceDetailsModal
+   IndicatorDetailsModal
   },
     props: {
     subjectId: {
@@ -15,7 +15,12 @@ export default {
     subjectName: {
       type: String,
       default: 'Не указано'
-    }
+    },
+    isCompetencies:
+    {
+      type:Boolean,
+      default:false
+    },
   },
   data() {
     return {
@@ -58,8 +63,17 @@ export default {
       this.loading = true;
       this.error = null;
       try {
+       if (!this.isCompetencies)
+       {
         const data = await fetchSubjectCompetencies(this.subjectId);
         this.competencies = Array.isArray(data) ? data : [];
+       }
+       else
+       {
+        const data = await fetchCompetencies();
+        this.competencies = Array.isArray(data) ? data : [];
+       }
+     
       } catch (error) {
         this.error = error.message || 'Не удалось загрузить компетенции';
       } finally {
@@ -94,8 +108,8 @@ export default {
   <div class="competence-management">
     <div class="row mb-4">
       <div class="col">
-        <h2>Компетенции предмета</h2>
-        <button class="btn btn-primary me-2" @click="addCompetence">Добавить компетенцию</button>
+        <h2>Индикаторы компетенций предмета</h2>
+        <button class="btn btn-primary me-2" @click="addCompetence">Добавить индикатор</button>
         <button class="btn btn-secondary" @click="$emit('back')">Назад к предметам</button>
       </div>
     </div>
@@ -124,7 +138,7 @@ export default {
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ editingCompetence.id ? 'Редактировать' : 'Добавить' }} компетенцию</h5>
+            <h5 class="modal-title">{{ editingCompetence.id ? 'Редактировать' : 'Добавить' }} индикатор</h5>
             <button type="button" class="btn-close" @click="closeModal"></button>
           </div>
           <div class="modal-body">
@@ -176,7 +190,7 @@ export default {
     <div class="modal-backdrop fade show" v-if="showDeleteModal"></div>
 
     <!-- Модальное окно подробностей -->
-    <CompetenceDetailsModal
+    <IndicatorDetailsModal
       v-if="selectedCompetence"
       :competence="selectedCompetence"
       :subject-name="subjectName" 

@@ -8,7 +8,7 @@
           <div class="grid-row">
             <div class="grid-cell icon-cell"></div>
             <div class="grid-cell input-cell">
-              <h3>Детали компетенции</h3>
+              <h3>Детали индикатора компетенции</h3>
             </div>
           </div>
 
@@ -33,7 +33,7 @@
               </svg>
             </div>
             <div class="grid-cell input-cell">
-              <label class="input-label">Название компетенции</label>
+              <label class="input-label">Название индикатора</label>
               <input type="text" v-model="currentCompetence.name" placeholder="Введите название" class="task-input">
             </div>
           </div>

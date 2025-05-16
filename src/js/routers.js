@@ -313,14 +313,7 @@ const teambuildingRoutes = [
   },
 ]
 // ЭС компетенции
-const competenciesRoutes = [
-  {
-    path: '/competencies',
-    name: 'Competencies',
-    component: () => import('@/pages/competencies/ParentLayout.vue'),
-    meta: { title: 'ЭС_компетенции', requiresAuth: true },
-  },
-]
+
 // Компоненты
 const componentsRoutes = [
   {
@@ -434,13 +427,19 @@ const expsysRoutes = [
   {
     path: '/expsys',
     name: 'Expsys',
-    component: () => import('@/pages/competencies/ParentLayout1.vue'),
-    redirect: { name: 'Предметы' },
+    component: () => import('@/pages/expsys/ParentLayout.vue'),
+    redirect: { name: 'Subjects' },
     children: [
       {
         path: 'subjects',
         name: 'Subjects',
-        component: () => import('@/pages/competencies/SubjectsManager.vue'),
+        component: () => import('@/pages/expsys/SubjectsManager.vue'),
+        meta: { title: 'Предметы', requiresAuth: true },
+      },
+      {
+        path: 'indicators',
+        name: 'Indicators',
+        component: () => import('@/pages/expsys/IndicatorsManager.vue'),
         meta: { title: 'Предметы', requiresAuth: true },
       },
     ],
@@ -464,7 +463,6 @@ const routes = [
   ...inputsRoutes,
   ...componentsRoutes,
   ...teambuildingRoutes,
-  ...competenciesRoutes,
   ...expsysRoutes,
 ]
 

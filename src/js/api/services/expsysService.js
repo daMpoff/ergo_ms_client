@@ -37,6 +37,26 @@ export const fetchSubjectCompetencies = async (subjectId) => {
   }
 };
 
+export const fetchCompetencies = async () => {
+  try {
+    const response = await apiClient.get(endpoints.expsys.subjects.competencies, {
+    });
+
+    if (!response.success) {
+      throw new Error(response.errors?.message || 'Ошибка при загрузке компетенций');
+    }
+
+    return response.data.data.map(comp => ({
+      id: comp.id,
+      name: comp.name,
+      description: comp.description,
+    }));
+  } catch (error) {
+    console.error('Ошибка в fetchCompetencies:', error.message);
+    throw error;
+  }
+};
+
 export const fetchTeacherSubjects = async () => {
   try {
     const userId = Cookies.get('userId');
