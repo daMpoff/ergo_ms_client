@@ -185,9 +185,8 @@ export default {
         }
         else{
           this.close()
+          this.$router.push({name:'Profile'})
         }
-        
-        
       } catch (err) {
         this.error = err.message || 'Ошибка при сохранении профиля'
       } finally {
