@@ -435,37 +435,37 @@ const expertSystemRoutes = [
         meta: { title: 'Группы обучения', requiresAuth: true }
       },
       {
-        path: 'proforientaion',
-        name: 'Proforientaion',
+        path: 'proforientation',
+        name: 'Proforientation',
         component:() => import ('@/pages/expert-system/ProforientationTest.vue'),
         meta: { title: 'Профориентация', requiresAuth: true }
       },
       {
-        path:'addstudentskills',
+        path:'addstudent-skills',
         name: 'Addstudentskills',
         component:()=>import ('@/pages/expert-system/AddSkillForStudentsWithExpirience.vue'),
         meta: { title: 'Добавление навыков студенту', requiresAuth: true }
       },
       {
-        path: 'Professions',
+        path: 'profession-manager',
         name: 'Profession',
         component:() => import ('@/pages/expert-system/ProfessionManager.vue'),
         meta: { title: 'Менеджер профессий', requiresAuth: true }
       },
       {
-        path: 'OrientationTest',
+        path: 'orientation-test',
         name: 'OrientationTest',
         component:() => import ('@/pages/expert-system/OrientationTestManager.vue'),
         meta: { title: 'Менеджер ориентационных тестов', requiresAuth: true }
       },
       {
-        path: 'OrientationQuestion',
+        path: 'orientation-question',
         name: 'OrientationQuestion',
         component:() => import ('@/pages/expert-system/OrientationQuestionManager.vue'),
         meta: { title: 'Менеджер управление ориентационными вопросами', requiresAuth: true }
       },
       {
-        path: 'OrientationAnswer',
+        path: 'orientation-answer',
         name: 'OrientationAnswer',
         component:() => import ('@/pages/expert-system/OrientationAnswerManager.vue'),
         meta: { title: 'Менеджер управление вариантов ответов на вопросы', requiresAuth: true }
