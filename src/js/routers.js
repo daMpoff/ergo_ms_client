@@ -502,6 +502,15 @@ const expertSystemTestsRoutes = [
         component: () => import('@/pages/expert-system-tests/TestPage.vue'),
         meta: { title: 'Тест', requiresAuth: true },
       },
+      {
+        path:'test-preview/:id',
+        name:'TestPreview',
+        component:()=> import('@/pages/expert-system-tests/TestViewPage.vue'),
+        meta:{title:'Предпросмотр теста', requiresAuth:true},
+        props:(route)=>({
+          id:route.params.id
+        })
+      }
       
      
     ]

@@ -37,6 +37,7 @@ export const endpoints = {
 
     getAllTests: 'expert_system/get-all-tests',
     createTest: 'expert_system/create-test',
-    deleteTest:'expert_system/delete-test'
+    deleteTest:'expert_system/delete-test',
+    getTest:'expert_system/get-test'
   }
 };

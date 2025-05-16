@@ -29,9 +29,14 @@
               <input v-model="test.title" type="text" class="form-control" placeholder="Введите название теста" />
             </div>
             <div class="mb-3">
-              <label class="form-label"><strong>Умение</strong></label>
-              <input v-model="test.skill" type="text" class="form-control" placeholder="Например: JavaScript, Vue.js..." />
-            </div>
+        <label class="form-label"><strong>Умение</strong></label>
+        <select v-model="test.skill" class="form-select" required>
+          <option disabled value="">Выберите умение</option>
+          <option v-for="skill in skills" :key="skill.id" :value="skill.name">
+            {{ skill.name }}
+          </option>
+        </select>
+      </div>
             <div class="mb-3">
               <label class="form-label"><strong>Описание</strong></label>
               <textarea v-model="test.description" class="form-control" rows="3" placeholder="Краткое описание теста"></textarea>
@@ -107,8 +112,10 @@
   </template>
   
   <script setup>
-  import { ref, computed } from 'vue'
-  
+  import { endpoints } from '@/js/api/endpoints'
+import { apiClient } from '@/js/api/manager'
+import { ref, computed, onMounted } from 'vue'
+import router from '@/js/routers'
   // Данные
   const mode = ref('create')
   const test = ref({
@@ -118,7 +125,7 @@
     questions: []
   })
   const errors = ref([])
-  
+  const skills = ref([])
   // Вычисляемые свойства
   const isTestValidForPreview = computed(() => {
     validate()
@@ -159,7 +166,6 @@
   
   function validate() {
     errors.value = []
-  
     if (!test.value.title.trim()) errors.value.push('Название теста не может быть пустым')
     if (!test.value.skill.trim()) errors.value.push('Поле "умение" обязательно для заполнения')
     if (!test.value.description.trim()) errors.value.push('Добавьте описание теста')
@@ -181,13 +187,16 @@
     return errors.value.length === 0
   }
   
-  function saveTest() {
+ async  function saveTest() {
     if (!validate()) return
-  
-    // Здесь можно отправить данные на сервер
-    console.log('Сохранённый тест:', JSON.stringify(test.value, null, 2))
-
+    await apiClient.post(endpoints.expert_system.createTest, test.value)
+    router.push({name:'AllTests'})
   }
+
+  onMounted(async()=>{
+    const response = await apiClient.get(endpoints.expert_system.skills);
+    skills.value = response.data;
+  })
   </script>
   
   <style scoped>

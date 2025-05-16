@@ -22,7 +22,7 @@
                 <button @click="deleteTest(test.id)" class="btn btn-outline-danger btn-sm">
                    Удалить
                 </button>
-                <button @click="" class="btn btn-outline-danger btn-sm">
+                <button @click="checktest(test.id)" class="btn btn-outline-danger btn-sm">
                    Просмотр теста
                 </button>
               </div>
@@ -60,11 +60,14 @@ const addNewTest = () => {
 const editTest = (test) => {
   alert(`Редактирование теста: ${test.title}`)
 }
-
-// Функция удаления теста
-const deleteTest = async (id) => {
+const checktest = (id)=>{
   console.log(id)
-  await apiClient.delete(endpoints.expert_system.deleteTest, {'id':id})
+  router.push({name:'TestPreview', params:{id:id} })
+}
+// Функция удаления теста
+const deleteTest = async (testid) => {
+  let url = `${endpoints.expert_system.deleteTest}/${testid}/`
+  await apiClient.delete(url);
   tests.value = tests.value.filter(test => test.id !== id)
 }
 </script>
