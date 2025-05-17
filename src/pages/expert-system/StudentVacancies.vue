@@ -137,7 +137,7 @@ async function fetchMySkills() {
     const res = await apiClient.get(endpoints.expert_system.getUserSkills)
     if (!res.success) throw new Error(JSON.stringify(res.errors))
     // ожидаем [{id, name, status}, ...]
-    mySkills.value = res.data.map(s => s.id)
+    mySkills.value = res.data.map(s => s.skill_id)
   } catch (err) {
     emit('error', err.message || 'Не удалось загрузить мои навыки')
   }
