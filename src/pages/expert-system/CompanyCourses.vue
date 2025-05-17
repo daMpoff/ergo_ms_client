@@ -24,13 +24,17 @@ import CreateCourse from '@/pages/expert-system/CreateCourse.vue'
 
 const courses = ref([])
 
+const emit = defineEmits(['error'])
+
 async function fetchCourses() {
   try {
     const res = await apiClient.get(endpoints.expert_system.courses)
-    if (res.success) courses.value = res.data
-    else throw new Error(JSON.stringify(res.errors))
+    if (res.success) {
+      courses.value = res.data
+    } else {
+      throw new Error(JSON.stringify(res.errors))
+    }
   } catch (err) {
-    // передаём ошибку наверх
     emit('error', err.message || 'Не удалось загрузить курсы')
   }
 }
