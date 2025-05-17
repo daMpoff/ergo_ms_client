@@ -469,6 +469,12 @@ const expertSystemRoutes = [
         name: 'OrientationAnswer',
         component:() => import ('@/pages/expert-system/OrientationAnswerManager.vue'),
         meta: { title: 'Менеджер управление вариантов ответов на вопросы', requiresAuth: true }
+      },
+      {
+        path: 'vacancies',
+        name: 'Vacancies',
+        component:() => import ('@/pages/expert-system/StudentVacancies.vue'),
+        meta: { title: 'Вакансии', requiresAuth: true }
       }
     ]
   },
