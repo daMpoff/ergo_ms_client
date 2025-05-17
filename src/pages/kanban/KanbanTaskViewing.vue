@@ -110,13 +110,21 @@ const saveTask = () => {
 
 const deleteTask = async () => {
   if (!currentTask.value?.id) return;
-
-  const success = await kanbanStore.deleteTask(currentTask.value.id);
-  if (success) {
-    closeModal();
+  
+  try {
+    const confirmed = confirm('Вы уверены, что хотите удалить эту задачу и все подзадачи?');
+    if (!confirmed) return;
+    
+    const { success, message } = await kanbanStore.deleteTask(currentTask.value.id);
+    
+    if (success) {
+      toast.success(message || 'Задача успешно удалена');
+      closeModal();
+    }
+  } catch (error) {
+    toast.error(error.message || 'Произошла ошибка при удалении');
   }
 };
-
 
 const closeModal = () => {
   kanbanStore.cleanSelectedTask()
@@ -239,12 +247,20 @@ const closeModal = () => {
 
           <!-- Седьмая строка - кнопки -->
           <div class="grid-row button-row">
-            <div class="grid-cell icon-cell"></div>
-            <div class="grid-cell button-cell">
-              <button class="action-button delete-button" @click="deleteTask">Удалить задачу</button>
-              <button class="action-button save-button" @click="saveTask">Сохранить задачу</button>
-            </div>
-          </div>
+    <div class="grid-cell icon-cell"></div>
+    <div class="grid-cell button-cell">
+      <button 
+        class="action-button delete-button" 
+        @click="deleteTask"
+        :disabled="!currentTask?.id"
+      >
+        Удалить задачу
+      </button>
+      <button class="action-button save-button" @click="saveTask">
+        Сохранить задачу
+      </button>
+    </div>
+  </div>
         </div>
       </div>
     </div>

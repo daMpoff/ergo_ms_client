@@ -12,14 +12,15 @@ export const endpoints = {
             sectionTasks: 'crm/tasks/section-tasks/',
             add_task:'crm/tasks/task-new/',
             add_section:'crm/tasks/section-new/',
-            delete_task:'/api/crm/tasks/task-delete/{id}/',
+            delete_task:'crm/tasks/delete-task/{id}/'
         },
         projects:
         {
             allprojects:'crm/projects/project-all/',
             personalprojects:'crm/projects/project-personal/',
             invitedprojects:'crm/projects/project-invited/',
-
+            addproject:'crm/projects/project-new-add/',
+            addprojectuser:'crm/projects/projectuser-new-add/',
         }
     },
     expsys: {

@@ -312,52 +312,39 @@ const createTask = async (taskData) => {
       throw error
     }
   }
+  
+// Удаление задачи
+const deleteTask = async (taskId) => {
+  if (!currentUserId.value) {
+    toast.error('Необходимо авторизоваться');
+    return { success: false };
+  }
 
-  // Удаление задачи
-  const deleteTask = async (taskId) => {
-    if (!currentUserId.value) {
-      toast.error('Необходимо авторизоваться');
-      return false;
-    }
-  
-    try {
-      // Проверяем существование задачи
-      const task = getTaskById(taskId);
-      if (!task) {
-        toast.error('Задача не найдена');
-        return false;
-      }
-  
-      // Подтверждение удаления
-      if (!confirm(`Удалить задачу "${task.title}"?`)) {
-        return false;
-      }
-  
-      // Отправляем запрос на удаление
-      const response = await apiClient.delete(
-        endpoints.crm.tasks.delete_task.replace('{id}', taskId)
-      );
-  
-      if (!response.success) {
-        throw new Error(response.error || 'Не удалось удалить задачу');
-      }
-  
-      // Обновляем локальное состояние
-      columns.value = columns.value.map(section => ({
-        ...section,
-        cards: section.cards.filter(card => card.id !== taskId)
-      }));
-  
-      toast.success('Задача успешно удалена');
-      return true;
-  
-    } catch (error) {
-      console.error('Delete task error:', error);
-      toast.error(error.message || 'Ошибка при удалении задачи');
-      return false;
-    }
-  };
+  isLoading.value = true;
+  try {
+    const response = await apiClient.delete(
+      endpoints.crm.tasks.delete_task.replace('{id}', taskId)
+    );
 
+    if (!response.success) {
+      throw new Error(response.errors?.message || 'Ошибка при удалении задачи');
+    }
+
+    // Обновляем локальное состояние
+    columns.value = columns.value.map(column => ({
+      ...column,
+      cards: column.cards.filter(card => card.id !== taskId)
+    }));
+
+    return { success: true, message: response.data?.message };
+  } catch (error) {
+    console.error('Delete Task Error:', error);
+    toast.error(error.message || 'Не удалось удалить задачу');
+    return { success: false, error: error.message };
+  } finally {
+    isLoading.value = false;
+  }
+};
   // Инициализация при создании хранилища
   initialize()
 
@@ -374,8 +361,8 @@ const createTask = async (taskData) => {
     setSelectedTask,
     cleanSelectedTask,
     updateTask,
-    deleteTask,
     fetchColumns,
-    fetchSubtasks
+    fetchSubtasks,
+    deleteTask,
   }
 })

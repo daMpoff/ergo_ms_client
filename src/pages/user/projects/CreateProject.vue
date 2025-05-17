@@ -1,15 +1,77 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { ref } from 'vue'
+import { useToast } from 'vue-toastification'
+import { createNewProject,createNewProjectUser } from '@/js/api/services/projectsService'
 
 const router = useRouter()
+const toast = useToast()
+
+const editingProject = ref({
+  name: '',
+  description: '',
+  deadline: ''
+})
+const isLoading = ref(false)
+const error = ref(null)
 
 const closeModal = () => {
-  router.go(-1) // Возврат на предыдущую страницу
+  router.go(-1)
 }
 
 const addParticipants = () => {
-  // Здесь будет логика добавления участников
   console.log('Добавление участников')
+}
+
+
+
+const saveProject = async () => {
+  if (!editingProject.value.name?.trim()) {
+    error.value = 'Введите название проекта'
+    toast.error('Введите название проекта')
+    return
+  }
+  
+  error.value = null
+  isLoading.value = true
+  
+  try {
+    const projectData = {
+      name: editingProject.value.name.trim(),
+      description: editingProject.value.description?.trim() || '',
+      deadline: editingProject.value.deadline || ''
+    }
+
+    // 1. Создаем проект
+    const projectResponse = await createNewProject(projectData)
+    
+    if (!projectResponse.success) {
+      throw new Error(projectResponse.error || 'Ошибка при создании проекта')
+    }
+
+    // 2. Добавляем создателя в проект
+    const projectUserData = {
+      project_id: projectResponse.project.id,
+      user_id: projectResponse.project.creator_id,
+      isnew: true
+    }
+    
+    const userProjectResponse = await createNewProjectUser(projectUserData)
+    
+    if (!userProjectResponse.success) {
+      throw new Error(userProjectResponse.error || 'Ошибка при добавлении в проект')
+    }
+
+    toast.success('Проект успешно создан')
+    closeModal()
+    
+  } catch (err) {
+    console.error('Ошибка сохранения проекта:', err)
+    error.value = err.message
+    toast.error(err.message)
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -19,6 +81,8 @@ const addParticipants = () => {
       <button @click="closeModal" class="close-button">×</button>
       
       <div class="window-container">
+        <div v-if="error" class="error-message">{{ error }}</div>
+        
         <div class="task-grid">
           <!-- Первая строка - название проекта -->
           <div class="grid-row">
@@ -29,7 +93,13 @@ const addParticipants = () => {
             </div>
             <div class="grid-cell input-cell">
               <div class="text-field">
-                <input type="text" placeholder="Название проекта" class="task-input">
+                <input 
+                  v-model="editingProject.name" 
+                  type="text" 
+                  placeholder="Название проекта" 
+                  class="task-input"
+                  :disabled="isLoading"
+                >
               </div>
             </div>
           </div>
@@ -43,7 +113,13 @@ const addParticipants = () => {
             </div>
             <div class="grid-cell input-cell">
               <div class="text-field">
-                <textarea placeholder="Описание проекта" class="description-input" rows="3"></textarea>
+                <textarea 
+                  v-model="editingProject.description" 
+                  placeholder="Описание проекта" 
+                  class="description-input" 
+                  rows="3"
+                  :disabled="isLoading"
+                ></textarea>
               </div>
             </div>
           </div>
@@ -56,7 +132,12 @@ const addParticipants = () => {
               </svg>
             </div>
             <div class="grid-cell input-cell">
-              <input type="date" class="date-picker">
+              <input 
+                type="date" 
+                v-model="editingProject.deadline" 
+                class="date-picker"
+                :disabled="isLoading"
+              >
             </div>
           </div>
   
@@ -68,7 +149,11 @@ const addParticipants = () => {
               </svg>
             </div>
             <div class="grid-cell input-cell">
-              <button @click="addParticipants" class="add-participant-button">
+              <button 
+                @click="addParticipants" 
+                class="add-participant-button"
+                :disabled="isLoading"
+              >
                 Добавить участника
               </button>
             </div>
@@ -78,8 +163,20 @@ const addParticipants = () => {
           <div class="grid-row button-row">
             <div class="grid-cell icon-cell"></div>
             <div class="grid-cell button-cell">
-              <button @click="closeModal" class="action-button cancel-button">Отмена</button>
-              <button class="action-button save-button">Создать проект</button>
+              <button 
+                @click="closeModal" 
+                class="action-button cancel-button"
+                :disabled="isLoading"
+              >
+                Отмена
+              </button>
+              <button 
+                @click="saveProject" 
+                class="action-button save-button"
+                :disabled="!editingProject.name.trim() || isLoading"
+              >
+                {{ isLoading ? 'Создание...' : 'Создать проект' }}
+              </button>
             </div>
           </div>
         </div>
