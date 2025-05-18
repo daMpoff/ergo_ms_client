@@ -34,8 +34,8 @@ async function fetchCourses() {
     } else {
       throw new Error(JSON.stringify(res.errors))
     }
-  } catch (err) {
-    emit('error', err.message || 'Не удалось загрузить курсы')
+  } catch {
+    emit('error', 'Не удалось загрузить курсы')
   }
 }
 
