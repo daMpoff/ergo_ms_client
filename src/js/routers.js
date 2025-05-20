@@ -469,54 +469,40 @@ const expertSystemRoutes = [
         name: 'OrientationAnswer',
         component:() => import ('@/pages/expert-system/OrientationAnswerManager.vue'),
         meta: { title: 'Менеджер управление вариантов ответов на вопросы', requiresAuth: true }
-      }
-    ]
-  },
-]
-
-const expertSystemTestsRoutes = [
-  {
-    path: '/expert-system-tests',
-    name: 'ExpertSystemTests',
-    component: () => import('@/pages/expert-system-tests/ParenLayout.vue'),
-    meta: {
-      requiresAuth: true,
-    },
-    redirect: { name: 'AllTests' },
-    children: [
+      },
       {
         path: 'all-tests',
         name: 'AllTests',
-        component: () => import('@/pages/expert-system-tests/AllTestsPage.vue'),
+        component: () => import('@/pages/expert-system/Tests/AllTestsPage.vue'),
         meta: { title: 'Тесты', requiresAuth: true },
       },
       {
         path: 'test-creation',
         name: 'TestCreation',
-        component: () => import('@/pages/expert-system-tests/TestCreation.vue'),
+        component: () => import('@/pages/expert-system/Tests/TestCreation.vue'),
         meta: { title: 'Создание тестов', requiresAuth: true },
-      },
-      {
-        path: 'test',
-        name: 'Test',
-        component: () => import('@/pages/expert-system-tests/TestPage.vue'),
-        meta: { title: 'Тест', requiresAuth: true },
       },
       {
         path:'test-preview/:id',
         name:'TestPreview',
-        component:()=> import('@/pages/expert-system-tests/TestViewPage.vue'),
+        component:()=> import('@/pages/expert-system/Tests/TestViewPage.vue'),
+        meta:{title:'Предпросмотр теста', requiresAuth:true},
+        props:(route)=>({
+          id:route.params.id
+        })
+      },
+      {
+        path:'test/:id',
+        name:'TestPage',
+        component:()=> import('@/pages/expert-system/Tests/TestPage.vue'),
         meta:{title:'Предпросмотр теста', requiresAuth:true},
         props:(route)=>({
           id:route.params.id
         })
       }
-      
-     
     ]
   },
 ]
-
 
 const routes = [
   ...startRoutes,
@@ -536,7 +522,6 @@ const routes = [
   ...inputsRoutes,
   ...componentsRoutes,
   ...expertSystemRoutes,
-  ...expertSystemTestsRoutes
 ]
 
 routes.forEach((route) => {

@@ -2,8 +2,7 @@
     <div class="container mt-5">
       <h1 class="mb-4">Список тестов</h1>
       <div class="row g-4">
-  
-        <!-- Существующие тесты -->
+
         <div class="col-md-4" v-for="test in tests" :key="test.id">
           <div class="card mb-4 shadow-sm h-100">
             <div class="card-body d-flex flex-column">
@@ -14,16 +13,12 @@
                 <strong>Описание:</strong> {{ test.description }}
               </p>
   
-              <!-- Кнопки всегда внизу -->
               <div class="mt-auto d-grid gap-2 d-md-flex justify-content-md-between">
-                <button @click="editTest(test)" class="btn btn-outline-primary btn-sm me-2">
+                <button @click="checktest(test.id)" class="btn btn-outline-primary btn-sm me-2">
                    Редактировать
                 </button>
                 <button @click="deleteTest(test.id)" class="btn btn-outline-danger btn-sm">
                    Удалить
-                </button>
-                <button @click="checktest(test.id)" class="btn btn-outline-danger btn-sm">
-                   Просмотр теста
                 </button>
               </div>
             </div>
@@ -45,7 +40,7 @@ import { ref, onMounted } from 'vue'
 import router from '@/js/routers'
 import { endpoints } from '@/js/api/endpoints'
 import { apiClient } from '@/js/api/manager'
-// Список тестов
+
 const tests = ref(  )
 onMounted(async ()=>{
  let t = await apiClient.get(endpoints.expert_system.getAllTests)
@@ -56,19 +51,14 @@ const addNewTest = () => {
   router.push({ name: 'TestCreation' })
 }
 
-// Функция редактирования теста
-const editTest = (test) => {
-  alert(`Редактирование теста: ${test.title}`)
-}
 const checktest = (id)=>{
-  console.log(id)
   router.push({name:'TestPreview', params:{id:id} })
 }
 // Функция удаления теста
 const deleteTest = async (testid) => {
   let url = `${endpoints.expert_system.deleteTest}/${testid}/`
   await apiClient.delete(url);
-  tests.value = tests.value.filter(test => test.id !== id)
+  tests.value = tests.value.filter(test => test.id !== testid)
 }
 </script>
   

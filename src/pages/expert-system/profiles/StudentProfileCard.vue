@@ -144,7 +144,7 @@
               <td>
                 <button 
                   class="btn btn-sm btn-primary me-2" 
-                  :disabled="item.status"
+                  @click="gototest(item.name)"
                 >
                   Пройти тест
                 </button>
@@ -191,6 +191,22 @@
   <ModalCenter title="Добавление новых умений" modalId="EditSkills">
     <AddSkillModal @AddSkillTest="AddSkills"  ref="addSkillModalRef"/>
   </ModalCenter>
+  <div v-if="testnotexist" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">Ошибка</h5>
+            <button type="button" class="btn-close btn-close-white" @click="testnotexist = false"></button>
+          </div>
+          <div class="modal-body">
+            Теста по выбранному навыку не существует
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="testnotexist = false">Закрыть</button>
+          </div>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script setup>
@@ -199,6 +215,7 @@ import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import ModalCenter from '@/components/ModalCenter.vue'
 import AddSkillModal from './StudentProfileComponents/AddSkillModal.vue'
+import router from '@/js/routers'
 
 
 const addSkillModalRef = ref(null);
@@ -208,7 +225,7 @@ const addSkillModalRef = ref(null);
 const items = ref([])
 const addskilllist = ref([])
 const deleteskillliest = ref([])
-
+const testnotexist = ref(false)
 // Принимаем пропс student
 const props = defineProps({
   student: { type: Object, required: true }
@@ -243,6 +260,18 @@ async function loadskills(){
 onMounted(async () => {
 await loadskills()
 })
+
+
+const gototest= async (skill)=>{
+  const response = await apiClient.get(endpoints.expert_system.getTestIdBySkill, {skill:skill})
+  let testid = response.data.id
+  if(testid==null){
+    testnotexist.value = true
+  }
+  else{
+    router.push({name:'TestPage', params: {id:testid}})
+  }
+}
 
 // Переключение режима редактирования
 function toggleEdit() {

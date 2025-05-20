@@ -131,19 +131,7 @@ export const InputsMenuSection = {
 }
 
 // Модальные окна
-export const ComponentsMenuSection = {
-  id: 13,
-  icon: Component,
-  routeName: 'Components',
-  title: 'Остальные',
-  list: [
-    { path: 'Alerts', name: 'Уведомления' },
-    { path: 'Badges', name: 'Значки' },
-    { path: 'Carousel', name: 'Карусель' },
-    { path: 'ListGroups', name: 'Группы списков' },
-    { path: 'Typography', name: 'Типография' },
-  ],
-}
+
 
 export const ExpertSystemSection = {
   id: 14,
@@ -156,19 +144,20 @@ export const ExpertSystemSection = {
     { path: 'Groups', name: 'Группы'},
     { path: 'Proforientaion', name: 'Профориентация'},
     { path: 'Profession', name: 'Менеджер профессий'},
-    { path: 'OrientationTest', name: 'Менеджер ориентационных тестов'},
-    { path: 'OrientationQuestion', name: 'Менеджер управление ориентационными вопросами'},
-    { path: 'OrientationAnswer', name: 'Менеджер управление вариантов ответов на вопросы'}
+    {path: 'AllTests', name:'Управление тестами'}
   ],
 }
 
-export const ExpertSystemTestsSection ={
-  id: 15,
-  icon: FileJson,
-  routeName: 'ExpertSystemTests',
-  title: 'Работа с тестами',
+export const ComponentsMenuSection = {
+  id: 13,
+  icon: Component,
+  routeName: 'Components',
+  title: 'Остальные',
   list: [
-    { path: 'AllTests', name: 'Тесты' },
+    { path: 'Alerts', name: 'Уведомления' },
+    { path: 'Badges', name: 'Значки' },
+    { path: 'Carousel', name: 'Карусель' },
+    { path: 'ListGroups', name: 'Группы списков' },
+    { path: 'Typography', name: 'Типография' },
   ],
-
 }

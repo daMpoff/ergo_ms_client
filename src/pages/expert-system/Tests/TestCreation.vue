@@ -2,25 +2,13 @@
     <div class="container mt-5">
       <h2 class="mb-4">Создание нового теста</h2>
   
-      <!-- Переключатель режимов -->
-      <div class="btn-group mb-3" role="group">
-        <input type="radio" class="btn-check" name="mode" id="createMode" autocomplete="off" v-model="mode" value="create" checked />
-        <label class="btn btn-outline-primary" for="createMode">Создание</label>
-  
-        <input type="radio" class="btn-check" name="mode" id="previewMode" autocomplete="off" v-model="mode" value="preview" />
-        <label class="btn btn-outline-secondary" :disabled="!isTestValidForPreview" for="previewMode">Предпросмотр</label>
-      </div>
-  
-      <!-- Сообщение об ошибках -->
-      <div v-if="errors.length && mode === 'create'" class="alert alert-danger">
+      <div v-if="errors.length" class="alert alert-danger">
         <strong>Исправьте ошибки:</strong>
         <ul>
           <li v-for="(error, i) in errors" :key="i">{{ error }}</li>
         </ul>
       </div>
-  
-      <!-- Режим создания теста -->
-      <div v-if="mode === 'create'">
+
         <!-- Общие параметры теста -->
         <div class="card mb-4 shadow-sm">
           <div class="card-body">
@@ -80,34 +68,7 @@
         <button @click="addQuestion" class="btn btn-primary mb-4">Добавить вопрос</button>
         <button @click="saveTest" class="btn btn-primary mb-4"> Сохранить тест</button>
         </div>
-      </div>
   
-      <!-- Режим предпросмотра теста -->
-      <div v-if="mode === 'preview'">
-        <div class="card mb-4 shadow-sm p-4 bg-light">
-          <h4>{{ test.title }}</h4>
-          <p><strong>Умение:</strong> {{ test.skill }}</p>
-          <p><strong>Описание:</strong> {{ test.description }}</p>
-  
-          <hr />
-  
-          <div v-for="(question, index) in test.questions" :key="index" class="mb-4">
-            <h6>Вопрос {{ index + 1 }}:</h6>
-            <p>{{ question.text }}</p>
-  
-            <div class="list-group">
-              <label
-                v-for="(answer, aIndex) in question.answers"
-                :key="aIndex"
-                class="list-group-item d-flex justify-content-between align-items-center"
-              >
-                <span>{{ answer.text }}</span>
-                <span v-if="answer.isCorrect" class="badge bg-success">Правильный</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </template>
   
@@ -126,11 +87,7 @@ import router from '@/js/routers'
   })
   const errors = ref([])
   const skills = ref([])
-  // Вычисляемые свойства
-  const isTestValidForPreview = computed(() => {
-    validate()
-    return errors.value.length === 0
-  })
+
   
   // Методы
   function addQuestion() {
@@ -194,8 +151,9 @@ import router from '@/js/routers'
   }
 
   onMounted(async()=>{
-    const response = await apiClient.get(endpoints.expert_system.skills);
+    const response = await apiClient.get(endpoints.expert_system.getSkillsForCreate);
     skills.value = response.data;
+    validate()
   })
   </script>
   

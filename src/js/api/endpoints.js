@@ -38,6 +38,12 @@ export const endpoints = {
     getAllTests: 'expert_system/get-all-tests',
     createTest: 'expert_system/create-test',
     deleteTest:'expert_system/delete-test',
-    getTest:'expert_system/get-test'
+    getTest:'expert_system/get-test',
+    updateTest:'expert_system/patch-test',
+    getSkillsForCreate:'expert_system/get-skills-for-create-test',
+    getSkillsForRedact:'expert_system/get-skills-for-redact-test',
+    getTestIdBySkill:'expert_system/get-test-id-by-skill',
+    getTestForRedact:'expert_system/get-test-for-redact',
+    evaluateTest: 'expert_system/evaluate-test'
   }
 };
