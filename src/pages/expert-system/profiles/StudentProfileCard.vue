@@ -162,7 +162,7 @@
         <!-- Кнопка добавления навыка -->
         <div class="d-flex justify-content-end mt-2">
           <button 
-            class="btn btn-success" 
+            class="btn btn-success text-light me-2"
             data-bs-toggle="modal"
             data-bs-target="#EditSkills"
           >
@@ -174,7 +174,7 @@
       <!-- Кнопки сохранения -->
       <div v-if="editMode" class="mt-3 text-end">
         <button
-          class="btn btn-success me-2"
+          class="btn btn-success text-light me-2"
           @click="saveProfile"
           :disabled="saving"
         >
