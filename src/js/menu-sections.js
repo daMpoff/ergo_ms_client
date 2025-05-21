@@ -13,7 +13,6 @@ import {
   TextCursorInput,
   UserCog,
   Wallet,
-FileJson
 } from 'lucide-vue-next'
 
 // Аккаунт
