@@ -126,7 +126,6 @@ export default {
     close() {
       this.$router.back()
     },
-
     onPhoneFocus(e) {
       if (!this.form.phone.startsWith('+7')) {
         this.form.phone = '+7'
@@ -184,10 +183,8 @@ export default {
           this.$router.push({ name: 'Addstudentskills' })
         }
         else{
-          this.close()
+          this.$router.push({name:'Proforientation'})
         }
-        
-        
       } catch (err) {
         this.error = err.message || 'Ошибка при сохранении профиля'
       } finally {

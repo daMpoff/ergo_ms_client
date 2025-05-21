@@ -1,108 +1,146 @@
 <template>
-  <button class="btn btn-outline-primary btn-sm mb-3" @click="show = true">
-    + Создать вакансию
-  </button>
+  <div>
+    <button class="btn fs-5 btn-primary btn-sm mt-2" @click="show = true">
+      + Создать вакансию
+    </button>
 
-  <div v-if="show" class="modal-backdrop">
-    <div class="modal-dialog">
-      <div class="modal-content p-4">
-        <button type="button" class="btn-close float-end" @click="close" />
-        <h5 class="mb-3">Новая вакансия</h5>
-
-        <div v-if="error" class="alert alert-danger">{{ error }}</div>
-        <form @submit.prevent="onSubmit">
-          <div class="mb-2">
-            <label class="form-label">Заголовок</label>
-            <input v-model="form.title" class="form-control" required />
+    <div v-if="show" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-success">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title">Новая вакансия</h5>
+            <button type="button" class="btn-close btn-close-white" @click="close" />
           </div>
 
-          <div class="mb-2">
-            <label class="form-label">Описание</label>
-            <textarea
-              v-model="form.description"
-              class="form-control"
-              rows="3"
-              required
-            ></textarea>
-          </div>
+          <div class="modal-body">
+            <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
-          <div class="mb-3">
-            <label class="form-label">Поиск навыков</label>
-            <input
-              type="text"
-              class="form-control form-control-sm"
-              v-model="searchTerm"
-              placeholder="Введите часть названия навыка"
-            />
-          </div>
+            <form @submit.prevent="onSubmit">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <input
+                      v-model="form.title"
+                      type="text"
+                      class="form-control"
+                      id="vacancyTitle"
+                      placeholder="Заголовок"
+                      required
+                    />
+                    <label for="vacancyTitle">Заголовок</label>
+                  </div>
+                </div>
 
-          <div class="mb-3 skills-list">
-            <label class="form-label">Требуемые навыки</label>
-            <div v-if="filteredSkills.length">
-              <div
-                v-for="skill in filteredSkills"
-                :key="skill.id"
-                class="form-check"
-              >
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  :id="`skill-${skill.id}`"
-                  :value="skill.id"
-                  v-model="form.required_skills"
-                />
-                <label
-                  class="form-check-label"
-                  :for="`skill-${skill.id}`"
-                >
-                  {{ skill.name }}
-                </label>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <textarea
+                      v-model="form.description"
+                      class="form-control"
+                      placeholder="Описание"
+                      id="vacancyDesc"
+                      style="height: 100px"
+                      required
+                    ></textarea>
+                    <label for="vacancyDesc">Описание</label>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <div class="input-group">
+                    <span class="input-group-text bg-white border-success">
+                      🔍
+                    </span>
+                    <input
+                      v-model="searchTerm"
+                      type="text"
+                      class="form-control border-success"
+                      placeholder="Поиск навыков"
+                    />
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <div class="card h-100 border-success">
+                    <div class="card-header bg-light">
+                      Выберите навыки
+                    </div>
+                    <div class="card-body p-2 skills-list">
+                      <div v-if="filteredSkills.length">
+                        <div
+                          v-for="skill in filteredSkills"
+                          :key="skill.id"
+                          class="form-check mb-1"
+                        >
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            :id="`skill-${skill.id}`"
+                            :value="skill.id"
+                            v-model="form.required_skills"
+                          />
+                          <label
+                            class="form-check-label"
+                            :for="`skill-${skill.id}`"
+                          >
+                            {{ skill.name }}
+                          </label>
+                        </div>
+                      </div>
+                      <div v-else class="text-muted small">
+                        Навыки не найдены.
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div v-else class="text-muted">
-              Навыки не найдены.
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            class="btn btn-success"
-            :disabled="loading"
-          >
-            {{ loading ? 'Сохраняем...' : 'Создать' }}
-          </button>
-        </form>
+              <div class="mt-4 text-end">
+                <button
+                  type="submit"
+                  class="btn btn-success me-2"
+                  :disabled="loading"
+                >
+                  {{ loading ? 'Сохраняем...' : 'Создать' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  @click="close"
+                  :disabled="loading"
+                >
+                  Отменить
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 
-const emit = defineEmits(['created', 'error'])
+const emit = defineEmits(['created','error'])
 
-const show            = ref(false)
-const loading         = ref(false)
-const error           = ref(null)
-const searchTerm      = ref('')
-const form            = ref({
-  title: '',
-  description: '',
-  required_skills: []
-})
-const skills          = ref([])
+const show        = ref(false)
+const loading     = ref(false)
+const error       = ref(null)
+const searchTerm  = ref('')
+const form        = reactive({ title: '', description: '', required_skills: [] })
+const skills      = ref([])
 
 function close() {
   show.value = false
-  form.value = { title: '', description: '', required_skills: [] }
-  searchTerm.value = ''
   error.value = null
+  loading.value = false
+  searchTerm.value = ''
+  Object.assign(form, { title: '', description: '', required_skills: [] })
 }
 
-// загрузка списка навыков
 onMounted(async () => {
   try {
     const res = await apiClient.get(endpoints.expert_system.skills)
@@ -113,13 +151,10 @@ onMounted(async () => {
   }
 })
 
-// вычисляемый список по фильтру
 const filteredSkills = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
   if (!term) return skills.value
-  return skills.value.filter(s =>
-    s.name.toLowerCase().includes(term)
-  )
+  return skills.value.filter(s => s.name.toLowerCase().includes(term))
 })
 
 async function onSubmit() {
@@ -127,11 +162,17 @@ async function onSubmit() {
   loading.value = true
 
   try {
+    const payload = {
+      title: form.title,
+      description: form.description,
+      required_skills: form.required_skills
+    }
     const res = await apiClient.post(
       endpoints.expert_system.vacancies,
-      form.value
+      payload
     )
     if (!res.success) throw new Error(JSON.stringify(res.errors))
+
     emit('created')
     close()
   } catch (err) {
@@ -144,25 +185,20 @@ async function onSubmit() {
 </script>
 
 <style scoped>
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .modal-dialog {
-  background: #fff;
-  border-radius: .5rem;
-  max-width: 480px;
-  width: 100%;
+  max-width: 800px;
 }
+
 .skills-list {
   max-height: 200px;
   overflow-y: auto;
-  padding-left: 0.25rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 0.25rem;
+}
+
+.card-header {
+  font-weight: 600;
+}
+
+.btn-close-white {
+  filter: invert(1);
 }
 </style>

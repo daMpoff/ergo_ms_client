@@ -38,7 +38,7 @@
       </td>
       <td>
         <button
-          class="btn btn-sm btn-success me-2"
+          class="btn btn-success text-light me-2"
           @click="updateRole()"
         >
           Сохранить
@@ -92,7 +92,7 @@
         />
       </div>
       <button
-        class="btn btn-success"
+        class="btn btn-success text-light me-2"
         @click="addRole"
         :disabled="!newRoleName || !newRoleDesc"
       >

@@ -7,7 +7,7 @@
 
     <div class="mb-3 d-flex">
       <input v-model="newText" class="form-control me-2" placeholder="Текст нового вопроса" />
-      <button class="btn btn-success" @click="addQuestion" :disabled="!newText">Добавить вопрос</button>
+      <button class="btn btn-sm btn-success text-light me-2" @click="addQuestion" :disabled="!newText">Добавить вопрос</button>
     </div>
 
     <ul class="list-group">
