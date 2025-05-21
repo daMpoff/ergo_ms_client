@@ -419,20 +419,20 @@ const expertSystemRoutes = [
       {
         path: 'student-register',
         name: 'StudentRegister',
-        component:() => import ('@/pages/expert-system/StudentRegister.vue'),
-        meta: { title: 'Регистрация студента', requiresAuth: true }
+        component: () => import('@/pages/expert-system/StudentRegister.vue'),
+        meta: { title: 'Регистрация студента', requiresAuth: true },
       },
       {
         path: 'company-register',
         name: 'CompanyRegister',
-        component:() => import ('@/pages/expert-system/CompanyRegister.vue'),
-        meta: { title: 'Вход / Регистрация работодателя', requiresAuth: true }
+        component: () => import('@/pages/expert-system/CompanyRegister.vue'),
+        meta: { title: 'Вход / Регистрация работодателя', requiresAuth: true },
       },
       {
         path: 'group-manager',
         name: 'Groups',
-        component:() => import ('@/pages/expert-system/GroupManager.vue'),
-        meta: { title: 'Группы обучения', requiresAuth: true }
+        component: () => import('@/pages/expert-system/GroupManager.vue'),
+        meta: { title: 'Группы обучения', requiresAuth: true },
       },
       {
         path: 'proforientation',
@@ -443,34 +443,58 @@ const expertSystemRoutes = [
       {
         path:'addstudent-skills',
         name: 'Addstudentskills',
-        component:()=>import ('@/pages/expert-system/AddSkillForStudentsWithExpirience.vue'),
-        meta: { title: 'Добавление навыков студенту', requiresAuth: true }
+        component: () => import('@/pages/expert-system/AddSkillForStudentsWithExpirience.vue'),
+        meta: { title: 'Добавление навыков студенту', requiresAuth: true },
       },
       {
         path: 'profession-manager',
         name: 'Profession',
-        component:() => import ('@/pages/expert-system/ProfessionManager.vue'),
-        meta: { title: 'Менеджер профессий', requiresAuth: true }
+        component: () => import('@/pages/expert-system/ProfessionManager.vue'),
+        meta: { title: 'Менеджер профессий', requiresAuth: true },
       },
       {
         path: 'orientation-test',
         name: 'OrientationTest',
-        component:() => import ('@/pages/expert-system/OrientationTestManager.vue'),
-        meta: { title: 'Менеджер ориентационных тестов', requiresAuth: true }
+        component: () => import('@/pages/expert-system/OrientationTestManager.vue'),
+        meta: { title: 'Менеджер ориентационных тестов', requiresAuth: true },
       },
       {
         path: 'orientation-question',
         name: 'OrientationQuestion',
-        component:() => import ('@/pages/expert-system/OrientationQuestionManager.vue'),
-        meta: { title: 'Менеджер управление ориентационными вопросами', requiresAuth: true }
+        component: () => import('@/pages/expert-system/OrientationQuestionManager.vue'),
+        meta: { title: 'Менеджер управление ориентационными вопросами', requiresAuth: true },
       },
       {
         path: 'orientation-answer',
         name: 'OrientationAnswer',
-        component:() => import ('@/pages/expert-system/OrientationAnswerManager.vue'),
-        meta: { title: 'Менеджер управление вариантов ответов на вопросы', requiresAuth: true }
-      }
-    ]
+        component: () => import('@/pages/expert-system/OrientationAnswerManager.vue'),
+        meta: { title: 'Менеджер управление вариантов ответов на вопросы', requiresAuth: true },
+      },
+      {
+        path: 'vacancies',
+        name: 'Vacancies',
+        component: () => import('@/pages/expert-system/StudentVacancies.vue'),
+        meta: { title: 'Вакансии', requiresAuth: true },
+      },
+      {
+        path: '/vacancy/:id',
+        name: 'VacancyDetail',
+        component: () => import('@/pages/expert-system/VacancyDetail.vue'),
+        meta: {
+          title: 'Детали вакансии',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/company/:id',
+        name: 'CompanyDetail',
+        component: () => import('@/pages/expert-system/CompanyDetail.vue'),
+        meta: {
+          title: 'Детали компании',
+          requiresAuth: true,
+        },
+      },
+    ],
   },
 ]
 
