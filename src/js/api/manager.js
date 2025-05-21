@@ -33,6 +33,16 @@ class ApiClient {
             if (needToken) {
                 this._addAuthToken(config);
             }
+
+            // Если отправляем FormData, не устанавливаем Content-Type,
+            // чтобы axios автоматически установил правильный multipart/form-data с boundary
+            if (data instanceof FormData) {
+                config.headers = {
+                    ...config.headers,
+                    'Content-Type': undefined // Позволяет axios автоматически установить правильный заголовок
+                };
+            }
+
             const response = await this.client.post(endpoint, data, config);
             return this.handleResponse(response);
         } catch (error) {
@@ -46,6 +56,16 @@ class ApiClient {
             if (needToken) {
                 this._addAuthToken(config);
             }
+
+            // Если отправляем FormData, не устанавливаем Content-Type,
+            // чтобы axios автоматически установил правильный multipart/form-data с boundary
+            if (data instanceof FormData) {
+                config.headers = {
+                    ...config.headers,
+                    'Content-Type': undefined // Позволяет axios автоматически установить правильный заголовок
+                };
+            }
+
             const response = await this.client.put(endpoint, data, config);
             return this.handleResponse(response);
         } catch (error) {
@@ -85,19 +105,49 @@ class ApiClient {
 
     // Generic response handlers
     handleResponse(response) {
-        if (response.status === 200) {
-            return { success: true, data: response.data };
+        // Успешные статусы: 200 OK, 201 Created, 204 No Content и т.д.
+        if (response.status >= 200 && response.status < 300) {
+            const data = response.data || {};
+
+            // Если сервер вернул success: false, сохраняем это значение
+            // Иначе считаем ответ успешным по умолчанию
+            const success = data.success !== undefined ? data.success : true;
+
+            return {
+                success,
+                data,
+                message: data.message,
+                status: response.status
+            };
         }
-        return { success: false, errors: response.data };
+
+        return {
+            success: false,
+            errors: response.data,
+            status: response.status
+        };
     }
 
     handleError(error) {
+        const errorMessage = error.response?.data?.message ||
+                            error.response?.data?.detail ||
+                            error.response?.data ||
+                            error.message ||
+                            'Ошибка сервера';
+
+        const status = error.response?.status;
+        const statusText = error.response?.statusText;
+
+        console.error(`API Error [${status}${statusText ? ' ' + statusText : ''}]:`, errorMessage);
+
         return {
             success: false,
-            errors: error.response?.data || 'Ошибка сервера.',
+            message: errorMessage,
+            status: status,
+            errors: error.response?.data
         };
     }
 }
 
 // Create and export a singleton instance
-export const apiClient = new ApiClient(); 
+export const apiClient = new ApiClient();

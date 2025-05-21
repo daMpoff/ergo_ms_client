@@ -12,6 +12,11 @@ export const endpoints = {
         tables: 'learning_analytics/tables/',
         clearTables: 'learning_analytics/tables/clear/',
 
+        excel: {
+            upload: 'learning_analytics/data_formalization_submodule/upload-excel/',
+            process: 'learning_analytics/data_formalization_submodule/process-excel/'
+        },
+
         relations: {
             disciplineTechnology: 'learning_analytics/data_formalization_submodule/relations/discipline-technology/',
             disciplineCompetency: 'learning_analytics/data_formalization_submodule/relations/discipline-competency/',
@@ -98,6 +103,16 @@ export const endpoints = {
             update: (pk) => `learning_analytics/data_formalization_submodule/ucms/${pk}/`,
             delete: (pk) => `learning_analytics/data_formalization_submodule/ucms/${pk}/`,
             loadSampleData: 'learning_analytics/data_formalization_submodule/ucms/loadsampledata/',
+        },
+        importHistory: {
+            get: 'learning_analytics/data_formalization_submodule/import_history/',
+            create: 'learning_analytics/data_formalization_submodule/import_history/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/import_history/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/import_history/${pk}/`,
+        },
+        importStats: {
+            get: 'learning_analytics/data_formalization_submodule/import_stats/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/import_stats/${pk}/`,
         },
     },
 };

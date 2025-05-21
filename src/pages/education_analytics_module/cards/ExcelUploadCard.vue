@@ -5,7 +5,7 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="mb-0 text-primary d-flex align-items-center">
           <FileSpreadsheet :size="22" class="me-2"/>
-          Загрузка Excel файлов
+          Загрузка файлов
         </h3>
       </div>
 
@@ -22,14 +22,17 @@
             <option value="" disabled>Выберите тип данных</option>
             <option value="curriculum">Учебный план, .xsls</option>
             <option value="competencies">Компетенции, .csv</option>
-            <option value="disciplines">Дисциплины, . csv</option>
+            <option value="technologies">Технологии, . csv</option>
             <option value="vacancies">Вакансии, .csv</option>
             <option value="custom">Пользовательский формат, .json</option>
           </select>
         </div>
 
         <div class="mb-3">
-          <label for="excelFile" class="form-label">Выберите файл:</label>
+          <label for="excelFile" class="form-label d-flex justify-content-between align-items-center">
+            <span>Выберите файл:</span>
+            <small v-if="!uploadType" class="text-danger">Выберите входной тип данных</small>
+          </label>
           <input
             type="file"
             class="form-control"
@@ -37,6 +40,7 @@
             ref="fileInput"
             accept=".xlsx,.xls"
             @change="handleFileChange"
+            :disabled="!uploadType"
           />
         </div>
 
@@ -82,7 +86,7 @@
 
           <button
             @click="processFile"
-            :disabled="!isFileUploaded || isProcessing || isUploading"
+            :disabled="!canProcess"
             class="btn btn-primary d-flex align-items-center action-btn">
             <template v-if="isProcessing">
               <span class="spinner-border spinner-border-sm me-2" role="status"></span>
@@ -97,23 +101,71 @@
       </div>
 
       <!-- Результаты предварительного просмотра -->
-      <div v-if="previewData.length > 0" class="preview-section mb-4">
+      <div v-if="previewData && previewData.length > 0" class="preview-section mb-4">
         <h4 class="mb-3">Предварительный просмотр данных</h4>
         <div class="preview-container">
-          <table class="table table-bordered table-hover table-sm">
-            <thead class="table-light">
+          <table class="table table-bordered table-hover table-sm preview-table">
+            <thead>
               <tr>
-                <th v-for="(column, index) in previewHeaders" :key="index">{{ column }}</th>
+                <th v-for="(column, index) in previewHeaders || []" :key="index">{{ column }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, rowIndex) in previewData.slice(0, 5)" :key="rowIndex">
-                <td v-for="(cell, cellIndex) in row" :key="cellIndex">{{ cell }}</td>
+              <tr v-for="(row, rowIndex) in (previewData || []).slice(0, 5)" :key="rowIndex">
+                <td v-for="(cell, cellIndex) in row || []" :key="cellIndex">{{ cell }}</td>
               </tr>
             </tbody>
           </table>
-          <div v-if="previewData.length > 5" class="text-muted text-center mt-2">
+          <div v-if="previewData && previewData.length > 5" class="text-muted text-center mt-2">
             Показаны первые 5 строк из {{ previewData.length }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Краткая информация о файле учебного плана -->
+      <div v-if="uploadType === 'curriculum' && Object.keys(fileSummary).length > 0" class="file-summary-section mb-4">
+        <h5 class="summary-title mb-3"><FileSpreadsheet class="me-2" :size="18" /> Информация об учебном плане</h5>
+        <div class="summary-container p-3">
+          <div class="row g-3">
+            <!-- Основная информация -->
+            <div class="col-md-12 mb-2">
+              <div class="d-flex align-items-center mb-2">
+                <span class="info-badge specialty">{{ fileSummary.specialty_code || '' }}</span>
+                <span class="ms-2 specialty-name">{{ fileSummary.specialty_name || 'Не указано' }}</span>
+              </div>
+              <div class="info-secondary mb-1" v-if="fileSummary.specialization">
+                Специализация: {{ fileSummary.specialization }}
+              </div>
+              <div class="info-secondary" v-if="fileSummary.department">
+                Кафедра: {{ fileSummary.department }}
+              </div>
+            </div>
+
+            <!-- Дополнительная информация -->
+            <div class="col-sm-6 col-lg-3">
+              <div class="info-tile">
+                <span class="info-label">Год набора</span>
+                <span class="info-value">{{ fileSummary.year_of_admission || 'Не указано' }}</span>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="info-tile">
+                <span class="info-label">Срок обучения</span>
+                <span class="info-value">{{ fileSummary.education_duration || '-' }} семестров</span>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="info-tile">
+                <span class="info-label">Дисциплины</span>
+                <span class="info-value">{{ disciplinesCount || 0 }}</span>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="info-tile">
+                <span class="info-label">Компетенции</span>
+                <span class="info-value">{{ competenciesCount || 0 }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -148,9 +200,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { FileSpreadsheet, File, Info, Upload, BarChartBig, X, CheckCircle2, AlertCircle } from 'lucide-vue-next'
-// Закомментируем неиспользуемые импорты до момента фактической реализации API
-// import { apiClient } from '@/js/api/manager'
-// import { endpoints } from '@/js/api/endpoints'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 import ToastNotification from './ToastNotification.vue'
 
 const toastRef = ref(null)
@@ -165,10 +216,18 @@ const previewData = ref([])
 const previewHeaders = ref([])
 const processingResults = ref(null)
 const processingSuccess = ref(false)
+const fileSummary = ref({})
+const disciplinesCount = ref(0)
+const competenciesCount = ref(0)
 
-// Проверка возможности загрузки
+// Проверка наличия выбранного файла
 const canUpload = computed(() => {
-  return selectedFile.value && uploadType.value
+  return selectedFile.value !== null && uploadType.value !== ''
+})
+
+// Проверка возможности обработки данных
+const canProcess = computed(() => {
+  return isFileUploaded.value && !isProcessing.value
 })
 
 // Обработка выбора файла
@@ -198,6 +257,9 @@ const resetResults = () => {
   previewHeaders.value = []
   processingResults.value = null
   isFileUploaded.value = false
+  fileSummary.value = {}
+  disciplinesCount.value = 0
+  competenciesCount.value = 0
 }
 
 // Форматирование размера файла
@@ -225,56 +287,47 @@ const uploadFile = async () => {
       formData.append('sheet_name', sheetName.value)
     }
 
-    // Здесь должен быть эндпоинт для загрузки Excel файлов
-    // const endpoint = endpoints.learning_analytics.uploadExcel || '/api/learning-analytics/upload-excel'
+    // Используем apiClient для отправки запроса
+    const response = await apiClient.post(
+      endpoints.learning_analytics.excel.upload,
+      formData,
+      true
+    )
 
-    // TODO: Раскомментировать после добавления эндпоинта в API
-    // const response = await apiClient.post(endpoint, formData, {
-    //   headers: {
-    //     'Content-Type': 'multipart/form-data'
-    //   }
-    // })
+    if (response && response.success) {
+      // Логирование для отладки
+      console.log('Ответ от сервера:', response)
 
-    // Имитация загрузки (замените этот код на реальный запрос)
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    // Симуляция успешного ответа с данными предпросмотра
-    const mockHeaders = ['Название', 'Код', 'Описание', 'Категория', 'Значение']
-    const mockData = [
-      ['Математика', 'MATH101', 'Высшая математика', 'Базовая', '10'],
-      ['Информатика', 'CS101', 'Основы программирования', 'Профильная', '15'],
-      ['Физика', 'PHYS101', 'Общая физика', 'Базовая', '12'],
-      ['Статистика', 'STAT101', 'Теория вероятностей', 'Профильная', '8'],
-      ['Английский', 'ENG101', 'Технический английский', 'Общая', '6'],
-      ['Философия', 'PHIL101', 'История философии', 'Общая', '4']
-    ]
-
-    /* Реальный запрос будет выглядеть примерно так:
-    const response = await apiClient.post(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-
-    if (response.success) {
-      previewHeaders.value = response.data.headers
-      previewData.value = response.data.preview
+      // Устанавливаем заголовки и данные для предпросмотра, с проверкой на наличие данных
+      previewHeaders.value = response.data?.headers || []
+      previewData.value = response.data?.preview || []
       isFileUploaded.value = true
+
+      // Устанавливаем краткую информацию о файле, если она есть
+      fileSummary.value = response.data?.file_summary || {}
+      disciplinesCount.value = response.data?.disciplines_count || 0
+      competenciesCount.value = response.data?.competencies_count || 0
+
+      // Дополнительное логирование для отладки
+      console.log('Информация о файле:', fileSummary.value)
+      console.log('Количество дисциплин:', disciplinesCount.value)
+      console.log('Количество компетенций:', competenciesCount.value)
+
       toastRef.value?.show('Файл успешно загружен', 'success')
     } else {
-      toastRef.value?.show(response.errors?.message || 'Ошибка при загрузке файла', 'error')
+      const errorMessage = response?.message || 'Ошибка при загрузке файла'
+      toastRef.value?.show(errorMessage, 'error')
     }
-    */
-
-    // Пока используем имитацию ответа
-    previewHeaders.value = mockHeaders
-    previewData.value = mockData
-    isFileUploaded.value = true
-    toastRef.value?.show('Файл успешно загружен', 'success')
 
   } catch (error) {
     console.error('Ошибка при загрузке файла:', error)
     toastRef.value?.show(`Ошибка при загрузке файла: ${error.message || 'Неизвестная ошибка'}`, 'error')
+    // Сбрасываем данные предпросмотра в случае ошибки
+    previewData.value = []
+    previewHeaders.value = []
+    fileSummary.value = {}
+    disciplinesCount.value = 0
+    competenciesCount.value = 0
   } finally {
     isUploading.value = false
   }
@@ -289,43 +342,24 @@ const processFile = async () => {
 
   isProcessing.value = true
   try {
-    // Имитация обработки файла (замените на реальный запрос)
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    // Симуляция успешного результата обработки
-    const mockResult = {
-      success: true,
-      message: 'Данные успешно обработаны и сохранены',
-      details: 'Все записи успешно импортированы в базу данных',
-      stats: {
-        'Всего записей': previewData.value.length,
-        'Обработано': previewData.value.length,
-        'Добавлено': previewData.value.length - 1,
-        'Обновлено': 1,
-        'Пропущено': 0
-      }
-    }
-
-    /* Реальный запрос будет выглядеть примерно так:
-    const endpoint = endpoints.learning_analytics.processExcel || '/api/learning-analytics/process-excel'
-    const response = await apiClient.post(endpoint, {
-      type: uploadType.value,
-      sheet_name: sheetName.value || undefined
-    })
+    // Используем apiClient для обработки данных
+    const response = await apiClient.post(
+      endpoints.learning_analytics.excel.process,
+      {
+        type: uploadType.value,
+        sheet_name: sheetName.value || undefined
+      },
+      true
+    )
 
     processingResults.value = {
-      success: response.success,
-      message: response.data?.message || 'Обработка завершена',
-      details: response.data?.details,
-      stats: response.data?.stats
+      success: response?.success || false,
+      message: response?.message || 'Обработка завершена',
+      details: response?.details,
+      stats: response?.stats
     }
-    processingSuccess.value = response.success
-    */
-
-    // Пока используем имитацию ответа
-    processingResults.value = mockResult
-    processingSuccess.value = mockResult.success
-    toastRef.value?.show(mockResult.message, processingSuccess.value ? 'success' : 'error')
+    processingSuccess.value = response?.success || false
+    toastRef.value?.show(response?.message || 'Обработка завершена', processingSuccess.value ? 'success' : 'error')
 
   } catch (error) {
     console.error('Ошибка при обработке файла:', error)
@@ -344,80 +378,78 @@ const processFile = async () => {
 
 <style scoped>
 .excel-upload-card {
-  background: rgba(--bs-body-bg, 0.8);
-  border: 1px solid var(--bs-border-color);
-  box-shadow: 0 4px 24px 0 rgba(60, 72, 88, 0.08), 0 1.5px 4px 0 rgba(60, 72, 88, 0.04);
-  transition: box-shadow 0.2s;
+  background-color: var(--color-primary-background);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 12px 0 rgba(13, 35, 67, 0.03);
+  transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
 .excel-upload-card:hover {
-  box-shadow: 0 8px 32px 0 rgba(60, 72, 88, 0.16), 0 3px 8px 0 rgba(60, 72, 88, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
 }
 
 .action-btn {
   min-width: 170px;
-  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  transition: all 0.3s ease-in-out;
   font-weight: 500;
   letter-spacing: 0.01em;
-  box-shadow: 0 1px 2px 0 rgba(60,72,88,0.04);
-  background-color: var(--bs-primary);
-  border-color: var(--bs-primary);
-  color: var(--bs-white);
-  font-weight: 600;
-  box-shadow: 0 3px 8px rgba(var(--bs-primary-rgb), 0.25);
+  box-shadow: 0 0.125rem 0.25rem 0 rgba(var(--bs-primary-rgb), 0.4);
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
 }
 
 .action-btn:not(:disabled):hover {
   transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 4px 12px 0 rgba(60,72,88,0.10);
+  box-shadow: 0 0.25rem 0.75rem 0 rgba(var(--bs-primary-rgb), 0.35);
   z-index: 1;
-  background-color: var(--bs-primary);
-  border-color: var(--bs-primary);
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
   filter: brightness(108%);
-  box-shadow: 0 5px 15px rgba(var(--bs-primary-rgb), 0.35);
 }
 
 .action-btn:active:not(:disabled) {
-  background-color: var(--bs-primary);
-  border-color: var(--bs-primary);
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
   filter: brightness(95%);
 }
 
 .preview-container {
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.375rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
 }
 
 .selected-file-info {
-  padding: 0.75rem;
-  background-color: var(--bs-light);
-  border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color);
+  padding: 8px;
+  background-color: var(--color-secondary-background);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
 }
 
 h3 {
-  font-size: 1.45rem;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 500;
   letter-spacing: 0.01em;
+  color: var(--color-primary-text);
 }
 
 h4 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--bs-primary);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--color-accent);
   margin-top: 1.5rem;
 }
 
 .alert {
-  background-color: var(--bs-tertiary-bg);
-  color: var(--bs-secondary-color);
+  background-color: var(--color-secondary-background);
+  color: var(--color-primary-text);
   border: none;
-  box-shadow: 0 1px 4px 0 rgba(60,72,88,0.04);
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
-  font-size: 1.05rem;
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -427,5 +459,106 @@ h4 {
 
 @keyframes spinner-border {
   to { transform: rotate(360deg); }
+}
+
+.preview-table {
+  width: 100%;
+  color: var(--color-primary-text);
+  background-color: var(--color-primary-background);
+  border-color: var(--color-border);
+}
+
+.preview-table thead {
+  background-color: var(--color-secondary-background);
+  color: var(--color-primary-text);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.preview-table th,
+.preview-table td {
+  padding: 8px;
+  border-color: var(--color-border);
+}
+
+.preview-table tbody tr:hover {
+  background-color: var(--color-hover-background);
+}
+
+.text-muted {
+  color: var(--color-secondary-text) !important;
+}
+
+.file-summary-section {
+  margin-top: 1.5rem;
+}
+
+.summary-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-primary-text);
+  display: flex;
+  align-items: center;
+}
+
+.summary-container {
+  background-color: var(--color-primary-background);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.specialty-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-primary-text);
+}
+
+.info-secondary {
+  font-size: 0.95rem;
+  color: var(--color-secondary-text);
+}
+
+.info-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+}
+
+.info-badge.specialty {
+  background-color: var(--color-accent);
+}
+
+.info-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  background-color: var(--color-secondary-background);
+  border-radius: 6px;
+  height: 100%;
+}
+
+.info-label {
+  font-size: 0.9rem;
+  color: var(--color-secondary-text);
+  margin-bottom: 0.25rem;
+}
+
+.info-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-primary-text);
+}
+
+/* Уменьшаем размер для мобильных устройств */
+@media (max-width: 768px) {
+  .info-value {
+    font-size: 1.25rem;
+  }
+
+  .specialty-name {
+    font-size: 1.1rem;
+  }
 }
 </style>

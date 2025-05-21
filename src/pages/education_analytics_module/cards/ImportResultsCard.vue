@@ -20,37 +20,27 @@
       <!-- Статистика импорта -->
       <div class="import-stats mb-4">
         <div class="row g-4">
-          <div class="col-md-6 col-lg-3">
+          <div class="col-md-4">
             <div class="stats-card bg-primary-subtle p-3 rounded-3 h-100">
               <div class="d-flex align-items-center mb-2">
                 <FileText :size="20" class="me-2 text-primary"/>
                 <h5 class="mb-0">Файлы</h5>
               </div>
-              <div class="stats-number">{{ stats.filesCount }}</div>
+              <div class="stats-number">{{ animatedStats.filesCount }}</div>
               <div class="stats-label">Всего обработано</div>
             </div>
           </div>
-          <div class="col-md-6 col-lg-3">
+          <div class="col-md-4">
             <div class="stats-card bg-success-subtle p-3 rounded-3 h-100">
               <div class="d-flex align-items-center mb-2">
                 <CheckCircle2 :size="20" class="me-2 text-success"/>
                 <h5 class="mb-0">Импорт</h5>
               </div>
-              <div class="stats-number">{{ stats.totalRecords }}</div>
+              <div class="stats-number">{{ animatedStats.totalRecords }}</div>
               <div class="stats-label">Всего записей</div>
             </div>
           </div>
-          <div class="col-md-6 col-lg-3">
-            <div class="stats-card bg-warning-subtle p-3 rounded-3 h-100">
-              <div class="d-flex align-items-center mb-2">
-                <AlertCircle :size="20" class="me-2 text-warning"/>
-                <h5 class="mb-0">Ошибки</h5>
-              </div>
-              <div class="stats-number">{{ stats.errorsCount }}</div>
-              <div class="stats-label">Количество ошибок</div>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-3">
+          <div class="col-md-4">
             <div class="stats-card bg-info-subtle p-3 rounded-3 h-100">
               <div class="d-flex align-items-center mb-2">
                 <Clock :size="20" class="me-2 text-info"/>
@@ -87,56 +77,38 @@
           <p class="text-muted">История импорта пуста</p>
         </div>
 
-        <div v-else class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Дата и время</th>
-                <th>Тип данных</th>
-                <th>Файл</th>
-                <th>Записей</th>
-                <th>Результат</th>
-                <th>Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in filteredHistory" :key="index">
-                <td>{{ formatDate(item.timestamp) }}</td>
-                <td>{{ translateDataType(item.dataType) }}</td>
-                <td class="text-truncate" style="max-width: 200px">{{ item.fileName }}</td>
-                <td>{{ item.recordsCount }}</td>
-                <td>
-                  <span
-                    class="badge"
-                    :class="item.status === 'success' ? 'text-bg-success' :
-                           item.status === 'warning' ? 'text-bg-warning' :
-                           'text-bg-danger'"
-                  >
-                    {{ translateStatus(item.status) }}
-                  </span>
-                </td>
-                <td>
-                  <div class="d-flex">
-                    <button
-                      class="btn btn-sm btn-outline-secondary me-2"
-                      @click="showDetails(item)"
-                      :title="'Подробности импорта ' + item.fileName"
+        <div v-else class="table-container" :class="{ 'visible': tableVisible }">
+          <div class="table-responsive-x">
+            <table class="modern-table-full">
+              <thead>
+                <tr>
+                  <th>Дата и время</th>
+                  <th>Тип данных</th>
+                  <th>Файл</th>
+                  <th>Записей</th>
+                  <th>Результат</th>
+                </tr>
+              </thead>
+              <tbody>
+                                <tr v-for="(item, index) in filteredHistory" :key="index"                    :style="isInitialLoad ? { animationDelay: (index * 0.05) + 's' } : {}"                    :class="{ 'table-row-animate': isInitialLoad }">
+                  <td>{{ formatDate(item.timestamp) }}</td>
+                  <td>{{ translateDataType(item.dataType) }}</td>
+                  <td class="text-truncate" style="max-width: 200px">{{ item.fileName }}</td>
+                  <td>{{ item.recordsCount }}</td>
+                  <td>
+                    <span
+                      class="badge status-badge"
+                      :class="item.status === 'success' ? 'status-success' :
+                             item.status === 'warning' ? 'status-warning' :
+                             'status-danger'"
                     >
-                      <Eye :size="16" />
-                    </button>
-                    <button
-                      v-if="item.canRepeat"
-                      class="btn btn-sm btn-outline-primary"
-                      @click="repeatImport(item)"
-                      :title="'Повторить импорт ' + item.fileName"
-                    >
-                      <Repeat :size="16" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                      {{ translateStatus(item.status) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Пагинация -->
@@ -257,10 +229,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Database, FileText, CheckCircle2, AlertCircle, Clock, Search, Eye, Repeat,
+import { Database, FileText, CheckCircle2, Clock, Search,
         FileQuestion, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-vue-next'
-// import { apiClient } from '@/js/api/manager'
-// import { endpoints } from '@/js/api/endpoints'
+// Раскомментируем импорты для API
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 import ToastNotification from './ToastNotification.vue'
 
 // Состояние
@@ -271,15 +244,22 @@ const currentPage = ref(1)
 const pageSize = 10
 const selectedImport = ref(null)
 const toastRef = ref(null)
+// Флаг для отслеживания первоначальной загрузки (добавляем)
+const isInitialLoad = ref(true)
 const stats = ref({
   filesCount: 0,
   totalRecords: 0,
-  errorsCount: 0,
   lastImportDate: 'Не выполнялся'
 })
 
-// Модальное окно
-let importDetailsModal = null
+// Анимируемые значения для статистики
+const animatedStats = ref({
+  filesCount: 0,
+  totalRecords: 0
+})
+
+// Флаг для анимации таблицы
+const tableVisible = ref(false)
 
 // Фильтрация истории
 const filteredHistory = computed(() => {
@@ -320,149 +300,151 @@ watch(searchQuery, () => {
   currentPage.value = 1
 })
 
+// Следим за изменением страницы для моментального отображения таблицы (добавляем)
+watch(currentPage, () => {
+  if (!isInitialLoad.value) {
+    // Если это не первая загрузка, сразу отображаем таблицу
+    tableVisible.value = true
+  }
+})
+
 // Инициализация
 onMounted(() => {
-  // Инициализация модального окна
-  if (typeof window !== 'undefined' && window.bootstrap) {
-    importDetailsModal = new window.bootstrap.Modal(document.getElementById('importDetailsModal'))
-  }
+  // Добавляем импорт шрифтов для новой стилизации таблицы
+  const link = document.createElement('link')
+  link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
+  link.rel = 'stylesheet'
+  document.head.appendChild(link)
 
   // Загрузка данных
   loadImportHistory()
 })
 
+// Анимация чисел
+const animateNumber = (target, propertyName, endValue, duration = 1000) => {
+  const startValue = target[propertyName]
+  const startTime = Date.now()
+  const changeInValue = endValue - startValue
+
+  const animate = () => {
+    const elapsedTime = Date.now() - startTime
+    const progress = Math.min(elapsedTime / duration, 1)
+    // Используем функцию easeOutQuad для более естественной анимации
+    const easeOutQuad = t => t * (2 - t)
+    const easedProgress = easeOutQuad(progress)
+
+    target[propertyName] = Math.round(startValue + changeInValue * easedProgress)
+
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    } else {
+      target[propertyName] = endValue // Гарантируем конечное значение
+    }
+  }
+
+  requestAnimationFrame(animate)
+}
+
+// Загрузка статистики импорта
+const loadImportStats = async () => {
+  try {
+    const response = await apiClient.get(endpoints.learning_analytics.importStats.get);
+
+    if (response.success && response.data) {
+      // Получаем данные из ответа API
+      const statsData = Array.isArray(response.data) ? response.data[0] : response.data;
+
+      // Обновляем статистику
+      stats.value.filesCount = statsData.sum_of_imported_files || 0;
+      stats.value.totalRecords = statsData.sum_of_imported_records || 0;
+
+      // Форматируем дату последнего импорта, если она есть
+      if (statsData.last_file_timestamp) {
+        stats.value.lastImportDate = formatDate(statsData.last_file_timestamp);
+      } else {
+        stats.value.lastImportDate = 'Не выполнялся';
+      }
+
+      // Запускаем анимацию чисел
+      animateNumber(animatedStats.value, 'filesCount', stats.value.filesCount, 1500);
+      animateNumber(animatedStats.value, 'totalRecords', stats.value.totalRecords, 2000);
+    } else {
+      // Если нет данных или ошибка, устанавливаем нулевые значения
+      stats.value = {
+        filesCount: 0,
+        totalRecords: 0,
+        lastImportDate: 'Не выполнялся'
+      };
+
+      // Обнуляем анимируемые значения
+      animatedStats.value = {
+        filesCount: 0,
+        totalRecords: 0
+      };
+    }
+  } catch (error) {
+    console.error('Ошибка при загрузке статистики импорта:', error);
+    toastRef.value?.show('Ошибка при загрузке статистики импорта', 'error');
+  }
+};
+
 // Загрузка истории импорта
 const loadImportHistory = async () => {
-  isLoading.value = true
+  isLoading.value = true;
+  tableVisible.value = false;
 
   try {
-    // В реальном коде тут был бы запрос к API
-    // const response = await apiClient.get(endpoints.learning_analytics.importHistory)
-    // importHistory.value = response.data.history
+    // Загружаем историю импорта через API
+    const response = await apiClient.get(endpoints.learning_analytics.importHistory.get);
 
-    // Имитация загрузки данных
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    if (response.success) {
+      // Получаем данные из ответа
+      const historyData = response.data?.data || response.data || [];
 
-    // Демонстрационные данные
-    importHistory.value = [
-      {
-        id: 1,
-        timestamp: '2023-09-10T14:30:00',
-        dataType: 'curriculum',
-        fileName: 'curriculum_sample_2023.xlsx',
-        recordsCount: 56,
-        status: 'success',
-        canRepeat: true,
+      // Преобразуем данные в нужный формат, если требуется
+      importHistory.value = historyData.map(item => ({
+        id: item.id,
+        timestamp: item.created_at || item.timestamp,
+        dataType: item.data_type,
+        fileName: item.file_name,
+        recordsCount: item.records_count,
+        status: item.status,
         stats: {
-          added: 48,
-          updated: 8,
-          skipped: 0,
-          errors: 0
-        }
-      },
-      {
-        id: 2,
-        timestamp: '2023-09-05T10:15:00',
-        dataType: 'competencies',
-        fileName: 'competencies_2023.csv',
-        recordsCount: 120,
-        status: 'warning',
-        canRepeat: true,
-        stats: {
-          added: 105,
-          updated: 0,
-          skipped: 15,
-          errors: 0
+          added: item.stats?.added || 0,
+          updated: item.stats?.updated || 0,
+          skipped: item.stats?.skipped || 0,
+          errors: item.stats?.errors || 0
         },
-        errorDetails: []
-      },
-      {
-        id: 3,
-        timestamp: '2023-08-28T09:45:00',
-        dataType: 'disciplines',
-        fileName: 'disciplines_courses.csv',
-        recordsCount: 75,
-        status: 'error',
-        canRepeat: true,
-        stats: {
-          added: 65,
-          updated: 0,
-          skipped: 0,
-          errors: 10
-        },
-        errorDetails: [
-          'Строка 12: Отсутствует обязательное поле "Код дисциплины"',
-          'Строка 24: Некорректный формат часов "abc"',
-          'Строка 43-53: Дублирующиеся значения в поле "Код дисциплины"'
-        ]
-      },
-      {
-        id: 4,
-        timestamp: '2023-08-15T16:20:00',
-        dataType: 'vacancies',
-        fileName: 'vacancies_it_august.csv',
-        recordsCount: 250,
-        status: 'success',
-        canRepeat: true,
-        stats: {
-          added: 250,
-          updated: 0,
-          skipped: 0,
-          errors: 0
-        }
-      },
-      {
-        id: 5,
-        timestamp: '2023-07-30T11:10:00',
-        dataType: 'custom',
-        fileName: 'custom_data_format.json',
-        recordsCount: 30,
-        status: 'success',
-        canRepeat: true,
-        stats: {
-          added: 27,
-          updated: 3,
-          skipped: 0,
-          errors: 0
-        }
+        errorDetails: item.error_details || []
+      }));
+
+      // Загружаем статистику
+      await loadImportStats();
+
+      // Анимируем появление таблицы только при первой загрузке (изменяем)
+      if (isInitialLoad.value) {
+        setTimeout(() => {
+          tableVisible.value = true;
+          // После первой загрузки меняем флаг на false
+          isInitialLoad.value = false;
+        }, 100);
+      } else {
+        // При последующих загрузках сразу показываем таблицу без анимации
+        tableVisible.value = true;
       }
-    ]
-
-    // Обновляем статистику
-    updateStats()
-
+    } else {
+      // Если ошибка в ответе
+      importHistory.value = [];
+      toastRef.value?.show(response.message || 'Ошибка при загрузке истории импорта', 'error');
+    }
   } catch (error) {
-    console.error('Ошибка при загрузке истории импорта:', error)
-    toastRef.value?.show('Ошибка при загрузке истории импорта', 'error')
+    console.error('Ошибка при загрузке истории импорта:', error);
+    importHistory.value = [];
+    toastRef.value?.show('Ошибка при загрузке истории импорта', 'error');
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
-
-// Обновление статистики
-const updateStats = () => {
-  const history = importHistory.value
-
-  if (history.length > 0) {
-    // Общее количество файлов
-    stats.value.filesCount = history.length
-
-    // Общее количество записей
-    stats.value.totalRecords = history.reduce((sum, item) => sum + item.recordsCount, 0)
-
-    // Количество ошибок
-    stats.value.errorsCount = history.reduce((sum, item) => {
-      return sum + (item.stats?.errors || 0)
-    }, 0)
-
-    // Дата последнего импорта
-    const lastImport = [...history].sort((a, b) =>
-      new Date(b.timestamp) - new Date(a.timestamp)
-    )[0]
-
-    stats.value.lastImportDate = formatDate(lastImport.timestamp)
-  }
-}
+};
 
 // Перевод типа данных
 const translateDataType = (type) => {
@@ -515,32 +497,62 @@ const formatDate = (dateString, detailed = false) => {
 }
 
 // Обновление данных
-const refresh = () => {
-  loadImportHistory()
-  toastRef.value?.show('Данные обновлены', 'success')
-}
+const refresh = async () => {
+  // Сбрасываем значения для красивой анимации
+  animatedStats.value = {
+    filesCount: 0,
+    totalRecords: 0
+  };
 
-// Показать детали импорта
-const showDetails = (importItem) => {
-  selectedImport.value = importItem
+  // Включаем анимацию при обновлении данных через кнопку (добавляем)
+  isInitialLoad.value = true;
 
-  // Открываем модальное окно
-  if (importDetailsModal) {
-    importDetailsModal.show()
-  }
-}
+  await loadImportHistory();
+  toastRef.value?.show('Данные обновлены', 'success');
+};
+
+// Функция showDetails удалена, так как больше не используется
 
 // Повторить импорт
-const repeatImport = (importItem) => {
-  toastRef.value?.show(`Повторный импорт ${importItem.fileName}. Функция в разработке.`, 'info')
+const repeatImport = async (importItem) => {
+  toastRef.value?.show(`Повторный импорт ${importItem.fileName}. Функция в разработке.`, 'info');
 
-  // Здесь должен быть код для повторного импорта
+  // Здесь можно добавить реальную логику повторного импорта
   // Например:
-  // apiClient.post(endpoints.learning_analytics.reimport, { id: importItem.id })
-}
+  // try {
+  //   const response = await apiClient.post(endpoints.learning_analytics.reimport, { id: importItem.id });
+  //   if (response.success) {
+  //     toastRef.value?.show('Импорт успешно запущен', 'success');
+  //     await loadImportHistory();
+  //   } else {
+  //     toastRef.value?.show(response.message || 'Ошибка при повторном импорте', 'error');
+  //   }
+  // } catch (error) {
+  //   toastRef.value?.show('Ошибка при повторном импорте', 'error');
+  // }
+};
 </script>
 
 <style scoped>
+/* Подключаем переменные для таблицы из TableEditor */
+:root {
+  --table-border-radius: 0.5rem;
+  --table-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --table-border: 1px solid var(--bs-border-color);
+  --color-primary-background: var(--bs-body-bg);
+  --color-secondary-background: white;
+  --color-primary-text: var(--bs-body-color);
+  --color-secondary-text: var(--bs-secondary-color);
+  --color-border: var(--bs-border-color);
+  --color-accent: var(--bs-primary);
+  --color-table-header: rgba(var(--bs-primary-rgb), 0.08);
+  --color-table-row-hover: rgba(var(--bs-primary-rgb), 0.04);
+  --color-success: var(--bs-success);
+  --color-danger: var(--bs-danger);
+  --color-warning: var(--bs-warning);
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 .import-results-card {
   background: rgba(--bs-body-bg, 0.8);
   border: 1px solid var(--bs-border-color);
@@ -599,15 +611,153 @@ h5 {
   color: var(--bs-secondary-color);
 }
 
-.table th {
-  font-weight: 600;
-  background-color: var(--bs-tertiary-bg);
+/* Новые стили для улучшенной таблицы */
+.table-responsive-x {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--table-border-radius);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: var(--color-secondary-background);
+  position: relative;
+  border: 1px solid var(--bs-border-color);
 }
 
-.table-responsive {
-  border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color);
+.modern-table-full {
+  width: 100%;
+  border-radius: var(--table-border-radius);
+  background: var(--color-secondary-background);
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--font-family-base);
   overflow: hidden;
+}
+
+.modern-table-full th,
+.modern-table-full td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--bs-border-color);
+  border-right: 1px solid rgba(var(--bs-border-color-rgb), 0.5);
+  font-size: 14px;
+  line-height: 1.5;
+  background: transparent;
+  color: var(--color-primary-text);
+  font-family: var(--font-family-base);
+}
+
+.modern-table-full th:last-child,
+.modern-table-full td:last-child {
+  border-right: none;
+}
+
+.modern-table-full th {
+  background: rgba(var(--bs-primary-rgb), 0.08);
+  font-weight: 600;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 2px solid var(--bs-primary);
+  color: var(--bs-primary);
+}
+
+.modern-table-full td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modern-table-full tbody tr {
+  transition: background-color 0.15s ease-in-out;
+}
+
+.modern-table-full tbody tr:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.04);
+}
+
+.modern-table-full tbody tr:nth-child(even) {
+  background-color: rgba(var(--bs-tertiary-bg-rgb), 0.3);
+}
+
+/* Стили для статусных меток */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.status-success {
+  background-color: rgba(var(--bs-success-rgb), 0.1);
+  color: var(--bs-success);
+  border: 1px solid rgba(var(--bs-success-rgb), 0.2);
+}
+
+.status-warning {
+  background-color: rgba(var(--bs-warning-rgb), 0.1);
+  color: var(--bs-warning);
+  border: 1px solid rgba(var(--bs-warning-rgb), 0.2);
+}
+
+.status-danger {
+  background-color: rgba(var(--bs-danger-rgb), 0.1);
+  color: var(--bs-danger);
+  border: 1px solid rgba(var(--bs-danger-rgb), 0.2);
+}
+
+/* Улучшенные стили для анимаций */
+.table-container {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.table-container.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.table-row-animate {
+  animation: fadeInUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Стили для скроллбара */
+.table-responsive-x::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive-x::-webkit-scrollbar-track {
+  background: var(--color-primary-background);
+  border-radius: 4px;
+}
+
+.table-responsive-x::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.table-responsive-x::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
 }
 
 .pagination .page-link {
@@ -625,5 +775,9 @@ h5 {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+.stats-number, .stats-time {
+  transition: all 0.3s ease;
 }
 </style>
