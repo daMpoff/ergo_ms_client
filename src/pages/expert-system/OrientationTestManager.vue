@@ -4,7 +4,7 @@
 
     <div class="mb-3 d-flex">
       <input v-model="newName" class="form-control me-2" placeholder="Название нового теста" />
-      <button class="btn btn-success" @click="addTest" :disabled="!newName">Создать тест</button>
+      <button class="btn btn-success text-light me-2" @click="addTest" :disabled="!newName">Создать тест</button>
     </div>
 
     <table class="table table-hover">
@@ -28,13 +28,13 @@
             >Переименовать</button>
             <button
               v-else
-              class="btn btn-sm btn-success me-2"
+              class="btn btn-success text-light me-2"
               @click="saveEdit"
               :disabled="!editName"
             >Сохранить</button>
 
             <button
-             class="btn btn-sm btn-success me-2" 
+             class="btn btn-sm btn-success text-light me-2"
              @click="$router.push({ name: 'ProforientationTest', params: { testId: t.id } })" 
            > 
             Пройти тест 

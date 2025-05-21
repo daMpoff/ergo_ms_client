@@ -1,7 +1,7 @@
 <template>
   <div class="container py-4">
     <h2 class="mb-4">
-      Ответы для вопроса "{{ questionText }}"
+      Ответы для вопросы "{{ questionText }}"
       <button class="btn btn-link" @click="$router.back()">← Назад</button>
     </h2>
 
@@ -20,7 +20,7 @@
           </select>
         </div>
         <div class="col-12 text-end">
-          <button class="btn btn-success" @click="addAnswer" :disabled="!newText||newRole===null">Добавить ответ</button>
+          <button class="btn btn-success text-light me-2" @click="addAnswer" :disabled="!newText||newRole===null">Добавить ответ</button>
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@
 
             <button
               v-else
-              class="btn btn-sm btn-success me-2"
+              class="btn btn-success text-light me-2"
               @click="saveEdit"
               :disabled="!editText||editRole===null"
             >Сохранить</button>
