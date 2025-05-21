@@ -499,6 +499,15 @@ const expertSystemRoutes = [
         props:(route)=>({
           id:route.params.id
         })
+      },
+      {
+        path:'test-result/:id',
+        name:'TestResult',
+        component:()=> import('@/pages/expert-system/Tests/TestResult.vue'),
+        meta:{title:'Результат теста', requiresAuth:true},
+        props:(route)=>({
+          id:Number(route.params.id)
+        })
       }
     ]
   },
