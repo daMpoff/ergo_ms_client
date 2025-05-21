@@ -35,9 +35,9 @@ export const CheckAccess = {
         return response;
     },
     async DeleteGroupCategory(name) {
-        const response = await apiClient.delete(endpoints.cms.deleteGroupCategory, 
+        const response = await apiClient.delete(`${endpoints.cms.deleteGroupCategory}${name}/`, 
         {
-          data:{  category_name: name,}
+          data:{ category_name: name}
         }, 
         true);
         return response;
@@ -59,10 +59,8 @@ export const CheckAccess = {
         }, true);
         return response;
     },
-    async DeleteGroup(name) {
-        const response = await apiClient.delete(endpoints.cms.deleteGroup, {
-            data: { group_name: name },
-        }, true);
+    async DeleteGroup(id) {
+        const response = await apiClient.delete(`${endpoints.cms.deleteGroup}${id}/`, {}, true);
         return response;
     },
     async ChangeGroup(name, newName, category, level) {
@@ -75,10 +73,9 @@ export const CheckAccess = {
         return response;
     },
 
-    async AddPermission(name, mark, category, accession_type, path, component_id) {
+    async AddPermission(name, category, accession_type, path, component_id) {
         const response = await apiClient.post(endpoints.cms.addPermission, {
             permission_name: name,
-            permission_mark: mark,
             category_name: category,
             accession_type: accession_type,
             path: path,
@@ -86,17 +83,14 @@ export const CheckAccess = {
         }, true);
         return response;
     },
-    async DeletePermission(name) {
-        const response = await apiClient.delete(endpoints.cms.deletePermission, {
-            data: { permission_name: name },
-        }, true);
+    async DeletePermission(id) {
+        const response = await apiClient.delete(`${endpoints.cms.deletePermission}${id}/`, {}, true);
         return response;
     },
-    async ChangePermission(name, newName, newMark, newCategory, accession_type, path, component_id) {
+    async ChangePermission(id, newName, newCategory, accession_type, path, component_id) {
         const response = await apiClient.put(endpoints.cms.changePermission, {
-            permission_name: name,
+            permission_id: id,
             new_permission_name: newName,
-            new_permission_mark: newMark,
             new_category_name: newCategory,
             accession_type: accession_type,
             path: path,
@@ -165,8 +159,9 @@ export const CheckAccess = {
         return response;
     },
     async RemoveGroupsPermissions(groupName, permissionsName) {
-        const response = await apiClient.delete(endpoints.cms.removeGroupsPermissions, {
-            data: { group_name: groupName, permissions_name: permissionsName },
+        const response = await apiClient.post(endpoints.cms.removeGroupsPermissions, {
+             group_name: groupName,
+             permissions_name: permissionsName
         }, true);
         return response;
     },

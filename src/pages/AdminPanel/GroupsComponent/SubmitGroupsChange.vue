@@ -1,8 +1,7 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { GetGroupCategories, ChangeGroup} from '@/js/GroupsPolitics'
 import ChangingPermissionsList from './ChangingPermissionsList.vue'
-import { Modal } from 'bootstrap'
 const emit = defineEmits(['changeGroup'])
 const oldname = ref('')
 const stopSubmit = ref(false)
@@ -14,13 +13,12 @@ const category = ref('')
 const level = ref('')
 const name = ref('')
 const permissions = ref([])
-const showError = ref(false)
 const PermissionsChangingListsRef = ref(null)
+const rowid = ref(0)
 const props = defineProps({
   row: { type: Object, required: true },
 })
 
-const modalRef = ref(null)
 
 watch(() => props.row, async (newRow) => {
   await loadCategories()
@@ -28,46 +26,31 @@ watch(() => props.row, async (newRow) => {
 })
 
 const submitForm = async () => {
-  if (!name.value.trim() | !category.value.trim() | !String(level.value).trim() | !Number.isInteger(Number(level.value))) {
-    
-    if(!category.value.trim())
-    {
-      showErrorCategory.value = true
-      stopSubmit.value = false
-    }
-    else{
-      showErrorCategory.value = false
-    }
-    if(!name.value.trim()) {
-      showErrorName.value = true
-      stopSubmit.value = false
-    }
-    else{
-      showErrorName.value = false
-    }
-    if (!String(level.value).trim()|!Number.isInteger(Number(level.value))) {
-      showErrorLevel.value = true
-      stopSubmit.value = false
-    }
-    else{
-      showErrorLevel.value =false
-    }
-  } 
-  else {
-    PermissionsChangingListsRef.value.changePermissions()
+  showErrorName.value = !name.value.trim()
+  showErrorCategory.value = !category.value.trim()
 
+  const levelStr = level.value?.toString().trim()
+  showErrorLevel.value = 
+    !levelStr ||
+    isNaN(levelStr) ||
+    !Number.isInteger(+levelStr)
+
+  if (showErrorName.value || showErrorCategory.value || showErrorLevel.value) {
+    return
+  }
+
+  try {
     await ChangeGroup(oldname.value, name.value, category.value, level.value)
-    console.log('Че?')
+    await PermissionsChangingListsRef.value.changePermissions()
+
     showErrorCategory.value = false
-    showErrorLevel.value=false
+    showErrorLevel.value = false
     showErrorName.value = false
     stopSubmit.value = true
     emit('changeGroup')
 
-    const modalInstance = Modal.getInstance(modalRef.value)
-    if (modalInstance) {
-      modalInstance.hide()
-    }
+  } catch (error) {
+    console.error('Ошибка при изменении группы:', error)
   }
 }
 
@@ -86,15 +69,23 @@ const ChangingGroup = async (prop) => {
   name.value = prop.name
   category.value = prop.category
   level.value = prop.level
+  rowid.value = prop.id
+  
 }
-const changecategory = async()=>{
-  permissions.value = []
-}
+
+const canDismiss = computed(() => {
+  const nameValid = String(name.value).trim() !== ''
+  const categoryValid = String(category.value).trim() !== ''
+  const levelStr = String(level.value).trim()
+  const levelValid = levelStr !== '' && Number.isInteger(Number(levelStr))
+  return nameValid && categoryValid && levelValid
+})
 
 </script>
 
 <template>
-  <form @submit.prevent="submitForm" ref="modalRef">
+  <form @submit.prevent="submitForm" novalidate>
+
     <div class="form-floating mb-3" v-auto-animate>
       <input
         type="text"
@@ -112,7 +103,7 @@ const changecategory = async()=>{
     class="form-select"
     :class="{ 'is-invalid': showErrorCategory }"
     id="categorySelect" 
-    v-model="category" @change="changecategory"
+    v-model="category"
   >
     <option v-for="category in categories" :key="category.id" :value="category.name">
       {{ category.name }}
@@ -123,11 +114,8 @@ const changecategory = async()=>{
     Необходимо выбрать категорию.
   </div>
     <br/>
-
-
-
-
-    <div class="form-floating mb-3" v-auto-animate>
+    
+<div class="form-floating mb-3" v-auto-animate>
       <input
         type="text"
         id="levelInput"
@@ -136,23 +124,17 @@ const changecategory = async()=>{
         :class="{ 'is-invalid': showErrorLevel }"
         placeholder="Введите уровень группы"
       />
-      <label for="levelInput">Введите уровень группы</label>
+      <label for="levelInput">Введите уровень группы</label>  
       <div v-if="showErrorLevel" class="invalid-feedback">В поле уровня должно быть записано целое число.</div>
     </div>
-  
-    <ChangingPermissionsList :list="permissions" :group_name="oldname" :category="category" ref="PermissionsChangingListsRef" />
+    <ChangingPermissionsList  :category="category" :list="permissions" :group_name="name"
+    :group_id="rowid" ref="PermissionsChangingListsRef" />
     
 
     <div class="mt-3 text-end">
-      <button type="submit" class="btn btn-primary"  :data-bs-dismiss="stopSubmit ? 'modal' : ''" >
+      <button type="submit" class="btn btn-primary" :data-bs-dismiss="canDismiss? 'modal':''">
         Изменить
       </button>
     </div>
   </form>
 </template>
-
-<style scoped>
-.list-group-item {
-  cursor: pointer;
-}
-</style>

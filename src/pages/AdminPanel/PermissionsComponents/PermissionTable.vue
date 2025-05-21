@@ -25,6 +25,7 @@ const rowselected = ref({
 
 const changingrow = (row)=>{
   rowselected.value ={
+    id: row.id,
     name: row.name,
     category: row.category,
     mark: row.mark,
@@ -60,9 +61,8 @@ const paginatedRows = computed(() => {
 })
 
 // Удаление прав
-const deletePermission = async (permissionname) => {
-    console.log(permissionname)
-  const response =  await DeletePermission(permissionname)
+const deletePermission = async (permissionid) => {
+  const response =  await DeletePermission(permissionid)
   emit('updatePermissions')
 
 }
@@ -82,7 +82,6 @@ const deletePermission = async (permissionname) => {
         <tr v-for="row in paginatedRows" :key="row.id">
           <td>{{ row.name }}</td>
           <td>{{ row.category }}</td>
-          <td>{{ row.mark }}</td>
           <td>{{ row.accession_type }}</td>
           <td>{{ row.path }}</td>
           <td>{{ row.component_id }}</td>
@@ -93,10 +92,11 @@ const deletePermission = async (permissionname) => {
                 data-bs-toggle="modal"
                 data-bs-target="#roleEdit"
                 @click="changingrow(row)"
+                :disabled="row.accession_type === 'Доступ к Панели администратора'"
               >
                 Изменить
               </button>
-              <button @click="deletePermission(row.name)" class="btn btn-sm btn-outline-primary">
+              <button @click="deletePermission(row.id)" class="btn btn-sm btn-outline-primary" :disabled="row.accession_type === 'Доступ к Панели администратора'">
                 Удалить
               </button>
               <ModalCenter title="Изменить разрешение" modalId="roleEdit" >

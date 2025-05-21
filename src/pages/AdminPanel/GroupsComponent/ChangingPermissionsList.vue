@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, defineExpose } from 'vue'
+import { ref, watch, defineExpose, } from 'vue'
 import { GetPermissionsByCategory, AddGroupsPermissions, RemoveGroupsPermissions } from '@/js/GroupsPolitics'
 
 const list2 = ref([])
@@ -46,11 +46,13 @@ const list1 = ref([])
 const startlist1 = ref([])
 const category = ref('')
 const group_name = ref('')
-
+const group_id = ref(0)
+let fistload = false
 const props = defineProps({
   list: { type: Array, required: true },
   group_name: { type: String, required: true },
   category: { type: String, required: true },
+  group_id:{type:Number, required:true}
 })
 
 const moveItem = (fromList, toList, index) => {
@@ -59,12 +61,15 @@ const moveItem = (fromList, toList, index) => {
 }
 
 const loadPermissions = async (prop) => {
+  if(group_id.value!= prop.group_id )
+{
   category.value = prop.category
   group_name.value = prop.group_name
-  list2.value = prop.list
+  list2.value = [...props.list]
   const permissions = await GetPermissionsByCategory(category.value)
   list1.value = permissions
   startlist1.value = [...props.list]
+  group_id.value = prop.group_id
   for (let i of list2.value) {
     for (let j of list1.value) {
       if (i === j) {
@@ -72,12 +77,20 @@ const loadPermissions = async (prop) => {
       }
     }
   }
+} 
+else{
+  category.value = prop.category
+  group_name.value = prop.group_name
+  list2.value = []
+  const permissions = await GetPermissionsByCategory(category.value)
+  list1.value = permissions
+}
 }
 
 watch(props, async (newProps) => {
   await loadPermissions(newProps)
-
 })
+
 
 const emit = defineEmits(['changePermissions'])
 
@@ -102,6 +115,7 @@ const changePermissions = async () => {
       await AddGroupsPermissions(group_name.value, addlist)
     }
   }
+  group_id.value =0
   emit('changePermissions')
 }
 

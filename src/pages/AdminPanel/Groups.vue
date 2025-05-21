@@ -7,21 +7,10 @@ import { ref, onMounted } from 'vue'
 const rows = ref([]) // Initialize with empty array
 
 onMounted(async () => {
-  try {
-    const groups = await GetGroups()
-    if (!groups || !Array.isArray(groups)) {
-      throw new Error('Invalid data format received from GetGroups')
-    }
-    rows.value = groups.map(i => ({
-      name: i.name,
-      category: i.category,
-      level: i.level,
-      permissions: i.permissions
-    }))
-  } catch (error) {
-    console.error('Error fetching group categories:', error)
-  }
+ updateGroups()
 })
+
+
 
 const rowsPerPage = ref(30)
 const handleChangeRows = (newRowsPerPage) => (rowsPerPage.value = newRowsPerPage)
@@ -36,8 +25,9 @@ const updateGroups = async () => {
       throw new Error('Invalid data format received from GetGroups')
     }
     rows.value = groups.map(i => ({
+      id:i.id,
       name: i.name,
-      category: i.category,
+      category: i.category, 
       level: i.level,
       permissions: i.permissions
     }))

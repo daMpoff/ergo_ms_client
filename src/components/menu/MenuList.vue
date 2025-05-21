@@ -36,7 +36,6 @@ watch(
     }
   },
 )
-
 const emit = defineEmits(['left-padding'])
 
 // Состояние меню

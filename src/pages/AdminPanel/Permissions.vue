@@ -21,15 +21,15 @@ onMounted(async () => {
         acsst = 'Доступ к Панели администратора'
       }
       rows.value.push({
+        id: i.id,
         name: i.name,
         category: i.category_name,
-        mark: i.permission_mark,
-        codename: i.code_name,
         accession_type: acsst,
         path: i.path,
         component_id: i.component_id
       })
     }
+    console.log(permissions)
   } catch (error) {
     console.error('Error fetching group categories:', error)
   }
@@ -56,10 +56,9 @@ const updatePermissions = async () => {
         acsst = 'Доступ к Панели администратора'
       }
       value.push({
+        id: i.id,
         name: i.name,
         category: i.category_name,
-        mark: i.permission_mark,
-        codename: i.code_name,
         accession_type: acsst,
         path: i.path,
         component_id: i.component_id
@@ -77,7 +76,7 @@ const updatePermissions = async () => {
 
     <PermissionTable 
       :rows="rows"
-      :headers="['Название','Категория', 'Маркер', 'Тип доступа', 'Путь', 'Идентификатор компонента', 'Действия']"
+      :headers="['Название','Категория', 'Тип доступа', 'Путь', 'Идентификатор компонента', 'Действия']"
       :rowsPerPage="rowsPerPage"
       :searchQuery="searchQuery"  
       @updatePermissions="updatePermissions"

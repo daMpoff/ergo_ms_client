@@ -1,9 +1,15 @@
 <script setup>
 import ModalCenter from '@/components/ModalCenter.vue'
 import SubmitForm from '@/pages/AdminPanel/PermissionsComponents/SubmitPermissionAdd.vue'
+import { ref } from 'vue'
 const emit = defineEmits(['updatePermissions'])
+const AddPermissionRef = ref(null)
 const updatePermissions =  () => {
      emit('updatePermissions')
+}
+
+const closemodal = ()=>{
+  AddPermissionRef.value.close()
 }
 </script>
 
@@ -28,8 +34,8 @@ const updatePermissions =  () => {
       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#roleAdd">
         Добавить
       </button>
-      <ModalCenter title="Добавить новое разрешение" modalId="roleAdd">
-        <SubmitForm  @addPermission="updatePermissions" />
+      <ModalCenter title="Добавить новое разрешение" modalId="roleAdd" @closemodal = "closemodal()">
+        <SubmitForm  @addPermission="updatePermissions"  ref="AddPermissionRef"/>
       </ModalCenter>
     </div>
   </div>

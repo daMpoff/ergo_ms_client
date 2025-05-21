@@ -17,6 +17,11 @@ const submitForm = async () => {
     createGroup.value = false
   }
 }
+const close=()=>{
+  name.value =''
+}
+defineExpose({close})
+
 </script>
 
 <template>

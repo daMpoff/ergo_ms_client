@@ -1,9 +1,15 @@
 <script setup>
 import ModalCenter from '@/components/ModalCenter.vue'
 import SubmitForm from '@/pages/AdminPanel/CategoriesComponents/SubmitCategory.vue'
+import { ref } from 'vue'
+const AddCategoryRef = ref(null)
 const emit = defineEmits(['updateCategories'])
 const updateCategories =  () => {
      emit('updateCategories')
+}
+
+const closemodal=()=>{
+  AddCategoryRef.value.close()
 }
 </script>
 
@@ -28,8 +34,8 @@ const updateCategories =  () => {
       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#roleAdd">
         Добавить
       </button>
-      <ModalCenter title="Добавить новую категорию" modalId="roleAdd" >
-        <SubmitForm @addCategory="updateCategories" />
+      <ModalCenter title="Добавить новую категорию" modalId="roleAdd" @closemodal = "closemodal()">
+        <SubmitForm @addCategory="updateCategories" ref="AddCategoryRef" />
       </ModalCenter>
     </div>
   </div>

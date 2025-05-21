@@ -1,68 +1,36 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { AddGroup, GetGroupCategories } from '@/js/GroupsPolitics'
 import ChangingPermissionsList from './ChangingPermissionsListAdd.vue'
-import * as bootstrap from 'bootstrap'
-
 const emit = defineEmits(['addGroup'])
 const name = ref('')
-const stopSubmit = ref(false)
 const showErrorName = ref(false)
 const showErrorLevel = ref(false)
 const showErrorCategory =ref(false)
 const categories = ref([])
 const category = ref('')
 const level = ref('')
-const permissions = ref([])
 const PermissionsChangingListsRef = ref(null)
-const modalRef = ref(null) // Ссылка на модальное окно
-
-let modalInstance = null
 
 const submitForm = async () => {
-  if (!name.value.trim() | !level.value.trim() | !category.value.trim()|!Number.isInteger(Number(level.value))) {
-    console.log(!name.value.trim())
-    console.log(!level.value.trim())
-    console.log(!category.value.trim())
-    console.log(!Number.isInteger(level.value))
-    if(!category.value.trim()){
-      showErrorCategory.value = true
-      stopSubmit.value = false
-    }
-    else{
-      showErrorCategory.value = false
-    }
-    if(!name.value.trim()) {
-      showErrorName.value = true
-      stopSubmit.value = false
-    }
-    else{
-      showErrorName.value = false
-    }
-    if (!level.value.trim() | !Number.isInteger(Number(level.value))) {
-      showErrorLevel.value = true
-      stopSubmit.value = false
-    }
-    else{
-      showErrorLevel.value =false
-    }
+  showErrorName.value = !name.value.trim()
+  showErrorCategory.value = !category.value.trim()
+  showErrorLevel.value = !level.value.trim() || !Number.isInteger(Number(level.value))
+
+  if (showErrorName.value || showErrorCategory.value || showErrorLevel.value) {
+    return // Остановить выполнение, если есть ошибки
   }
-  else {
-    console.log('1')
-    showErrorName.value = false
-    showErrorLevel.value = false
+
+  try {
     const response = await AddGroup(name.value, category.value, level.value)
     await PermissionsChangingListsRef.value.changePermissions(name.value)
+
+    emit('addGroup',{})
     name.value = ''
     level.value = ''
     category.value = ''
-    stopSubmit.value = true
-
-    emit('addGroup')
-
-    if (modalInstance) {
-      modalInstance.hide()
-    }
+  } catch (error) {
+    console.error('Ошибка при добавлении группы:', error)
   }
 }
 
@@ -74,15 +42,31 @@ const loadCategories = async () => {
     console.error('Error loading categories:', error)
   }
 }
-
+const close = ()=>{
+  name.value =''
+  level.value = ''
+  category.value = ''
+}
+defineExpose({close})
 onMounted(() => {
   loadCategories()
-  modalInstance = new bootstrap.Modal(modalRef.value)
 })
+
+
+const canDismiss = computed(() => {
+  const nameValid = String(name.value).trim() !== ''
+  const categoryValid = String(category.value).trim() !== ''
+  const levelStr = String(level.value).trim()
+  const levelValid = levelStr !== '' && Number.isInteger(Number(levelStr))
+
+
+  return nameValid && categoryValid && levelValid
+})
+
 </script>
 
 <template>
-  <form @submit.prevent="submitForm" novalidate ref="modalRef">
+  <form @submit.prevent="submitForm" novalidate>
 
     <div class="form-floating mb-3" v-auto-animate>
       <input
@@ -125,11 +109,11 @@ onMounted(() => {
       <label for="levelInput">Введите уровень группы</label>
       <div v-if="showErrorLevel" class="invalid-feedback">В поле уровня должно быть записано целое число.</div>
     </div>
-    <ChangingPermissionsList :list="permissions" :category="category" ref="PermissionsChangingListsRef" />
+    <ChangingPermissionsList  :category="category" ref="PermissionsChangingListsRef" />
     
 
     <div class="mt-3 text-end">
-      <button type="submit" class="btn btn-primary" :data-bs-dismiss="stopSubmit ? 'modal' : ''">
+      <button type="submit" class="btn btn-primary" :data-bs-dismiss="canDismiss? 'modal':''">
         Добавить
       </button>
     </div>

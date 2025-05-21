@@ -26,6 +26,7 @@ const changingrow = (row)=>{
   try {
 
     rowselected.value ={
+      id:row.id,
       name: row.name,
       category: row.category,
       level: row.level,
@@ -65,9 +66,8 @@ const paginatedRows = computed(() => {
 })
 
 // Удаление групп
-const deleteGroup = async (groupname) => {
-    console.log(groupname)
-  const response =  await DeleteGroup(groupname)
+const deleteGroup = async (groupid) => {
+  const response =  await DeleteGroup(groupid)
   emit('updateGroups')
 
 }
@@ -85,6 +85,7 @@ const deleteGroup = async (groupname) => {
       </thead>
       <tbody class="table-group-divider">
         <tr v-for="row in paginatedRows" :key="row.id">
+          
           <td>{{ row.name }}</td>
           <td>{{ row.category }}</td>
           <td>{{ row.level }}</td>
@@ -108,7 +109,7 @@ const deleteGroup = async (groupname) => {
               >
                 Изменить
               </button>
-              <button @click="deleteGroup(row.name)" class="btn btn-sm btn-outline-primary">
+              <button @click="deleteGroup(row.id)" class="btn btn-sm btn-outline-primary">
                 Удалить
               </button>
               <ModalCenter title="Изменить название группы" modalId="roleEdit" >

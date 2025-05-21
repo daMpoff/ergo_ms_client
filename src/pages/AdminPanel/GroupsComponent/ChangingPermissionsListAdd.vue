@@ -55,7 +55,11 @@
   
   const loadPermissions = async (prop) => {
     category.value = prop.category
-    list1.value = await GetPermissionsByCategory(category.value)
+    if(category.value.trim()){
+      list1.value = await GetPermissionsByCategory(category.value)
+      
+    }
+    list2.value = []
   }
   
   watch(props, async (newProps) => {
@@ -66,8 +70,10 @@
   const emit = defineEmits(['changePermissions'])
   
   const changePermissions = async (group_name) => {
-      console.log(group_name)
+      let permissions = list2.value.map(i => i.id)
       await AddGroupsPermissions(group_name, list2.value)
+      list1.value =[]
+      list2.value =[]
     }
   
   

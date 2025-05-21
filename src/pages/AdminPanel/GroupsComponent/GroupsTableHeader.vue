@@ -1,9 +1,14 @@
 <script setup>
 import ModalCenter from '@/components/ModalCenter.vue'
 import SubmitForm from '@/pages/AdminPanel/GroupsComponent/SubmitGroupsAdd.vue'
-const emit = defineEmits(['updateCategories'])
+import { ref } from 'vue'
+const emit = defineEmits(['updateGroups'])
 const updateGroups =  () => {
      emit('updateGroups')
+}
+const GroupAddRef = ref(null)
+const closemodal = ()=>{
+  GroupAddRef.value.close()
 }
 </script>
 
@@ -23,13 +28,12 @@ const updateGroups =  () => {
           type="search"
           class="form-control"
           placeholder="Поиск..."
-          @input="$emit('searchRowData', $event.target.value)"
       /></label>
       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#roleAdd">
         Добавить
       </button>
-      <ModalCenter title="Добавить новую категорию" modalId="roleAdd">
-        <SubmitForm  @addGroup="updateGroups" />
+      <ModalCenter title="Добавить новую категорию" modalId="roleAdd"  @closemodal = "closemodal()">
+        <SubmitForm  @addGroup="updateGroups()" ref="GroupAddRef"/>
       </ModalCenter>
     </div>
   </div>
