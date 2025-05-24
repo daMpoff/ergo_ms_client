@@ -12,7 +12,8 @@ export const endpoints = {
             sectionTasks: 'crm/tasks/section-tasks/',
             add_task:'crm/tasks/task-new/',
             add_section:'crm/tasks/section-new/',
-            delete_task:'crm/tasks/delete-task/{id}/'
+            delete_task:'crm/tasks/delete-task/{id}/',
+            add_subtask:'crm/tasks/subtask-new/{id}/'
         },
         projects:
         {
@@ -27,8 +28,15 @@ export const endpoints = {
         subjects: {
             allsubjects: '/expsys_module/subjects-all/',
             create:'/expsys_module/subject-create/',
+            create_competencies:'/expsys_module/competence-create/',
+            create_indicator:'/expsys_module/indicator-create/',
             allcompenencies:'/expsys_module/subjectsindicators/',
             competencies:'/expsys_module/allcompetencies',
+            countsubjectsind:'/expsys_module/indicator-subjects-count',
+            indicators:'/expsys_module/allindicators',
+            indicatorscompenencies:'/expsys_module/competenceindicators/',
+
+
         },
     
     },   

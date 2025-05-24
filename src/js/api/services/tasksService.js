@@ -260,6 +260,55 @@ const createTask = async (taskData) => {
     isLoading.value = false
   }
 }
+
+// Создание подзадачи
+const createSubtask = async (subtaskData) => {
+  if (!currentUserId.value) {
+    toast.error('Необходимо авторизоваться')
+    return null
+  }
+
+  isLoading.value = true
+  try {
+    // Проверяем обязательные поля (добавляем parenttask_id)
+    if (!subtaskData.text || !subtaskData.section_id || !subtaskData.parenttask_id) {
+      throw new Error('Не указаны обязательные поля (text, section_id и parenttask_id)')
+    }
+
+    const requestData = {
+      text: subtaskData.text,
+      section_id: subtaskData.section_id,
+      parenttask_id: subtaskData.parenttask_id, // Добавляем ID родительской задачи
+      description: subtaskData.description || null,
+      deadline: subtaskData.deadline || null,
+      priority: subtaskData.priority || 0,
+      user_id: currentUserId.value,
+      isdone: subtaskData.isdone || false,
+      dateofcreation: new Date().toISOString()
+    }
+
+    // Используем эндпоинт для подзадач, передаем parenttask_id в URL
+    const response = await apiClient.post(
+      endpoints.crm.tasks.add_subtask.replace('{id}', subtaskData.parenttask_id),
+      requestData
+    )
+
+    // Проверяем успешность создания
+    if (response.data && response.data.success) {
+      toast.success('Подзадача успешно создана')
+      return response.data.data // Возвращаем созданную подзадачу
+    } else {
+      throw new Error(response.data.message || 'Не удалось создать подзадачу')
+    }
+
+  } catch (error) {
+    console.error('Ошибка при создании подзадачи:', error)
+    toast.error(error.message || 'Ошибка при создании подзадачи')
+    throw error
+  } finally {
+    isLoading.value = false
+  }
+}
   // Обновление информации о задаче
   const updateTask = async (info) => {
     if (!currentUserId.value) {
@@ -322,21 +371,29 @@ const deleteTask = async (taskId) => {
 
   isLoading.value = true;
   try {
-    const response = await apiClient.delete(
-      endpoints.crm.tasks.delete_task.replace('{id}', taskId)
-    );
+    // Формируем URL с учетом нового формата эндпоинта
+    const deleteUrl = `${endpoints.crm.tasks.delete_task.replace('{id}', taskId)}`;
+    
+    const response = await apiClient.delete(deleteUrl);
 
-    if (!response.success) {
+    if (!response.data) {
       throw new Error(response.errors?.message || 'Ошибка при удалении задачи');
     }
 
-    // Обновляем локальное состояние
+    // Обновляем локальное состояние - удаляем задачу и все её подзадачи
+    const deletedTaskIds = response.data.deleted_tasks || [taskId];
+    
     columns.value = columns.value.map(column => ({
       ...column,
-      cards: column.cards.filter(card => card.id !== taskId)
+      cards: column.cards.filter(card => !deletedTaskIds.includes(card.id))
     }));
 
-    return { success: true, message: response.data?.message };
+    toast.success(response.data.message || 'Задача и подзадачи успешно удалены');
+    return { 
+      success: true, 
+      message: response.data.message,
+      deletedIds: deletedTaskIds 
+    };
   } catch (error) {
     console.error('Delete Task Error:', error);
     toast.error(error.message || 'Не удалось удалить задачу');
@@ -364,5 +421,6 @@ const deleteTask = async (taskId) => {
     fetchColumns,
     fetchSubtasks,
     deleteTask,
+    createSubtask
   }
 })

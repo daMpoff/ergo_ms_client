@@ -116,7 +116,11 @@ const openCompetencies = (subject) => {
   selectedSubjectId.value = subject.id;
   selectedSubjectName.value = subject.name;
   showCompetencies.value = true;
+  isIndicator.value = true; // Добавляем эту строку
 };
+
+// Добавляем новый ref для isIndicator
+const isIndicator = ref(false);
 
 const backToSubjects = () => {
   showCompetencies.value = false;
@@ -132,12 +136,13 @@ onMounted(() => {
 
 <template>
   <div class="subject-management">
-    <CompetenciesManager 
-      v-if="showCompetencies"
-      :subject-id="selectedSubjectId"
-      :subject-name="selectedSubjectName"
-      @back="backToSubjects"
-    />
+<CompetenciesManager 
+  v-if="showCompetencies"
+  :subject-id="selectedSubjectId"
+  :subject-name="selectedSubjectName"
+  :is-indicator="isIndicator"
+  @back="backToSubjects"
+/>
     
     <div v-if="!showCompetencies">
       <div class="row mb-4">

@@ -7,6 +7,7 @@ const kanbanStore = useKanbanStore()
 const newSubtaskText = ref('')
 const toast = useToast()
 const currentTask = computed(() => kanbanStore.editableTask)
+const isLoading = ref(false) // Добавляем состояние загрузки
 
 const isChecked = computed({
   get: () => currentTask.value?.is_completed || false,
@@ -77,17 +78,46 @@ const subtasks = computed({
   }
 })
 
-const addSubtask = () => {
-  if (newSubtaskText.value.trim()) {
-    const newSubtask = {
-      id: Date.now(), // временный ID
-      title: newSubtaskText.value.trim(),
-      is_completed: false
+const addSubtask = async () => {
+  if (!newSubtaskText.value.trim()) return
+  
+  try {
+    isLoading.value = true
+    
+    // Создаем данные для подзадачи
+    const subtaskData = {
+      text: newSubtaskText.value.trim(),
+      section_id: currentTask.value.section_id, // предполагаем, что section_id есть у родительской задачи
+      parenttask_id: currentTask.value.id, // ID текущей задачи как родительской
+      isdone: false,
+      priority: currentTask.value.priority || 0,
+      user_id: currentTask.value.assignee_id // или другой ID пользователя
     }
-    subtasks.value = [...subtasks.value, newSubtask]
+    
+    // Вызываем метод из сервиса
+    const createdSubtask = await kanbanStore.createSubtask(subtaskData)
+    
+    // Добавляем подзадачу в локальный список
+    subtasks.value = [
+      ...subtasks.value, 
+      {
+        id: createdSubtask.id,
+        title: createdSubtask.text,
+        is_completed: createdSubtask.isdone
+      }
+    ]
+    
     newSubtaskText.value = ''
+    toast.success('Подзадача успешно добавлена')
+    
+  } catch (error) {
+    console.error('Ошибка при создании подзадачи:', error)
+    toast.error(error.message || 'Ошибка при создании подзадачи')
+  } finally {
+    isLoading.value = false
   }
 }
+
 
 const toggleSubtask = (subtaskId) => {
   subtasks.value = subtasks.value.map(subtask => 
@@ -115,10 +145,9 @@ const deleteTask = async () => {
     const confirmed = confirm('Вы уверены, что хотите удалить эту задачу и все подзадачи?');
     if (!confirmed) return;
     
-    const { success, message } = await kanbanStore.deleteTask(currentTask.value.id);
+    const { success} = await kanbanStore.deleteTask(currentTask.value.id);
     
     if (success) {
-      toast.success(message || 'Задача успешно удалена');
       closeModal();
     }
   } catch (error) {

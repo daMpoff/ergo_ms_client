@@ -12,6 +12,7 @@ const editingProject = ref({
   description: '',
   deadline: ''
 })
+
 const isLoading = ref(false)
 const error = ref(null)
 
@@ -22,7 +23,6 @@ const closeModal = () => {
 const addParticipants = () => {
   console.log('Добавление участников')
 }
-
 
 
 const saveProject = async () => {
