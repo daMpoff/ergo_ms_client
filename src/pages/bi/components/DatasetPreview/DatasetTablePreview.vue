@@ -1,73 +1,136 @@
 <template>
-    <div class="preview-main">
-        <div class="main-title">
-            <div class="title-lable" style="font-weight: bold; margin-right: 2rem;">Предпросмотр</div>
-            <div class="title-input">
-                <div class="input-label-left" style="width: auto;">Количество строк:</div>
-                <input class="form-control form-control-sm" type="text" id="smallInput" placeholder="10" v-model="pageSizeInput" min="1" max="1000" @input="handleInput" />
-                <div class="input-label-right">не больше 1000</div>
-            </div>
-        </div>
-        <div class="main-grid">
-            <Vue3Datatable :columns="cols" :rows="rows" :loading="loading" :page-size="pageSize" skin="table table-hover" noDataContent="Нет данных"/>
-        </div>
+  <div class="preview-main">
+    <div class="main-title">
+      <div class="title-label" style="font-weight: bold; margin-right:2rem">Предпросмотр</div>
+      <div class="title-input">
+        <div class="input-label-left">Количество строк:</div>
+        <input type="text" v-model="limitInput" class="form-control form-control-sm"/>
+        <div class="input-label-right">не больше 1000</div>
+      </div>
     </div>
+    <div v-if="loading" class="preview-loading">
+      <div class="spinner">Загружаем данные…</div>
+    </div>
+    <div v-else class="main-grid">
+      <Vue3Datatable :columns="datatableColumns" :rows="tableRows" :loading="props.loading" :page-size="props.limit" skin="table table-hover" noDataContent="Нет данных"/>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { defineProps, ref, watch, computed } from 'vue'
 import Vue3Datatable from '@bhplugin/vue3-datatable'
 
-const cols = ref([
-  { title: 'ID', field: 'id' },
-  { title: 'Имя', field: 'name' },
-  { title: 'Возраст', field: 'age' },
-  { title: 'Город', field: 'city' }
-])
+const props = defineProps({
+  cols: Array,
+  rows: Array,
+  loading: Boolean,
+  limit: Number,
+  fields: Array
+})
 
-const rows = ref([
-  { id: 1, name: 'Анна', age: 25, city: 'Москва' },
-  { id: 2, name: 'Иван', age: 32, city: 'Санкт-Петербург' },
-  { id: 3, name: 'Мария', age: 29, city: 'Новосибирск' },
-  { id: 4, name: 'Пётр', age: 41, city: 'Екатеринбург' },
-  { id: 5, name: 'Олег', age: 22, city: 'Казань' },
-  { id: 6, name: 'Светлана', age: 36, city: 'Самара' },
-  { id: 7, name: 'Дмитрий', age: 28, city: 'Уфа' },
-  { id: 8, name: 'Елена', age: 33, city: 'Ростов-на-Дону' },
-  { id: 9, name: 'Николай', age: 45, city: 'Челябинск' },
-  { id: 10, name: 'Вера', age: 27, city: 'Пермь' }
-])
 const loading = ref(false)
 
-const pageSize = ref(10)
-const pageSizeInput = ref('10')
+const nameMap = computed(() =>
+  Object.fromEntries((props.fields || []).map(f => [f.source_column, f.name]))
+)
 
-function handleInput(e) {
-  const raw = e.target.value.replace(/\D/g, '')
-  pageSizeInput.value = raw
-
-  const parsed = parseInt(raw)
-  if (!isNaN(parsed)) {
-    const clamped = Math.min(1000, Math.max(1, parsed))
-    pageSize.value = clamped
-    pageSizeInput.value = String(clamped)
+function toField(str) {
+  const map = {
+    'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l',
+    'м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh',
+    'щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'
   }
+  return str.toLowerCase()
+    .replace(/[а-яё]/g, x => map[x] ?? '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
+
+// 2. computed
+const datatableColumns = computed(() =>
+  props.cols.map((col) => ({
+    title: nameMap.value[col] || col,
+    field: toField(nameMap.value[col] || col),
+    sortable: true,
+  }))
+)
+
+const tableRows = computed(() => {
+  const fields = props.cols.map(toField)
+  return props.rows.map(rowArr =>
+    fields.reduce((obj, field, idx) => {
+      obj[field] = rowArr[idx]
+      return obj
+    }, {})
+  )
+})
+
+const limitInput = ref(String(props.limit))
+const limit      = ref(props.limit)
+
+watch(() => props.limit, v => {
+  limit.value = v
+  limitInput.value = String(v)
+})
+
+watch(limitInput, val => {
+  const num = parseInt(val.replace(/\D/g,'')) || props.limit
+  limit.value      = Math.min(1000, Math.max(1, num))
+  limitInput.value = String(limit.value)
+})
 </script>
 
 <style scoped lang="scss">
+.preview-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  z-index: 10;
+}
+
+/* сам спиннер */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* подправим контейнер чтобы позиционировался относительно */
 .preview-main {
-    margin: 5px 0 5px 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  gap: 10px;
 }
 
 .main-title {
     display: flex;
     justify-content: start;
     align-items: center;
-    height: 25px;
+    flex: 0 0 auto;
     width: auto;
 }
 
@@ -88,11 +151,20 @@ input {
     max-width: 70px;
 }
 
-.main-grid{
-    text-align: left;
-    max-height: 330px;
-    overflow-y: auto;
-    overflow-x: auto;
+.main-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+:deep(.vue3-datatable__table-wrapper) {
+  overflow-y: inherit !important;
+  padding-bottom: inherit !important;
+}
+
+:deep(.vue3-datatable__table-wrapper)::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 :deep(.bh-pagination-wrapper) {

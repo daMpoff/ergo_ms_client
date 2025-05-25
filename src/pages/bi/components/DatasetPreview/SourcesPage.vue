@@ -21,9 +21,7 @@
         </div>
         <hr>
         <div class="tables-list">
-            <div v-if="!selectedConnection" class="tables-list-empty">
-                Добавьте подключение, чтобы отобразить список таблиц
-            </div>
+            <div v-if="!selectedConnection" class="tables-list-empty">Добавьте подключение, чтобы отобразить список таблиц</div>
             <div v-else>
                 <ConnectionTables :connection-id="selectedConnection.id" :connection-type="selectedConnection.connector_type" :linked-tables="selectedTables"/>
             </div>
@@ -32,12 +30,7 @@
     <div v-if="showTooltip" class="tooltip-panel" ref="tooltipRef">
         <ConnectionsTooltip @select="handleSelect" />
     </div>
-
-    <!-- Контекстное меню -->
-    <div v-if="actionMenu.visible" class="menu-dropdown" :style="{
-        top: actionMenu.y + 'px',
-        left: actionMenu.x + 'px'
-    }" @mouseleave="actionMenu.visible = false">
+    <div v-if="actionMenu.visible" class="menu-dropdown" :style="{ top: actionMenu.y + 'px', left: actionMenu.x + 'px' }" @mouseleave="actionMenu.visible = false">
         <div class="menu-item" @click="handleOpen">Открыть подключение</div>
         <div class="menu-item" @click="handleReplace">Заменить подключение</div>
         <div class="menu-item danger" @click="handleDelete">Удалить подключение</div>
@@ -65,8 +58,12 @@ const props = defineProps({
   selectedConnection: Object,
   selectedTables: Array
 })
-const emit = defineEmits(['update:selectedConnection', 'update:selectedTables'])
 
+const emit = defineEmits([
+  'update:selectedConnection',
+  'table-drop',
+  'update:selectedTables'
+])
 
 function handleClickOutside(event) {
   const clickedOutsideTooltip = tooltipRef.value && !tooltipRef.value.contains(event.target)

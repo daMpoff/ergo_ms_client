@@ -1,21 +1,6 @@
 <template>
-  <div
-    class="join-builder"
-    ref="container"
-    @dragover.prevent="onExternalDrop"
-    @drop.prevent="onExternalDrop"
-  >
-    <VueFlow
-      class="flow-canvas"
-      :nodes="nodes"
-      :edges="edges"
-      @edge-click="handleEdgeClick"
-      fit-view
-      :nodes-connectable="false"
-      :edges-connectable="false"
-      :defaultEdgeOptions="{
-      sourcePosition: Position.Bottom,
-      targetPosition: Position.Top }">
+  <div class="join-builder" ref="container" @dragover.prevent="onExternalDrop" @drop.prevent="onExternalDrop">
+    <VueFlow class="flow-canvas" :nodes="nodes" :edges="edges" @edge-click="handleEdgeClick" fit-view :nodes-connectable="false" :edges-connectable="false" :defaultEdgeOptions="{ sourcePosition: Position.Bottom, targetPosition: Position.Top }">
       <template #node-tableNode="{ id, data }">
         <Handle type="target" position="top" style="background:transparent; width:0; height:0;"/>
         <div class="table-node" :class="{ 'primary-node': data.primary }">
@@ -26,13 +11,10 @@
         <Handle type="source" position="bottom" style="background:transparent; width:0; height:0;"/>
       </template>
       <template #edge-label="{ edge }">
-  <div
-    class="custom-label"
-    @click.stop="openSettingsFor(edge)"
-  >
-    {{ edge.data.joinType }}
-  </div>
-</template>
+        <div class="custom-label" @click.stop="openSettingsFor(edge)">
+          {{ edge.data.joinType }}
+        </div>
+      </template>
     </VueFlow>
   </div>
 </template>
@@ -40,7 +22,7 @@
 <script setup>
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch } from 'vue'
 import { VueFlow, useVueFlow, Position, Handle } from '@vue-flow/core'
 import { Table as TableIcon } from 'lucide-vue-next'
 
@@ -51,12 +33,11 @@ const props = defineProps({
 const emit = defineEmits(['update:selectedTables', 'update:relations'])
 
 const container = ref(null)
-const { findEdge, updateEdgeData, removeEdges, removeNodes } = useVueFlow()
+const { findEdge, updateEdgeData, removeNodes } = useVueFlow()
 
 const nodes = ref([])
 const edges = ref([])
 
-// 1) Watch selectedTables — сохраняем старые позиции
 watch(
   () => props.selectedTables,
   (tables) => {
@@ -76,7 +57,6 @@ watch(
   { immediate: true, deep: true }
 )
 
-// 2) Watch relations — строим edges
 watch(() => props.relations, rels => {
   edges.value = rels.map(r => ({
     id:     `${r.source}-${r.target}`,
@@ -86,16 +66,14 @@ watch(() => props.relations, rels => {
     label:  r.joinType,
     data:   { joinType: r.joinType },
 
-    // --- стили для линии и фона метки ---
     style:       { strokeWidth: 2 },
     labelBgStyle:{
-      fill: 'rgba(0,0,0,0.6)',    // чуть более тёмный фон под текст
+      fill: 'rgba(0,0,0,0.6)',
     },
 
-    // --- стиль самого текста ---
     labelStyle: {
-      fill:   '#fff',             // белый цвет текста
-      fontSize: '12px',           // чуть побольше
+      fill:   '#fff',
+      fontSize: '12px',
       fontWeight: 600
     },
   }))
@@ -122,8 +100,6 @@ function handleEdgeClick(edge) {
 }
 
 function openSettingsFor(edge) {
-  // сюда edge.id, edge.data.joinType и всё остальное придёт
-  // открываем ваше модальное окно
   selectedEdge.value = edge
   isSettingsModalOpen.value = true
 }
@@ -156,17 +132,12 @@ function onExternalDrop(evt) {
   const table = JSON.parse(raw)
   const key   = String(table.id ?? `${table.schema}.${table.table}`)
 
-  // 0) Если уже есть — выходим
   if (props.selectedTables.some(
     t => String(t.id ?? `${t.schema}.${t.table}`) === key
   )) return
 
-  // 1) Новый список таблиц
   const newTables = [...props.selectedTables, table]
 
-  // 2) Новый список связей:
-  //    — копируем старые props.relations
-  //    — добавляем ровно одну новую связь первичной -> только что дропнутой
   let newRelations = [...props.relations]
   if (newTables.length > 1) {
     const source = String(newTables[0].id)
@@ -176,7 +147,6 @@ function onExternalDrop(evt) {
     ]
   }
 
-  // 3) Эмитим оба массива сразу
   emit('update:selectedTables', newTables)
   emit('update:relations',     newRelations)
 }

@@ -1,9 +1,7 @@
 <template>
     <div class="list-main">
         <input class="form-control mb-2" type="text" placeholder="Фильтр по имени" v-model="filter" />
-
         <ul class="connection-list">
-            <!-- Скелетоны во время загрузки -->
             <li v-if="isLoading" v-for="n in 3" :key="'skeleton-' + n" class="connection-item loading-placeholder">
                 <div class="connection-left">
                     <div class="skeleton-icon"></div>
@@ -11,8 +9,6 @@
                 </div>
                 <div class="skeleton-date"></div>
             </li>
-
-            <!-- Загруженные подключения -->
             <li v-for="item in filteredUsers" :key="item.id" class="connection-item" v-show="!isLoading" @click="emit('select', item)">
                 <div class="connection-left">
                     <img :src="getIconComponent(item)?.src" class="icon" @mouseenter="onIconHover($event, getIconComponent(item)?.tooltip)" @mouseleave="hideTooltip"/>
@@ -22,12 +18,9 @@
                     {{ new Date(item.created_at).toLocaleDateString() }}
                 </div>
             </li>
-
-            <!-- Пустой список -->
             <li v-if="!isLoading && filteredUsers.length === 0" class="no-data">Нет данных</li>
         </ul>
     </div>
-
     <div v-if="showTooltip" class="tooltip-fixed" :style="tooltipStyle">
         {{ tooltipText }}
     </div>
@@ -145,7 +138,6 @@ function hideTooltip() {
     color: #777;
 }
 
-/* 🔄 Скелетоны */
 .loading-placeholder {
     opacity: 0.6;
     animation: pulse 1.5s infinite ease-in-out;
