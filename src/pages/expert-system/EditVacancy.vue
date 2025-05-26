@@ -196,7 +196,10 @@ async function onSubmit() {
 }
 </script>
 
-<style>
+<style scoped>
+.modal-dialog {
+  max-width: 800px;
+}
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -206,12 +209,7 @@ async function onSubmit() {
   justify-content: center;
   z-index: 1050;
 }
-</style>
 
-<style scoped>
-.modal-dialog {
-  max-width: 800px;
-}
 .skills-list {
   max-height: 200px;
   overflow-y: auto;
