@@ -2,7 +2,7 @@
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
-import { createNewProject,createNewProjectUser } from '@/js/api/services/projectsService'
+import { createNewProject} from '@/js/api/services/projectsService'
 
 const router = useRouter()
 const toast = useToast()
@@ -50,25 +50,18 @@ const saveProject = async () => {
     }
 
     // 2. Добавляем создателя в проект
-    const projectUserData = {
-      project_id: projectResponse.project.id,
-      user_id: projectResponse.project.creator_id,
-      isnew: true
-    }
-    
-    const userProjectResponse = await createNewProjectUser(projectUserData)
-    
-    if (!userProjectResponse.success) {
-      throw new Error(userProjectResponse.error || 'Ошибка при добавлении в проект')
-    }
+
+  
 
     toast.success('Проект успешно создан')
     closeModal()
     
   } catch (err) {
     console.error('Ошибка сохранения проекта:', err)
-    error.value = err.message
-    toast.error(err.message)
+    error.value = err.message.includes('Название проекта обязательно') 
+      ? 'Введите название проекта' 
+      : err.message
+    toast.error(error.value)
   } finally {
     isLoading.value = false
   }

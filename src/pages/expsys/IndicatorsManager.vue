@@ -9,16 +9,21 @@ import {
 } from '@/js/api/services/expsysService'
 import IndicatorDetailsModal from './IndicatorDetailsModal.vue'
 import DropDown from '@/components/DropDown.vue'
-import { EllipsisVertical, Edit, Trash, Info,SquarePlus, ArrowLeftToLine } from 'lucide-vue-next'
+import { EllipsisVertical, Edit, Trash, Info, SquarePlus, ArrowLeftToLine } from 'lucide-vue-next'
 import { onMounted } from 'vue'
-import CompetenceStats from '@/pages/expsys/CompetenceStats.vue' // Импортируем компонент статистики
+import CompetenceStats from '@/pages/expsys/CompetenceStats.vue'
+
 const props = defineProps({
   subjectId: {
     type: Number,
     required: false
   },
-    competenceId: {
+  competenceId: {
     type: Number,
+    required: false
+  },
+  competence: {
+    type: Object,
     required: false
   },
   subjectName: {
@@ -29,106 +34,104 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-    isCompetence: {
+  isCompetence: {
     type: Boolean,
     default: false
   }
 })
 
-const emit = defineEmits(['back'])
+const emit = defineEmits(['back', 'close'])
 
 // Реактивные состояния
-const competencies = ref([])
+const indicators = ref([])
 const loading = ref(false)
 const error = ref(null)
 const showAddModal = ref(false)
 const showDeleteModal = ref(false)
-const competenceToDelete = ref(null)
-const selectedCompetence = ref(null)
+const indicatorToDelete = ref(null)
+const selectedIndicator = ref(null)
 const saving = ref(false)
 const deleting = ref(false)
 const subjectsCounts = ref({})
 
-const editingCompetence = ref({
+const editingIndicator = ref({
   id: null,
   name: '',
   description: '',
 })
 
 // Методы
-function getEmptyCompetence() {
+function getEmptyIndicator() {
   return {
     id: null,
     name: '',
     description: '',
   }
 }
+
 async function saveIndicator() {
   saving.value = true
   error.value = null
 
   try {
-    // Вызываем функцию createCompetence с данными из editingCompetence
-    const createdCompetence = await createIndicator({
-      name: editingCompetence.value.name,
-      description: editingCompetence.value.description,
+    const createdIndicator = await createIndicator({
+      name: editingIndicator.value.name,
+      description: editingIndicator.value.description,
+      ...(props.subjectId && { subject_id: props.subjectId }),
+      ...(props.competenceId && { competence_id: props.competenceId })
     })
 
-    // Добавляем новую компетенцию в список
-    competencies.value.unshift(createdCompetence)
-    
-    // Закрываем модальное окно
+    indicators.value.unshift(createdIndicator)
     showAddModal.value = false
   } catch (err) {
-    error.value = err.message || 'Не удалось сохранить компетенцию'
-    console.error('Ошибка сохранения компетенции:', err)
+    error.value = err.message || 'Не удалось сохранить индикатор'
+    console.error('Ошибка сохранения индикатора:', err)
   } finally {
     saving.value = false
   }
 }
-async function loadCompetencies() {
+
+async function loadIndicators() {
   loading.value = true
   error.value = null
 
   try {
-    if (props.isIndicator) {
+    if (props.isIndicator && props.subjectId) {
+      // Загрузка для предмета
       const data = await fetchSubjectCompetencies(props.subjectId)
-      competencies.value = Array.isArray(data) ? data : []
+      indicators.value = Array.isArray(data) ? data : []
       await loadSubjectsCounts()
-    } 
-    if (!props.isCompetence)
-    {
-     competencies.value =await fetchIndicatorsCompetencie(props.competenceId)
-    }
-    else
-    {
-      competencies.value =await fetchIndicators()
+    } else if (!props.isCompetence && props.competenceId) {
+      // Загрузка для компетенции
+      indicators.value = await fetchIndicatorsCompetencie(props.competenceId)
+    } else {
+      // Общая загрузка всех индикаторов
+      indicators.value = await fetchIndicators()
     }
   } catch (err) {
-    error.value = err.message || 'Не удалось загрузить компетенции'
+    error.value = err.message || 'Не удалось загрузить индикаторы'
+    console.error('Ошибка загрузки индикаторов:', err)
   } finally {
     loading.value = false
   }
 }
-onMounted(() => {
-  loadCompetencies()
-})
+
 async function loadSubjectsCounts() {
   try {
-    if (!competencies.value.length) return
+    if (!indicators.value.length) return
 
-    const countsPromises = competencies.value.map(async comp => {
+    const countsPromises = indicators.value.map(async indicator => {
       try {
-        if (comp.id === undefined || comp.id === null) {
-          console.warn('Невалидный ID индикатора:', comp)
-          return { id: comp.id, count: 0 }
+        if (indicator.id === undefined || indicator.id === null) {
+          console.warn('Невалидный ID индикатора:', indicator)
+          return { id: indicator.id, count: 0 }
         }
 
-        const res = await fetchSubjectsCountByIndicator(comp.id)
-        return { id: comp.id, count: res.count }
+        const res = await fetchSubjectsCountByIndicator(indicator.id)
+        return { id: indicator.id, count: res.count }
       } catch (err) {
-        console.error(`Ошибка для индикатора ${comp.id}:`, err)
-        return { id: comp.id, count: 0 }
+        console.error(`Ошибка для индикатора ${indicator.id}:`, err)
+        return { id: indicator.id, count: 0 }
       }
     })
 
@@ -145,24 +148,25 @@ async function loadSubjectsCounts() {
   }
 }
 
-function addCompetence() {
-  editingCompetence.value = getEmptyCompetence()
+function addIndicator() {
+  editingIndicator.value = getEmptyIndicator()
   showAddModal.value = true
 }
 
-function editCompetence(competence) {
-  editingCompetence.value = { ...competence }
+function editIndicator(indicator) {
+  editingIndicator.value = { ...indicator }
   showAddModal.value = true
 }
 
-function openDetails(competence) {
-  selectedCompetence.value = competence
+function openDetails(indicator) {
+  selectedIndicator.value = indicator
 }
 
 function closeDetails() {
-  selectedCompetence.value = null
+  selectedIndicator.value = null
 }
-const showStatsModal = ref(false) // Добавляем состояние для модального окна статистики
+
+const showStatsModal = ref(false)
 
 async function openStats() {
   try {
@@ -175,29 +179,29 @@ async function openStats() {
   }
 }
 
-function saveCompetence(updatedCompetence) {
-  const index = competencies.value.findIndex(c => c.id === updatedCompetence.id)
+function saveIndicatorLocal(updatedIndicator) {
+  const index = indicators.value.findIndex(i => i.id === updatedIndicator.id)
   if (index !== -1) {
-    competencies.value.splice(index, 1, updatedCompetence)
+    indicators.value.splice(index, 1, updatedIndicator)
   }
 }
 
-function confirmDelete(competence) {
-  competenceToDelete.value = competence
+function confirmDelete(indicator) {
+  indicatorToDelete.value = indicator
   showDeleteModal.value = true
 }
 
-async function deleteCompetence() {
-  if (!competenceToDelete.value) return
+async function deleteIndicator() {
+  if (!indicatorToDelete.value) return
 
   deleting.value = true
   try {
-    competencies.value = competencies.value.filter(
-      c => c.id !== competenceToDelete.value.id
+    indicators.value = indicators.value.filter(
+      i => i.id !== indicatorToDelete.value.id
     )
     showDeleteModal.value = false
   } catch (err) {
-    error.value = 'Ошибка при удалении компетенции'
+    error.value = 'Ошибка при удалении индикатора'
   } finally {
     deleting.value = false
   }
@@ -206,24 +210,38 @@ async function deleteCompetence() {
 function closeModal() {
   showAddModal.value = false
 }
+
 function closeStatsModal() {
   showStatsModal.value = false
 }
-// Наблюдатель за изменением subjectId
+
+// Наблюдатели за изменением props
 watch(() => props.subjectId, (newVal) => {
   if (newVal) {
-    loadCompetencies()
+    loadIndicators()
   }
 }, { immediate: true })
+
+watch(() => props.competenceId, (newVal) => {
+  if (newVal) {
+    loadIndicators()
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  loadIndicators()
+})
 </script>
 
 <template>
-  <div class="competence-management">
+  <div class="indicator-management">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2>Индикаторы компетенций предмета</h2>
+      <h2 v-if="isIndicator">Индикаторы предмета "{{ subjectName }}"</h2>
+      <h2 v-else-if="isCompetence">Индикаторы компетенции "{{ competence?.name }}"</h2>
+      <h2 v-else>Все индикаторы</h2>
     </div>
     <div class="d-flex gap-2">
-      <button class="btn fw-bold d-flex align-items-center gap-2" @click="addCompetence">
+      <button class="btn fw-bold d-flex align-items-center gap-2" @click="addIndicator">
         <SquarePlus class="icon" />
         Добавить индикатор
       </button>
@@ -241,12 +259,11 @@ watch(() => props.subjectId, (newVal) => {
     </div>
     <div v-else class="row">
       <div 
-        v-for="competence in competencies" 
-        :key="competence.id" 
+        v-for="indicator in indicators" 
+        :key="indicator.id" 
         class="col-md-4 mb-3"
       >
         <div class="card h-100 position-relative">
-          <!-- Выпадающее меню -->
           <div class="position-absolute top-0 end-0 mt-2 me-2">
             <DropDown dropdownMenuClass="dropdown-menu-end">
               <template #main>
@@ -255,18 +272,18 @@ watch(() => props.subjectId, (newVal) => {
                 </button>
               </template>
               <template #list>
-                <li class="dropdown-item" @click="editCompetence(competence)">
+                <li class="dropdown-item" @click="editIndicator(indicator)">
                   <Edit :size="16" class="me-2" />
                   Редактировать
                 </li>
-                <li class="dropdown-item" @click="openDetails(competence)">
+                <li class="dropdown-item" @click="openDetails(indicator)">
                   <Info :size="16" class="me-2" />
                   Подробнее
                 </li>
                 <li class="dropdown-divider"></li>
                 <li 
                   class="dropdown-item text-danger" 
-                  @click="confirmDelete(competence)"
+                  @click="confirmDelete(indicator)"
                 >
                   <Trash :size="16" class="me-2" />
                   Удалить
@@ -275,15 +292,15 @@ watch(() => props.subjectId, (newVal) => {
             </DropDown>
           </div>
           <div class="card-body">
-            <h5 class="card-title">{{ competence.name }}</h5>
-            <p class="card-text text-muted">{{ competence.description }}</p>
+            <h5 class="card-title">{{ indicator.name }}</h5>
+            <p class="card-text text-muted">{{ indicator.description }}</p>
             <div class="mt-3">
               <span class="badge bg-light text-dark">
-                Коэффициент освоенности: {{ 100 / subjectsCounts[competence.id] || 0 }} %
+                Коэффициент освоенности: {{ 100 / subjectsCounts[indicator.id] || 0 }} %
               </span>
             </div>
             <div class="text-center mt-3">
-              <button class="btn btn-primary" @click="openStats(competence)">
+              <button class="btn btn-primary" @click="openStats(indicator)">
                 Статистика освоения
               </button>
             </div>
@@ -300,14 +317,14 @@ watch(() => props.subjectId, (newVal) => {
           <h3></h3>
           <button class="btn-close" @click="closeStatsModal" aria-label="Закрыть"></button>
         </div>
-        <div v-if="statsLoading" class="text-center py-4">
+        <div v-if="loading" class="text-center py-4">
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Загрузка...</span>
           </div>
         </div>
         <CompetenceStats 
           v-else
-          :selected-competence="currentCompetence"
+          :selected-competence="selectedIndicator"
           :students-data="currentStats"
         />
       </div>
@@ -325,7 +342,7 @@ watch(() => props.subjectId, (newVal) => {
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">
-              {{ editingCompetence.id ? 'Редактировать' : 'Добавить' }} индикатор
+              {{ editingIndicator.id ? 'Редактировать' : 'Добавить' }} индикатор
             </h5>
             <button type="button" class="btn-close" @click="closeModal"></button>
           </div>
@@ -335,7 +352,7 @@ watch(() => props.subjectId, (newVal) => {
                 <label class="form-label">Название</label>
                 <input 
                   type="text" 
-                  v-model="editingCompetence.name" 
+                  v-model="editingIndicator.name" 
                   class="form-control" 
                   required 
                 />
@@ -343,7 +360,7 @@ watch(() => props.subjectId, (newVal) => {
               <div class="mb-3">
                 <label class="form-label">Описание</label>
                 <textarea 
-                  v-model="editingCompetence.description" 
+                  v-model="editingIndicator.description" 
                   rows="3" 
                   class="form-control" 
                   required
@@ -385,7 +402,7 @@ watch(() => props.subjectId, (newVal) => {
             ></button>
           </div>
           <div class="modal-body">
-            <p>Вы уверены, что хотите удалить индикатор"{{ competenceToDelete?.name }}"?</p>
+            <p>Вы уверены, что хотите удалить индикатор "{{ indicatorToDelete?.name }}"?</p>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" @click="showDeleteModal = false">
@@ -393,7 +410,7 @@ watch(() => props.subjectId, (newVal) => {
             </button>
             <button 
               class="btn btn-danger" 
-              @click="deleteCompetence" 
+              @click="deleteIndicator" 
               :disabled="deleting"
             >
               <span v-if="deleting" class="spinner-border spinner-border-sm"></span>
@@ -407,11 +424,11 @@ watch(() => props.subjectId, (newVal) => {
 
     <!-- Модальное окно подробностей -->
     <IndicatorDetailsModal
-      v-if="selectedCompetence"
-      :competence="selectedCompetence"
+      v-if="selectedIndicator"
+      :indicator="selectedIndicator"
       :subject-name="subjectName"
       @close="closeDetails"
-      @update="saveCompetence"
+      @update="saveIndicatorLocal"
     />
   </div>
 </template>

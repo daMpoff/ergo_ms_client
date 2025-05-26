@@ -21,7 +21,6 @@ export const endpoints = {
             personalprojects:'crm/projects/project-personal/',
             invitedprojects:'crm/projects/project-invited/',
             addproject:'crm/projects/project-new-add/',
-            addprojectuser:'crm/projects/projectuser-new-add/',
         }
     },
     expsys: {

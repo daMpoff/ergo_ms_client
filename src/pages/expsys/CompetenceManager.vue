@@ -1,9 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { 
-  fetchSubjectCompetencies,
   fetchCompetencies,
-  fetchSubjectsCountByIndicator,
   createCompetence
 } from '@/js/api/services/expsysService'
 import IndicatorDetailsModal from './IndicatorDetailsModal.vue'
@@ -22,10 +20,6 @@ const props = defineProps({
     type: String,
     default: 'Не указано'
   },
-  isIndicator: {
-    type: Boolean,
-    default: false
-  }
 })
 
 const emit = defineEmits(['back'])
@@ -50,10 +44,10 @@ const isCompetence = ref(false)
 
 // Открытие менеджера индикаторов для конкретной компетенции
 function openIndicatorsManager(competence) {
-  selectedCompetenceForIndicators.value = competence // Сохраняем всю компетенцию
-  showIndicatorsManager.value = true
-  showCompetenceList.value = false
-  isCompetence.value = true
+  selectedCompetenceForIndicators.value = competence;
+  showIndicatorsManager.value = true;
+  showCompetenceList.value = false;
+  isCompetence.value = true; // Указываем, что это переход из CompetenceManager
 }
 
 // Закрытие менеджера индикаторов
@@ -103,13 +97,7 @@ async function loadCompetencies() {
   error.value = null
 
   try {
-    if (props.isIndicator) {
-      const data = await fetchSubjectCompetencies(props.subjectId)
-      competencies.value = Array.isArray(data) ? data : []
-      await loadSubjectsCounts()
-    } else {
       competencies.value = await fetchCompetencies()
-    }
   } catch (err) {
     error.value = err.message || 'Не удалось загрузить компетенции'
   } finally {
@@ -121,37 +109,6 @@ onMounted(() => {
   loadCompetencies()
 })
 
-async function loadSubjectsCounts() {
-  try {
-    if (!competencies.value.length) return
-
-    const countsPromises = competencies.value.map(async comp => {
-      try {
-        if (comp.id === undefined || comp.id === null) {
-          console.warn('Невалидный ID индикатора:', comp)
-          return { id: comp.id, count: 0 }
-        }
-
-        const res = await fetchSubjectsCountByIndicator(comp.id)
-        return { id: comp.id, count: res.count }
-      } catch (err) {
-        console.error(`Ошибка для индикатора ${comp.id}:`, err)
-        return { id: comp.id, count: 0 }
-      }
-    })
-
-    const counts = await Promise.all(countsPromises)
-
-    subjectsCounts.value = counts.reduce((acc, { id, count }) => {
-      if (id !== undefined && id !== null) {
-        acc[id] = count
-      }
-      return acc
-    }, {})
-  } catch (err) {
-    console.error('Ошибка при загрузке количества предметов:', err)
-  }
-}
 
 function addCompetence() {
   editingCompetence.value = getEmptyCompetence()

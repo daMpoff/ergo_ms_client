@@ -54,8 +54,6 @@ export const fetchPersonalUserProjects = async () => {
 };
 
 export const createNewProject = async (projectData) => {
-  const toast = useToast()
-  
   try {
     const response = await apiClient.post(
       endpoints.crm.projects.addproject,
@@ -76,52 +74,20 @@ export const createNewProject = async (projectData) => {
         }
       }
     } else {
-      const errorMsg = response.errors?.message || response.data?.message || 'Ошибка при создании проекта'
-      toast.error(errorMsg)
-      return { success: false, error: errorMsg }
+      return { 
+        success: false, 
+        error: response.errors?.message || response.data?.message || 'Ошибка при создании проекта' 
+      }
     }
   } catch (error) {
     console.error('Ошибка при создании проекта:', error)
-    const errorMsg = error.response?.data?.message || error.message || 'Неизвестная ошибка'
-    toast.error(errorMsg)
-    return { success: false, error: errorMsg }
+    return { 
+      success: false, 
+      error: error.response?.data?.message || error.message || 'Неизвестная ошибка' 
+    }
   }
 }
 
-export const createNewProjectUser = async (projectuserData) => {
-    try {
-        const response = await apiClient.post(
-            endpoints.crm.projects.addprojectuser,
-            projectuserData,
-            true // Требуется авторизация
-        );
-
-        console.log('Response from server:', response);
-
-        if (response.success) {
-            return {
-                success: true,
-                userProject: response.data
-            };
-        }
-
-        return {
-            success: false,
-            error: response.errors?.message || response.data?.message || 'Ошибка при добавлении в проект'
-        };
-
-    } catch (error) {
-        console.error('Ошибка в createNewProjectUser:', {
-            error: error.message,
-            response: error.response?.data || error.message
-        });
-
-        return {
-            success: false,
-            error: error.response?.data?.message || error.message || 'Неизвестная ошибка'
-        };
-    }
-};
 
 export const fetchInvitedUserProjects = async () => {
   try {

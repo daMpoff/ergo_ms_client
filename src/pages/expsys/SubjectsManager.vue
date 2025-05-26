@@ -116,7 +116,7 @@ const openCompetencies = (subject) => {
   selectedSubjectId.value = subject.id;
   selectedSubjectName.value = subject.name;
   showCompetencies.value = true;
-  isIndicator.value = true; // Добавляем эту строку
+  isIndicator.value = true; // Указываем, что это переход из SubjectManager
 };
 
 // Добавляем новый ref для isIndicator
