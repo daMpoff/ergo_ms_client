@@ -524,6 +524,24 @@ const expertSystemRoutes = [
           requiresAuth: true,
         },
       },
+      {
+        path: '/student/:id',
+        name: 'StudentDetail',
+        component: () => import('@/pages/expert-system/StudentDetail.vue'),
+        meta: {
+          title: 'Детали студента',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/students',
+        name: 'StudentsList',
+        component: () => import('@/pages/expert-system/StudentList.vue'),
+        meta: {
+          title: 'Поиск студентов',
+          requiresAuth: true,
+        },
+      },
     ],
   },
 ]
