@@ -1,7 +1,9 @@
 import {
   AtSign,
+  Braces,
   Calendar,
   ChartSpline,
+  ChartCandlestick,
   CircleUserRound,
   Component,
   Grid2x2,
@@ -59,6 +61,7 @@ export const ChatMenuSection = {
   routeName: 'Messenger',
   title: 'Мессенджер',
 }
+
 
 // Карты
 export const MapsMenuSection = {
@@ -165,5 +168,34 @@ export const BIMenuSection = {
       page: 'charts',
       isOffcanvas: true
     },
-  ]
+  ],
+}
+
+export const ShortcodesMenuSection = {
+  id: 15,
+  icon: Braces,
+  routeName: 'Shortcodes',
+  title: 'Редактор страниц',
+  list: [
+    { path: 'MainShortcodePage', name: 'Главная' },
+    { path: 'ShortcodeEditor', name: 'Редактор страниц' },
+    { path: 'Templates', name: 'Компоненты' },
+  ],
+}
+
+// Модуль учебной аналитики
+export const EducationAnalyticMenuSection = {
+  id: 16,
+  icon: ChartCandlestick,
+  routeName: 'EducationAnalyticModule',
+  title: 'Учебная аналитика',
+  list: [
+    { path: 'MainPage', name: "Общее" },
+    { path: 'StatsPage', name: "Статистика" },
+    { path: 'LearningTrackPage', name: "Траектория" },
+    { path: 'ReportsPage', name: "Отчёты" },
+    { path: 'ProfilePage', name: "Профиль" },
+    { path: 'AdminPanelPage', name: "Админ-панель" },
+    { path: 'SuperUserPage', name: "SAdmin  " },
+  ],
 }

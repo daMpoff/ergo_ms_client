@@ -6,6 +6,7 @@ import {
   EmailMenuSection,
   SettingsMenuSection,
   UserMenuSection,
+
   MapsMenuSection,
   BillingMenuSection,
   CalendarMenuSection,
@@ -16,6 +17,8 @@ import {
   TablesMenuSection,
   ModalWindowsMenuSection,
   BIMenuSection,
+  ShortcodesMenuSection,
+  EducationAnalyticMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -96,6 +99,7 @@ const menuSections = [
   UserMenuSection,
   SettingsMenuSection,
   BIMenuSection,
+  EducationAnalyticMenuSection,
   EmailMenuSection,
   ChatMenuSection,
   MapsMenuSection,
@@ -107,6 +111,7 @@ const menuSections = [
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  ShortcodesMenuSection,
 ]
 
 const separators = (index) => {
