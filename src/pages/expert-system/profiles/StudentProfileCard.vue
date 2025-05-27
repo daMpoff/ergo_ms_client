@@ -252,7 +252,6 @@ async function saveProfile() {
   saving.value = true
 
   try {
-    // Обновление основных данных студента
     const payload = {
       first_name: form.first_name,
       last_name: form.last_name,
@@ -272,29 +271,22 @@ async function saveProfile() {
       )
     }
 
-    // Обработка удаления навыков
     if (deleteskillliest.value.length > 0) {
-      // Предположим, что есть эндпоинт для удаления навыков по ID
       await apiClient.delete(`${endpoints.expert_system.deleteSkill}`, {
         data: { skill_ids: deleteskillliest.value }
       })
     }
 
-    // Обработка добавления навыков
     if (addskilllist.value.length > 0) {
-      // Предположим, что есть эндпоинт для добавления навыков
       await apiClient.post(`${endpoints.expert_system.addSkill}`, {
         skill_ids: addskilllist.value
       })
     }
 
-    // Обновление локальных данных
     Object.assign(studentData, resp.data)
-    // Обновление списка навыков
     const updatedSkills = await apiClient.get(endpoints.expert_system.getUserSkills)
     items.value = updatedSkills.data
 
-    // Сброс состояний
     editMode.value = false
     addskilllist.value = []
     deleteskillliest.value = []
@@ -306,7 +298,6 @@ async function saveProfile() {
   }
 }
 
-// Отмена редактирования
 function cancelEdit() {
   Object.assign(form, studentData)
   apiError.value = null
