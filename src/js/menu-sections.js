@@ -1,8 +1,10 @@
 import {
   AtSign,
+  Braces,
   Calendar,
   ChartBarStacked,
   ChartSpline,
+  ChartCandlestick,
   CircleUserRound,
   Component,
   Grid2x2,
@@ -64,6 +66,7 @@ export const ChatMenuSection = {
   routeName: 'Messenger',
   title: 'Мессенджер',
 }
+
 
 // Карты
 export const MapsMenuSection = {
@@ -169,6 +172,56 @@ export const WatermarkedVideoSection = {
   title: 'Видео с вотермаркой',
 }
 
+// BI секция
+export const BIMenuSection = {
+  id: 16,
+  icon: ChartSpline,
+  routeName: 'BI',
+  title: 'BI',
+  list: [
+    {
+      name: 'Датасеты',
+      page: 'datasets',
+      isOffcanvas: true
+    },
+    {
+      name: 'Подключения',
+      page: 'connections',
+      isOffcanvas: true
+    },
+    {
+      name: 'Чарты',
+      page: 'charts',
+      isOffcanvas: true
+    },
+  ],
+}
 
+export const ShortcodesMenuSection = {
+  id: 17,
+  icon: Braces,
+  routeName: 'Shortcodes',
+  title: 'Редактор страниц',
+  list: [
+    { path: 'MainShortcodePage', name: 'Главная' },
+    { path: 'ShortcodeEditor', name: 'Редактор страниц' },
+    { path: 'Templates', name: 'Компоненты' },
+  ],
+}
 
-
+// Модуль учебной аналитики
+export const EducationAnalyticMenuSection = {
+  id: 18,
+  icon: ChartCandlestick,
+  routeName: 'EducationAnalyticModule',
+  title: 'Учебная аналитика',
+  list: [
+    { path: 'MainPage', name: "Общее" },
+    { path: 'StatsPage', name: "Статистика" },
+    { path: 'LearningTrackPage', name: "Траектория" },
+    { path: 'ReportsPage', name: "Отчёты" },
+    { path: 'ProfilePage', name: "Профиль" },
+    { path: 'AdminPanelPage', name: "Админ-панель" },
+    { path: 'SuperUserPage', name: "SAdmin  " },
+  ],
+}
