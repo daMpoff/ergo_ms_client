@@ -16,16 +16,19 @@ import {
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  BIMenuSection,
   ShortcodesMenuSection,
   EducationAnalyticMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
 import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 
 const props = defineProps({
   isVisible: Boolean,
+  currentPage: String
 })
 
 watch(
@@ -37,19 +40,13 @@ watch(
   },
 )
 
-const emit = defineEmits(['left-padding'])
-
-// Состояние меню
 const isCollapsed = ref(false)
 const isHovering = ref(true)
-
-// Переключение состояния
 const toggleMenu = () => {
   isCollapsed.value = !isCollapsed.value
   emit('left-padding', isCollapsed.value ? '120px' : '280px')
 }
 
-// Наведение на меню
 const handleMouseEnter = () => {
   if (isCollapsed.value) isHovering.value = true
 }
@@ -57,7 +54,6 @@ const handleMouseLeave = () => {
   if (isCollapsed.value) isHovering.value = false
 }
 
-// Текущая группа
 const route = useRoute()
 const openGroupId = ref(null)
 
@@ -77,10 +73,32 @@ const toggleGroup = (id) => {
   openGroupId.value = openGroupId.value === id ? null : id
 }
 
-// Список секций меню
+const emit = defineEmits(['left-padding', 'open-datasets', 'open-sidebar', 'reset-page'])
+
+function handleAction(action) {
+  if (action === 'openDatasetSidebar') {
+    emit('open-datasets')
+  }
+}
+
+const router = useRouter()
+
+function handleNavigate(item) {
+  if (['datasets', 'connections', 'charts'].includes(item.page)) {
+    emit('open-sidebar', item.page)
+  } else if (item.path) {
+    router.push({ name: item.path })
+  }
+}
+
+function resetCurrentPage() {
+  emit('reset-page')  
+}
+
 const menuSections = [
   UserMenuSection,
   SettingsMenuSection,
+  BIMenuSection,
   EducationAnalyticMenuSection,
   EmailMenuSection,
   ChatMenuSection,
@@ -96,10 +114,9 @@ const menuSections = [
   ShortcodesMenuSection,
 ]
 
-// Список разделителей
 const separators = (index) => {
   switch (index) {
-    case 1:
+    case 2:
       return 'Шаблоны'
   }
 }
@@ -135,9 +152,13 @@ const separators = (index) => {
           :is-collapsed="!isCollapsed"
           :is-open="openGroupId === section.id"
           :data="section"
+          :current-page="props.currentPage"
           @toggle="toggleGroup(section.id)"
+          @action="handleAction"
+          @navigate="handleNavigate"
+          @reset-page="resetCurrentPage"
         />
-        <div v-if="[1].includes(index)" class="side-menu__divider side-divider py-3">
+        <div v-if="[2].includes(index)" class="side-menu__divider side-divider py-3">
           <div class="side-divider__icon"><Minus :size="20" /></div>
           <div class="side-divider__name text-smooth-animation" :class="{ hidden: !isHovering }">
             {{ separators(index) }}

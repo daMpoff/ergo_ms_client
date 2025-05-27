@@ -443,6 +443,75 @@ const startRoutes = [
   },
 ]
 
+const biRoutes = [
+  {
+    path: '/bi',
+    name: 'BI',
+    component: () => import('@/pages/bi/HomePageBI.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/storagelist',
+    name: 'StorageList',
+    component: () => import('@/pages/bi/StorageListPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/storage',
+    name: 'BIStorage',
+    component: () => import('@/pages/bi/DatasetListPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new',
+    name: 'NewConnection',
+    component: () => import('@/pages/bi/NewConnection.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/file',
+    name: 'NewFile',
+    component: () => import('@/pages/bi/NewFile.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/clickhouse',
+    name: 'ClickHouse',
+    component: () => import('@/pages/bi/components/db-settings/ClickHouse.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/mssql',
+    name: 'MySQL',
+    component: () => import('@/pages/bi/components/db-settings/MSSQL.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/postgresql',
+    name: 'PostgreSQL',
+    component: () => import('@/pages/bi/components/db-settings/PostgreSQL.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/:pk',
+    name: 'connection-detail',
+    component: () => import('@/pages/bi/components/db-settings/ConnectionDetail.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/:pk/files',
+    name: 'ConnectionFiles',
+    component: () => import('@/pages/bi/ConnectionFiles.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/dataset',
+    name: 'NewDataset',
+    component: () => import('@/pages/bi/DatasetPage.vue'),
+    meta: { requiresAuth: true 
+  },
+]
+
 const shortcodeRoutes = [
   {
     path: '/shortcodes',
@@ -536,6 +605,7 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...biRoutes,
   ...shortcodeRoutes,
   ...learningAnalyticsRoutes,
 ]

@@ -146,8 +146,33 @@ export const ComponentsMenuSection = {
   ],
 }
 
-export const ShortcodesMenuSection = {
+// BI секция
+export const BIMenuSection = {
   id: 14,
+  icon: ChartSpline,
+  routeName: 'BI',
+  title: 'BI',
+  list: [
+    {
+      name: 'Датасеты',
+      page: 'datasets',
+      isOffcanvas: true
+    },
+    {
+      name: 'Подключения',
+      page: 'connections',
+      isOffcanvas: true
+    },
+    {
+      name: 'Чарты',
+      page: 'charts',
+      isOffcanvas: true
+    },
+  ],
+}
+
+export const ShortcodesMenuSection = {
+  id: 15,
   icon: Braces,
   routeName: 'Shortcodes',
   title: 'Редактор страниц',
@@ -160,7 +185,7 @@ export const ShortcodesMenuSection = {
 
 // Модуль учебной аналитики
 export const EducationAnalyticMenuSection = {
-  id: 15,
+  id: 16,
   icon: ChartCandlestick,
   routeName: 'EducationAnalyticModule',
   title: 'Учебная аналитика',

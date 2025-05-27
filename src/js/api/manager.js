@@ -78,6 +78,23 @@ class ApiClient {
         }
     }
 
+    async patch(endpoint, data = {}, needToken = true) {
+        try {
+          const config = {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          };
+          if (needToken) {
+            this._addAuthToken(config);
+          }
+          const response = await this.client.patch(endpoint, data, config);
+          return this.handleResponse(response);
+        } catch (error) {
+          return this.handleError(error);
+        }
+      }
+
     // Метод для DELETE-запросов
     async delete(endpoint, params = {}, needToken = true) {
         try {
@@ -86,6 +103,36 @@ class ApiClient {
                 this._addAuthToken(config);
             }
             const response = await this.client.delete(endpoint, config);
+            return this.handleResponse(response);
+        } catch (error) {
+            return this.handleError(error);
+        }
+    }
+
+    async upload(endpoint, formData, needToken = true) {
+        try {
+            const config = {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            };
+            if (needToken) {
+                this._addAuthToken(config);
+            }
+            const response = await this.client.post(endpoint, formData, config);
+            return this.handleResponse(response);
+        } catch (error) {
+            return this.handleError(error);
+        }
+    }
+
+    async getUploadedFiles(endpoint, needToken = true) {
+        try {
+            const config = {};
+            if (needToken) {
+                this._addAuthToken(config);
+            }
+            const response = await this.client.get(endpoint, config);
             return this.handleResponse(response);
         } catch (error) {
             return this.handleError(error);
