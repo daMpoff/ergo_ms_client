@@ -1,5 +1,4 @@
 <script setup>
-import { defineProps } from 'vue'
 import RecursiveRenderer from '../editor/RecursiveRenderer.vue'
 
 const {component} = defineProps({
