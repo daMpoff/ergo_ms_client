@@ -43,7 +43,7 @@ watch(
   },
 )
 
-const emit = defineEmits(['left-padding'])
+const emit = defineEmits(['left-padding', 'open-datasets', 'open-sidebar', 'reset-page'])
 
 // Состояние меню
 const isCollapsed = ref(false)
@@ -78,8 +78,6 @@ watch(
 const toggleGroup = (id) => {
   openGroupId.value = openGroupId.value === id ? null : id
 }
-
-const emit = defineEmits(['left-padding', 'open-datasets', 'open-sidebar', 'reset-page'])
 
 function handleAction(action) {
   if (action === 'openDatasetSidebar') {
@@ -121,7 +119,7 @@ const menuSections = ref([
   AdminPanelMenuSection,
   WatermarkedVideoSection,
   ShortcodesMenuSection,
-]
+])
 
 const separators = (index) => {
   switch (index) {
