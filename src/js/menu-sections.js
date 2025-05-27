@@ -152,12 +152,10 @@ export const ExpertSystemSection = {
   list: [
     { path: 'Skills', name: 'Навыки' },
     { path: 'Profile', name: 'Профиль' },
-    { path: 'Groups', name: 'Группы'},
-    { path: 'Vacancies', name: 'Вакансии'},
-    { path: 'Proforientation', name: 'Профориентация'},
-    { path: 'Profession', name: 'Менеджер профессий'},
-    { path: 'OrientationTest', name: 'Менеджер ориентационных тестов'},
-    { path: 'OrientationQuestion', name: 'Менеджер управление ориентационными вопросами'},
-    { path: 'OrientationAnswer', name: 'Менеджер управление вариантов ответов на вопросы'}
+    { path: 'Groups', name: 'Группы' },
+    { path: 'Vacancies', name: 'Вакансии' },
+    { path: 'Proforientation', name: 'Профориентация' },
+    { path: 'Profession', name: 'Менеджер профессий' },
+    { path: 'OrientationTest', name: 'Менеджер тестов' }
   ],
 }
