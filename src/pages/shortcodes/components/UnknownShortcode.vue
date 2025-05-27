@@ -5,7 +5,6 @@
 </template>
 
 <script setup>
-import { defineProps, defineOptions } from 'vue'
 defineOptions({ name: 'UnknownShortcode' })
 
 const props = defineProps({
