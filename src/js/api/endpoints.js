@@ -21,21 +21,24 @@ export const endpoints = {
             personalprojects:'crm/projects/project-personal/',
             invitedprojects:'crm/projects/project-invited/',
             addproject:'crm/projects/project-new-add/',
+            delete_project:'crm/projects/delete-project/{id}/',
+            counttasks:'crm/projects/tasks-count/',
+
         }
     },
     expsys: {
         subjects: {
             allsubjects: '/expsys_module/subjects-all/',
             create:'/expsys_module/subject-create/',
+            delete_subject:'/expsys_module/delete-subject/{id}/',
             create_competencies:'/expsys_module/competence-create/',
+
             create_indicator:'/expsys_module/indicator-create/',
             allcompenencies:'/expsys_module/subjectsindicators/',
             competencies:'/expsys_module/allcompetencies',
             countsubjectsind:'/expsys_module/indicator-subjects-count',
             indicators:'/expsys_module/allindicators',
             indicatorscompenencies:'/expsys_module/competenceindicators/',
-
-
         },
     
     },   

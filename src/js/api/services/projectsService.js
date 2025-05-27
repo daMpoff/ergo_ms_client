@@ -2,9 +2,56 @@ import { apiClient } from '../manager';
 import { endpoints } from '../endpoints';
 
 import Cookies from 'js-cookie';
+import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
+export const fetchCountTasksProject = async (projectId, countDone = null) => {
+  if (!projectId && projectId !== 0) {
+    throw new Error('ID проекта обязателен');
+  }
 
+  try {
+    // Создаем объект параметров запроса
+    const params = {
+      project_id: projectId
+    };
+ var response=null;
+    // Добавляем параметр count_done, если он указан
+    if (countDone !== null) {
+      params.count_done = countDone;
+      response = await apiClient.get(endpoints.crm.projects.counttasks, {
+       project_id: parseInt(projectId), count_done:countDone
+    });
+    }
+    else
+    {
+       response = await apiClient.get(endpoints.crm.projects.counttasks, {
+       project_id: parseInt(projectId) 
+    });
+    }
 
+  
+
+    if (response.data.error) {
+      throw new Error(response.data.error);
+    }
+
+    return {
+      totalCount: response.data.tasks_count || 0,
+      doneCount: response.data.done_count || 0,
+      activeCount: response.data.active_count || 0,
+      projectName: response.data.project_name || '',
+      message: response.data.message || ''
+    };
+
+  } catch (error) {
+    console.error('Ошибка в fetchCountTasksProject:', {
+      error: error.message,
+      response: error.response?.data || error.message
+    });
+
+    throw error;
+  }
+};
 export const fetchUserProjects = async () => {
     try {
       console.log(endpoints.crm.projects.allprojects)
@@ -110,5 +157,43 @@ export const fetchInvitedUserProjects = async () => {
   } catch (error) {
     console.error('Ошибка при загрузке проектов:', error);
     return []; // Возвращаем пустой массив в случае ошибки
+  }
+};
+
+
+
+export const deleteProject = async (projectId) => {
+  try {
+
+     const deleteUrl = `${endpoints.crm.projects.delete_project.replace('{id}', projectId)}`;
+    
+    const response = await apiClient.delete(deleteUrl);
+    if (!response.data) {
+      throw new Error(response.errors?.message || 'Ошибка при удалении проекта');
+    }
+
+    return {
+      success: true,
+      message: response.data.message,
+      deletedProjectId: projectId
+    };
+  } catch (error) {
+    console.error('Delete Project Error:', error);
+    
+    // Улучшенная обработка ошибок
+    let errorMessage = 'Не удалось удалить проект';
+    if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = 'Проект не найден';
+      } else if (error.response.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+    }
+    
+    return {
+      success: false,
+      error: errorMessage,
+      originalError: error
+    };
   }
 };

@@ -1,10 +1,12 @@
-<!-- SubjectManager.vue -->
 <script setup>
 import { ref, onMounted } from 'vue';
-import { fetchTeacherSubjects, createSubject } from '@/js/api/services/expsysService';
+import { fetchTeacherSubjects, createSubject, deleteSubject } from '@/js/api/services/expsysService';
+import { useToast } from 'vue-toastification';
 import CompetenciesManager from '@/pages/expsys/IndicatorsManager.vue';
 import DropDown from '@/components/DropDown.vue';
-import { EllipsisVertical, MessagesSquare, Trash, SquarePlus, UsersRound, LibraryBig, NotebookPen, CircleDot } from 'lucide-vue-next';
+import { EllipsisVertical, MessagesSquare, Trash, SquarePlus, UsersRound, LibraryBig, NotebookPen } from 'lucide-vue-next';
+
+const toast = useToast();
 
 // Reactive state
 const subjects = ref([]);
@@ -78,12 +80,14 @@ const saveSubject = async () => {
     });
     subjects.value.unshift(createdSubject);
     closeModal();
+    toast.success('Предмет успешно сохранен');
   } catch (err) {
     console.error('Ошибка сохранения предмета:', {
       error: err.message,
       component: editingSubject.value
     });
     error.value = err.message;
+    toast.error('Не удалось сохранить предмет');
   } finally {
     saving.value = false;
   }
@@ -94,16 +98,26 @@ const confirmDelete = (subject) => {
   showDeleteModal.value = true;
 };
 
-const deleteSubject = async () => {
+const deleteSubjectHandler = async () => {
+  if (!subjectToDelete.value) return;
+
   deleting.value = true;
   try {
-    subjects.value = subjects.value.filter(s => s.id !== subjectToDelete.value.id);
-    showDeleteModal.value = false;
+    const response = await deleteSubject(subjectToDelete.value.id);
+    
+    if (response.success) {
+      subjects.value = subjects.value.filter(s => s.id !== subjectToDelete.value.id);
+      toast.success(response.message || 'Предмет успешно удален');
+    } else {
+      toast.error(response.error || 'Не удалось удалить предмет');
+    }
   } catch (err) {
     console.error('Ошибка при удалении предмета:', err);
-    error.value = err.message || 'Не удалось удалить предмет';
+    toast.error(err.message || 'Не удалось удалить предмет');
   } finally {
     deleting.value = false;
+    showDeleteModal.value = false;
+    subjectToDelete.value = null;
   }
 };
 
@@ -116,16 +130,6 @@ const openCompetencies = (subject) => {
   selectedSubjectId.value = subject.id;
   selectedSubjectName.value = subject.name;
   showCompetencies.value = true;
-  isIndicator.value = true; // Указываем, что это переход из SubjectManager
-};
-
-// Добавляем новый ref для isIndicator
-const isIndicator = ref(false);
-
-const backToSubjects = () => {
-  showCompetencies.value = false;
-  selectedSubjectId.value = null;
-  selectedSubjectName.value = null;
 };
 
 // Lifecycle hook
@@ -265,29 +269,28 @@ onMounted(() => {
       </div>
       <div class="modal-backdrop fade show" v-if="showAddModal"></div>
 
-      <!-- Модальное окно подтверждения удаления -->
       <div class="modal fade" :class="{show: showDeleteModal}" tabindex="-1" style="display: block;" v-if="showDeleteModal">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Подтверждение удаления</h5>
-              <button type="button" class="btn-close" @click="showDeleteModal = false"></button>
-            </div>
-            <div class="modal-body">
-              <p>Вы уверены, что хотите удалить предмет "{{ subjectToDelete?.name }}"?</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="showDeleteModal = false">Отмена</button>
-              <button type="button" class="btn btn-danger" @click="deleteSubject" :disabled="deleting">
-                <span v-if="deleting" class="spinner-border spinner-border-sm" role="status"></span>
-                Удалить
-              </button>
-            </div>
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Подтверждение удаления</h5>
+            <button type="button" class="btn-close" @click="showDeleteModal = false"></button>
+          </div>
+          <div class="modal-body">
+            <p>Вы уверены, что хотите удалить предмет "{{ subjectToDelete?.name }}"?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="showDeleteModal = false">Отмена</button>
+            <button type="button" class="btn btn-danger" @click="deleteSubjectHandler" :disabled="deleting">
+              <span v-if="deleting" class="spinner-border spinner-border-sm" role="status"></span>
+              Удалить
+            </button>
           </div>
         </div>
       </div>
-      <div class="modal-backdrop fade show" v-if="showDeleteModal"></div>
     </div>
+    <div class="modal-backdrop fade show" v-if="showDeleteModal"></div>
+  </div>
   </div>
 
 </template>

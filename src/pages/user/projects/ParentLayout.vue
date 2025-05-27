@@ -1,40 +1,71 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchUserProjects, fetchPersonalUserProjects, fetchInvitedUserProjects } from '@/js/api/services/projectsService.js'
+import { 
+  fetchUserProjects, 
+  fetchPersonalUserProjects, 
+  fetchInvitedUserProjects,
+  fetchCountTasksProject
+} from '@/js/api/services/projectsService.js'
 import CardProject from '@/pages/user/projects/CardProject.vue'
 
 const route = useRoute()
 const userProjects = ref([])
 
-// Функция загрузки проектов в зависимости от текущего маршрута
 const loadProjects = async () => {
   try {
+    let projects;
     if (route.name === 'Projects') {
-      userProjects.value = await fetchUserProjects();
+      projects = await fetchUserProjects();
     } else if (route.name === 'PersonalProjects') {
-      userProjects.value = await  fetchPersonalUserProjects(); 
+      projects = await fetchPersonalUserProjects(); 
     } else if (route.name === 'InvitedProjects') {
-      userProjects.value = await fetchInvitedUserProjects();
+      projects = await fetchInvitedUserProjects();
     }
+
+    // Добавляем статистику задач к каждому проекту
+    userProjects.value = await Promise.all(projects.map(async project => {
+      try {
+        const tasksStats = await fetchCountTasksProject(project.id);
+        return {
+          ...project,
+          tasks: {
+            all: tasksStats.totalCount,
+            current: tasksStats.doneCount,
+            active: tasksStats.activeCount
+          }
+        };
+      } catch (error) {
+        console.error(`Ошибка загрузки задач для проекта ${project.id}:`, error);
+        return {
+          ...project,
+          tasks: {
+            all: 0,
+            current: 0,
+            active: 0
+          }
+        };
+      }
+    }));
+
   } catch (error) {
     console.error('Ошибка загрузки проектов:', error);
   }
 };
 
+
+const handleProjectDeleted = (projectId) => {
+  userProjects.value = userProjects.value.filter(project => project.id !== projectId)
+  loadProjects()
+}
+
 onMounted(loadProjects)
 watch(() => route.name, loadProjects)
 
-const leaveProject = (projectId) => {
-  userProjects.value = userProjects.value.filter((project) => project.id !== projectId)
-}
-
-// Открытие канбан-доски в новом окне
 const openKanbanBoard = (projectId) => {
-  const url = `/kanban?project_id=${projectId}`; // Предполагаем, что в канбане используется project_id в URL
-  window.open(url, '_blank'); // Открывает канбан в новом окне
+  const url = `/kanban?project_id=${projectId}`;
+  window.open(url, '_blank');
 }
-
 </script>
 
 <template>
@@ -54,7 +85,9 @@ const openKanbanBoard = (projectId) => {
         :hours="project.hours"
         :tasks="project.tasks"
         :deadline="project.deadline"
-        @leaveProject="leaveProject(project.id)"
+        :is-invited="route.name === 'InvitedProjects'"
+        :is-all="route.name === 'Projects'"
+        @projectDeleted="handleProjectDeleted"
         @viewTasks="openKanbanBoard" 
       />
     </div>

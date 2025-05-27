@@ -272,3 +272,39 @@ export const fetchSubjectsCountByIndicator = async (indicatorId) => {
     throw error; // пробрасываем ошибку дальше
   }
 };
+
+export const deleteSubject = async (subjectId) => {
+  try {
+
+     const deleteUrl = `${endpoints.expsys.subjects.delete_subject.replace('{id}', subjectId)}`;
+    
+    const response = await apiClient.delete(deleteUrl);
+    if (!response.data) {
+      throw new Error(response.errors?.message || 'Ошибка при удалении проекта');
+    }
+
+    return {
+      success: true,
+      message: response.data.message,
+      deletedProjectId: subjectId
+    };
+  } catch (error) {
+    console.error('Delete Subject Error:', error);
+    
+    // Улучшенная обработка ошибок
+    let errorMessage = 'Не удалось удалить предмет';
+    if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = 'Предмет не найден';
+      } else if (error.response.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+    }
+    
+    return {
+      success: false,
+      error: errorMessage,
+      originalError: error
+    };
+  }
+};
