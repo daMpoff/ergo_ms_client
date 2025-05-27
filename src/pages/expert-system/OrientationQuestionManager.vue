@@ -4,17 +4,43 @@
       Вопросы теста: "{{ testName }}"
       <button class="btn btn-link" @click="$router.back()">← Назад</button>
     </h2>
-
-    <div class="mb-3 d-flex">
-      <input v-model="newText" class="form-control me-2" placeholder="Текст нового вопроса" />
-      <button class="btn btn-sm btn-success text-light me-2" @click="addQuestion" :disabled="!newText">Добавить вопрос</button>
+    <div class="mb-3">
+      <input v-model="filterTerm" class="form-control" placeholder="Поиск по вопросам..." />
+    </div>
+    <div class="card card-body mb-4">
+      <h5>Добавить новый вопрос</h5>
+      <div class="mb-2">
+        <input
+          v-model="newText"
+          class="form-control"
+          placeholder="Текст нового вопроса"
+        />
+      </div>
+      <button
+        class="btn btn-success text-light me-2"
+        @click="addQuestion"
+        :disabled="!newText"
+      >
+        Добавить вопрос
+      </button>
     </div>
 
     <ul class="list-group">
-      <li v-for="q in questions" :key="q.id" class="list-group-item d-flex justify-content-between align-items-center">
-        <div v-if="editId !== q.id">{{ q.text }}</div>
+      <li
+        v-for="q in filteredQuestions"
+        :key="q.id"
+        class="list-group-item d-flex justify-content-between align-items-center"
+      >
+        <div v-if="editId !== q.id" class="flex-grow-1">
+          {{ q.text }}
+        </div>
         <div v-else class="flex-grow-1 me-2">
-          <input v-model="editText" class="form-control form-control-sm" @keyup.enter="saveEdit" />
+          <input
+            v-model="editText"
+            class="form-control form-control-sm"
+            @keyup.enter="saveEdit"
+            placeholder="Текст вопроса"
+          />
         </div>
 
         <div>
@@ -22,19 +48,17 @@
             v-if="editId !== q.id"
             class="btn btn-sm btn-primary me-2"
             @click="startEdit(q)"
-          >Переименовать</button>
+          >Редактировать</button>
           <button
             v-else
             class="btn btn-sm btn-success me-2"
             @click="saveEdit"
             :disabled="!editText"
           >Сохранить</button>
-
           <button
             class="btn btn-sm btn-secondary me-2"
             @click="$router.push({ name: 'OrientationAnswerManager', params: { questionId: q.id } })"
           >Ответы</button>
-
           <button
             class="btn btn-sm btn-danger"
             @click="deleteQuestion(q.id)"
@@ -48,37 +72,37 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 
 const route = useRoute()
-const router = useRouter()
 const testId = route.params.testId
 
 const questions = ref([])
 const testName = ref('')
 const newText = ref('')
+const filterTerm = ref('')
 const editId = ref(null)
 const editText = ref('')
 const error = ref('')
 
 async function fetchQuestions() {
   error.value = ''
-  // загрузим тест, чтобы взять имя
   const tres = await apiClient.get(`${endpoints.expert_system.orientationTests}${testId}/`)
   testName.value = tres.success ? tres.data.name : ''
-  // и вопросы
   const qres = await apiClient.get(endpoints.expert_system.orientationQuestions, { test: testId })
   if (qres.success) questions.value = qres.data
   else error.value = 'Не удалось загрузить вопросы'
 }
 
 async function addQuestion() {
+  const text = newText.value.trim()
+  if (!text) return
   const res = await apiClient.post(endpoints.expert_system.orientationQuestions, {
     test: testId,
-    text: newText.value.trim()
+    text
   })
   if (res.success) {
     newText.value = ''
@@ -114,6 +138,14 @@ async function deleteQuestion(id) {
   if (res.success) await fetchQuestions()
   else error.value = 'Ошибка удаления'
 }
+
+const filteredQuestions = computed(() => {
+  const term = filterTerm.value.trim().toLowerCase()
+  if (!term) return questions.value
+  return questions.value.filter(q =>
+    q.text.toLowerCase().includes(term)
+  )
+})
 
 onMounted(fetchQuestions)
 </script>

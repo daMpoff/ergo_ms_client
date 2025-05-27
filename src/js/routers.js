@@ -393,11 +393,12 @@ const expertSystemRoutes = [
     path: '/expert-system',
     name: 'ExpertSystem',
     component: () => import('@/pages/expert-system/ParentLayout.vue'),
-    meta: {
-      requiresAuth: true,
-    },
+    meta: { requiresAuth: true },
     redirect: { name: 'ChoiceRole' },
     children: [
+      { path: 'orientation-question/:testId',     name: 'OrientationQuestionManager',component: () => import('@/pages/expert-system/OrientationQuestionManager.vue'), meta: { title: 'Менеджер вопросов', requiresAuth: true } },
+      { path: 'orientation-answer/:questionId',   name: 'OrientationAnswerManager',  component: () => import('@/pages/expert-system/OrientationAnswerManager.vue'),   meta: { title: 'Менеджер ответов', requiresAuth: true } },
+      { path: 'proforientation-test/:testId',     name: 'ProforientationTest',      component: () => import('@/pages/expert-system/ProforientationTest.vue'),        meta: { title: 'Прохождение теста', requiresAuth: true } },
       {
         path: 'choice-role',
         name: 'ChoiceRole',
