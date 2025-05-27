@@ -314,7 +314,26 @@ watch(() => props.subjectId, (newVal) => {
         </div>
       </div>
     </div>
-
+          <!-- Модальное окно статистики -->
+    <div v-if="showStatsModal" class="stats-modal">
+      <div class="stats-modal-backdrop" @click="closeStatsModal"></div>
+      <div class="stats-modal-content">
+        <div class="stats-modal-header">
+          <h3></h3>
+          <button class="btn-close" @click="closeStatsModal" aria-label="Закрыть"></button>
+        </div>
+        <div v-if="statsLoading" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+        <CompetenceStats 
+          v-else
+          :selected-competence="currentCompetence"
+          :students-data="currentStats"
+        />
+      </div>
+    </div>
     <!-- Модальное окно добавления/редактирования -->
     <div 
       class="modal fade" 
