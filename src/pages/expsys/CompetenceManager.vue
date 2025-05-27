@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { 
   fetchCompetencies,
   createCompetence
@@ -7,7 +7,7 @@ import {
 import IndicatorDetailsModal from './IndicatorDetailsModal.vue'
 import IndicatorsManager from './IndicatorsManager.vue'
 import DropDown from '@/components/DropDown.vue'
-import { EllipsisVertical, Edit, Trash, Info, SquarePlus, ArrowLeftToLine } from 'lucide-vue-next'
+import { EllipsisVertical, Edit, Trash, Info, SquarePlus, ArrowLeftToLine, Filter } from 'lucide-vue-next'
 import { onMounted } from 'vue'
 import CompetenceStats from '@/pages/expsys/CompetenceStats.vue'
 
@@ -42,12 +42,29 @@ const deleting = ref(false)
 const subjectsCounts = ref({})
 const isCompetence = ref(false)
 
+// Сортировка
+const sortOptions = [
+  { id: 'all', name: 'Все виды' },
+  { id: 'professional', name: 'Профессиональные' },
+  { id: 'general', name: 'Общеобразовательные' },
+  { id: 'general_professional', name: 'Общепрофессиональные' }
+]
+const selectedSort = ref('all')
+
+// Отсортированные компетенции
+const sortedCompetencies = computed(() => {
+  if (selectedSort.value === 'all') {
+    return competencies.value
+  }
+  return competencies.value.filter(c => c.category === selectedSort.value)
+})
+
 // Открытие менеджера индикаторов для конкретной компетенции
 function openIndicatorsManager(competence) {
   selectedCompetenceForIndicators.value = competence;
   showIndicatorsManager.value = true;
   showCompetenceList.value = false;
-  isCompetence.value = true; // Указываем, что это переход из CompetenceManager
+  isCompetence.value = true;
 }
 
 // Закрытие менеджера индикаторов
@@ -57,7 +74,6 @@ function closeIndicatorsManager() {
   selectedCompetenceForIndicators.value = null
 }
 
-
 async function saveCompetence() {
   saving.value = true
   error.value = null
@@ -66,6 +82,7 @@ async function saveCompetence() {
     const createdCompetence = await createCompetence({
       name: editingCompetence.value.name,
       description: editingCompetence.value.description,
+      category: editingCompetence.value.type
     })
 
     competencies.value.unshift(createdCompetence)
@@ -82,6 +99,7 @@ const editingCompetence = ref({
   id: null,
   name: '',
   description: '',
+  type: 'professional'
 })
 
 function getEmptyCompetence() {
@@ -89,6 +107,7 @@ function getEmptyCompetence() {
     id: null,
     name: '',
     description: '',
+    type: 'professional'
   }
 }
 
@@ -97,7 +116,7 @@ async function loadCompetencies() {
   error.value = null
 
   try {
-      competencies.value = await fetchCompetencies()
+    competencies.value = await fetchCompetencies()
   } catch (err) {
     error.value = err.message || 'Не удалось загрузить компетенции'
   } finally {
@@ -108,7 +127,6 @@ async function loadCompetencies() {
 onMounted(() => {
   loadCompetencies()
 })
-
 
 function addCompetence() {
   editingCompetence.value = getEmptyCompetence()
@@ -179,27 +197,45 @@ watch(() => props.subjectId, (newVal) => {
 
 <template>
   <div class="competence-management">
-    <!-- Компонент индикаторов (заменяет список компетенций) -->
     <IndicatorsManager 
       v-if="showIndicatorsManager && selectedCompetenceForIndicators"
       :competence="selectedCompetenceForIndicators"
       :competence-id="selectedCompetenceForIndicators.id"
       @close="closeIndicatorsManager"
     />
-    <!-- Список компетенций (отображается только когда showCompetenceList = true) -->
+    
     <div v-if="showCompetenceList">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Компитенции</h2>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="btn fw-bold d-flex align-items-center gap-2" @click="addCompetence">
-          <SquarePlus class="icon" />
-          Добавить компитенцию
-        </button>
+        <div class="d-flex gap-2">
+          <button class="btn fw-bold d-flex align-items-center gap-2" @click="addCompetence">
+            <SquarePlus class="icon" />
+            Добавить компетенцию
+          </button>
+        </div>
         <button class="btn fw-bold d-flex align-items-center gap-2" @click="$emit('back')">
           <ArrowLeftToLine class="icon" />
           Назад
         </button>
+      </div>
+      
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Компетенции</h2>
+        <div class="d-flex align-items-center">
+          <Filter class="me-2" />
+          <select 
+            v-model="selectedSort" 
+            class="form-select form-select-sm"
+            style="width: auto;"
+          >
+            <option 
+              v-for="option in sortOptions" 
+              :key="option.id" 
+              :value="option.id"
+            >
+              {{ option.name }}
+            </option>
+          </select>
+        </div>
       </div>
 
       <div v-if="loading" class="text-center">
@@ -210,7 +246,7 @@ watch(() => props.subjectId, (newVal) => {
       </div>
       <div v-else class="row">
         <div 
-          v-for="competence in competencies" 
+          v-for="competence in sortedCompetencies" 
           :key="competence.id" 
           class="col-md-4 mb-3"
         >
@@ -245,13 +281,28 @@ watch(() => props.subjectId, (newVal) => {
             <div class="card-body">
               <h5 class="card-title">{{ competence.name }}</h5>
               <p class="card-text text-muted">{{ competence.description }}</p>
+              <div class="mt-2 mb-3">
+                <span class="badge" 
+                  :class="{
+                    'bg-primary': competence.category === 'professional',
+                    'bg-success': competence.category === 'general',
+                    'bg-info text-dark': competence.category === 'general_professional'
+                  }"
+                >
+                  {{
+                    sortOptions.find(o => o.id === competence.category)?.name || 'Не указан'
+                  }}
+                </span>
+              </div>
+              
               <div class="mt-3">
                 <span class="badge bg-light text-dark">
                   Коэффициент освоенности: {{ 100 / subjectsCounts[competence.id] || 0 }} %
                 </span>
               </div>
-              <div class="text-center mt-3">
-                <button class="btn btn-primary me-2" @click="openStats(competence)">
+              
+              <div class="text-center mt-3 d-flex flex-column align-items-center">
+                <button class="btn btn-primary mb-2" @click="openStats(competence)">
                   Статистика освоения
                 </button>
                 <button class="btn btn-primary" @click="openIndicatorsManager(competence)">
@@ -261,27 +312,6 @@ watch(() => props.subjectId, (newVal) => {
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Модальное окно статистики -->
-    <div v-if="showStatsModal" class="stats-modal">
-      <div class="stats-modal-backdrop" @click="closeStatsModal"></div>
-      <div class="stats-modal-content">
-        <div class="stats-modal-header">
-          <h3></h3>
-          <button class="btn-close" @click="closeStatsModal" aria-label="Закрыть"></button>
-        </div>
-        <div v-if="statsLoading" class="text-center py-4">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Загрузка...</span>
-          </div>
-        </div>
-        <CompetenceStats 
-          v-else
-          :selected-competence="currentCompetence"
-          :students-data="currentStats"
-        />
       </div>
     </div>
 
@@ -320,6 +350,22 @@ watch(() => props.subjectId, (newVal) => {
                   class="form-control" 
                   required
                 ></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Вид компетенции</label>
+                <select 
+                  v-model="editingCompetence.type" 
+                  class="form-select"
+                  required
+                >
+                  <option 
+                    v-for="option in sortOptions.filter(o => o.id !== 'all')" 
+                    :key="option.id" 
+                    :value="option.id"
+                  >
+                    {{ option.name }}
+                  </option>
+                </select>
               </div>
               <div v-if="error" class="alert alert-danger">{{ error }}</div>
               <div class="d-flex justify-content-end">
@@ -445,5 +491,16 @@ watch(() => props.subjectId, (newVal) => {
 .btn-close {
   font-size: 1.5rem;
   padding: 0.5rem;
+}
+
+/* Стили для бейджей типов компетенций */
+.bg-primary {
+  background-color: #0d6efd !important;
+}
+.bg-success {
+  background-color: #198754 !important;
+}
+.bg-info {
+  background-color: #0dcaf0 !important;
 }
 </style>

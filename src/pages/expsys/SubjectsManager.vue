@@ -4,7 +4,7 @@ import { ref, onMounted } from 'vue';
 import { fetchTeacherSubjects, createSubject } from '@/js/api/services/expsysService';
 import CompetenciesManager from '@/pages/expsys/IndicatorsManager.vue';
 import DropDown from '@/components/DropDown.vue';
-import { EllipsisVertical, MessagesSquare, Trash, SquarePlus } from 'lucide-vue-next';
+import { EllipsisVertical, MessagesSquare, Trash, SquarePlus, UsersRound, LibraryBig, NotebookPen, CircleDot } from 'lucide-vue-next';
 
 // Reactive state
 const subjects = ref([]);
@@ -186,33 +186,45 @@ onMounted(() => {
                 </DropDown>
               </div>
 
-              <div class="d-flex align-items-center mb-3">
-                <div class="icon-container" :class="subject.iconBackground">
-                  <i class="bi" :class="`bi-${subject.icon}`"></i>
-                </div>
-                <h5 class="card-title mb-0 ms-3">{{ subject.name }}</h5>
-              </div>
-              <p class="card-text">{{ subject.caption }}</p>
-              <div class="subject-stats">
-                <div class="stat-item">
-                  <i class="bi bi-people"></i>
-                  <span>{{ subject.stats.students }} студентов</span>
-                </div>
-                <div class="stat-item">
-                  <i class="bi bi-journal-text"></i>
-                  <span>{{ subject.stats.lessons }} уроков</span>
-                </div>
-                <div class="stat-item">
-                  <i class="bi bi-list-task"></i>
-                  <span>{{ subject.stats.tasks }} заданий</span>
-                </div>
-              </div>
-                <div class="text-center mt-3">
-                  <button class="btn btn-primary" @click="openCompetencies(subject)">
-                     Индикаторы
-                  </button>
-                </div>
-
+                <div class="card-body-1 p-4">
+  <!-- Заголовок с иконкой -->
+   <div class="d-flex align-items-center mb-3">
+    <div class="border-start border-3 border-primary me-3" style="height: 40px;"></div>
+    <h5 class="card-title mb-0 fw-bold text-dark">{{ subject.name }}</h5>
+  </div>
+  
+  <!-- Описание -->
+  <p class="card-text text-muted mb-4">{{ subject.caption }}</p>
+  
+  <!-- Статистика -->
+  <div class="subject-stats d-flex justify-content-between mb-4 px-2">
+    <div class="stat-item text-center">
+      <div class="stat-icon bg-light rounded-circle p-2 mb-1 mx-auto">
+        <UsersRound class="icon" />
+      </div>
+      <span class="small text-muted"> {{ subject.stats.students }} <br>студентов</span>
+    </div>
+    <div class="stat-item text-center">
+      <div class="stat-icon bg-light rounded-circle p-2 mb-1 mx-auto">
+           <LibraryBig class="icon" />
+      </div>
+      <span class="small text-muted">{{ subject.stats.lessons }}<br>уроков</span>
+    </div>
+    <div class="stat-item text-center">
+      <div class="stat-icon bg-light rounded-circle p-2 mb-1 mx-auto">
+         <NotebookPen class="icon" />
+      </div>
+      <span class="small text-muted">{{ subject.stats.tasks }}<br>заданий</span>
+    </div>
+  </div>
+  
+  <!-- Кнопка -->
+  <div class="text-center mt-2">
+    <button class="btn btn-primary px-4 rounded-pill fw-medium" @click="openCompetencies(subject)">
+      <i class="bi bi-bar-chart me-2"></i>Индикаторы
+    </button>
+  </div>
+</div>
             </div>
           </div>
         </div>
@@ -286,6 +298,33 @@ onMounted(() => {
     background-color: var(--bs-primary-bg-subtle);
     color: var(--bs-primary);
   }
+}
+
+.icon-container {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subject-stats {
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 0;
+}
+
+.card-body {
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
 </style>

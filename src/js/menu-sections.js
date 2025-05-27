@@ -158,7 +158,7 @@ export const ExpsysMenuSection = {
   title: 'Экспертная система',
     list: [
     { path: 'Subjects', name: 'Предметы' },
-    { path: 'Competencies', name: 'Компитенции' },
+    { path: 'Competencies', name: 'Компетенции' },
     { path: 'Indicators', name: 'Индикаторы компетенций' },
 
   ],

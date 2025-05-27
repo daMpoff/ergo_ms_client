@@ -94,6 +94,7 @@ export const fetchCompetencies = async () => {
       id: comp.id,
       name: comp.name,
       description: comp.description,
+      category:comp.category,
     }));
   } catch (error) {
     console.error('Ошибка в fetchCompetencies:', error.message);

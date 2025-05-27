@@ -240,16 +240,16 @@ onMounted(() => {
       <h2 v-else-if="isCompetence">Индикаторы компетенции "{{ competence?.name }}"</h2>
       <h2 v-else>Все индикаторы</h2>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn fw-bold d-flex align-items-center gap-2" @click="addIndicator">
-        <SquarePlus class="icon" />
-        Добавить индикатор
-      </button>
-      <button class="btn fw-bold d-flex align-items-center gap-2" @click="$emit('back')">
-        <ArrowLeftToLine class="icon" />
-        Назад
-      </button>
-    </div>
+    <div class="d-flex justify-content-between align-items-center">
+  <button class="btn fw-bold d-flex align-items-center gap-2" @click="addIndicator">
+    <SquarePlus class="icon" />
+    Добавить индикатор
+  </button>
+  <button class="btn fw-bold d-flex align-items-center gap-2" @click="$emit('back')">
+    <ArrowLeftToLine class="icon" />
+    Назад
+  </button>
+</div>
 
     <div v-if="loading" class="text-center">
       <div class="spinner-border"></div>

@@ -446,7 +446,7 @@ const expsysRoutes = [
         path: 'competencies',
         name: 'Competencies',
         component: () => import('@/pages/expsys/CompetenceManager.vue'),
-        meta: { title: 'Компитенции', requiresAuth: true },
+        meta: { title: 'Компетенции', requiresAuth: true },
       },
     ],
   },
