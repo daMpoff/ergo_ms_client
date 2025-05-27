@@ -137,7 +137,7 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
 }
 
 .side-group__list.is-open {
-  max-height: 320px;
+  max-height: none;
   opacity: 1;
 }
 
