@@ -16,6 +16,7 @@ import {
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  ShortcodesMenuSection,
   EducationAnalyticMenuSection,
 } from '@/js/menu-sections.js'
 
@@ -92,6 +93,7 @@ const menuSections = [
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  ShortcodesMenuSection,
 ]
 
 // Список разделителей

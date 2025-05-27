@@ -2,6 +2,8 @@ import router from '@/js/routers.js'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import '@he-tree/vue/style/default.css'
+import '@he-tree/vue/style/material-design.css'
 import { Tooltip } from 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
 

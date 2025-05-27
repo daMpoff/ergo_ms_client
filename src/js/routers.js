@@ -443,6 +443,81 @@ const startRoutes = [
   },
 ]
 
+const shortcodeRoutes = [
+  {
+    path: '/shortcodes',
+    name: 'Shortcodes',
+    component: () => import('@/pages/shortcodes/ParentLayout.vue'),
+    meta: { title: 'Конструктор сайта', requiresAuth: true },
+    redirect: { name: 'MainShortcodePage' },
+    children: [
+      {
+        path: 'editor',
+        name: 'MainShortcodePage',
+        component: () => import('@/pages/shortcodes/editor/MainPage.vue'),
+        meta: {
+          title: 'Главная',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'editor',
+        name: 'ShortcodeEditor',
+        component: () => import('@/pages/shortcodes/editor/ShortcodeEditor.vue'),
+        meta: {
+          title: 'Редактор страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'create-page',
+        name: 'CreatePage',
+        component: () => import('@/pages/shortcodes/editor/CreatePage.vue'),
+        meta: {
+          title: 'Создание страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'create-template',
+        name: 'CreateTemplate',
+        component: () => import('@/pages/shortcodes/editor/CreateTemplate.vue'),
+        meta: {
+          title: 'Создание шаблонов',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'categories-page',
+        name: 'PageCategories',
+        component: () => import('@/pages/shortcodes/editor/PageCategories.vue'),
+        meta: {
+          title: 'Категории страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'templates',
+        name: 'Templates',
+        component: () => import('@/pages/shortcodes/editor/TemplateManager.vue'),
+        meta: {
+          title: 'Компоненты',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'templates/:id?',
+        name: 'TemplateEditor',
+        component: import('@/pages/shortcodes/editor/TemplateEditor.vue'),
+        props: true,
+        meta: {
+          title: 'Редактор компонентов',
+          requiresAuth: true
+        },
+      }
+    ],
+  },
+]
 
 const routes = [
   ...startRoutes,
@@ -461,6 +536,7 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...shortcodeRoutes,
   ...learningAnalyticsRoutes,
 ]
 

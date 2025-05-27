@@ -50,7 +50,9 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
           exact-active-class="side-subtitle--exact-active"
         >
           <div class="side-subtitle__label">
-            <div class="nav-icon icon-flex"><Dot :size="20" /></div>
+            <div class="nav-icon m icon-flex">
+              <component :is="item.icon || Dot" :size="20" />
+            </div>
             <div
               v-if="showFull"
               class="d-inline-block text-truncate side-subtitle__name"
@@ -91,6 +93,7 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
 .side-subtitle--active .nav-icon,
 .side-subtitle--active .side-subtitle__name {
   color: var(--bs-primary);
+  padding-left: 0.5rem;
 }
 
 // Кнопка навигации

@@ -1,5 +1,6 @@
 import {
   AtSign,
+  Braces,
   Calendar,
   ChartSpline,
   ChartCandlestick,
@@ -145,9 +146,21 @@ export const ComponentsMenuSection = {
   ],
 }
 
+export const ShortcodesMenuSection = {
+  id: 14,
+  icon: Braces,
+  routeName: 'Shortcodes',
+  title: 'Редактор страниц',
+  list: [
+    { path: 'MainShortcodePage', name: 'Главная' },
+    { path: 'ShortcodeEditor', name: 'Редактор страниц' },
+    { path: 'Templates', name: 'Компоненты' },
+  ],
+}
+
 // Модуль учебной аналитики
 export const EducationAnalyticMenuSection = {
-  id: 14,
+  id: 15,
   icon: ChartCandlestick,
   routeName: 'EducationAnalyticModule',
   title: 'Учебная аналитика',
