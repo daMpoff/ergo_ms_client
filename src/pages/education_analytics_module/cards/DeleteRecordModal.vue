@@ -22,7 +22,6 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
 defineProps({
   visible: Boolean,
   isDark: Boolean
