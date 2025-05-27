@@ -393,107 +393,28 @@ const expertSystemRoutes = [
     path: '/expert-system',
     name: 'ExpertSystem',
     component: () => import('@/pages/expert-system/ParentLayout.vue'),
-    meta: {
-      requiresAuth: true,
-    },
+    meta: { requiresAuth: true },
     redirect: { name: 'ChoiceRole' },
     children: [
-      {
-        path: 'choice-role',
-        name: 'ChoiceRole',
-        component: () => import('@/pages/expert-system/ChoiceRole.vue'),
-        meta: { title: 'Выбор роли', requiresAuth: true },
-      },
-      {
-        path: 'account',
-        name: 'Profile',
-        component: () => import('@/pages/expert-system/ProfileDashboard.vue'),
-        meta: { title: 'Профиль', requiresAuth: true },
-      },
-      {
-        path: 'skills',
-        name: 'Skills',
-        component: () => import('@/pages/expert-system/SkillManager.vue'),
-        meta: { title: 'Навыки', requiresAuth: true },
-      },
-      {
-        path: 'student-register',
-        name: 'StudentRegister',
-        component: () => import('@/pages/expert-system/StudentRegister.vue'),
-        meta: { title: 'Регистрация студента', requiresAuth: true },
-      },
-      {
-        path: 'company-register',
-        name: 'CompanyRegister',
-        component: () => import('@/pages/expert-system/CompanyRegister.vue'),
-        meta: { title: 'Вход / Регистрация работодателя', requiresAuth: true },
-      },
-      {
-        path: 'group-manager',
-        name: 'Groups',
-        component: () => import('@/pages/expert-system/GroupManager.vue'),
-        meta: { title: 'Группы обучения', requiresAuth: true },
-      },
-      {
-        path: 'proforientation',
-        name: 'Proforientation',
-        component:() => import ('@/pages/expert-system/ProforientationTest.vue'),
-        meta: { title: 'Профориентация', requiresAuth: true }
-      },
-      {
-        path:'addstudent-skills',
-        name: 'Addstudentskills',
-        component: () => import('@/pages/expert-system/AddSkillForStudentsWithExpirience.vue'),
-        meta: { title: 'Добавление навыков студенту', requiresAuth: true },
-      },
-      {
-        path: 'profession-manager',
-        name: 'Profession',
-        component: () => import('@/pages/expert-system/ProfessionManager.vue'),
-        meta: { title: 'Менеджер профессий', requiresAuth: true },
-      },
-      {
-        path: 'orientation-test',
-        name: 'OrientationTest',
-        component: () => import('@/pages/expert-system/OrientationTestManager.vue'),
-        meta: { title: 'Менеджер ориентационных тестов', requiresAuth: true },
-      },
-      {
-        path: 'orientation-question',
-        name: 'OrientationQuestion',
-        component: () => import('@/pages/expert-system/OrientationQuestionManager.vue'),
-        meta: { title: 'Менеджер управление ориентационными вопросами', requiresAuth: true },
-      },
-      {
-        path: 'orientation-answer',
-        name: 'OrientationAnswer',
-        component: () => import('@/pages/expert-system/OrientationAnswerManager.vue'),
-        meta: { title: 'Менеджер управление вариантов ответов на вопросы', requiresAuth: true },
-      },
-      {
-        path: 'vacancies',
-        name: 'Vacancies',
-        component: () => import('@/pages/expert-system/StudentVacancies.vue'),
-        meta: { title: 'Вакансии', requiresAuth: true },
-      },
-      {
-        path: '/vacancy/:id',
-        name: 'VacancyDetail',
-        component: () => import('@/pages/expert-system/VacancyDetail.vue'),
-        meta: {
-          title: 'Детали вакансии',
-          requiresAuth: true,
-        },
-      },
-      {
-        path: '/company/:id',
-        name: 'CompanyDetail',
-        component: () => import('@/pages/expert-system/CompanyDetail.vue'),
-        meta: {
-          title: 'Детали компании',
-          requiresAuth: true,
-        },
-      },
+      { path: 'choice-role',         name: 'ChoiceRole',          component: () => import('@/pages/expert-system/ChoiceRole.vue'),          meta: { title: 'Выбор роли', requiresAuth: true } },
+      { path: 'account',             name: 'Profile',             component: () => import('@/pages/expert-system/ProfileDashboard.vue'),   meta: { title: 'Профиль', requiresAuth: true } },
+      { path: 'skills',              name: 'Skills',              component: () => import('@/pages/expert-system/SkillManager.vue'),        meta: { title: 'Навыки', requiresAuth: true } },
+      { path: 'student-register',    name: 'StudentRegister',     component: () => import('@/pages/expert-system/StudentRegister.vue'),     meta: { title: 'Регистрация студента', requiresAuth: true } },
+      { path: 'company-register',    name: 'CompanyRegister',     component: () => import('@/pages/expert-system/CompanyRegister.vue'),     meta: { title: 'Вход / Регистрация работодателя', requiresAuth: true } },
+      { path: 'group-manager',       name: 'Groups',              component: () => import('@/pages/expert-system/GroupManager.vue'),        meta: { title: 'Группы обучения', requiresAuth: true } },
+      { path: 'proforientation',     name: 'Proforientation',     component: () => import('@/pages/expert-system/ProforientationTest.vue'), meta: { title: 'Профориентация', requiresAuth: true } },
+      { path: 'addstudent-skills',   name: 'Addstudentskills',    component: () => import('@/pages/expert-system/AddSkillForStudentsWithExpirience.vue'), meta: { title: 'Добавление навыков студенту', requiresAuth: true } },
+      { path: 'profession-manager',  name: 'Profession',          component: () => import('@/pages/expert-system/ProfessionManager.vue'),   meta: { title: 'Менеджер профессий', requiresAuth: true } },
+
+      // Тесты профориентации
+      { path: 'orientation-test',                 name: 'OrientationTest',          component: () => import('@/pages/expert-system/OrientationTestManager.vue'),      meta: { title: 'Менеджер тестов', requiresAuth: true } },
+      { path: 'orientation-question/:testId',     name: 'OrientationQuestionManager',component: () => import('@/pages/expert-system/OrientationQuestionManager.vue'), meta: { title: 'Менеджер вопросов', requiresAuth: true } },
+      { path: 'orientation-answer/:questionId',   name: 'OrientationAnswerManager',  component: () => import('@/pages/expert-system/OrientationAnswerManager.vue'),   meta: { title: 'Менеджер ответов', requiresAuth: true } },
+      { path: 'proforientation-test/:testId',     name: 'ProforientationTest',      component: () => import('@/pages/expert-system/ProforientationTest.vue'),        meta: { title: 'Прохождение теста', requiresAuth: true } },
+
+      { path: 'vacancies',           name: 'Vacancies',           component: () => import('@/pages/expert-system/StudentVacancies.vue'),    meta: { title: 'Вакансии', requiresAuth: true } },
+      { path: '/vacancy/:id',        name: 'VacancyDetail',       component: () => import('@/pages/expert-system/VacancyDetail.vue'),       meta: { title: 'Детали вакансии', requiresAuth: true } },
+      { path: '/company/:id',        name: 'CompanyDetail',       component: () => import('@/pages/expert-system/CompanyDetail.vue'),       meta: { title: 'Детали компании', requiresAuth: true } },
     ],
   },
 ]
