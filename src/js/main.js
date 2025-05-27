@@ -4,7 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import { Tooltip } from 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
-import '@/assets/main.css'
+
 import '@/scss/styles.scss'
 
 import { PerfectScrollbarPlugin } from 'vue3-perfect-scrollbar'

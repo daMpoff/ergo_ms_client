@@ -1,11 +1,12 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
+import { ChevronLeft, Cog} from 'lucide-vue-next'
 import {
   ChatMenuSection,
   EmailMenuSection,
   SettingsMenuSection,
   UserMenuSection,
+
   MapsMenuSection,
   BillingMenuSection,
   CalendarMenuSection,
@@ -15,6 +16,7 @@ import {
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
+  EducationAnalyticMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -78,6 +80,7 @@ const toggleGroup = (id) => {
 const menuSections = [
   UserMenuSection,
   SettingsMenuSection,
+  EducationAnalyticMenuSection,
   EmailMenuSection,
   ChatMenuSection,
   MapsMenuSection,
