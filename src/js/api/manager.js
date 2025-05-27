@@ -1,7 +1,9 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
+// Класс для работы с API
 class ApiClient {
+    // Конструктор класса
     constructor() {
         this.baseUrl = `http://${import.meta.env.VITE_API_HOST || 'localhost'}:${import.meta.env.VITE_API_PORT || '8000'}/`;
         this.apiPath = 'api/';
@@ -13,7 +15,8 @@ class ApiClient {
         });
     }
 
-    // Generic request methods
+    // Основные методы запросов
+    // Метод для GET-запросов
     async get(endpoint, params = {}, needToken = true) {
         try {
             const config = { params };
@@ -27,6 +30,7 @@ class ApiClient {
         }
     }
 
+    // Метод для POST-запросов
     async post(endpoint, data = {}, needToken = true) {
         try {
             const config = {};
@@ -40,6 +44,7 @@ class ApiClient {
         }
     }
 
+    // Метод для PUT-запросов
     async put(endpoint, data = {}, needToken = true) {
         try {
             const config = {};
@@ -53,6 +58,7 @@ class ApiClient {
         }
     }
 
+    // Метод для DELETE-запросов
     async delete(endpoint, params = {}, needToken = true) {
         try {
             const config = { params };
@@ -66,7 +72,7 @@ class ApiClient {
         }
     }
 
-    // Helper method to add auth token to config
+    // Вспомогательный метод для добавления токена авторизации в конфигурацию
     _addAuthToken(config) {
         const token = Cookies.get('token');
         if (token) {
@@ -78,19 +84,21 @@ class ApiClient {
         return config;
     }
 
+    // Метод для удаления токенов авторизации
     logout() {
         Cookies.remove('token');
         Cookies.remove('refresh');
     }
 
-    // Generic response handlers
+    // Обработчики ответов
     handleResponse(response) {
-        if (response.status === 200) {
+        if (response.status >= 200 && response.status < 300) {
             return { success: true, data: response.data };
         }
         return { success: false, errors: response.data };
     }
 
+    // Обработчик ошибок
     handleError(error) {
         return {
             success: false,
@@ -99,5 +107,5 @@ class ApiClient {
     }
 }
 
-// Create and export a singleton instance
+// Создать и экспортировать синглтон-объект
 export const apiClient = new ApiClient(); 
