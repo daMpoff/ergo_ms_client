@@ -443,6 +443,52 @@ const startRoutes = [
   },
 ]
 
+const adminpanelRoutes = [
+  {
+    path: '/AdminPanel',
+    name: 'AdminPanel',
+    component: () => import('@/pages/AdminPanel/ParentLayout.vue'),
+    redirect: { name: 'CategoriesPanel' },
+    meta: { title: 'Админ-панель', requiresAuth: true },
+    children: [
+      {
+        path: 'CategoriesPanel',
+        name: 'CategoriesPanel',
+        component: () => import('@/pages/AdminPanel/Categories.vue'),
+        meta: { title: 'Панель категорий', requiresAuth: true },
+      },
+      {
+        path: 'GroupsPanel',
+        name: 'GroupsPanel',
+        component: () => import('@/pages/AdminPanel/Groups.vue'),
+        meta: { title: 'Панель групп', requiresAuth: true },
+      },
+      {
+        path: 'PermissionsPanel',
+        name: 'PermissionsPanel',
+        component: () => import('@/pages/AdminPanel/Permissions.vue'),
+        meta: { title: 'Панель прав', requiresAuth: true },
+      },
+      {
+        path: 'UsersPanel',
+        name: 'UsersPanel',
+        component: () => import('@/pages/AdminPanel/Users.vue'),
+        meta: { title: 'Панель пользователей', requiresAuth: true },
+      },
+    ],
+  },
+]
+const waterMarkvideoRoute = [
+  {
+    path: '/watermarked-video',
+    name: 'Watermarked-Video',
+    component: () => import('@/pages/WatermarkVideo/ParentLayout.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+]
+
 const biRoutes = [
   {
     path: '/bi',
@@ -605,6 +651,8 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...adminpanelRoutes,
+  ...waterMarkvideoRoute,
   ...biRoutes,
   ...shortcodeRoutes,
   ...learningAnalyticsRoutes,

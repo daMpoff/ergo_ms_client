@@ -2,6 +2,7 @@ import {
   AtSign,
   Braces,
   Calendar,
+  ChartBarStacked,
   ChartSpline,
   ChartCandlestick,
   CircleUserRound,
@@ -14,6 +15,10 @@ import {
   TextCursorInput,
   UserCog,
   Wallet,
+  KeySquare,
+  BookOpen,
+  NotepadTextDashed,
+  Video
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -146,9 +151,30 @@ export const ComponentsMenuSection = {
   ],
 }
 
+// Админ-панель
+export const AdminPanelMenuSection = {
+  id: 14,
+  icon: KeySquare,
+  routeName: 'AdminPanel',
+  title: 'Админ-панель',
+  list: [
+    { path: 'CategoriesPanel', name: 'Настройка категорий' },
+    { path: 'GroupsPanel', name: 'Настройка групп' },
+    { path: 'PermissionsPanel', name: 'Настройка прав' },
+    { path: 'UsersPanel', name: 'Настройка пользователей' },
+  ],
+}
+
+export const WatermarkedVideoSection = {
+  id: 15,
+  icon: Video,
+  routeName: 'Watermarked-Video',
+  title: 'Видео с вотермаркой',
+}
+
 // BI секция
 export const BIMenuSection = {
-  id: 14,
+  id: 16,
   icon: ChartSpline,
   routeName: 'BI',
   title: 'BI',
@@ -172,7 +198,7 @@ export const BIMenuSection = {
 }
 
 export const ShortcodesMenuSection = {
-  id: 15,
+  id: 17,
   icon: Braces,
   routeName: 'Shortcodes',
   title: 'Редактор страниц',
@@ -185,7 +211,7 @@ export const ShortcodesMenuSection = {
 
 // Модуль учебной аналитики
 export const EducationAnalyticMenuSection = {
-  id: 16,
+  id: 18,
   icon: ChartCandlestick,
   routeName: 'EducationAnalyticModule',
   title: 'Учебная аналитика',

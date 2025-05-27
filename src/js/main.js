@@ -56,7 +56,7 @@ try {
     }),
   )
 } catch (error) {
-  console.error('Ошибка при инициализации Yandex Maps:', error)
+ //console.error('Ошибка при инициализации Yandex Maps:', error)
 }
 
 app.mount('#app')

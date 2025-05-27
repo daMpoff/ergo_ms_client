@@ -1,5 +1,5 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import axios from 'axios'
+import Cookies from 'js-cookie'
 
 // Класс для работы с API
 class ApiClient {
@@ -29,6 +29,7 @@ class ApiClient {
             return this.handleError(error);
         }
     }
+  }
 
     // Метод для POST-запросов
     async post(endpoint, data = {}, needToken = true) {
@@ -53,6 +54,7 @@ class ApiClient {
             return this.handleError(error);
         }
     }
+  }
 
     // Метод для PUT-запросов
     async put(endpoint, data = {}, needToken = true) {
@@ -77,6 +79,7 @@ class ApiClient {
             return this.handleError(error);
         }
     }
+  }
 
     async patch(endpoint, data = {}, needToken = true) {
         try {
@@ -108,7 +111,7 @@ class ApiClient {
             return this.handleError(error);
         }
     }
-
+  }
     async upload(endpoint, formData, needToken = true) {
         try {
             const config = {
@@ -150,13 +153,12 @@ class ApiClient {
         }
         return config;
     }
+  }
 
-    // Метод для удаления токенов авторизации
-    logout() {
-        Cookies.remove('token');
-        Cookies.remove('refresh');
-    }
-
+  logout() {
+    Cookies.remove('token')
+    Cookies.remove('refresh')
+  }
     // Обработчики ответов
     handleResponse(response) {
         // Успешные статусы: 200 OK, 201 Created, 204 No Content и т.д.
@@ -180,7 +182,7 @@ class ApiClient {
             errors: response.data,
             status: response.status
         };
-    }
+  }
 
     // Обработчик ошибок
     handleError(error) {
@@ -202,6 +204,7 @@ class ApiClient {
             errors: error.response?.data
         };
     }
+  }
 }
 
 // Создать и экспортировать синглтон-объект
