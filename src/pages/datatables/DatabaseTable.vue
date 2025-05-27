@@ -1,6 +1,6 @@
 <script setup>
 import DataTable from '@bhplugin/vue3-datatable'
-import { ref, defineProps, defineEmits, onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Modal } from 'bootstrap'
 
 const emit = defineEmits(['recordUpdated', 'recordDeleted', 'recordCreated'])

@@ -1,5 +1,5 @@
 <script setup>
-import { defineOptions, defineProps, computed } from 'vue'
+import { computed } from 'vue'
 import { componentMap, defaultRenderer } from '../js'
 
 defineOptions({ name: 'RecursiveRenderer' })

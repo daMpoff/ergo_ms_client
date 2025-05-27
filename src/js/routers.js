@@ -508,7 +508,7 @@ const biRoutes = [
     path: '/bi/connections/new/dataset',
     name: 'NewDataset',
     component: () => import('@/pages/bi/DatasetPage.vue'),
-    meta: { requiresAuth: true 
+    meta: { requiresAuth: true },
   },
 ]
 
