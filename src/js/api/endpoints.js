@@ -15,6 +15,7 @@ export const endpoints = {
     companiesMe: 'expert_system/companies/me/',
     skills: 'expert_system/skills/',
     userSkills: 'expert_system/user-skills/',
+    myVacancies: 'expert_system/companies/my-vacancies/',
     roles: 'expert_system/roles/',
     trajectorySteps: 'expert_system/trajectory-steps/',
     orientationTests: 'expert_system/orientation-tests/',
@@ -34,5 +35,16 @@ export const endpoints = {
 
     setUserSkills: 'expert_system/set-user-skills',
     getUserSkills: 'expert_system/get-user-skills',
+
+    getAllTests: 'expert_system/get-all-tests',
+    createTest: 'expert_system/create-test',
+    deleteTest:'expert_system/delete-test',
+    getTest:'expert_system/get-test',
+    updateTest:'expert_system/patch-test',
+    getSkillsForCreate:'expert_system/get-skills-for-create-test',
+    getSkillsForRedact:'expert_system/get-skills-for-redact-test',
+    getTestIdBySkill:'expert_system/get-test-id-by-skill',
+    getTestForRedact:'expert_system/get-test-for-redact',
+    evaluateTest: 'expert_system/evaluate-test'
   }
 };

@@ -90,7 +90,7 @@ const menuSections = [
   KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
-  ExpertSystemSection
+  ExpertSystemSection,
 ]
 
 // Список разделителей

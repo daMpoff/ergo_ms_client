@@ -130,19 +130,7 @@ export const InputsMenuSection = {
 }
 
 // Модальные окна
-export const ComponentsMenuSection = {
-  id: 13,
-  icon: Component,
-  routeName: 'Components',
-  title: 'Остальные',
-  list: [
-    { path: 'Alerts', name: 'Уведомления' },
-    { path: 'Badges', name: 'Значки' },
-    { path: 'Carousel', name: 'Карусель' },
-    { path: 'ListGroups', name: 'Группы списков' },
-    { path: 'Typography', name: 'Типография' },
-  ],
-}
+
 
 export const ExpertSystemSection = {
   id: 14,
@@ -157,5 +145,19 @@ export const ExpertSystemSection = {
     { path: 'Proforientation', name: 'Профориентация' },
     { path: 'Profession', name: 'Менеджер профессий' },
     { path: 'OrientationTest', name: 'Менеджер тестов' }
+  ],
+}
+
+export const ComponentsMenuSection = {
+  id: 13,
+  icon: Component,
+  routeName: 'Components',
+  title: 'Остальные',
+  list: [
+    { path: 'Alerts', name: 'Уведомления' },
+    { path: 'Badges', name: 'Значки' },
+    { path: 'Carousel', name: 'Карусель' },
+    { path: 'ListGroups', name: 'Группы списков' },
+    { path: 'Typography', name: 'Типография' },
   ],
 }
