@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
 import {
+  AnalyzeMenuSection,
   ChatMenuSection,
   EmailMenuSection,
   SettingsMenuSection,
@@ -102,6 +103,7 @@ function resetCurrentPage() {
 // Список секций меню
 const menuSections = ref([
   UserMenuSection,
+  AnalyzeMenuSection,
   SettingsMenuSection,
   BIMenuSection,
   EducationAnalyticMenuSection,

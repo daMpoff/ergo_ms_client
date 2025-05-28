@@ -7,6 +7,7 @@ import {
   ChartCandlestick,
   CircleUserRound,
   Component,
+  Code2,
   Grid2x2,
   Map,
   MessagesSquare,
@@ -32,13 +33,24 @@ export const UserMenuSection = {
     { path: 'Teams', name: 'Команды' },
     { path: 'Projects', name: 'Проекты' },
     { path: 'Connections', name: 'Связи' },
-    { path: 'Analytics', name: 'Статистика' },
   ],
 }
 
+// Аналитика
+export const AnalyzeMenuSection = {
+  id: 2,
+  icon: Code2,
+  routeName: 'Analyze',
+  title: 'Анализ',
+  list: [
+    { path: 'DatabaseAnalyze', name: 'Анализ Bitcoin' },
+  ],
+};
+
+
 // Настройки аккаунта
 export const SettingsMenuSection = {
-  id: 2,
+  id: 3,
   icon: UserCog,
   routeName: 'Settings',
   title: 'Настройки',
@@ -53,7 +65,7 @@ export const SettingsMenuSection = {
 
 // Электронная почта
 export const EmailMenuSection = {
-  id: 3,
+  id: 4,
   icon: AtSign,
   routeName: 'Email',
   title: 'Электронная почта',
@@ -61,16 +73,15 @@ export const EmailMenuSection = {
 
 // Мессенджер
 export const ChatMenuSection = {
-  id: 4,
+  id: 5,
   icon: MessagesSquare,
   routeName: 'Messenger',
   title: 'Мессенджер',
 }
 
-
 // Карты
 export const MapsMenuSection = {
-  id: 5,
+  id: 6,
   icon: Map,
   routeName: 'Maps',
   title: 'Карты',
@@ -78,7 +89,7 @@ export const MapsMenuSection = {
 
 // Ценовой план
 export const BillingMenuSection = {
-  id: 6,
+  id: 7,
   icon: Wallet,
   routeName: 'Billing',
   title: 'Ценовой план',
@@ -86,7 +97,7 @@ export const BillingMenuSection = {
 
 // Календарь
 export const CalendarMenuSection = {
-  id: 7,
+  id: 8,
   icon: Calendar,
   routeName: 'Calendar',
   title: 'Календарь',
@@ -94,7 +105,7 @@ export const CalendarMenuSection = {
 
 // Канбан-доска
 export const KanbanMenuSection = {
-  id: 8,
+  id: 9,
   icon: Grid2x2,
   routeName: 'Kanban',
   title: 'Канбан-доска',
@@ -102,7 +113,7 @@ export const KanbanMenuSection = {
 
 // Таблицы
 export const TablesMenuSection = {
-  id: 9,
+  id: 10,
   icon: Table2,
   routeName: 'Tables',
   title: 'Таблицы',
@@ -110,7 +121,7 @@ export const TablesMenuSection = {
 
 // Графики
 export const ChartsMenuSection = {
-  id: 10,
+  id: 11,
   icon: ChartSpline,
   routeName: 'Charts',
   title: 'Графики',
@@ -122,7 +133,7 @@ export const ChartsMenuSection = {
 
 // Модальные окна
 export const ModalWindowsMenuSection = {
-  id: 11,
+  id: 12,
   icon: PictureInPicture2,
   routeName: 'ModalWindows',
   title: 'Модальные окна',
@@ -130,7 +141,7 @@ export const ModalWindowsMenuSection = {
 
 // Модальные окна
 export const InputsMenuSection = {
-  id: 12,
+  id: 13,
   icon: TextCursorInput,
   routeName: 'Inputs',
   title: 'Формы ввода',
@@ -138,7 +149,7 @@ export const InputsMenuSection = {
 
 // Модальные окна
 export const ComponentsMenuSection = {
-  id: 13,
+  id: 14,
   icon: Component,
   routeName: 'Components',
   title: 'Остальные',
@@ -153,7 +164,7 @@ export const ComponentsMenuSection = {
 
 // Админ-панель
 export const AdminPanelMenuSection = {
-  id: 14,
+  id: 15,
   icon: KeySquare,
   routeName: 'AdminPanel',
   title: 'Админ-панель',
@@ -166,7 +177,7 @@ export const AdminPanelMenuSection = {
 }
 
 export const WatermarkedVideoSection = {
-  id: 15,
+  id: 16,
   icon: Video,
   routeName: 'Watermarked-Video',
   title: 'Видео с вотермаркой',
@@ -174,7 +185,7 @@ export const WatermarkedVideoSection = {
 
 // BI секция
 export const BIMenuSection = {
-  id: 16,
+  id: 17,
   icon: ChartSpline,
   routeName: 'BI',
   title: 'BI',
@@ -198,7 +209,7 @@ export const BIMenuSection = {
 }
 
 export const ShortcodesMenuSection = {
-  id: 17,
+  id: 18,
   icon: Braces,
   routeName: 'Shortcodes',
   title: 'Редактор страниц',
@@ -211,7 +222,7 @@ export const ShortcodesMenuSection = {
 
 // Модуль учебной аналитики
 export const EducationAnalyticMenuSection = {
-  id: 18,
+  id: 19,
   icon: ChartCandlestick,
   routeName: 'EducationAnalyticModule',
   title: 'Учебная аналитика',

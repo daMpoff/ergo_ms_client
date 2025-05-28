@@ -99,6 +99,29 @@ const userRoutes = [
   },
 ]
 
+// Секция "Analyze"
+const analyzeRoutes = [
+  {
+    path: '/user/analyze',
+    name: 'Analyze',
+    component: () => import('@/pages/user/analyze/Analyze.vue'),
+    meta: {
+      requiresAuth: true
+    },
+    children: [
+      {
+        path: 'databaseanalyze',
+        name: 'DatabaseAnalyze',
+        component: () => import('@/pages/user/analyze/DatabaseAnalyze.vue'),
+        meta: {
+          requiresAuth: true
+        },
+      }
+    ]
+  },
+];
+
+
 // Настройки аккаунта
 const settingsRoutes = [
   {
@@ -322,61 +345,60 @@ const componentsRoutes = [
   },
 ]
 
-  // Маршрутизация страниц модуля учебной аналитики
-  const learningAnalyticsRoutes = [
-    {
-      path: '/education_analytics',
-      name: 'EducationAnalyticModule',
-      component: () => import('@/pages/education_analytics_module/ParentLayout.vue'),
-      redirect: { name: 'MainPage' },
-      children: [
-        {
-          path: 'main',
-          name: 'MainPage',
-          component: () => import('@/pages/education_analytics_module/MainPage.vue'),
-          meta: { title: 'MainPage', requiresAuth: true },
-        },
-        {
-          path: 'learning_track',
-          name: 'LearningTrackPage',
-          component: () => import('@/pages/education_analytics_module/LearningTrack.vue'),
-          meta: { title: 'LearningTrackPage', requiresAuth: true },
-        },
-        {
-          path: 'reports',
-          name: 'ReportsPage',
-          component: () => import('@/pages/education_analytics_module/ReportsPage.vue'),
-          meta: { title: 'ReportsPage', requiresAuth: true },
-        },
-        {
-          path: 'stats',
-          name: 'StatsPage',
-          component: () => import('@/pages/education_analytics_module/StatsPage.vue'),
-          meta: { title: 'StatsPage', requiresAuth: true },
-        },
-        {
-          path: 'profile',
-          name: 'ProfilePage',
-          component: () => import('@/pages/education_analytics_module/ProfilePage.vue'),
-          meta: { title: 'ProfilePage', requiresAuth: true },
-        },
-        {
-          path: 'admin',
-          name: 'AdminPanelPage',
-          component: () => import('@/pages/education_analytics_module/AdminPanelPage.vue'),
-          meta: { title: 'AdminPanelPage', requiresAuth: true },
-        },
-        {
-          path: 'root',
-          name: 'SuperUserPage',
-          component: () => import('@/pages/education_analytics_module/SuperUserPanelPage.vue'),
-          meta: { title: 'SuperUserPage', requiresAuth: true },
-        },
-    ],
-    },
-  ]
+// Маршрутизация страниц модуля учебной аналитики
+const learningAnalyticsRoutes = [
+  {
+    path: '/education_analytics',
+    name: 'EducationAnalyticModule',
+    component: () => import('@/pages/education_analytics_module/ParentLayout.vue'),
+    redirect: { name: 'MainPage' },
+    children: [
+      {
+        path: 'main',
+        name: 'MainPage',
+        component: () => import('@/pages/education_analytics_module/MainPage.vue'),
+        meta: { title: 'MainPage', requiresAuth: true },
+      },
+      {
+        path: 'learning_track',
+        name: 'LearningTrackPage',
+        component: () => import('@/pages/education_analytics_module/LearningTrack.vue'),
+        meta: { title: 'LearningTrackPage', requiresAuth: true },
+      },
+      {
+        path: 'reports',
+        name: 'ReportsPage',
+        component: () => import('@/pages/education_analytics_module/ReportsPage.vue'),
+        meta: { title: 'ReportsPage', requiresAuth: true },
+      },
+      {
+        path: 'stats',
+        name: 'StatsPage',
+        component: () => import('@/pages/education_analytics_module/StatsPage.vue'),
+        meta: { title: 'StatsPage', requiresAuth: true },
+      },
+      {
+        path: 'profile',
+        name: 'ProfilePage',
+        component: () => import('@/pages/education_analytics_module/ProfilePage.vue'),
+        meta: { title: 'ProfilePage', requiresAuth: true },
+      },
+      {
+        path: 'admin',
+        name: 'AdminPanelPage',
+        component: () => import('@/pages/education_analytics_module/AdminPanelPage.vue'),
+        meta: { title: 'AdminPanelPage', requiresAuth: true },
+      },
+      {
+        path: 'root',
+        name: 'SuperUserPage',
+        component: () => import('@/pages/education_analytics_module/SuperUserPanelPage.vue'),
+        meta: { title: 'SuperUserPage', requiresAuth: true },
+      },
+  ],
+  },
+]
 
-//
 const startRoutes = [
   {
     path: '/start-page',
@@ -639,6 +661,7 @@ const routes = [
   ...mainRoutes,
   ...dashboardRoutes,
   ...userRoutes,
+  ...analyzeRoutes,
   ...settingsRoutes,
   ...emailRoutes,
   ...messengerRoutes,
