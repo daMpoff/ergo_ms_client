@@ -32,13 +32,15 @@ export const endpoints = {
             create:'/expsys_module/subject-create/',
             delete_subject:'/expsys_module/delete-subject/{id}/',
             create_competencies:'/expsys_module/competence-create/',
-
             create_indicator:'/expsys_module/indicator-create/',
             allcompenencies:'/expsys_module/subjectsindicators/',
             competencies:'/expsys_module/allcompetencies',
             countsubjectsind:'/expsys_module/indicator-subjects-count',
             indicators:'/expsys_module/allindicators',
             indicatorscompenencies:'/expsys_module/competenceindicators/',
+            delete_competence:'/expsys_module/delete-competence/{id}/',
+            delete_indicator:'/expsys_module/delete-indicator/{id}/',
+
         },
     
     },   

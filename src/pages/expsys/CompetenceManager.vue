@@ -2,7 +2,8 @@
 import { ref, watch, computed } from 'vue'
 import { 
   fetchCompetencies,
-  createCompetence
+  createCompetence,
+  deleteCompetence,
 } from '@/js/api/services/expsysService'
 import IndicatorDetailsModal from './IndicatorDetailsModal.vue'
 import IndicatorsManager from './IndicatorsManager.vue'
@@ -164,17 +165,21 @@ function confirmDelete(competence) {
   showDeleteModal.value = true
 }
 
-async function deleteCompetence() {
+async function deleteCompetences() {
   if (!competenceToDelete.value) return
-
+  
   deleting.value = true
+  error.value = null
+  
   try {
-    competencies.value = competencies.value.filter(
-      c => c.id !== competenceToDelete.value.id
-    )
+    await deleteCompetence(competenceToDelete.value.id)
+    // Удаляем компетенцию из списка
+    competencies.value = competencies.value.filter(c => c.id !== competenceToDelete.value.id)
     showDeleteModal.value = false
+    competenceToDelete.value = null
   } catch (err) {
-    error.value = 'Ошибка при удалении компетенции'
+    error.value = err.message || 'Не удалось удалить компетенцию'
+    console.error('Ошибка удаления компетенции:', err)
   } finally {
     deleting.value = false
   }
@@ -430,7 +435,7 @@ watch(() => props.subjectId, (newVal) => {
             </button>
             <button 
               class="btn btn-danger" 
-              @click="deleteCompetence" 
+              @click="deleteCompetences" 
               :disabled="deleting"
             >
               <span v-if="deleting" class="spinner-border spinner-border-sm"></span>

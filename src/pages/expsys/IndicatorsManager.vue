@@ -5,7 +5,8 @@ import {
   fetchIndicators, 
   fetchSubjectsCountByIndicator,
   fetchIndicatorsCompetencie,
-  createIndicator
+  createIndicator,
+  deleteIndicator
 } from '@/js/api/services/expsysService'
 import IndicatorDetailsModal from './IndicatorDetailsModal.vue'
 import DropDown from '@/components/DropDown.vue'
@@ -191,17 +192,21 @@ function confirmDelete(indicator) {
   showDeleteModal.value = true
 }
 
-async function deleteIndicator() {
+async function deleteIndicators() {
   if (!indicatorToDelete.value) return
-
+  
   deleting.value = true
+  error.value = null
+  
   try {
-    indicators.value = indicators.value.filter(
-      i => i.id !== indicatorToDelete.value.id
-    )
+    await deleteIndicator(indicatorToDelete.value.id)
+    // Удаляем индикатор из списка
+    indicators.value = indicators.value.filter(i => i.id !== indicatorToDelete.value.id)
     showDeleteModal.value = false
+    indicatorToDelete.value = null
   } catch (err) {
-    error.value = 'Ошибка при удалении индикатора'
+    error.value = err.message || 'Не удалось удалить индикатор'
+    console.error('Ошибка удаления индикатора:', err)
   } finally {
     deleting.value = false
   }
@@ -241,15 +246,15 @@ onMounted(() => {
       <h2 v-else>Все индикаторы</h2>
     </div>
     <div class="d-flex justify-content-between align-items-center">
-  <button class="btn fw-bold d-flex align-items-center gap-2" @click="addIndicator">
-    <SquarePlus class="icon" />
-    Добавить индикатор
-  </button>
-  <button class="btn fw-bold d-flex align-items-center gap-2" @click="$emit('back')">
-    <ArrowLeftToLine class="icon" />
-    Назад
-  </button>
-</div>
+      <button class="btn fw-bold d-flex align-items-center gap-2" @click="addIndicator">
+        <SquarePlus class="icon" />
+        Добавить индикатор
+      </button>
+      <button class="btn fw-bold d-flex align-items-center gap-2" @click="$emit('back')">
+        <ArrowLeftToLine class="icon" />
+        Назад
+      </button>
+    </div>
 
     <div v-if="loading" class="text-center">
       <div class="spinner-border"></div>
@@ -389,8 +394,7 @@ onMounted(() => {
       :class="{ show: showDeleteModal }" 
       tabindex="-1" 
       style="display: block;" 
-      v-if="showDeleteModal"
-    >
+      v-if="showDeleteModal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -410,7 +414,7 @@ onMounted(() => {
             </button>
             <button 
               class="btn btn-danger" 
-              @click="deleteIndicator" 
+              @click="deleteIndicators" 
               :disabled="deleting"
             >
               <span v-if="deleting" class="spinner-border spinner-border-sm"></span>

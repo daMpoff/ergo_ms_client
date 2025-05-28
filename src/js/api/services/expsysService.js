@@ -308,3 +308,75 @@ export const deleteSubject = async (subjectId) => {
     };
   }
 };
+
+export const deleteCompetence = async (competenceId) => {
+  try {
+
+     const deleteUrl = `${endpoints.expsys.subjects.delete_competence.replace('{id}', competenceId)}`;
+    
+    const response = await apiClient.delete(deleteUrl);
+    if (!response.data) {
+      throw new Error(response.errors?.message || 'Ошибка при удалении компетенции');
+    }
+
+    return {
+      success: true,
+      message: response.data.message,
+      deletedProjectId: competenceId
+    };
+  } catch (error) {
+    console.error('Delete Subject Error:', error);
+    
+    // Улучшенная обработка ошибок
+    let errorMessage = 'Не удалось удалить компетенцию';
+    if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = 'Компетенция не найдена';
+      } else if (error.response.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+    }
+    
+    return {
+      success: false,
+      error: errorMessage,
+      originalError: error
+    };
+  }
+};
+
+export const deleteIndicator = async (indicatorId) => {
+  try {
+
+     const deleteUrl = `${endpoints.expsys.subjects.delete_indicator.replace('{id}', indicatorId)}`;
+    
+    const response = await apiClient.delete(deleteUrl);
+    if (!response.data) {
+      throw new Error(response.errors?.message || 'Ошибка при удалении компетенции');
+    }
+
+    return {
+      success: true,
+      message: response.data.message,
+      deletedProjectId: indicatorId
+    };
+  } catch (error) {
+    console.error('Delete Indicator Error:', error);
+    
+    // Улучшенная обработка ошибок
+    let errorMessage = 'Не удалось удалить индикатор';
+    if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = 'Индикатор не найден';
+      } else if (error.response.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+    }
+    
+    return {
+      success: false,
+      error: errorMessage,
+      originalError: error
+    };
+  }
+};
