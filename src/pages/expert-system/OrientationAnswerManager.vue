@@ -39,7 +39,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="a in answers" :key="a.id">
+        <tr v-for="a in filteredAnswers" :key="a.id">
           <td v-if="editId!==a.id">{{ a.text }}</td>
           <td v-else>
             <input v-model="editText" class="form-control form-control-sm" />
@@ -48,7 +48,7 @@
           <td v-else>
             <input v-model.number="editWeight" type="number" class="form-control form-control-sm" />
           </td>
-          <td v-if="editId!==a.id">{{ a.role.name }}</td>
+          <td v-if="editId!==a.id">{{ getRoleName(a.role) }}</td>
           <td v-else>
             <select v-model="editRole" class="form-select form-select-sm">
               <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
@@ -89,7 +89,7 @@ const route = useRoute()
 const questionId = route.params.questionId
 
 const answers = ref([])
-const roles   = ref([])
+const roles = ref([])
 const questionText = ref('')
 
 const newText   = ref('')
@@ -103,6 +103,15 @@ const editRole   = ref('')
 
 const error = ref('')
 
+const filteredAnswers = computed(() =>
+  answers.value.filter(a => String(a.question) === String(questionId))
+)
+
+function getRoleName(roleId) {
+  const role = roles.value.find(r => r.id === roleId)
+  return role ? role.name : `Роль #${roleId}`
+}
+
 async function load() {
   error.value = ''
   const rres = await apiClient.get(endpoints.expert_system.roles)
@@ -111,7 +120,7 @@ async function load() {
   const qres = await apiClient.get(`${endpoints.expert_system.orientationQuestions}${questionId}/`)
   if (qres.success) questionText.value = qres.data.text
 
-  const ares = await apiClient.get(endpoints.expert_system.orientationAnswers, { question: questionId })
+  const ares = await apiClient.get(endpoints.expert_system.orientationAnswers)
   if (ares.success) answers.value = ares.data
   else error.value = 'Не удалось загрузить ответы'
 }
@@ -139,7 +148,7 @@ function startEdit(a) {
   editId.value     = a.id
   editText.value   = a.text
   editWeight.value = a.weight
-  editRole.value   = a.role.id
+  editRole.value   = typeof a.role === 'object' && a.role !== null ? a.role.id : a.role
 }
 
 async function saveEdit() {
