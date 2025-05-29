@@ -322,6 +322,60 @@ const componentsRoutes = [
   },
 ]
 
+  // Маршрутизация страниц модуля учебной аналитики
+  const learningAnalyticsRoutes = [
+    {
+      path: '/education_analytics',
+      name: 'EducationAnalyticModule',
+      component: () => import('@/pages/education_analytics_module/ParentLayout.vue'),
+      redirect: { name: 'MainPage' },
+      children: [
+        {
+          path: 'main',
+          name: 'MainPage',
+          component: () => import('@/pages/education_analytics_module/MainPage.vue'),
+          meta: { title: 'MainPage', requiresAuth: true },
+        },
+        {
+          path: 'learning_track',
+          name: 'LearningTrackPage',
+          component: () => import('@/pages/education_analytics_module/LearningTrack.vue'),
+          meta: { title: 'LearningTrackPage', requiresAuth: true },
+        },
+        {
+          path: 'reports',
+          name: 'ReportsPage',
+          component: () => import('@/pages/education_analytics_module/ReportsPage.vue'),
+          meta: { title: 'ReportsPage', requiresAuth: true },
+        },
+        {
+          path: 'stats',
+          name: 'StatsPage',
+          component: () => import('@/pages/education_analytics_module/StatsPage.vue'),
+          meta: { title: 'StatsPage', requiresAuth: true },
+        },
+        {
+          path: 'profile',
+          name: 'ProfilePage',
+          component: () => import('@/pages/education_analytics_module/ProfilePage.vue'),
+          meta: { title: 'ProfilePage', requiresAuth: true },
+        },
+        {
+          path: 'admin',
+          name: 'AdminPanelPage',
+          component: () => import('@/pages/education_analytics_module/AdminPanelPage.vue'),
+          meta: { title: 'AdminPanelPage', requiresAuth: true },
+        },
+        {
+          path: 'root',
+          name: 'SuperUserPage',
+          component: () => import('@/pages/education_analytics_module/SuperUserPanelPage.vue'),
+          meta: { title: 'SuperUserPage', requiresAuth: true },
+        },
+    ],
+    },
+  ]
+
 //
 const startRoutes = [
   {
@@ -441,6 +495,151 @@ const waterMarkvideoRoute = [
   },
 ]
 
+const biRoutes = [
+  {
+    path: '/bi',
+    name: 'BI',
+    component: () => import('@/pages/bi/HomePageBI.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/storagelist',
+    name: 'StorageList',
+    component: () => import('@/pages/bi/StorageListPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/storage',
+    name: 'BIStorage',
+    component: () => import('@/pages/bi/DatasetListPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new',
+    name: 'NewConnection',
+    component: () => import('@/pages/bi/NewConnection.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/file',
+    name: 'NewFile',
+    component: () => import('@/pages/bi/NewFile.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/clickhouse',
+    name: 'ClickHouse',
+    component: () => import('@/pages/bi/components/db-settings/ClickHouse.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/mssql',
+    name: 'MySQL',
+    component: () => import('@/pages/bi/components/db-settings/MSSQL.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/postgresql',
+    name: 'PostgreSQL',
+    component: () => import('@/pages/bi/components/db-settings/PostgreSQL.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/:pk',
+    name: 'connection-detail',
+    component: () => import('@/pages/bi/components/db-settings/ConnectionDetail.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/:pk/files',
+    name: 'ConnectionFiles',
+    component: () => import('@/pages/bi/ConnectionFiles.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/dataset',
+    name: 'NewDataset',
+    component: () => import('@/pages/bi/DatasetPage.vue'),
+    meta: { requiresAuth: true },
+  },
+]
+
+const shortcodeRoutes = [
+  {
+    path: '/shortcodes',
+    name: 'Shortcodes',
+    component: () => import('@/pages/shortcodes/ParentLayout.vue'),
+    meta: { title: 'Конструктор сайта', requiresAuth: true },
+    redirect: { name: 'MainShortcodePage' },
+    children: [
+      {
+        path: 'editor',
+        name: 'MainShortcodePage',
+        component: () => import('@/pages/shortcodes/editor/MainPage.vue'),
+        meta: {
+          title: 'Главная',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'editor',
+        name: 'ShortcodeEditor',
+        component: () => import('@/pages/shortcodes/editor/ShortcodeEditor.vue'),
+        meta: {
+          title: 'Редактор страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'create-page',
+        name: 'CreatePage',
+        component: () => import('@/pages/shortcodes/editor/CreatePage.vue'),
+        meta: {
+          title: 'Создание страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'create-template',
+        name: 'CreateTemplate',
+        component: () => import('@/pages/shortcodes/editor/CreateTemplate.vue'),
+        meta: {
+          title: 'Создание шаблонов',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'categories-page',
+        name: 'PageCategories',
+        component: () => import('@/pages/shortcodes/editor/PageCategories.vue'),
+        meta: {
+          title: 'Категории страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'templates',
+        name: 'Templates',
+        component: () => import('@/pages/shortcodes/editor/TemplateManager.vue'),
+        meta: {
+          title: 'Компоненты',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'templates/:id?',
+        name: 'TemplateEditor',
+        component: import('@/pages/shortcodes/editor/TemplateEditor.vue'),
+        props: true,
+        meta: {
+          title: 'Редактор компонентов',
+          requiresAuth: true
+        },
+      }
+    ],
+  },
+]
+
 const routes = [
   ...startRoutes,
   ...mainRoutes,
@@ -459,7 +658,10 @@ const routes = [
   ...inputsRoutes,
   ...componentsRoutes,
   ...adminpanelRoutes,
-  ...waterMarkvideoRoute
+  ...waterMarkvideoRoute,
+  ...biRoutes,
+  ...shortcodeRoutes,
+  ...learningAnalyticsRoutes,
 ]
 
 routes.forEach((route) => {

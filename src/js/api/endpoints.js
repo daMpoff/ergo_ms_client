@@ -1,13 +1,13 @@
 export const endpoints = {
-    auth: {
-        login: 'cms/adp/authorization/',
-        validateRegistration: 'cms/adp/validate_registration/',
-        sendCode: 'cms/adp/send_code/',
-        verifyCode: 'cms/adp/verify_code/',
-        registration: 'cms/adp/registration/',
-        protected: 'cms/adp/protected/',
-    },
-    cms: {
+  auth: {
+    login: 'cms/adp/authorization/',
+    validateRegistration: 'cms/adp/validate_registration/',
+    sendCode: 'cms/adp/send_code/',
+    verifyCode: 'cms/adp/verify_code/',
+    registration: 'cms/adp/registration/',
+    protected: 'cms/adp/protected/',
+  },
+  cms: {
         checkAccessToPage: 'cms/check_access_to_page/',
         checkAccessToComponent: 'cms/check_access_to_component/',
         checkAccessToAdminPanel: 'cms/check_access_to_admin_panel/',
@@ -73,5 +73,6 @@ export const endpoints = {
         setUserSkillTest: 'expert_system/set-user-skill-test',
         getUserSkillTest: 'expert_system/get-user-skill-tests',
         getUserSkills: 'expert_system/get-user-skills'
+
     }
 };
