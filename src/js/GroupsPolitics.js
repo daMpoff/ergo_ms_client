@@ -2,8 +2,8 @@ import { CheckAccess } from './api/services/cms';
 import router from './routers';
 
 // Create a composable function for checking access
-export const checkAccessToPage = async () => {
-    const response = await CheckAccess.CheckAccesToPage(document.URL);
+export const checkAccessToPage = async (path) => {
+    const response = await CheckAccess.CheckAccesToPage(path);
     const accessed = response.data.access;
     if(!accessed) 
         {
@@ -12,22 +12,25 @@ export const checkAccessToPage = async () => {
         }
 }
 
-export const CheckAccessToComponent = async (path, componentId) => {
-    const response = await CheckAccess.CheckAccesToComponent(path, componentId);
+export const CheckAccessToComponents = async (path) => {
+    const response = await CheckAccess.CheckAccesToComponent(path);
     const accesses = response.data;
-    if(!accesses.read){
-       const element = document.getElementById(componentId)
-       element.remove();
-       console.log(element);
+    for (let acc of accesses){
+        console.log(acc)
+        if(!acc.write){
+            const element = document.getElementById(acc.component)
+            element.style.pointerEvents = 'none';
+            element.style.userSelect = 'none';
+            element.style.webkitUserSelect ='none'
+            element.style.MozUserSelect ='none'
+            element.style.msUserSelect ='none'
+        }
+        if(!acc.read){
+            const element = document.getElementById(acc.component)
+            element.remove();
+         }
     }
-    if(!accesses.execute){
-        const element = document.getElementById(componentId)
-        element.style.pointerEvents = 'none';
-        element.style.userSelect = 'none';
-        element.style.webkitUserSelect ='none'
-        element.style.MozUserSelect ='none'
-        element.style.msUserSelect ='none'
-    }
+    
     return response;
 }
 
@@ -145,3 +148,36 @@ export const RemoveGroupsPermissions = async (groupName, permissionsName) => {
     return response.data;
 }
 
+export const GetPages = async () => {
+    const response = await CheckAccess.GetPages();
+    return response.data;
+}
+export const PutPages = async (path, type) => {
+    const response = await CheckAccess.PutPages(path, type);
+    return response.data;
+}
+
+export const AddPageComponent = async (path, componentId) => {
+    const response = await CheckAccess.AddPageComponent(path, componentId);
+    return response.data;
+}
+
+export const RemovePageComponent = async (path, componentId) => {
+    const response = await CheckAccess.RemovePageComponent(path, componentId);
+    return response.data;
+}
+
+export const UpdatePageComponent = async (path, oldComponentId, newComponentId) => {
+    const response = await CheckAccess.UpdatePageComponent(path, oldComponentId, newComponentId);
+    return response.data;
+}
+
+export const GetPageComponents = async () => {
+    const response = await CheckAccess.GetPageComponents();
+    return response.data.components;
+}
+
+export const GetClosedPages = async () => {
+    const response = await CheckAccess.GetClosedPages();
+    return response.data.pages;
+}

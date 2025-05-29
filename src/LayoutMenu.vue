@@ -3,7 +3,6 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import MenuList from '@/components/menu/MenuList.vue'
 import TheHeader from '@/components/header/TheHeader.vue'
-
 const leftPadding = ref('280px')
 
 // Видимость меню
@@ -45,6 +44,7 @@ const closeMenu = () => {
 onMounted(() => {
   updateMenuVisibility()
   window.addEventListener('resize', updateMenuVisibility)
+  
 })
 
 // Очистка

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
+import Cookies from 'js-cookie';
 import { checkToken } from '@/js/api/services/auth-index'
 
 const mainRoutes = [
@@ -421,6 +421,12 @@ const adminpanelRoutes = [
         component: () => import('@/pages/AdminPanel/Users.vue'),
         meta: { title: 'Панель пользователей', requiresAuth: true },
       },
+      {
+        path: 'LiminationsPanel',
+        name: 'LiminationPanel',
+        component: () => import('@/pages/AdminPanel/limitationSettings.vue'),
+        meta: { title: 'Панель Ограничений', requiresAuth: true },
+      },
     ],
   },
 ]
@@ -494,5 +500,11 @@ async function runCheckToken() {
   const isChecked = await checkToken()
   return isChecked
 }
+import { checkAccessToPage, CheckAccessToComponents } from './GroupsPolitics'
 
 export default router
+router.beforeEach((to, from, next) => {
+  checkAccessToPage(to.path)
+  next()
+  CheckAccessToComponents(to.path)
+})

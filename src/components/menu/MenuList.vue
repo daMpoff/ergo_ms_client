@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
 import {
   ChatMenuSection,
@@ -20,17 +20,16 @@ import {
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
-import { useRoute } from 'vue-router'
+import { useRoute,  } from 'vue-router'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { onMounted } from 'vue'
-import { CheckAccessToAdminPanel } from '@/js/GroupsPolitics.js'
+import { GetClosedPages } from '@/js/GroupsPolitics'
 const props = defineProps({
   isVisible: Boolean,
 })
-
 watch(
   () => props.isVisible,
   (newValue) => {
+    
     if (!newValue) {
       isHovering.value = true
     }
@@ -55,6 +54,32 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
   if (isCollapsed.value) isHovering.value = false
 }
+
+
+onMounted(async ()=>{
+  //pages = await GetClosedPages()
+  //console.log(pages)
+  let pro = ['Settings/SecuritySettings', 'Settings/NotificationSettings']
+  let path = menuSections.value[1].routeName
+  //console.log( menuSections.value[1].list)
+  let deliting =[]
+  for(let i=0; i < menuSections.value[1].list.length; i+=1){
+    let tmp = path+'/'+menuSections.value[1].list[i].path
+    //console.log(tmp)
+    for(let j=0; j<pro.length; j++){
+      if(pro[j]==tmp){
+       // console.log(pro[j])
+        //menuSections.value[1].list.splice(i,1)
+        deliting.push(i)
+        break
+      }
+    }
+  }
+  //console.log(deliting)
+  for( let j = deliting.length; j>0 ; j--){
+    menuSections.value[1].list.splice(j,1)
+  }
+})
 
 // Текущая группа
 const route = useRoute()

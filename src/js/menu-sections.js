@@ -159,6 +159,7 @@ export const AdminPanelMenuSection = {
     { path: 'GroupsPanel', name: 'Настройка групп' },
     { path: 'PermissionsPanel', name: 'Настройка прав' },
     { path: 'UsersPanel', name: 'Настройка пользователей' },
+    { path: 'LiminationPanel', name:'Настройка ограничений'}
   ],
 }
 

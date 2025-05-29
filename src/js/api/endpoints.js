@@ -39,6 +39,14 @@ export const endpoints = {
         removeGroupsPermissions: 'cms/remove_groups_permissions/',
         getPermissionsByCategory: 'cms/get_permissions_by_category/',
         getUserName: 'cms/get_user_name/',
+        getpages:'cms/get-cms-pages',
+        putpages:'cms/put-cms-pages',
+        getClosedPages: 'cms/get-closed-pages/',
+        
+        addPageComponent: 'cms/add-page-component/',
+        removePageComponent: 'cms/remove-page-component/',
+        updatePageComponent: 'cms/update-page-component/',
+        getPageComponents: 'cms/get-page-components/'
     },
     expert_system: {
         studyGroups: 'expert_system/study-groups/',
@@ -65,6 +73,5 @@ export const endpoints = {
         setUserSkillTest: 'expert_system/set-user-skill-test',
         getUserSkillTest: 'expert_system/get-user-skill-tests',
         getUserSkills: 'expert_system/get-user-skills'
-
     }
 };
