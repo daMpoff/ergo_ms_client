@@ -13,7 +13,6 @@ import {
   TextCursorInput,
   UserCog,
   Wallet,
-FileJson
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -141,11 +140,12 @@ export const ExpertSystemSection = {
   list: [
     { path: 'Skills', name: 'Навыки' },
     { path: 'Profile', name: 'Профиль' },
-    { path: 'Groups', name: 'Группы'},
-    { path: 'Vacancies', name: 'Вакансии'},
-    { path: 'Proforientation', name: 'Профориентация'},
-    { path: 'Profession', name: 'Менеджер профессий'},
-    {path: 'AllTests', name:'Управление тестами'}
+    { path: 'Groups', name: 'Группы' },
+    { path: 'Vacancies', name: 'Вакансии' },
+    { path: 'Proforientation', name: 'Профориентация' },
+    { path: 'Profession', name: 'Менеджер профессий' },
+    { path: 'OrientationTest', name: 'Менеджер тестов' },
+    { path: 'AllTests', name:'Управление тестами для навыков'}
   ],
 }
 

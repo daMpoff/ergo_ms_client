@@ -15,6 +15,7 @@ export const endpoints = {
     companiesMe: 'expert_system/companies/me/',
     skills: 'expert_system/skills/',
     userSkills: 'expert_system/user-skills/',
+    myVacancies: 'expert_system/companies/my-vacancies/',
     roles: 'expert_system/roles/',
     trajectorySteps: 'expert_system/trajectory-steps/',
     orientationTests: 'expert_system/orientation-tests/',
