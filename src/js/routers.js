@@ -393,11 +393,12 @@ const expertSystemRoutes = [
     path: '/expert-system',
     name: 'ExpertSystem',
     component: () => import('@/pages/expert-system/ParentLayout.vue'),
-    meta: {
-      requiresAuth: true,
-    },
+    meta: { requiresAuth: true },
     redirect: { name: 'ChoiceRole' },
     children: [
+      { path: 'orientation-question/:testId',     name: 'OrientationQuestionManager',component: () => import('@/pages/expert-system/OrientationQuestionManager.vue'), meta: { title: 'Менеджер вопросов', requiresAuth: true } },
+      { path: 'orientation-answer/:questionId',   name: 'OrientationAnswerManager',  component: () => import('@/pages/expert-system/OrientationAnswerManager.vue'),   meta: { title: 'Менеджер ответов', requiresAuth: true } },
+      { path: 'proforientation-test/:testId',     name: 'ProforientationTest',      component: () => import('@/pages/expert-system/ProforientationTest.vue'),        meta: { title: 'Прохождение теста', requiresAuth: true } },
       {
         path: 'choice-role',
         name: 'ChoiceRole',
@@ -521,6 +522,24 @@ const expertSystemRoutes = [
         component: () => import('@/pages/expert-system/CompanyDetail.vue'),
         meta: {
           title: 'Детали компании',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/student/:id',
+        name: 'StudentDetail',
+        component: () => import('@/pages/expert-system/StudentDetail.vue'),
+        meta: {
+          title: 'Детали студента',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/students',
+        name: 'StudentsList',
+        component: () => import('@/pages/expert-system/StudentList.vue'),
+        meta: {
+          title: 'Поиск студентов',
           requiresAuth: true,
         },
       },

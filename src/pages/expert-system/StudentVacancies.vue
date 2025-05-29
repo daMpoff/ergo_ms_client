@@ -152,7 +152,7 @@ const emit = defineEmits(['error'])
 const skills = ref([])
 const vacancies = ref([])
 const manualSelected = ref([])
-const useMySkills = ref(false)
+const useMySkills = ref(true)
 const mySkills = ref([])
 const applied = ref([])
 const loading = ref(false)
@@ -192,6 +192,16 @@ async function fetchMySkills() {
     }
   } catch (err) {
     emit('error', err.message || 'Не удалось загрузить мои навыки')
+  }
+}
+
+async function fetchAppliedVacancies() {
+  try {
+    const res = await apiClient.get(endpoints.expert_system.applications + '?my=1')
+    if (!res.success) throw new Error(JSON.stringify(res.errors))
+    applied.value = res.data.map((a) => a.vacancy)
+  } catch (err) {
+    emit('error', err.message || 'Не удалось загрузить отклики')
   }
 }
 
@@ -239,8 +249,18 @@ function toggleSkill(skillId) {
 
 async function applyVacancy(id) {
   try {
-    const res = await apiClient.post(endpoints.expert_system.candidate_applications, {
+    const vac = vacancies.value.find(v => v.id === id)
+    if (!vac) throw new Error('Вакансия не найдена')
+
+    const requiredSkillIds = vac.required_skills_info.map(s => s.id)
+    const studentSkillIds = mySkills.value
+
+    let matchedCount = requiredSkillIds.filter(id => studentSkillIds.includes(id)).length
+    let match_score = requiredSkillIds.length ? Math.round((matchedCount / requiredSkillIds.length) * 100) : 0
+
+    const res = await apiClient.post(endpoints.expert_system.applications, {
       vacancy: id,
+      match_score
     })
     if (!res.success) throw new Error(JSON.stringify(res.errors))
     applied.value.push(id)
@@ -248,6 +268,7 @@ async function applyVacancy(id) {
     emit('error', err.message || 'Не удалось откликнуться')
   }
 }
+
 
 const getMatchColor = (score) => {
   if (score >= 75) return '#4CAF50'
@@ -267,7 +288,7 @@ watch(useMySkills, async (val) => {
 watchEffect(fetchVacancies)
 
 onMounted(async () => {
-  await Promise.all([fetchSkills(), fetchMySkills()])
+  await Promise.all([fetchSkills(), fetchMySkills(), fetchAppliedVacancies()])
   await fetchVacancies()
 })
 </script>

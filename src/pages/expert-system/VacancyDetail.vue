@@ -49,7 +49,7 @@
           </div>
         </div>
 
-        <!-- Требуемые навыки -->
+        <!-- Требуемые навыки + match_score -->
         <div class="col-md-4">
           <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-4">
@@ -59,7 +59,7 @@
                 </div>
                 <h5 class="mb-0 fw-semibold">Требуемые навыки</h5>
               </div>
-              <div class="d-flex flex-wrap gap-1 mt-3">
+              <div class="d-flex flex-wrap gap-1 mt-3 mb-4">
                 <span v-for="skill in vacancy.required_skills_info" :key="skill.id"
                   class="badge badge-skill select-none">
                   {{ skill.name }}
@@ -68,6 +68,19 @@
                   Навыки не указаны
                 </span>
               </div>
+
+              <!-- Спидометр с match_score -->
+              <div class="d-flex flex-column align-items-center">
+                <apexchart
+                  type="radialBar"
+                  height="120"
+                  width="120"
+                  :options="apexOptions"
+                  :series="[matchScore]"
+                  class="mb-1"
+                ></apexchart>
+                <small class="text-muted">Ваш уровень соответствия</small>
+              </div>
             </div>
           </div>
         </div>
@@ -75,10 +88,15 @@
 
       <!-- Действия -->
       <div class="d-flex flex-column flex-md-row gap-3 pt-4">
-        <button class="btn btn-gradient-success px-4 py-3 d-flex align-items-center justify-content-center flex-grow-1"
-          @click="applyVacancy(vacancy.id)">
-          <Send class="me-2" :size="16" />
-          <span class="font-italic">Откликнуться на вакансию</span>
+        <button class="btn" :class="isApplied ? 'btn-danger' : 'btn-gradient-success'" :disabled="loadingApply"
+          @click="toggleApply">
+          <span v-if="loadingApply">
+            <Loader class="me-2" :size="18" />
+          </span>
+          <Send v-if="!isApplied" class="me-2" :size="18" />
+          <span>
+            {{ isApplied ? 'Убрать отклик' : 'Откликнуться на вакансию' }}
+          </span>
         </button>
 
         <button class="btn btn-outline-primary px-4 py-3 d-flex align-items-center justify-content-center flex-grow-1"
@@ -92,35 +110,36 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
-import { ArrowLeftCircle, Loader, AlertTriangle, Building, FileText, Lightbulb, Send, ExternalLink } from 'lucide-vue-next'
+import {
+  ArrowLeftCircle, Loader, AlertTriangle, Building,
+  FileText, Lightbulb, Send, ExternalLink
+} from 'lucide-vue-next'
 
 const route = useRoute()
-const router = useRouter()
 
 const vacancy = ref(null)
 const loading = ref(true)
 const error = ref(null)
-const applied = ref([])
+const loadingApply = ref(false)
+const appliedApplication = ref(null) // Отклик на вакансию (объект с match_score)
+const mySkills = ref([]) // Навыки пользователя
 
+const isApplied = computed(() => !!appliedApplication.value)
+
+// Получаем вакансию и её данные
 async function fetchVacancy() {
   loading.value = true
   error.value = null
-
   try {
     const res = await apiClient.get(
-      endpoints.expert_system.vacancies + route.params.id
+      endpoints.expert_system.vacancies + route.params.id + '/'
     )
-
     if (!res.success) throw new Error(JSON.stringify(res.errors))
-
-    vacancy.value = {
-      ...res.data,
-      required_skills_info: res.data.required_skills_info || []
-    }
+    vacancy.value = { ...res.data, required_skills_info: res.data.required_skills_info || [] }
   } catch (err) {
     error.value = 'Не удалось загрузить данные вакансии'
     console.error('Ошибка загрузки вакансии:', err)
@@ -129,18 +148,101 @@ async function fetchVacancy() {
   }
 }
 
-async function applyVacancy(id) {
+// Получаем свои навыки
+async function fetchMySkills() {
   try {
-    const res = await apiClient.post(endpoints.expert_system.candidate_applications, {
-      vacancy: id
-    })
+    const res = await apiClient.get(endpoints.expert_system.getUserSkills)
+    if (res.success) {
+      mySkills.value = res.data.map((s) => s.skill_id)
+    }
+  } catch {
+    mySkills.value = []
+  }
+}
 
-    if (!res.success) throw new Error(JSON.stringify(res.errors))
-    applied.value.push(id)
-    router.push({ name: 'Vacancies' })
-  } catch (err) {
-    error.value = 'Не удалось откликнуться на вакансию'
-    console.error('Ошибка отклика:', err)
+// Получаем свои отклики
+async function fetchMyApplications() {
+  try {
+    const res = await apiClient.get(endpoints.expert_system.applications + '?my=1')
+    if (res.success) {
+      const found = res.data.find(app => app.vacancy === Number(route.params.id))
+      appliedApplication.value = found || null
+    }
+  } catch {
+    appliedApplication.value = null
+  }
+}
+
+// Считаем match_score на основе своих навыков и требуемых
+const matchScore = computed(() => {
+  const required = vacancy.value?.required_skills_info?.map(s => s.id) || []
+  if (!required.length || !mySkills.value.length) return 0
+  const matched = required.filter(id => mySkills.value.includes(id))
+  return Math.round((matched.length / required.length) * 100)
+})
+
+const apexOptions = computed(() => ({
+  chart: { toolbar: { show: false } },
+  plotOptions: {
+    radialBar: {
+      startAngle: -90,
+      endAngle: 90,
+      track: { background: '#e0e0e0' },
+      dataLabels: {
+        show: true,
+        name: { show: false },
+        value: {
+          offsetY: 10,
+          fontSize: '20px',
+          fontWeight: 700,
+          formatter: () => `${matchScore.value} %`,
+        },
+      },
+    },
+  },
+  fill: { colors: [getMatchColor(matchScore.value)] },
+  stroke: { lineCap: 'round' },
+  labels: ['Соответствие'],
+}))
+
+function getMatchColor(score) {
+  if (score >= 75) return '#4CAF50'
+  if (score >= 50) return '#FFA726'
+  return '#EF5350'
+}
+
+// Отклик/отмена отклика
+async function toggleApply() {
+  if (!vacancy.value) return
+  loadingApply.value = true
+  error.value = null
+  if (isApplied.value) {
+    // Удаляем отклик
+    try {
+      const res = await apiClient.delete(
+        endpoints.expert_system.applications + `${appliedApplication.value.id}/`
+      )
+      if (!res.success) throw new Error(JSON.stringify(res.errors))
+      appliedApplication.value = null
+    } catch {
+      error.value = 'Не удалось убрать отклик'
+    } finally {
+      loadingApply.value = false
+    }
+  } else {
+    // Делаем отклик и передаем match_score
+    try {
+      const res = await apiClient.post(endpoints.expert_system.applications, {
+        vacancy: vacancy.value.id,
+        match_score: matchScore.value
+      })
+      if (!res.success) throw new Error(JSON.stringify(res.errors))
+      appliedApplication.value = res.data
+    } catch {
+      error.value = 'Не удалось откликнуться на вакансию'
+    } finally {
+      loadingApply.value = false
+    }
   }
 }
 
@@ -158,8 +260,10 @@ function shareVacancy() {
   }
 }
 
-onMounted(() => {
-  fetchVacancy()
+onMounted(async () => {
+  await fetchVacancy()
+  await fetchMySkills()
+  await fetchMyApplications()
 })
 </script>
 
@@ -218,5 +322,15 @@ onMounted(() => {
 
 .btn-outline-primary:hover {
   box-shadow: 0 0.5rem 1.5rem rgba(167, 167, 167, 0.4);
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: #a81d2b;
 }
 </style>
