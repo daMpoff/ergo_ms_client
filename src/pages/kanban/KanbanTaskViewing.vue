@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useKanbanStore } from '@/js/api/services/tasksService'
 import { SquarePlus } from 'lucide-vue-next'
+import Cookies from 'js-cookie'
 import { useToast } from 'vue-toastification'
 const kanbanStore = useKanbanStore()
 const newSubtaskText = ref('')
@@ -78,45 +79,6 @@ const subtasks = computed({
   }
 })
 
-const addSubtask = async () => {
-  if (!newSubtaskText.value.trim()) return
-  
-  try {
-    isLoading.value = true
-    
-    // Создаем данные для подзадачи
-    const subtaskData = {
-      text: newSubtaskText.value.trim(),
-      section_id: currentTask.value.section_id, // предполагаем, что section_id есть у родительской задачи
-      parenttask_id: currentTask.value.id, // ID текущей задачи как родительской
-      isdone: false,
-      priority: currentTask.value.priority || 0,
-      user_id: currentTask.value.assignee_id // или другой ID пользователя
-    }
-    
-    // Вызываем метод из сервиса
-    const createdSubtask = await kanbanStore.createSubtask(subtaskData)
-    
-    // Добавляем подзадачу в локальный список
-    subtasks.value = [
-      ...subtasks.value, 
-      {
-        id: createdSubtask.id,
-        title: createdSubtask.text,
-        is_completed: createdSubtask.isdone
-      }
-    ]
-    
-    newSubtaskText.value = ''
-    toast.success('Подзадача успешно добавлена')
-    
-  } catch (error) {
-    console.error('Ошибка при создании подзадачи:', error)
-    toast.error(error.message || 'Ошибка при создании подзадачи')
-  } finally {
-    isLoading.value = false
-  }
-}
 
 
 const toggleSubtask = (subtaskId) => {
@@ -127,9 +89,25 @@ const toggleSubtask = (subtaskId) => {
   )
 }
 
-const deleteSubtask = (subtaskId) => {
-  subtasks.value = subtasks.value.filter(subtask => subtask.id !== subtaskId)
-}
+const deleteSubtask = async (subtaskId) => {
+  if (!subtaskId) return;
+  
+  try {
+    const confirmed = confirm('Вы уверены, что хотите удалить эту подзадачу?');
+    if (!confirmed) return;
+    
+    const { success } = await kanbanStore.deleteTask(subtaskId);
+    
+    if (success) {
+      // Удаляем подзадачу из локального списка только после успешного удаления на сервере
+      subtasks.value = subtasks.value.filter(subtask => subtask.id !== subtaskId);
+      toast.success('Подзадача успешно удалена');
+    }
+  } catch (error) {
+    console.error('Ошибка при удалении подзадачи:', error);
+    toast.error(error.message || 'Произошла ошибка при удалении подзадачи');
+  }
+};
 
 const saveTask = () => {
   if (currentTask.value) {
@@ -146,12 +124,67 @@ const deleteTask = async () => {
     if (!confirmed) return;
     
     const { success} = await kanbanStore.deleteTask(currentTask.value.id);
-    
+      if (success) {
+      // Удаляем задачу из локального списка только после успешного удаления на сервере
+      toast.success('Задача успешно удалена');
+    }
     if (success) {
       closeModal();
     }
   } catch (error) {
     toast.error(error.message || 'Произошла ошибка при удалении');
+  }
+  
+};
+
+const addSubtask = async () => {
+  if (!newSubtaskText.value.trim()) {
+    toast.error('Текст подзадачи не может быть пустым');
+    return;
+  }
+
+  if (!currentTask.value?.id) {
+    toast.error('Родительская задача не определена');
+    return;
+  }
+
+  isLoading.value = true;
+  
+  try {
+    // Форматируем дату в YYYY-MM-DD
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const subtaskData = {
+      text: newSubtaskText.value.trim(),
+      section_id: currentTask.value.section_id,
+      parenttask_id: currentTask.value.id,
+      user_id: parseInt(Cookies.get('userId')) || null,
+      priority: currentTask.value.priority || 0,
+      description: '',
+      isdone: false,
+      deadline: formattedDate, // Используем отформатированную дату
+      dateofcreation: formattedDate // Используем отформатированную дату
+    };
+
+    const createdSubtask = await kanbanStore.createSubtask(subtaskData);
+
+    subtasks.value = [
+      ...subtasks.value,
+      {
+        id: createdSubtask.id,
+        title: createdSubtask.text,
+        is_completed: createdSubtask.isdone
+      }
+    ];
+
+    newSubtaskText.value = '';
+    toast.success('Подзадача успешно добавлена');
+  } catch (error) {
+    console.error('Ошибка при создании подзадачи:', error);
+    toast.error(error.message || 'Ошибка при создании подзадачи');
+  } finally {
+    isLoading.value = false;
   }
 };
 

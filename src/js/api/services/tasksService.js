@@ -129,6 +129,7 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
             user_id: subtask.user_id,
             deadline: subtask.deadline || null
           })),
+          section_id:section.id,
           image: task.image,
           attachments: task.attachments,
           comments: task.description,
@@ -262,53 +263,7 @@ const createTask = async (taskData) => {
 }
 
 // Создание подзадачи
-const createSubtask = async (subtaskData) => {
-  if (!currentUserId.value) {
-    toast.error('Необходимо авторизоваться')
-    return null
-  }
 
-  isLoading.value = true
-  try {
-    // Проверяем обязательные поля (добавляем parenttask_id)
-    if (!subtaskData.text || !subtaskData.section_id || !subtaskData.parenttask_id) {
-      throw new Error('Не указаны обязательные поля (text, section_id и parenttask_id)')
-    }
-
-    const requestData = {
-      text: subtaskData.text,
-      section_id: subtaskData.section_id,
-      parenttask_id: subtaskData.parenttask_id, // Добавляем ID родительской задачи
-      description: subtaskData.description || null,
-      deadline: subtaskData.deadline || null,
-      priority: subtaskData.priority || 0,
-      user_id: currentUserId.value,
-      isdone: subtaskData.isdone || false,
-      dateofcreation: new Date().toISOString()
-    }
-
-    // Используем эндпоинт для подзадач, передаем parenttask_id в URL
-    const response = await apiClient.post(
-      endpoints.crm.tasks.add_subtask.replace('{id}', subtaskData.parenttask_id),
-      requestData
-    )
-
-    // Проверяем успешность создания
-    if (response.data && response.data.success) {
-      toast.success('Подзадача успешно создана')
-      return response.data.data // Возвращаем созданную подзадачу
-    } else {
-      throw new Error(response.data.message || 'Не удалось создать подзадачу')
-    }
-
-  } catch (error) {
-    console.error('Ошибка при создании подзадачи:', error)
-    toast.error(error.message || 'Ошибка при создании подзадачи')
-    throw error
-  } finally {
-    isLoading.value = false
-  }
-}
   // Обновление информации о задаче
   const updateTask = async (info) => {
     if (!currentUserId.value) {
@@ -361,6 +316,59 @@ const createSubtask = async (subtaskData) => {
       throw error
     }
   }
+  const createSubtask = async (subtaskData) => {
+  try {
+    // Проверяем обязательные поля
+    const requiredFields = ['text', 'section_id', 'parenttask_id', 'user_id'];
+    const missingFields = requiredFields.filter(field => !subtaskData[field]);
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Отсутствуют обязательные поля: ${missingFields.join(', ')}`);
+    }
+
+    // Формируем данные для запроса
+    const requestData = {
+      text: subtaskData.text,
+      section_id: subtaskData.section_id,
+      parenttask_id: subtaskData.parenttask_id,
+      user_id: subtaskData.user_id,
+      description: subtaskData.description || '',
+      deadline: subtaskData.deadline || new Date().toISOString(),
+      priority: subtaskData.priority || 0,
+      isdone: subtaskData.isdone || false
+    };
+
+    // Отправляем запрос на сервер
+    const response = await apiClient.post(
+      endpoints.crm.tasks.add_subtask,
+      requestData
+    );
+
+    // Обрабатываем ответ
+    if (response.data && response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data?.message || 'Не удалось создать подзадачу');
+    }
+  } catch (error) {
+    console.error('Ошибка при создании подзадачи:', error);
+    
+    // Формируем понятное сообщение об ошибке
+    let errorMessage = 'Ошибка при создании подзадачи';
+    if (error.response) {
+      // Ошибка от сервера
+      errorMessage = error.response.data?.message || 
+                    error.response.data?.error || 
+                    `Ошибка сервера: ${error.response.status}`;
+    } else if (error.message) {
+      // Ошибка валидации или другая клиентская ошибка
+      errorMessage = error.message;
+    }
+    
+    throw new Error(errorMessage);
+  }
+};
+
   
 // Удаление задачи
 const deleteTask = async (taskId) => {
@@ -388,15 +396,54 @@ const deleteTask = async (taskId) => {
       cards: column.cards.filter(card => !deletedTaskIds.includes(card.id))
     }));
 
-    toast.success(response.data.message || 'Задача и подзадачи успешно удалены');
     return { 
       success: true, 
-      message: response.data.message,
       deletedIds: deletedTaskIds 
     };
   } catch (error) {
     console.error('Delete Task Error:', error);
     toast.error(error.message || 'Не удалось удалить задачу');
+    return { success: false, error: error.message };
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const deleteSection = async (sectionId) => {
+  if (!currentUserId.value) {
+    toast.error('Необходимо авторизоваться');
+    return { success: false };
+  }
+
+  isLoading.value = true;
+  try {
+    // Формируем URL для удаления раздела
+    const deleteUrl = `${endpoints.crm.tasks.delete_section.replace('{id}', sectionId)}`;
+    
+    const response = await apiClient.delete(deleteUrl);
+
+    if (!response.data) {
+      throw new Error(response.errors?.message || 'Ошибка при удалении раздела');
+    }
+
+    // Обновляем локальное состояние - удаляем раздел и все его задачи
+    const deletedSectionId = response.data.deleted_section_id;
+    const deletedTaskIds = response.data.deleted_tasks || [];
+    
+    // Удаляем все задачи этого раздела из колонок
+    columns.value = columns.value.map(column => ({
+      ...column,
+      cards: column.cards.filter(card => !deletedTaskIds.includes(card.id))
+    }));
+
+    return { 
+      success: true, 
+      deletedSectionId: deletedSectionId,
+      deletedTaskIds: deletedTaskIds
+    };
+  } catch (error) {
+    console.error('Delete Section Error:', error);
+    toast.error(error.message || 'Не удалось удалить раздел');
     return { success: false, error: error.message };
   } finally {
     isLoading.value = false;
@@ -421,6 +468,7 @@ const deleteTask = async (taskId) => {
     fetchColumns,
     fetchSubtasks,
     deleteTask,
-    createSubtask
+    createSubtask,
+    deleteSection
   }
 })

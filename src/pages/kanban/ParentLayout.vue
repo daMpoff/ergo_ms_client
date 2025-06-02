@@ -152,7 +152,22 @@ function formatDateTimeForAPI(date) {
   return new Date(date).toISOString()
 }
 // Остальные вспомогательные функции остаются без изменений
-
+const deleteSection = async (sectionId) => {
+  if (!sectionId) return;
+  
+  try {
+    const confirmed = confirm('Вы уверены, что хотите удалить этот раздел?');
+    if (!confirmed) return;
+    
+    await kanbanStore.deleteSection(sectionId);
+    // После успешного удаления обновляем данные
+    await kanbanStore.fetchColumns(projectId.value);
+    toast.success('Раздел успешно удален');
+  } catch (error) {
+    console.error('Ошибка при удалении раздела:', error);
+    toast.error(error.message || 'Произошла ошибка при удалении раздела');
+  }
+};
 
 
 
@@ -171,8 +186,8 @@ const formatDate = (date) => {
     <SlickList axis="x" v-model:list="kanbanStore.columns" class="d-flex" useDragHandle>
       <SlickItem
         v-for="(column, i) in kanbanStore.columns"
-        :key="column.id"
-        :index="i"
+        :key="column.section_id"
+        :index="sectionId"
         class="kanban-column mx-2 flex-shrink-0"
         style="width: 18rem"
       >
@@ -194,7 +209,7 @@ const formatDate = (date) => {
             </template>
             <template #list>
               <li class="dropdown-item">Изменить название</li>
-              <li class="dropdown-item" @click="kanbanStore.deleteColumn(i)">Удалить раздел</li>
+              <li class="dropdown-item" @click="deleteSection(column.id)">Удалить раздел</li>
             </template>
           </DropDown>
         </div>

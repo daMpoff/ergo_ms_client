@@ -13,7 +13,8 @@ export const endpoints = {
             add_task:'crm/tasks/task-new/',
             add_section:'crm/tasks/section-new/',
             delete_task:'crm/tasks/delete-task/{id}/',
-            add_subtask:'crm/tasks/subtask-new/{id}/'
+            delete_section:'crm/tasks/delete-section/{id}/',
+            add_subtask:'crm/tasks/new-subtask/'
         },
         projects:
         {
@@ -23,7 +24,6 @@ export const endpoints = {
             addproject:'crm/projects/project-new-add/',
             delete_project:'crm/projects/delete-project/{id}/',
             counttasks:'crm/projects/tasks-count/',
-
         }
     },
     expsys: {
