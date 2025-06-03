@@ -197,3 +197,39 @@ export const deleteProject = async (projectId) => {
     };
   }
 };
+
+export const leaveProject = async (userId,projectId) => {
+  try {
+
+     const deleteUrl = `${endpoints.crm.projects.leave_project.replace('{id}', userId).replace('{project_id}',projectId)}/`;
+    
+    const response = await apiClient.delete(deleteUrl);
+    if (!response.data) {
+      throw new Error(response.errors?.message || 'Ошибка при выходе из проекта');
+    }
+
+    return {
+      success: true,
+      message: response.data.message,
+      deletedProjectId: userId
+    };
+  } catch (error) {
+    console.error('Delete Project Error:', error);
+    
+    // Улучшенная обработка ошибок
+    let errorMessage = 'Не удалось покинуть проект';
+    if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = 'Проект не найден';
+      } else if (error.response.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+    }
+    
+    return {
+      success: false,
+      error: errorMessage,
+      originalError: error
+    };
+  }
+};

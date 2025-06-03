@@ -23,6 +23,7 @@ export const endpoints = {
             invitedprojects:'crm/projects/project-invited/',
             addproject:'crm/projects/project-new-add/',
             delete_project:'crm/projects/delete-project/{id}/',
+            leave_project:'crm/projects/leave-project/{id}/{project_id}',
             counttasks:'crm/projects/tasks-count/',
         }
     },

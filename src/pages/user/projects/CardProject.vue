@@ -1,8 +1,9 @@
 <script setup>
-import { EllipsisVertical, MessagesSquare, Trash } from 'lucide-vue-next'
+import { EllipsisVertical, MessagesSquare, Trash, ArrowLeftToLine } from 'lucide-vue-next'
 import { computed, defineProps } from 'vue'
 import { useToast } from 'vue-toastification'
-import { deleteProject } from '@/js/api/services/projectsService'
+import { deleteProject,leaveProject  } from '@/js/api/services/projectsService'
+import Cookies from 'js-cookie'
 
 import AvatarGroup from '@/components/AvatarGroup.vue'
 import DropDown from '@/components/DropDown.vue'
@@ -19,12 +20,14 @@ const props = defineProps({
   hours: { type: Number, default: 0 },
   tasks: { type: Object, default: () => ({ current: 0, all: 0 }) },
   project_id: { type: [Number, String], required: true },
+  user_id: { type: [Number, String], required: true },
+
   isInvited: { type: Boolean, default: false } ,// Новый пропс
   isAll: { type: Boolean, default: false } // Новый пропс
 
 })
 
-const emit = defineEmits(['projectDeleted', 'viewTasks'])
+const emit = defineEmits(['projectDeleted', 'viewTasks','projectLeaved'])
 
 // Форматирование даты
 const formatDate = (timestamp) => {
@@ -77,6 +80,22 @@ const handleDeleteProject = async () => {
     toast.error('Произошла ошибка при удалении проекта');
   }
 }
+
+const handleLeaveProject = async () => {
+  try {
+    const response = await leaveProject(parseInt(Cookies.get('userId')),props.project_id);
+    
+    if (response.success) {
+      toast.success(response.message || 'Вы успешно вышли из проекта');
+      emit('projectLeaved', props.project_id);
+    } else {
+      toast.error(response.error || 'Не удалось удалить покинуть проект');
+    }
+  } catch (error) {
+    console.error('Ошибка при выходе из проекта:', error);
+    toast.error('Произошла ошибка при выходе из проекта');
+  }
+}
 </script>
 
 <template>
@@ -102,6 +121,13 @@ const handleDeleteProject = async () => {
               @click="handleDeleteProject"
             >
               <Trash :size="20" /> Удалить
+            </li>
+              <li 
+              v-if="isInvited || isAll" 
+              class="dropdown-item text-danger" 
+              @click="handleLeaveProject"
+            >
+              <ArrowLeftToLine :size="20" /> Покинуть проект
             </li>
             <li class="dropdown-item" @click="$emit('viewTasks', project_id)">
               <MessagesSquare :size="20" /> Посмотреть задачи

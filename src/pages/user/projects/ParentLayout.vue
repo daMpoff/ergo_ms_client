@@ -59,6 +59,11 @@ const handleProjectDeleted = (projectId) => {
   loadProjects()
 }
 
+const handleProjectLeaved = (userId) => {
+  userProjects.value = userProjects.value.filter(project => project.userId !== userId)
+  loadProjects()
+}
+
 onMounted(loadProjects)
 watch(() => route.name, loadProjects)
 
@@ -85,9 +90,11 @@ const openKanbanBoard = (projectId) => {
         :hours="project.hours"
         :tasks="project.tasks"
         :deadline="project.deadline"
+        :user_id="project.userId"
         :is-invited="route.name === 'InvitedProjects'"
         :is-all="route.name === 'Projects'"
         @projectDeleted="handleProjectDeleted"
+        @projectLeaved="handleProjectLeaved"
         @viewTasks="openKanbanBoard" 
       />
     </div>
