@@ -8,10 +8,10 @@
     </div>
 
     <div class="card-body">
-      <!-- Ошибка API -->
+ 
       <div v-if="apiError" class="alert alert-danger">{{ apiError }}</div>
 
-      <!-- Табы -->
+
       <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item" v-for="tab in tabs" :key="tab.name">
           <button class="nav-link" :class="{ active: activeTab === tab.name }" @click="activeTab = tab.name"
@@ -22,7 +22,7 @@
       </ul>
 
       <div class="tab-content">
-        <!-- Основное -->
+   
         <div class="tab-pane fade" :class="{ 'show active': activeTab === 'main' }" role="tabpanel">
           <dl class="row">
             <dt class="col-sm-3">Имя</dt>
@@ -43,10 +43,28 @@
               <input v-else v-model="form.group_name" class="form-control form-control-sm"
                 placeholder="Укажите группу" />
             </dd>
+
+
+            <dt class="col-sm-3">Профессия</dt>
+            <dd class="col-sm-9">
+              <span v-if="!studentData.role && !editMode" class="text-muted">Профессия не выбрана</span>
+              <span v-else-if="studentData.role && !editMode" class="fw-bold text-success">
+                {{ getRoleName(studentData.role) }}
+              </span>
+              <select
+                v-else
+                v-model="form.role"
+                class="form-select form-select-sm"
+                :disabled="roles.length === 0"
+              >
+                <option value="">Не выбрана</option>
+                <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
+              </select>
+            </dd>
           </dl>
         </div>
 
-        <!-- Опыт -->
+  
         <div class="tab-pane fade" :class="{ 'show active': activeTab === 'experience' }" role="tabpanel">
           <div v-if="!editMode">
             <strong>Опыт в IT:</strong>
@@ -60,7 +78,7 @@
           </div>
         </div>
 
-        <!-- Контакты -->
+
         <div class="tab-pane fade" :class="{ 'show active': activeTab === 'contacts' }" role="tabpanel">
           <dl class="row">
             <dt class="col-sm-3">Email</dt>
@@ -78,7 +96,7 @@
         </div>
       </div>
 
-      <!-- Таблица навыков -->
+
       <div class="mt-4">
         <h5>Навыки</h5>
         <table class="table table-bordered mt-2">
@@ -107,7 +125,7 @@
           </tbody>
         </table>
 
-        <!-- Кнопка добавления навыка -->
+
         <div class="d-flex justify-content-end mt-2">
           <button class="btn btn-success text-light me-2" data-bs-toggle="modal" data-bs-target="#EditSkills">
             Добавить навык
@@ -115,7 +133,6 @@
         </div>
       </div>
 
-      <!-- Кнопки сохранения -->
       <div v-if="editMode" class="mt-3 text-end">
         <button class="btn btn-success text-light me-2" @click="saveProfile" :disabled="saving">
           {{ saving ? 'Сохраняем...' : 'Сохранить' }}
@@ -127,7 +144,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно для добавления навыков -->
+  
   <ModalCenter title="Добавление новых умений" modalId="EditSkills">
     <AddSkillModal @AddSkillTest="AddSkills" ref="addSkillModalRef" />
   </ModalCenter>
@@ -157,38 +174,32 @@ import ModalCenter from '@/components/ModalCenter.vue'
 import AddSkillModal from './StudentProfileComponents/AddSkillModal.vue'
 import router from '@/js/routers'
 
-
 const addSkillModalRef = ref(null);
 
-
-// Состояния
 const items = ref([])
 const addskilllist = ref([])
 const deleteskillliest = ref([])
 const testnotexist = ref(false)
-// Принимаем пропс student
+const roles = ref([])
+
 const props = defineProps({
   student: { type: Object, required: true }
 })
 
-// Локальная копия для отображения и редактирования
 const studentData = reactive({ ...props.student })
 const form = reactive({ ...props.student })
 
-// Состояния UI
 const editMode = ref(false)
 const activeTab = ref('main')
 const saving = ref(false)
 const apiError = ref(null)
 
-// Настройка табов
 const tabs = [
   { name: 'main', label: 'Основное' },
   { name: 'experience', label: 'Опыт' },
   { name: 'contacts', label: 'Контакты' }
 ]
 
-// Получение данных навыков
 async function loadskills() {
   try {
     const response = await apiClient.get(endpoints.expert_system.getUserSkills)
@@ -197,10 +208,15 @@ async function loadskills() {
     console.error('Ошибка загрузки навыков:', error)
   }
 }
+async function loadRoles() {
+  const resp = await apiClient.get(endpoints.expert_system.roles)
+  if (resp.success) roles.value = resp.data
+}
+
 onMounted(async () => {
   await loadskills()
+  await loadRoles()
 })
-
 
 const gototest = async (skill) => {
   const response = await apiClient.get(endpoints.expert_system.getTestIdBySkill, { skill: skill })
@@ -213,7 +229,6 @@ const gototest = async (skill) => {
   }
 }
 
-// Переключение режима редактирования
 function toggleEdit() {
   editMode.value = !editMode.value
   if (editMode.value) {
@@ -222,7 +237,13 @@ function toggleEdit() {
   }
 }
 
-// Обработка добавления навыков
+
+function getRoleName(roleId) {
+  const role = roles.value.find(r => r.id === roleId)
+  return role ? role.name : 'Не выбрана'
+}
+
+
 async function AddSkills(skills) {
   await apiClient.post(endpoints.expert_system.setUserSkills, { Skills: skills })
   await loadskills()
@@ -232,10 +253,8 @@ async function DeleteSkill(id) {
   let index = items.value.findIndex(item => item.id == id)
   let deletedskill = items.value[index].name
   items.value.splice(index, 1)
-
   let url = `${endpoints.expert_system.userSkills}${id}/`
   const resp = await apiClient.delete(url)
-
   if (!resp.success) {
     throw new Error(
       typeof resp.errors === 'string'
@@ -246,7 +265,6 @@ async function DeleteSkill(id) {
   await addSkillModalRef.value.loadallskills()
 }
 
-// Сохранение профиля
 async function saveProfile() {
   apiError.value = null
   saving.value = true
@@ -258,7 +276,8 @@ async function saveProfile() {
       has_experience: form.has_experience,
       email: form.email,
       phone: form.phone,
-      ...(form.study_group ? { study_group: form.study_group } : {})
+      ...(form.study_group ? { study_group: form.study_group } : {}),
+      ...(form.role ? { role: form.role } : {})
     }
     const url = `${endpoints.expert_system.students}${studentData.id}/`
     const resp = await apiClient.patch(url, payload)
