@@ -25,7 +25,7 @@
       </ul>
 
       <div class="tab-content">
-        <!-- Основная информация -->
+       
         <div
           class="tab-pane fade"
           :class="{ 'show active': activeTab === 'main' }"
@@ -55,7 +55,7 @@
           </dl>
         </div>
 
-        <!-- Контакты -->
+    
         <div
           class="tab-pane fade"
           :class="{ 'show active': activeTab === 'contacts' }"
@@ -101,10 +101,10 @@
         </div>
       </div>
 
-      <!-- Кнопки сохранения -->
+      
       <div v-if="editMode" class="mt-3 text-end">
         <button
-          class="btn btn-success me-2"
+          class="btn btn-success text-light fw-semibold"
           @click="saveProfile"
           :disabled="saving"
         >
@@ -115,13 +115,13 @@
         </button>
       </div>
 
-      <!-- Управление курсами -->
+      
       <div class="mt-5">
         <h5>Управление курсами</h5>
         <CompanyCourses @error="apiError = $event" />
       </div>
 
-      <!-- Управление вакансиями -->
+      
       <div class="mt-5">
         <h5>Управление вакансиями</h5>
         <CompanyVacancies @error="apiError = $event" />
