@@ -51,7 +51,7 @@
           >Редактировать</button>
           <button
             v-else
-            class="btn btn-sm btn-success me-2"
+            class="btn btn-success btn-sm text-light fw-semibold"
             @click="saveEdit"
             :disabled="!editText"
           >Сохранить</button>

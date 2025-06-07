@@ -97,7 +97,7 @@
               <div class="mt-4 text-end">
                 <button
                   type="submit"
-                  class="btn btn-success me-2"
+                  class="btn btn-success text-light fw-semibold"
                   :disabled="loading"
                 >
                   {{ loading ? 'Сохраняем...' : 'Создать' }}
