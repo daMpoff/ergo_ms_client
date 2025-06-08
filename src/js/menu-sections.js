@@ -251,6 +251,7 @@ export const ExpertSystemSection = {
     { path: 'Profession', name: 'Менеджер профессий' },
     { path: 'OrientationTest', name: 'Менеджер тестов' },
     { path: 'AllTests', name: 'Управление тестами для навыков' },
-    { path: 'StudentCourses', name: 'Рекомендованные курсы' }
+    { path: 'StudentCourses', name: 'Рекомендованные курсы' },
+    { path: 'StudentsList', name: 'Студенты' }
   ],
 }
