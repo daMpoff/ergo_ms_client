@@ -48,6 +48,7 @@ export const endpoints = {
     evaluateTest: 'expert_system/evaluate-test',
     saveOrientationTestResult: 'expert_system/orientation-test-results/',
     saveBestRoleToStudent: 'expert_system/students/me/set-role/', 
-    setStudentRole: 'expert_system/students/me/set-role/'
+    setStudentRole: 'expert_system/students/me/set-role/',
+    courses: 'expert_system/courses/',
   }
 };

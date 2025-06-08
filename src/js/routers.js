@@ -543,6 +543,15 @@ const expertSystemRoutes = [
           requiresAuth: true,
         },
       },
+      {
+        path: '/student-courses',
+        name: 'StudentCourses',
+        component: () => import('@/pages/expert-system/StudentCourses.vue'),
+        meta: {
+          title: 'Рекомендованные курсы',
+          requiresAuth: true,
+        },
+      },
     ],
   },
 ]
