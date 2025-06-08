@@ -8,10 +8,7 @@
     </div>
 
     <div class="card-body">
- 
       <div v-if="apiError" class="alert alert-danger">{{ apiError }}</div>
-
-
       <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item" v-for="tab in tabs" :key="tab.name">
           <button class="nav-link" :class="{ active: activeTab === tab.name }" @click="activeTab = tab.name"
@@ -22,7 +19,6 @@
       </ul>
 
       <div class="tab-content">
-   
         <div class="tab-pane fade" :class="{ 'show active': activeTab === 'main' }" role="tabpanel">
           <dl class="row">
             <dt class="col-sm-3">Имя</dt>
@@ -30,21 +26,17 @@
               <span v-if="!editMode">{{ studentData.first_name }}</span>
               <input v-else v-model="form.first_name" class="form-control form-control-sm" />
             </dd>
-
             <dt class="col-sm-3">Фамилия</dt>
             <dd class="col-sm-9">
               <span v-if="!editMode">{{ studentData.last_name }}</span>
               <input v-else v-model="form.last_name" class="form-control form-control-sm" />
             </dd>
-
             <dt class="col-sm-3">Группа</dt>
             <dd class="col-sm-9">
               <span v-if="!editMode">{{ studentData.group_name || 'Не указана' }}</span>
               <input v-else v-model="form.group_name" class="form-control form-control-sm"
                 placeholder="Укажите группу" />
             </dd>
-
-
             <dt class="col-sm-3">Профессия</dt>
             <dd class="col-sm-9">
               <span v-if="!studentData.role && !editMode" class="text-muted">Профессия не выбрана</span>
@@ -63,7 +55,6 @@
             </dd>
           </dl>
         </div>
-
   
         <div class="tab-pane fade" :class="{ 'show active': activeTab === 'experience' }" role="tabpanel">
           <div v-if="!editMode">
@@ -77,7 +68,6 @@
             </label>
           </div>
         </div>
-
 
         <div class="tab-pane fade" :class="{ 'show active': activeTab === 'contacts' }" role="tabpanel">
           <dl class="row">
@@ -95,7 +85,6 @@
           </dl>
         </div>
       </div>
-
 
       <div class="mt-4">
         <h5>Навыки</h5>
@@ -125,12 +114,54 @@
           </tbody>
         </table>
 
-
         <div class="d-flex justify-content-end mt-2">
           <button class="btn btn-success text-light me-2" data-bs-toggle="modal" data-bs-target="#EditSkills">
             Добавить навык
           </button>
         </div>
+      </div>
+
+   
+      <div class="mt-4">
+        <h5>Мои отклики</h5>
+        <table class="table table-bordered mt-2">
+          <thead>
+            <tr>
+              <th>Вакансия</th>
+              <th>Дата подачи</th>
+              <th>Совпадение</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="app in myApplications" :key="app.id">
+              <td>
+  <router-link
+    :to="{ name: 'VacancyDetail', params: { id: app.vacancy } }"
+    class="fw-bold link-primary"
+    style="text-decoration: underline"
+  >
+    {{ app.vacancy_title || `Вакансия №${app.vacancy}` }}
+  </router-link>
+</td>
+              <td>
+                {{ formatDate(app.applied_at) }}
+              </td>
+              <td>
+                {{ app.match_score ?? 0 }}%
+              </td>
+              <td>
+                <router-link
+                  :to="{ name: 'VacancyDetail', params: { id: app.vacancy } }"
+                  class="btn btn-sm btn-outline-primary"
+                >Подробнее</router-link>
+              </td>
+            </tr>
+            <tr v-if="myApplications.length === 0">
+              <td colspan="4" class="text-center text-muted">Нет откликов</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <div v-if="editMode" class="mt-3 text-end">
@@ -143,7 +174,6 @@
       </div>
     </div>
   </div>
-
   
   <ModalCenter title="Добавление новых умений" modalId="EditSkills">
     <AddSkillModal @AddSkillTest="AddSkills" ref="addSkillModalRef" />
@@ -182,6 +212,9 @@ const deleteskillliest = ref([])
 const testnotexist = ref(false)
 const roles = ref([])
 
+const myApplications = ref([])
+const loadingApplications = ref(false)
+
 const props = defineProps({
   student: { type: Object, required: true }
 })
@@ -213,9 +246,29 @@ async function loadRoles() {
   if (resp.success) roles.value = resp.data
 }
 
+async function loadApplications() {
+  loadingApplications.value = true
+  try {
+    const response = await apiClient.get(endpoints.expert_system.applications + '?my=1')
+    if (response.success) {
+      myApplications.value = response.data
+    } else if (Array.isArray(response)) {
+      // fallback для прямого массива
+      myApplications.value = response
+    } else {
+      myApplications.value = []
+    }
+  } catch (error) {
+    myApplications.value = []
+  } finally {
+    loadingApplications.value = false
+  }
+}
+
 onMounted(async () => {
   await loadskills()
   await loadRoles()
+  await loadApplications()
 })
 
 const gototest = async (skill) => {
@@ -237,12 +290,10 @@ function toggleEdit() {
   }
 }
 
-
 function getRoleName(roleId) {
   const role = roles.value.find(r => r.id === roleId)
   return role ? role.name : 'Не выбрана'
 }
-
 
 async function AddSkills(skills) {
   await apiClient.post(endpoints.expert_system.setUserSkills, { Skills: skills })
@@ -322,13 +373,18 @@ function cancelEdit() {
   apiError.value = null
   editMode.value = false
 }
+
+function formatDate(dt) {
+  if (!dt) return ''
+  const d = new Date(dt)
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString().slice(0, 5)
+}
 </script>
 
 <style scoped>
 .nav-tabs .nav-link {
   cursor: pointer;
 }
-
 .card-header h4 {
   font-size: 1.25rem;
 }
