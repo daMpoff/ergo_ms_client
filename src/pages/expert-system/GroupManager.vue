@@ -183,5 +183,3 @@ async function deleteGroup(id) {
 
 onMounted(fetchGroups)
 </script>
-
-
