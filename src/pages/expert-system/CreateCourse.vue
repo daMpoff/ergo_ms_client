@@ -1,7 +1,7 @@
 <template>
   <div class="modal-backdrop">
     <div class="modal-dialog">
-      <div class="modal-content p-4">
+      <div class="modal-content p-4 bg-white">
         <button type="button" class="btn-close float-end" @click="$emit('close')" />
         <h5 class="mb-3">Новый курс</h5>
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
@@ -31,21 +31,30 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue'
+import { ref, defineProps, defineEmits } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 
-const props = defineProps({ roles: { type: Array, required: true } })
+const props = defineProps({
+  roles: { type: Array, required: true },
+  employerId: { type: [String, Number], required: true }
+})
 const emit = defineEmits(['created', 'close'])
 
 const form = ref({ title: '', description: '', role: '' })
 const loading = ref(false)
 const error = ref(null)
+
 async function onSubmit() {
   error.value = null
   loading.value = true
   try {
-    const res = await apiClient.post(endpoints.expert_system.courses, form.value)
+    const payload = {
+      ...form.value,
+      role: form.value.role,
+      employer: props.employerId
+    }
+    const res = await apiClient.post(endpoints.expert_system.courses, payload)
     if (!res.success) throw new Error(JSON.stringify(res.errors))
     emit('created')
     form.value = { title: '', description: '', role: '' }
@@ -56,3 +65,18 @@ async function onSubmit() {
   }
 }
 </script>
+
+<style scoped>
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bg-white {
+  background: #fff !important;
+}
+</style>
