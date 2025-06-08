@@ -45,6 +45,10 @@ export const endpoints = {
     getSkillsForRedact:'expert_system/get-skills-for-redact-test',
     getTestIdBySkill:'expert_system/get-test-id-by-skill',
     getTestForRedact:'expert_system/get-test-for-redact',
-    evaluateTest: 'expert_system/evaluate-test'
+    evaluateTest: 'expert_system/evaluate-test',
+    saveOrientationTestResult: 'expert_system/orientation-test-results/',
+    saveBestRoleToStudent: 'expert_system/students/me/set-role/', 
+    setStudentRole: 'expert_system/students/me/set-role/',
+    courses: 'expert_system/courses/',
   }
 };

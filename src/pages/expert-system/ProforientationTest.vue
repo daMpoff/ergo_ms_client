@@ -1,21 +1,35 @@
 <template>
   <div class="container py-2 d-flex flex-column align-items-center justify-content-center" v-if="loaded" style="min-height: 80vh">
-    <h2 class="mb-3 text-center fw-bolder fs-1" style="letter-spacing: -1px;">{{ testName }}</h2>
+    <h2 class="fw-bold mb-4 text-center fs-1" style="letter-spacing: -1px; color: #16192C;">{{ testName }}</h2>
 
+ 
     <div v-if="!started" class="w-100 d-flex flex-column align-items-center justify-content-center" style="min-height: 50vh;">
-      <div class="alert alert-light border fs-5 mb-5 text-center shadow-sm" style="max-width: 480px;">
+      <div
+        v-if="studentProfile?.role"
+        class="alert alert-success border fs-5 mb-5 text-center shadow-sm"
+        style="max-width: 480px;"
+      >
+        Вы уже выбрали профессию: <b>{{ getRoleName(studentProfile.role) }}</b><br>
+        Пройти тест повторно нельзя.
+      </div>
+      <div
+        v-else
+        class="alert alert-light border fs-5 mb-5 text-center shadow-sm"
+        style="max-width: 480px;"
+      >
         Ответьте на вопросы, чтобы узнать, какая IT-профессия вам ближе!
       </div>
       <button
         class="btn btn-success btn-lg px-5 py-3 text-white fw-semibold shadow-sm"
         style="border-radius: 8px; font-size: 1.35rem; min-width: 220px; box-shadow: none; letter-spacing: 1px;"
         @click="startTest"
+        :disabled="!!studentProfile?.role"
       >
         Пройти тест
       </button>
     </div>
 
-    <!-- Прохождение теста -->
+ 
     <div v-else-if="step < questions.length" class="w-100" style="max-width: 520px;">
       <div class="card mb-4 border shadow-sm" style="border-radius: 10px;">
         <div class="card-body px-4 py-4">
@@ -62,26 +76,55 @@
       </div>
     </div>
 
-    <!-- Результаты -->
+    
     <div v-else class="w-100">
       <h4 class="mb-4 text-center fw-bold" style="letter-spacing:1px;">Результаты теста</h4>
-      <div v-if="bestRoleName" class="mb-5">
-        <div class="alert alert-success text-center fs-4 mb-4 shadow-sm border-0" style="border-radius: 8px; background: #eafbee; color: #155724;">
-          Ваша профессия: <span class="fw-bold">{{ bestRoleName }}</span>
+      <div v-if="roles.length">
+        <div v-if="bestRoleId !== null" class="mb-5">
+          <div class="alert alert-success text-center fs-4 mb-4 shadow-sm border-0" style="border-radius: 8px; background: #eafbee; color: #155724;">
+            Ваша профессия: <span class="fw-bold">{{ getRoleName(bestRoleId) }}</span>
+          </div>
+          <div class="d-flex justify-content-center mb-3">
+            <button
+              
+              class="btn btn-success btn-lg text-light px-5 fw-semibold"
+              v-if="!roleSaved"
+              @click="chooseProfession"
+            >
+              Выбрать профессию
+            </button>
+            <span v-else class="alert alert-success mb-0 py-2 px-4" style="font-size:1.13rem;">
+              Вы выбрали: <b>{{ getRoleName(bestRoleId) }}</b>
+            </span>
+          </div>
+          <div v-if="recommendedCourses.length" class="mt-4">
+            <h5 class="text-center mb-3 fw-bold">Рекомендуемые курсы:</h5>
+            <ul class="list-group mx-auto" style="max-width: 440px;">
+              <li class="list-group-item" v-for="c in recommendedCourses" :key="c.id">
+                {{ c.name }}
+              </li>
+            </ul>
+          </div>
         </div>
+ 
         <div class="row g-3 justify-content-center">
           <div
             class="col-12 col-md-6 col-lg-4"
-            v-for="r in resultList"
-            :key="r.roleId"
+            v-for="role in roles"
+            :key="role.id"
           >
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 10px; background: #fafbfc;">
-              <div class="card-body px-4 py-4">
+            <div class="card border-0 shadow-sm h-100"
+                :class="{'border-success': bestRoleId === role.id}"
+                style="border-radius: 10px; background: #fafbfc;">
+              <div class="card-body px-4 py-4 text-center">
                 <div class="fw-bold fs-5 mb-2 text-dark" style="letter-spacing: 0.5px;">
-                  {{ getRoleName(r.roleId) }}
+                  {{ role.name }}
                 </div>
-                <div class="fs-4 fw-semibold" style="color:#218838;">
-                  Баллы: <span>{{ r.score }}</span>
+                <div class="fs-4 fw-semibold mb-2" style="color:#218838;">
+                  {{ getRolePercent(role.id) }}%
+                </div>
+                <div class="fs-6" style="color: #888;">
+                  (Баллы: {{ getRoleScore(role.id) }})
                 </div>
               </div>
             </div>
@@ -94,7 +137,7 @@
         </div>
       </div>
       <div v-else class="alert alert-warning text-center shadow-sm border-0" style="border-radius: 8px;">
-        Нет результата — выберите варианты.
+        Нет профессий в системе.
       </div>
     </div>
   </div>
@@ -123,8 +166,14 @@ const started = ref(false)
 
 const selectedAnswers = reactive({})
 const bestRoleId = ref(null)
-const bestRoleName = ref('')
-const resultList = ref([])
+const bestRoleScore = ref(0)
+const scoresByRole = ref({}) // roleId: баллы
+const totalScore = ref(0)
+
+const roleSaved = ref(false)
+const recommendedCourses = ref([])
+
+const studentProfile = ref(null)
 
 const currentAnswers = computed(() => {
   if (!questions.value.length) return []
@@ -134,6 +183,13 @@ const currentAnswers = computed(() => {
 function isChecked(answerId) {
   const arr = selectedAnswers[questions.value[step.value].id]
   return arr && arr.includes(answerId)
+}
+
+async function loadStudentProfile() {
+  const resp = await apiClient.get(endpoints.expert_system.studentsMe)
+  if (resp.success) {
+    studentProfile.value = resp.data
+  }
 }
 
 async function load() {
@@ -164,12 +220,17 @@ function getRoleName(roleId) {
 }
 
 function startTest() {
+
+  if (studentProfile.role) return
   started.value = true
   step.value = 0
   for (const key in selectedAnswers) selectedAnswers[key] = []
   bestRoleId.value = null
-  bestRoleName.value = ''
-  resultList.value = []
+  bestRoleScore.value = 0
+  scoresByRole.value = {}
+  totalScore.value = 0
+  roleSaved.value = false
+  recommendedCourses.value = []
 }
 
 function nextStep() {
@@ -180,8 +241,9 @@ function nextStep() {
   }
 }
 
-function calculateResult() {
+async function calculateResult() {
   const scoreByRole = {}
+  let total = 0
   for (const q of questions.value) {
     const selected = selectedAnswers[q.id] || []
     for (const answerId of selected) {
@@ -189,21 +251,74 @@ function calculateResult() {
       if (answer) {
         const rid = typeof answer.role === 'object' ? answer.role.id : answer.role
         scoreByRole[rid] = (scoreByRole[rid] || 0) + (answer.weight || 1)
+        total += (answer.weight || 1)
       }
     }
   }
-  const sorted = Object.entries(scoreByRole)
-    .map(([roleId, score]) => ({ roleId: Number(roleId), score }))
-    .sort((a, b) => b.score - a.score)
-  resultList.value = sorted
-  if (sorted.length) {
-    bestRoleId.value = sorted[0].roleId
-    bestRoleName.value = getRoleName(bestRoleId.value)
-  } else {
-    bestRoleId.value = null
-    bestRoleName.value = ''
+  scoresByRole.value = scoreByRole
+  totalScore.value = total
+
+
+  let maxRoleId = null
+  let maxScore = -1
+  for (const role of roles.value) {
+    const sc = scoreByRole[role.id] || 0
+    if (sc > maxScore) {
+      maxScore = sc
+      maxRoleId = role.id
+    }
   }
+  bestRoleId.value = maxRoleId
+  bestRoleScore.value = maxScore
   step.value = questions.value.length
+
+
+  await saveTestResult()
+}
+
+
+async function saveTestResult() {
+  
+  if (roleSaved.value) return
+
+  const payload = {
+    test: testId,
+    best_role: bestRoleId.value,
+    answers: []
+  }
+  for (const q of questions.value) {
+    const selected = selectedAnswers[q.id] || []
+    for (const answerId of selected) {
+      payload.answers.push({ question: q.id, answer: answerId })
+    }
+  }
+  await apiClient.post(endpoints.expert_system.saveOrientationTestResult, payload)
+
+  roleSaved.value = false
+}
+
+function getRolePercent(roleId) {
+  const sc = scoresByRole.value[roleId] || 0
+  if (!totalScore.value) return 0
+  return Math.round(sc * 100 / totalScore.value)
+}
+
+function getRoleScore(roleId) {
+  return scoresByRole.value[roleId] || 0
+}
+
+
+async function chooseProfession() {
+  await apiClient.patch(endpoints.expert_system.saveBestRoleToStudent, {
+    role: bestRoleId.value
+  })
+  roleSaved.value = true
+  // Загружаем рекомендованные курсы
+  const resp = await apiClient.get(endpoints.expert_system.recommendedCourses, {
+    role: bestRoleId.value
+  })
+  if (resp.success) recommendedCourses.value = resp.data
+  else recommendedCourses.value = []
 }
 
 function restart() {
@@ -211,9 +326,15 @@ function restart() {
   step.value = 0
   for (const key in selectedAnswers) selectedAnswers[key] = []
   bestRoleId.value = null
-  bestRoleName.value = ''
-  resultList.value = []
+  bestRoleScore.value = 0
+  scoresByRole.value = {}
+  totalScore.value = 0
+  roleSaved.value = false
+  recommendedCourses.value = []
 }
 
-onMounted(load)
+
+onMounted(async () => {
+  await Promise.all([loadStudentProfile(), load()])
+})
 </script>

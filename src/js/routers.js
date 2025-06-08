@@ -535,11 +535,29 @@ const expertSystemRoutes = [
         },
       },
       {
+        path: '/course/:id',
+        name: 'CourseDetail',
+        component: () => import('@/pages/expert-system/CourseDetail.vue'),
+        meta: {
+          title: 'Детали курса',
+          requiresAuth: true,
+        },
+      },
+      {
         path: '/students',
         name: 'StudentsList',
         component: () => import('@/pages/expert-system/StudentList.vue'),
         meta: {
           title: 'Поиск студентов',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/student-courses',
+        name: 'StudentCourses',
+        component: () => import('@/pages/expert-system/StudentCourses.vue'),
+        meta: {
+          title: 'Рекомендованные курсы',
           requiresAuth: true,
         },
       },
