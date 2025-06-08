@@ -1,6 +1,5 @@
 <template>
   <div>
-   
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <button class="btn btn-outline-primary btn-sm" @click="showCreate = true">
         + Создать курс
@@ -13,7 +12,6 @@
       />
     </div>
 
-  
     <div class="row mt-4 gy-4 mx-auto cards-container">
       <div
         class="col-lg-4 col-md-6 d-flex"
@@ -43,10 +41,9 @@
       </div>
     </div>
 
-  
     <div v-if="showEdit" class="modal-backdrop">
       <div class="modal-dialog">
-        <div class="modal-content p-4">
+        <div class="modal-content p-4 bg-white">
           <button type="button" class="btn-close float-end" @click="closeEdit" />
           <h5 class="mb-3">Редактировать курс</h5>
           <div v-if="error" class="alert alert-danger">{{ error }}</div>
@@ -74,8 +71,7 @@
       </div>
     </div>
 
-
-    <CreateCourse v-if="showCreate" @created="onCreated" @close="showCreate = false" :roles="roles" />
+    <CreateCourse v-if="showCreate" @created="onCreated" @close="showCreate = false" :roles="roles" :employer-id="employerId" />
   </div>
 </template>
 
@@ -83,10 +79,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
-import CreateCourse from './CreateCourse.vue' // только форма создания, без поиска и списка
+import CreateCourse from './CreateCourse.vue'
 
 const courses = ref([])
 const roles = ref([])
+const employerId = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const searchTerm = ref('')
@@ -129,10 +126,19 @@ async function fetchRoles() {
     roles.value = []
   }
 }
+async function fetchEmployer() {
+  try {
+    const res = await apiClient.get(endpoints.expert_system.companiesMe)
+    employerId.value = res.data.id
+  } catch {
+    employerId.value = null
+  }
+}
 
 onMounted(() => {
   fetchCourses()
   fetchRoles()
+  fetchEmployer()
 })
 
 function openEdit(course) {
@@ -152,7 +158,11 @@ async function onEdit() {
   error.value = null
   loading.value = true
   try {
-    const res = await apiClient.put(endpoints.expert_system.courses + currentId.value + '/', editForm.value)
+    const payload = {
+      ...editForm.value,
+      employer: employerId.value
+    }
+    const res = await apiClient.put(endpoints.expert_system.courses + currentId.value + '/', payload)
     if (!res.success) throw new Error(JSON.stringify(res.errors))
     await fetchCourses()
     closeEdit()
@@ -173,9 +183,23 @@ async function remove(course) {
   }
 }
 
-
 function onCreated() {
   showCreate.value = false
   fetchCourses()
 }
 </script>
+
+<style scoped>
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bg-white {
+  background: #fff !important;
+}
+</style>
