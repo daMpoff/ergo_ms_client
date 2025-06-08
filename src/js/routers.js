@@ -770,6 +770,15 @@ const expertSystemRoutes = [
         })
       },
       {
+        path:'test-result/:id',
+        name:'TestResult',
+        component:()=> import('@/pages/expert-system/Tests/TestResult.vue'),
+        meta:{title:'Результат теста', requiresAuth:true},
+        props:(route)=>({
+          id:Number(route.params.id)
+        })
+      },
+      {
         path: 'vacancies',
         name: 'Vacancies',
         component: () => import('@/pages/expert-system/StudentVacancies.vue'),
