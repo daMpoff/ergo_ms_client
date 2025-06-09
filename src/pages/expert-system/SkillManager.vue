@@ -162,6 +162,7 @@ async function updateSkill() {
   }
 }
 
+
 async function deleteSkill(id) {
   if (!confirm('Удалить этот навык?')) return
   error.value = ''

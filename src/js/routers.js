@@ -99,6 +99,29 @@ const userRoutes = [
   },
 ]
 
+// Секция "Analyze"
+const analyzeRoutes = [
+  {
+    path: '/user/analyze',
+    name: 'Analyze',
+    component: () => import('@/pages/user/analyze/Analyze.vue'),
+    meta: {
+      requiresAuth: true
+    },
+    children: [
+      {
+        path: 'databaseanalyze',
+        name: 'DatabaseAnalyze',
+        component: () => import('@/pages/user/analyze/DatabaseAnalyze.vue'),
+        meta: {
+          requiresAuth: true
+        },
+      }
+    ]
+  },
+];
+
+
 // Настройки аккаунта
 const settingsRoutes = [
   {
@@ -322,7 +345,60 @@ const componentsRoutes = [
   },
 ]
 
-//
+// Маршрутизация страниц модуля учебной аналитики
+const learningAnalyticsRoutes = [
+  {
+    path: '/education_analytics',
+    name: 'EducationAnalyticModule',
+    component: () => import('@/pages/education_analytics_module/ParentLayout.vue'),
+    redirect: { name: 'MainPage' },
+    children: [
+      {
+        path: 'main',
+        name: 'MainPage',
+        component: () => import('@/pages/education_analytics_module/MainPage.vue'),
+        meta: { title: 'MainPage', requiresAuth: true },
+      },
+      {
+        path: 'learning_track',
+        name: 'LearningTrackPage',
+        component: () => import('@/pages/education_analytics_module/LearningTrack.vue'),
+        meta: { title: 'LearningTrackPage', requiresAuth: true },
+      },
+      {
+        path: 'reports',
+        name: 'ReportsPage',
+        component: () => import('@/pages/education_analytics_module/ReportsPage.vue'),
+        meta: { title: 'ReportsPage', requiresAuth: true },
+      },
+      {
+        path: 'stats',
+        name: 'StatsPage',
+        component: () => import('@/pages/education_analytics_module/StatsPage.vue'),
+        meta: { title: 'StatsPage', requiresAuth: true },
+      },
+      {
+        path: 'profile',
+        name: 'ProfilePage',
+        component: () => import('@/pages/education_analytics_module/ProfilePage.vue'),
+        meta: { title: 'ProfilePage', requiresAuth: true },
+      },
+      {
+        path: 'admin',
+        name: 'AdminPanelPage',
+        component: () => import('@/pages/education_analytics_module/AdminPanelPage.vue'),
+        meta: { title: 'AdminPanelPage', requiresAuth: true },
+      },
+      {
+        path: 'root',
+        name: 'SuperUserPage',
+        component: () => import('@/pages/education_analytics_module/SuperUserPanelPage.vue'),
+        meta: { title: 'SuperUserPage', requiresAuth: true },
+      },
+    ],
+  },
+]
+
 const startRoutes = [
   {
     path: '/start-page',
@@ -388,6 +464,198 @@ const startRoutes = [
     },
   },
 ]
+
+const adminpanelRoutes = [
+  {
+    path: '/AdminPanel',
+    name: 'AdminPanel',
+    component: () => import('@/pages/AdminPanel/ParentLayout.vue'),
+    redirect: { name: 'CategoriesPanel' },
+    meta: { title: 'Админ-панель', requiresAuth: true },
+    children: [
+      {
+        path: 'CategoriesPanel',
+        name: 'CategoriesPanel',
+        component: () => import('@/pages/AdminPanel/Categories.vue'),
+        meta: { title: 'Панель категорий', requiresAuth: true },
+      },
+      {
+        path: 'GroupsPanel',
+        name: 'GroupsPanel',
+        component: () => import('@/pages/AdminPanel/Groups.vue'),
+        meta: { title: 'Панель групп', requiresAuth: true },
+      },
+      {
+        path: 'PermissionsPanel',
+        name: 'PermissionsPanel',
+        component: () => import('@/pages/AdminPanel/Permissions.vue'),
+        meta: { title: 'Панель прав', requiresAuth: true },
+      },
+      {
+        path: 'UsersPanel',
+        name: 'UsersPanel',
+        component: () => import('@/pages/AdminPanel/Users.vue'),
+        meta: { title: 'Панель пользователей', requiresAuth: true },
+      },
+    ],
+  },
+]
+const waterMarkvideoRoute = [
+  {
+    path: '/watermarked-video',
+    name: 'Watermarked-Video',
+    component: () => import('@/pages/WatermarkVideo/ParentLayout.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+]
+
+const biRoutes = [
+  {
+    path: '/bi',
+    name: 'BI',
+    component: () => import('@/pages/bi/HomePageBI.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/storagelist',
+    name: 'StorageList',
+    component: () => import('@/pages/bi/StorageListPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/storage',
+    name: 'BIStorage',
+    component: () => import('@/pages/bi/DatasetListPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new',
+    name: 'NewConnection',
+    component: () => import('@/pages/bi/NewConnection.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/file',
+    name: 'NewFile',
+    component: () => import('@/pages/bi/NewFile.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/clickhouse',
+    name: 'ClickHouse',
+    component: () => import('@/pages/bi/components/db-settings/ClickHouse.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/mssql',
+    name: 'MySQL',
+    component: () => import('@/pages/bi/components/db-settings/MSSQL.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/postgresql',
+    name: 'PostgreSQL',
+    component: () => import('@/pages/bi/components/db-settings/PostgreSQL.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/:pk',
+    name: 'connection-detail',
+    component: () => import('@/pages/bi/components/db-settings/ConnectionDetail.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/:pk/files',
+    name: 'ConnectionFiles',
+    component: () => import('@/pages/bi/ConnectionFiles.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bi/connections/new/dataset',
+    name: 'NewDataset',
+    component: () => import('@/pages/bi/DatasetPage.vue'),
+    meta: { requiresAuth: true },
+  },
+]
+
+const shortcodeRoutes = [
+  {
+    path: '/shortcodes',
+    name: 'Shortcodes',
+    component: () => import('@/pages/shortcodes/ParentLayout.vue'),
+    meta: { title: 'Конструктор сайта', requiresAuth: true },
+    redirect: { name: 'MainShortcodePage' },
+    children: [
+      {
+        path: 'editor',
+        name: 'MainShortcodePage',
+        component: () => import('@/pages/shortcodes/editor/MainPage.vue'),
+        meta: {
+          title: 'Главная',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'editor',
+        name: 'ShortcodeEditor',
+        component: () => import('@/pages/shortcodes/editor/ShortcodeEditor.vue'),
+        meta: {
+          title: 'Редактор страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'create-page',
+        name: 'CreatePage',
+        component: () => import('@/pages/shortcodes/editor/CreatePage.vue'),
+        meta: {
+          title: 'Создание страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'create-template',
+        name: 'CreateTemplate',
+        component: () => import('@/pages/shortcodes/editor/CreateTemplate.vue'),
+        meta: {
+          title: 'Создание шаблонов',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'categories-page',
+        name: 'PageCategories',
+        component: () => import('@/pages/shortcodes/editor/PageCategories.vue'),
+        meta: {
+          title: 'Категории страниц',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'templates',
+        name: 'Templates',
+        component: () => import('@/pages/shortcodes/editor/TemplateManager.vue'),
+        meta: {
+          title: 'Компоненты',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'templates/:id?',
+        name: 'TemplateEditor',
+        component: import('@/pages/shortcodes/editor/TemplateEditor.vue'),
+        props: true,
+        meta: {
+          title: 'Редактор компонентов',
+          requiresAuth: true
+        },
+      }
+    ],
+  },
+]
+
 const expertSystemRoutes = [
   {
     path: '/expert-system',
@@ -396,9 +664,9 @@ const expertSystemRoutes = [
     meta: { requiresAuth: true },
     redirect: { name: 'ChoiceRole' },
     children: [
-      { path: 'orientation-question/:testId',     name: 'OrientationQuestionManager',component: () => import('@/pages/expert-system/OrientationQuestionManager.vue'), meta: { title: 'Менеджер вопросов', requiresAuth: true } },
-      { path: 'orientation-answer/:questionId',   name: 'OrientationAnswerManager',  component: () => import('@/pages/expert-system/OrientationAnswerManager.vue'),   meta: { title: 'Менеджер ответов', requiresAuth: true } },
-      { path: 'proforientation-test/:testId',     name: 'ProforientationTest',      component: () => import('@/pages/expert-system/ProforientationTest.vue'),        meta: { title: 'Прохождение теста', requiresAuth: true } },
+      { path: 'orientation-question/:testId', name: 'OrientationQuestionManager', component: () => import('@/pages/expert-system/OrientationQuestionManager.vue'), meta: { title: 'Менеджер вопросов', requiresAuth: true } },
+      { path: 'orientation-answer/:questionId', name: 'OrientationAnswerManager', component: () => import('@/pages/expert-system/OrientationAnswerManager.vue'), meta: { title: 'Менеджер ответов', requiresAuth: true } },
+      { path: 'proforientation-test/:testId', name: 'ProforientationTest', component: () => import('@/pages/expert-system/ProforientationTest.vue'), meta: { title: 'Прохождение теста', requiresAuth: true } },
       {
         path: 'choice-role',
         name: 'ChoiceRole',
@@ -438,11 +706,11 @@ const expertSystemRoutes = [
       {
         path: 'proforientation',
         name: 'Proforientation',
-        component:() => import ('@/pages/expert-system/ProforientationTest.vue'),
+        component: () => import('@/pages/expert-system/ProforientationTest.vue'),
         meta: { title: 'Профориентация', requiresAuth: true }
       },
       {
-        path:'addstudent-skills',
+        path: 'addstudent-skills',
         name: 'Addstudentskills',
         component: () => import('@/pages/expert-system/AddSkillForStudentsWithExpirience.vue'),
         meta: { title: 'Добавление навыков студенту', requiresAuth: true },
@@ -468,7 +736,7 @@ const expertSystemRoutes = [
       {
         path: 'orientation-answer',
         name: 'OrientationAnswer',
-        component:() => import ('@/pages/expert-system/OrientationAnswerManager.vue'),
+        component: () => import('@/pages/expert-system/OrientationAnswerManager.vue'),
         meta: { title: 'Менеджер управление вариантов ответов на вопросы', requiresAuth: true }
       },
       {
@@ -484,21 +752,21 @@ const expertSystemRoutes = [
         meta: { title: 'Создание тестов', requiresAuth: true },
       },
       {
-        path:'test-preview/:id',
-        name:'TestPreview',
-        component:()=> import('@/pages/expert-system/Tests/TestViewPage.vue'),
-        meta:{title:'Предпросмотр теста', requiresAuth:true},
-        props:(route)=>({
-          id:route.params.id
+        path: 'test-preview/:id',
+        name: 'TestPreview',
+        component: () => import('@/pages/expert-system/Tests/TestViewPage.vue'),
+        meta: { title: 'Предпросмотр теста', requiresAuth: true },
+        props: (route) => ({
+          id: route.params.id
         })
       },
       {
-        path:'test/:id',
-        name:'TestPage',
-        component:()=> import('@/pages/expert-system/Tests/TestPage.vue'),
-        meta:{title:'Предпросмотр теста', requiresAuth:true},
-        props:(route)=>({
-          id:route.params.id
+        path: 'test/:id',
+        name: 'TestPage',
+        component: () => import('@/pages/expert-system/Tests/TestPage.vue'),
+        meta: { title: 'Предпросмотр теста', requiresAuth: true },
+        props: (route) => ({
+          id: route.params.id
         })
       },
       {
@@ -544,11 +812,29 @@ const expertSystemRoutes = [
         },
       },
       {
+        path: '/course/:id',
+        name: 'CourseDetail',
+        component: () => import('@/pages/expert-system/CourseDetail.vue'),
+        meta: {
+          title: 'Детали курса',
+          requiresAuth: true,
+        },
+      },
+      {
         path: '/students',
         name: 'StudentsList',
         component: () => import('@/pages/expert-system/StudentList.vue'),
         meta: {
           title: 'Поиск студентов',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/student-courses',
+        name: 'StudentCourses',
+        component: () => import('@/pages/expert-system/StudentCourses.vue'),
+        meta: {
+          title: 'Рекомендованные курсы',
           requiresAuth: true,
         },
       },
@@ -561,6 +847,7 @@ const routes = [
   ...mainRoutes,
   ...dashboardRoutes,
   ...userRoutes,
+  ...analyzeRoutes,
   ...settingsRoutes,
   ...emailRoutes,
   ...messengerRoutes,
@@ -573,7 +860,12 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...adminpanelRoutes,
+  ...waterMarkvideoRoute,
+  ...biRoutes,
+  ...shortcodeRoutes,
   ...expertSystemRoutes,
+  ...learningAnalyticsRoutes,
 ]
 
 routes.forEach((route) => {
