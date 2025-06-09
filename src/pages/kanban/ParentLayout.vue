@@ -43,19 +43,17 @@ const priorityOptions = [
   { value: 3, label: 'срочная', color: 'info' },
   { value: 4, label: 'рутинная', color: 'secondary' }
 ]
-// Загрузка данных канбан-доски при изменении project_id
+
 watch(() => props.project_id, (newVal) => {
   if (newVal) {
     kanbanStore.fetchColumns(newVal)
   }
-})
-// Добавляем реактивное отслеживание изменений в хранилище
+}, { immediate: true })
+
 watch(() => kanbanStore.columns, () => {
   // Можно добавить дополнительную логику при изменении колонок
 }, { deep: true })
 
-
-// Fetching project_id from the query parameter
 onMounted(() => {
   projectId.value = route.query.project_id;
   if (projectId.value) {
@@ -81,7 +79,6 @@ const submitNewSection = async () => {
     })
     isAddingSection.value = false
     newSectionName.value = ''
-    // После успешного добавления обновляем данные
     await kanbanStore.fetchColumns(props.project_id)
   } catch (error) {
     console.error('Ошибка при создании раздела:', error)
@@ -117,20 +114,9 @@ const submitNewTask = async (columnIndex) => {
     dateofcreation: new Date().toISOString()
   }
 
-  if (!taskData.section_id) {
-    toast.error('Не удалось определить раздел для задачи')
-    return
-  }
-
   try {
- await kanbanStore.createTask(taskData)
-    
-   
-    props.project_id==route.query.project_id;
-    // Обновляем список задач
+    await kanbanStore.createTask(taskData)
     await kanbanStore.fetchColumns(route.query.project_id)
-    
-    // Очищаем форму
     isAddingTask.value = -1
     newTaskData.value = {
       title: '',
@@ -139,19 +125,17 @@ const submitNewTask = async (columnIndex) => {
       priority: 0,
       reminders: []
     }
-
     toast.success(`Задача создана!`)
-
   } catch (error) {
     console.error('Ошибка создания задачи:', error)
     toast.error(error.message || 'Ошибка при создании задачи')
   }
 }
-// Вспомогательная функция для форматирования даты
+
 function formatDateTimeForAPI(date) {
   return new Date(date).toISOString()
 }
-// Остальные вспомогательные функции остаются без изменений
+
 const deleteSection = async (sectionId) => {
   if (!sectionId) return;
   
@@ -160,7 +144,6 @@ const deleteSection = async (sectionId) => {
     if (!confirmed) return;
     
     await kanbanStore.deleteSection(sectionId);
-    // После успешного удаления обновляем данные
     await kanbanStore.fetchColumns(projectId.value);
     toast.success('Раздел успешно удален');
   } catch (error) {
@@ -169,7 +152,14 @@ const deleteSection = async (sectionId) => {
   }
 };
 
-
+const handleTaskUpdated = async () => {
+  try {
+        await kanbanStore.fetchColumns(route.query.project_id)
+  } catch (error) {
+    console.error('Ошибка при обновлении задач:', error);
+    toast.error('Не удалось обновить список задач');
+  }
+}
 
 const formatDate = (date) => {
   if (!date) return ''
@@ -224,20 +214,23 @@ const formatDate = (date) => {
           @sort-end="isCopyingText = true"
           @sort-cancel="isCopyingText = true"
         >
-          <SlickItem
-            v-for="(task, j) in kanbanStore.columns[i].cards"
-            :key="task.id"
-            :index="j"
-            class="my-2"
-          >
-            <div
-              class="kanban-card-task card"
-              :class="{ 'user-select-none': !isCopyingText }"
-              style="cursor: grab"
-            >
-              <KanbanTask :task="task" />
-            </div>
-          </SlickItem>
+    <SlickItem
+          v-for="(task, j) in kanbanStore.columns[i].cards"
+          :key="task.id"
+          :index="j"
+          class="my-2"
+      >
+      <div
+        class="kanban-card-task card"
+        :class="{ 'user-select-none': !isCopyingText }"
+        style="cursor: grab"
+      >
+      <KanbanTask 
+         :task="task" 
+         @task-updated="handleTaskUpdated"
+         />
+        </div>
+    </SlickItem>
         </SlickList>
 
         <!-- блок добавления подзадач -->

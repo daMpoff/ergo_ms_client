@@ -10,6 +10,8 @@ const toast = useToast()
 const currentTask = computed(() => kanbanStore.editableTask)
 const isLoading = ref(false) // Добавляем состояние загрузки
 
+
+
 const isChecked = computed({
   get: () => currentTask.value?.is_completed || false,
   set: (value) => {

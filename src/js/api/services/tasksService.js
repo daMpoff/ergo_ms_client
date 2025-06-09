@@ -115,7 +115,7 @@ export const useKanbanStore = defineStore('kanbanStore', () => {
           title: task.title,
           priority: task.priority,
           description: task.description || '',
-          is_completed: task.is_completed || false,
+          isdone: task.isdone || false,
           assignee_id: task.assignee_id || null,
           deadline: task.deadline || null,
           project_id: task.project_id,
@@ -273,11 +273,6 @@ const createTask = async (taskData) => {
 
     try {
       // Проверяем, что задача принадлежит пользователю
-      const originalTask = getTaskById(info.id)
-      if (!originalTask || originalTask.user_id !== currentUserId.value) {
-        toast.error('У вас нет прав для редактирования этой задачи')
-        return
-      }
 
       const response = await fetch(`http://localhost:8000/api/crm/tasks/task-update/${info.id}/`, {
         method: 'PUT',
@@ -449,6 +444,19 @@ const deleteSection = async (sectionId) => {
     isLoading.value = false;
   }
 };
+
+const toggleTask = async (taskId) => {
+  try {
+     await apiClient.post(
+      `${endpoints.crm.tasks.toggle_task.replace('{id}', taskId)}`
+    );
+    return { success: true };
+  } catch (error) {
+    console.error('Toggle task error:', error);
+    toast.error(error.message || 'Не удалось изменить статус задачи');
+    return { success: false };
+  }
+}
   // Инициализация при создании хранилища
   initialize()
 
@@ -469,6 +477,7 @@ const deleteSection = async (sectionId) => {
     fetchSubtasks,
     deleteTask,
     createSubtask,
-    deleteSection
+    deleteSection,
+    toggleTask,
   }
 })

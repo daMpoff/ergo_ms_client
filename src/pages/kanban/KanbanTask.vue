@@ -1,5 +1,5 @@
 <script setup>
-import { MessageSquareText, Paperclip, Settings2 } from 'lucide-vue-next'
+import { MessageSquareText, Paperclip, Settings2, Check } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useKanbanStore } from '@/js/api/services/tasksService'
 const kanbanStore = useKanbanStore()
@@ -7,6 +7,8 @@ const kanbanStore = useKanbanStore()
 const props = defineProps({
   task: { type: Object, required: true, default: () => {} },
 })
+
+const emit = defineEmits(['task-updated'])
 
 const priorityLabel = computed(() => {
   switch (props.task.priority) {
@@ -31,6 +33,17 @@ const priorityBackground = computed(() => {
 const handleTaskClick = () => {
   kanbanStore.setSelectedTask(props.task)
 }
+
+const toggleTaskStatus = async () => {
+  try {
+    const { success } = await kanbanStore.toggleTask(props.task.id);
+    if (success) {
+      emit('task-updated');
+    }
+  } catch (error) {
+    console.error('Ошибка при изменении статуса задачи:', error);
+  }
+}
 </script>
 
 <template>
@@ -40,12 +53,23 @@ const handleTaskClick = () => {
     style="cursor: pointer;"
   >
     <div class="d-flex align-items-center justify-content-between mb-2">
-      <span
-        class="small px-2 py-1 rounded"
-        :class="`bg-${priorityBackground}-subtle text-${priorityBackground}`"
-      >
-        {{ priorityLabel }}
-      </span>
+      <div class="d-flex align-items-center gap-2">
+        <!-- Чекбокс для изменения статуса задачи (теперь слева) -->
+        <div 
+          class="status-checkbox"
+          @click.stop="toggleTaskStatus"
+          :class="{ 'checked': task.isdone }"
+        >
+          <Check v-if="task.isdone" :size="14" class="check-icon" />
+        </div>
+        
+        <span
+          class="small px-2 py-1 rounded"
+          :class="`bg-${priorityBackground}-subtle text-${priorityBackground}`"
+        >
+          {{ priorityLabel }}
+        </span>
+      </div>
 
       <div
         class="hover-section text-secondary-emphasis p-1 rounded"
@@ -54,7 +78,10 @@ const handleTaskClick = () => {
         <Settings2 :size="20" />
       </div>
     </div>
-    <h6 class="mb-2">{{ props.task.title }}</h6>
+    
+    <h6 class="mb-2" :class="{ 'text-decoration-line-through text-muted': task.isdone }">
+      {{ props.task.title }}
+    </h6>
 
     <div v-if="props.task.image" class="mb-2">
       <img :src="props.task.image" :alt="props.task.title" class="img-fluid rounded" />
@@ -79,6 +106,7 @@ const handleTaskClick = () => {
   background-color: white;
   margin-bottom: 1rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: relative;
 }
 
 .task-container:hover {
@@ -87,5 +115,35 @@ const handleTaskClick = () => {
 
 .hover-section:hover {
   background-color: #e9ecef;
+}
+
+.status-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #dee2e6;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 8px;
+}
+
+.status-checkbox:hover {
+  border-color: #adb5bd;
+}
+
+.status-checkbox.checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.check-icon {
+  color: white;
+}
+
+.text-muted {
+  opacity: 0.7;
 }
 </style>
