@@ -86,7 +86,6 @@
     try {
       const response = await apiClient.get(endpoints.expert_system.getTestResult, { id: props.id });
       const testData = response.data;
-  
       test_name.value = testData.test_name;
       skill.value = testData.skill;
       score.value = testData.score;

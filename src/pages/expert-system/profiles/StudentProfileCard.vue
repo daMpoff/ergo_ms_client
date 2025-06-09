@@ -106,6 +106,9 @@
                 <button class="btn btn-sm btn-primary me-2" @click="gototest(item.name)">
                   Пройти тест
                 </button>
+                <button class="btn btn-sm btn-primary me-2" @click="gotoresult(item.skill_id)">
+                  Получить результаты теста
+                </button>
                 <button class="btn btn-sm btn-danger" @click="DeleteSkill(item.id)">
                   Удалить
                 </button>
@@ -194,6 +197,22 @@
       </div>
     </div>
   </div>
+  <div v-if="testresultnotexist" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Ошибка</h5>
+          <button type="button" class="btn-close btn-close-white" @click="testresultnotexist = false"></button>
+        </div>
+        <div class="modal-body">
+          {{ testresulterrortest }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="testresultnotexist = false">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -210,6 +229,8 @@ const items = ref([])
 const addskilllist = ref([])
 const deleteskillliest = ref([])
 const testnotexist = ref(false)
+const testresultnotexist = ref(false)
+const testresulterrortest = ref('')
 const roles = ref([])
 
 const myApplications = ref([])
@@ -281,7 +302,18 @@ const gototest = async (skill) => {
     router.push({ name: 'TestPage', params: { id: testid } })
   }
 }
+const gotoresult = async (skillid) => {
+  let response= null;
+  try{
+    response= await apiClient.get(endpoints.expert_system.getTestResultBySkillId, { id: skillid })
+    router.push({ name: 'TestResult', params: { id: response.data.id } })
+  }
+  catch{
+    testresulterrortest.value = (response.message)
+    testresultnotexist.value = true
+  }
 
+}
 function toggleEdit() {
   editMode.value = !editMode.value
   if (editMode.value) {
@@ -304,6 +336,8 @@ async function DeleteSkill(id) {
   let index = items.value.findIndex(item => item.id == id)
   let deletedskill = items.value[index].name
   items.value.splice(index, 1)
+  console.log(id)
+  console.log(await apiClient.delete(endpoints.expert_system.deleteTestResultBySkill, {skill_id:id}))
   let url = `${endpoints.expert_system.userSkills}${id}/`
   const resp = await apiClient.delete(url)
   if (!resp.success) {
