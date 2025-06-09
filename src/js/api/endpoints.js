@@ -82,7 +82,10 @@ export const endpoints = {
         saveOrientationTestResult: 'expert_system/orientation-test-results/',
         saveBestRoleToStudent: 'expert_system/students/me/set-role/',
         setStudentRole: 'expert_system/students/me/set-role/',
+        getTestResult: 'expert_system/get-test-result',
         courses: 'expert_system/courses/',
+        getTestResultBySkillId: 'expert_system/get-test-result-by-skill-id',
+        deleteTestResultBySkill: 'expert_system/delete-test-result-by-skill',
     },
     bi: {
         DatasetsList: 'bi_analysis/bi_datasets/',
