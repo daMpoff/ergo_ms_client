@@ -7,4 +7,10 @@ export const endpoints = {
         registration: 'cms/adp/registration/',
         protected: 'cms/adp/protected/',
     },
-}; 
+    crm: {
+        monthlyStats: 'crm/stats/monthly/',
+        priorityStats: 'crm/stats/priority/',
+        efficiencyStats: 'crm/stats/efficiency/',
+        sectionStats: 'crm/stats/sections/'
+    },
+};

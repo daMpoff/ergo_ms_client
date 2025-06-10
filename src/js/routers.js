@@ -26,7 +26,7 @@ const dashboardRoutes = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('@/pages/dashboard/ParentLayout.vue'),
+    component: () => import('@/pages/dashboard/AnaliticsView.vue'),
     redirect: { name: 'Analytics' },
     meta: {
       requiresAuth: true,
@@ -35,7 +35,7 @@ const dashboardRoutes = [
       {
         path: 'analytics',
         name: 'Analytics',
-        component: () => import('@/pages/dashboard/ParentLayout.vue'),
+        component: () => import('@/pages/dashboard/AnaliticsView.vue'),
         meta: {
           requiresAuth: true,
         },
@@ -90,7 +90,7 @@ const userRoutes = [
       {
         path: 'analytics',
         name: 'Analytics',
-        component: () => import('@/pages/dashboard/ParentLayout.vue'),
+        component: () => import('@/pages/dashboard/AnaliticsView.vue'),
         meta: {
           requiresAuth: true,
         },
