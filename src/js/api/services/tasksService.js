@@ -457,6 +457,44 @@ const toggleTask = async (taskId) => {
     return { success: false };
   }
 }
+
+
+const updatesTask = async (taskId, updatedData) => {
+  try {
+    const response = await apiClient.post(
+      `${endpoints.crm.tasks.update_task.replace('{id}', taskId)}`,
+      updatedData
+    )
+    
+    toast.success('Задача успешно обновлена')
+    return { 
+      success: true,
+      updatedTask: response.data.task
+    }
+  } catch (error) {
+    console.error('Update task error:', error)
+    toast.error(error.response?.data?.message || 'Не удалось обновить задачу')
+    return { success: false }
+  }
+}
+
+const updatesSection = async (sectionId, updatedData) => {
+  try {
+    const response = await apiClient.post(
+      `${endpoints.crm.tasks.update_section.replace('{id}', sectionId)}`,
+      updatedData
+    )
+    
+    return { 
+      success: true,
+      updatedTask: response.data.task
+    }
+  } catch (error) {
+    console.error('Update task error:', error)
+    toast.error(error.response?.data?.message || 'Не удалось обновить раздел')
+    return { success: false }
+  }
+}
   // Инициализация при создании хранилища
   initialize()
 
@@ -479,5 +517,7 @@ const toggleTask = async (taskId) => {
     createSubtask,
     deleteSection,
     toggleTask,
+    updatesTask,
+    updatesSection,
   }
 })

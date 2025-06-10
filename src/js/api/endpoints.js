@@ -14,8 +14,11 @@ export const endpoints = {
             add_section:'crm/tasks/section-new/',
             delete_task:'crm/tasks/delete-task/{id}/',
             delete_section:'crm/tasks/delete-section/{id}/',
+            update_section:'crm/tasks/update-section/{id}/',
             add_subtask:'crm/tasks/new-subtask/',
             toggle_task:'crm/tasks/toggle-task/{id}/',
+            update_task:'crm/tasks/update-task/{id}/',
+
         },
         projects:
         {

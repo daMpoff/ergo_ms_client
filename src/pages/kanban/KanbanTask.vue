@@ -1,5 +1,5 @@
 <script setup>
-import { MessageSquareText, Paperclip, Settings2, Check } from 'lucide-vue-next'
+import { MessageSquareText, Paperclip, Settings2, Check, Calendar } from 'lucide-vue-next' // Добавлен Calendar
 import { computed } from 'vue'
 import { useKanbanStore } from '@/js/api/services/tasksService'
 const kanbanStore = useKanbanStore()
@@ -44,6 +44,24 @@ const toggleTaskStatus = async () => {
     console.error('Ошибка при изменении статуса задачи:', error);
   }
 }
+
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const options = { day: '2-digit', month: '2-digit', year: 'numeric' }
+  return new Date(dateString).toLocaleDateString('ru-RU', options)
+}
+
+// Добавляем вычисляемое свойство для цвета дедлайна
+const deadlineColor = computed(() => {
+  if (!props.task.deadline) return 'text-muted'
+  const now = new Date()
+  const deadline = new Date(props.task.deadline)
+  const diffDays = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24))
+  
+  if (diffDays < 0) return 'text-danger' // Просрочено
+  if (diffDays <= 3) return 'text-warning' // Скоро срок
+  return 'text-success' // Еще есть время
+})
 </script>
 
 <template>
@@ -54,7 +72,7 @@ const toggleTaskStatus = async () => {
   >
     <div class="d-flex align-items-center justify-content-between mb-2">
       <div class="d-flex align-items-center gap-2">
-        <!-- Чекбокс для изменения статуса задачи (теперь слева) -->
+        <!-- Чекбокс -->
         <div 
           class="status-checkbox"
           @click.stop="toggleTaskStatus"
@@ -83,17 +101,30 @@ const toggleTaskStatus = async () => {
       {{ props.task.title }}
     </h6>
 
+    <!-- Блок с дедлайном - улучшенное отображение -->
+    <div class="d-flex align-items-center gap-1 mb-2" v-if="task.deadline">
+      <Calendar :size="14" class="text-muted" />
+      <span :class="deadlineColor">
+        {{ formatDate(task.deadline) }}
+      </span>
+    </div>
+    <div v-else class="d-flex align-items-center gap-1 mb-2">
+      <Calendar :size="14" class="text-muted" />
+      <span class="text-muted">Нет срока</span>
+    </div>
+
     <div v-if="props.task.image" class="mb-2">
       <img :src="props.task.image" :alt="props.task.title" class="img-fluid rounded" />
     </div>
+
     <div v-if="props.task.attachments || props.task.comments" class="d-flex gap-2">
       <div class="d-inline-flex align-items-center gap-1">
         <Paperclip :size="16" />
-        <span>{{ props.task.attachments }}</span>
+        <span>{{ props.task.attachments || 0 }}</span>
       </div>
       <div class="d-inline-flex align-items-center gap-1">
         <MessageSquareText :size="16" />
-        <span>{{ props.task.comments }}</span>
+        <span>{{ props.task.comments || 0 }}</span>
       </div>
     </div>
   </div>
@@ -135,16 +166,12 @@ const toggleTaskStatus = async () => {
 }
 
 .status-checkbox.checked {
-  background-color: #cb2c20; /* Красный цвет вместо синего */
+  background-color: #cb2c20;
   border-color: #cb2c20;
 }
 
 .check-icon {
   color: white;
-  stroke-width: 3px; /* Делаем галочку более жирной */
-}
-
-.text-muted {
-  opacity: 0.7;
+  stroke-width: 3px;
 }
 </style>

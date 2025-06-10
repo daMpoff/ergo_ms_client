@@ -1,15 +1,69 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useKanbanStore } from '@/js/api/services/tasksService'
-import { SquarePlus } from 'lucide-vue-next'
 import Cookies from 'js-cookie'
 import { useToast } from 'vue-toastification'
+
+
 const kanbanStore = useKanbanStore()
 const newSubtaskText = ref('')
 const toast = useToast()
 const currentTask = computed(() => kanbanStore.editableTask)
-const isLoading = ref(false) // Добавляем состояние загрузки
+const isLoading = ref(false)
 
+// Добавляем функцию updateTask
+const updateTask = async (updatedData) => {
+    // Преобразуем данные в формат, ожидаемый бэкендом
+    const backendData = {
+      title: updatedData.title,
+      text: updatedData.title, // Если title и text - одно и то же
+      description: updatedData.description,
+      isdone: updatedData.is_completed,
+      deadline: updatedData.deadline,
+      priority: updatedData.priority,
+      assignee_id: updatedData.assignee_id
+    }
+    
+    // Удаляем undefined/null значения
+    Object.keys(backendData).forEach(key => {
+      if (backendData[key] === undefined || backendData[key] === null) {
+        delete backendData[key]
+      }
+    })
+    
+    const response = await kanbanStore.updatesTask(currentTask.value.id, backendData)
+    
+    return { 
+      success: true,
+      updatedTask: response.data.task
+    }
+
+}
+
+const saveTask = async () => {
+  if (!currentTask.value) return
+  
+  isLoading.value = true
+    const updates = {
+      title: taskTitle.value,
+      description: taskDescription.value,
+      is_completed: isChecked.value,
+      priority: parseInt(selectedPriority.value),
+      assignee_id: parseInt(selectedWorker.value),
+      deadline: deadline.value
+    }
+    
+    const { success } = await updateTask(updates)
+    
+    if (success) {
+      closeModal()
+    }
+ 
+    isLoading.value = false
+  }
+
+
+// Остальной код остается без изменений
 const isChecked = computed({
   get: () => currentTask.value?.is_completed || false,
   set: (value) => {
@@ -62,7 +116,12 @@ const selectedWorker = computed({
 })
 
 const deadline = computed({
-  get: () => currentTask.value?.deadline || '',
+  get: () => {
+    if (!currentTask.value?.deadline) return ''
+    // Преобразуем дату в формат, понятный input[type="date"]
+    const date = new Date(currentTask.value.deadline)
+    return date.toISOString().split('T')[0]
+  },
   set: (value) => {
     if (currentTask.value) {
       currentTask.value.deadline = value
@@ -106,13 +165,6 @@ const deleteSubtask = async (subtaskId) => {
   }
 };
 
-const saveTask = () => {
-  if (currentTask.value) {
-    kanbanStore.updateTask(currentTask.value)
-    closeModal()
-  }
-}
-
 const deleteTask = async () => {
   if (!currentTask.value?.id) return;
   
@@ -130,7 +182,6 @@ const deleteTask = async () => {
   } catch (error) {
     toast.error(error.message || 'Произошла ошибка при удалении');
   }
-  
 };
 
 const addSubtask = async () => {
@@ -214,10 +265,15 @@ const closeModal = () => {
           </select>
         </div>
 
-        <div class="form-group half">
-          <label class="form-label">Срок выполнения</label>
-          <input type="date" v-model="deadline" class="input-field date-field" />
-        </div>
+       <div class="form-group half">
+  <label class="form-label">Срок выполнения</label>
+  <input 
+    type="date" 
+    v-model="deadline" 
+    class="input-field date-field"
+    :min="new Date().toISOString().split('T')[0]" 
+  />
+       </div>
       </div>
 
       <div class="form-group">
@@ -255,8 +311,8 @@ const closeModal = () => {
         <button class="btn btn-secondary" @click="deleteTask" :disabled="!currentTask?.id">
           Удалить
         </button>
-        <button class="btn btn-primary" @click="saveTask">
-          Сохранить
+        <button class="btn btn-primary" @click="saveTask" :disabled="isLoading">
+          {{ isLoading ? 'Сохранение...' : 'Сохранить' }}
         </button>
       </div>
     </div>

@@ -53,7 +53,6 @@ const loadProjects = async () => {
   }
 };
 
-
 const handleProjectDeleted = (projectId) => {
   userProjects.value = userProjects.value.filter(project => project.id !== projectId)
   loadProjects()
@@ -67,8 +66,8 @@ const handleProjectLeaved = (userId) => {
 onMounted(loadProjects)
 watch(() => route.name, loadProjects)
 
-const openKanbanBoard = (projectId) => {
-  const url = `/kanban?project_id=${projectId}`;
+const openKanbanBoard = (projectId, projectName) => {
+  const url = `/kanban?project_id=${projectId}&project_name=${encodeURIComponent(projectName)}`;
   window.open(url, '_blank');
 }
 </script>
@@ -89,13 +88,14 @@ const openKanbanBoard = (projectId) => {
         :date="project.date"
         :hours="project.hours"
         :tasks="project.tasks"
+        :project_name="project.name"
         :deadline="project.deadline"
         :user_id="project.userId"
         :is-invited="route.name === 'InvitedProjects'"
         :is-all="route.name === 'Projects'"
         @projectDeleted="handleProjectDeleted"
         @projectLeaved="handleProjectLeaved"
-        @viewTasks="openKanbanBoard" 
+        @viewTasks="(projectId) => openKanbanBoard(projectId, project.name)" 
       />
     </div>
   </div>
