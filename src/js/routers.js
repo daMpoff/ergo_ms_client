@@ -88,9 +88,9 @@ const userRoutes = [
         },
       },
       {
-        path: 'analytics',
-        name: 'Analytics',
-        component: () => import('@/pages/dashboard/AnalyticsView.vue'),
+        path: 'analitics',
+        name: 'Analitics',
+        component: () => import('@/pages/dashboard/AnaliticsView.vue'),
         meta: {
           requiresAuth: true,
         },
