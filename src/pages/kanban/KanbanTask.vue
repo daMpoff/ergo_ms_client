@@ -135,12 +135,13 @@ const toggleTaskStatus = async () => {
 }
 
 .status-checkbox.checked {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  background-color: #cb2c20; /* Красный цвет вместо синего */
+  border-color: #cb2c20;
 }
 
 .check-icon {
   color: white;
+  stroke-width: 3px; /* Делаем галочку более жирной */
 }
 
 .text-muted {

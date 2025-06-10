@@ -1,8 +1,8 @@
 <script setup>
-import { EllipsisVertical, GripVertical, Plus, Bell, Calendar, Flag } from 'lucide-vue-next'
+import { EllipsisVertical, GripVertical, Plus, Bell, Calendar, Flag, Filter } from 'lucide-vue-next'
 import { DragHandle, SlickItem, SlickList } from 'vue-slicksort'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import Cookies from 'js-cookie'
 import { useToast } from 'vue-toastification'
 import DropDown from '@/components/DropDown.vue'
@@ -20,6 +20,7 @@ const props = defineProps({
 
 const route = useRoute()
 const projectId = ref(null)
+const selectedPriorityFilter = ref('all')
 
 const kanbanStore = useKanbanStore()
 const toast = useToast()
@@ -37,12 +38,25 @@ const newTaskData = ref({
 const showDatePicker = ref(false)
 const showReminderPicker = ref(false)
 const reminderDate = ref(null)
+
 const priorityOptions = [
+  { value: 'all', label: 'Все приоритеты' },
   { value: 1, label: 'критическая', color: 'danger' },
   { value: 2, label: 'важная', color: 'warning' },
   { value: 3, label: 'срочная', color: 'info' },
   { value: 4, label: 'рутинная', color: 'secondary' }
 ]
+
+const filteredColumns = computed(() => {
+  if (selectedPriorityFilter.value === 'all') {
+    return kanbanStore.columns
+  }
+  
+  return kanbanStore.columns.map(column => ({
+    ...column,
+    cards: column.cards.filter(task => task.priority === Number(selectedPriorityFilter.value))
+  }))
+})
 
 watch(() => props.project_id, (newVal) => {
   if (newVal) {
@@ -172,215 +186,210 @@ const formatDate = (date) => {
 </script>
 
 <template>
-  <PerfectScrollbar class="kanban-container">
-    <SlickList axis="x" v-model:list="kanbanStore.columns" class="d-flex" useDragHandle>
-      <SlickItem
-        v-for="(column, i) in kanbanStore.columns"
-        :key="column.section_id"
-        :index="sectionId"
-        class="kanban-column mx-2 flex-shrink-0"
-        style="width: 18rem"
-      >
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <div class="d-inline-flex gap-1 text-truncate">
-            <DragHandle style="cursor: move"><GripVertical :size="18" /></DragHandle>
-            <h5
-              class="mb-0 text-truncate user-select-none"
-              contenteditable="true"
-              style="outline: none"
-            >
-              {{ column.title }}
-            </h5>
-            <h5 class="mb-0 user-select-none">({{ column.cards.length }})</h5>
-          </div>
-          <DropDown dropdownMenuClass="hover-section dropdown-menu-end bg-light-subtle">
-            <template #main>
-              <EllipsisVertical :size="19" />
-            </template>
-            <template #list>
-              <li class="dropdown-item">Изменить название</li>
-              <li class="dropdown-item" @click="deleteSection(column.id)">Удалить раздел</li>
-            </template>
-          </DropDown>
-        </div>
-
-        <SlickList
-          axis="y"
-          v-model:list="kanbanStore.columns[i].cards"
-          group="tasks"
-          helper-class="selected-card-task"
-          :distance="10"
-          @sort-start="isCopyingText = false"
-          @sort-end="isCopyingText = true"
-          @sort-cancel="isCopyingText = true"
+  <div class="kanban-wrapper">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Канбан-доска</h2>
+      <div class="d-flex align-items-center">
+        <Filter class="me-2" />
+        <select 
+          v-model="selectedPriorityFilter" 
+          class="form-select form-select-sm"
+          style="width: auto;"
         >
-    <SlickItem
-          v-for="(task, j) in kanbanStore.columns[i].cards"
-          :key="task.id"
-          :index="j"
-          class="my-2"
-      >
-      <div
-        class="kanban-card-task card"
-        :class="{ 'user-select-none': !isCopyingText }"
-        style="cursor: grab"
-      >
-      <KanbanTask 
-         :task="task" 
-         @task-updated="handleTaskUpdated"
-         />
-        </div>
-    </SlickItem>
-        </SlickList>
+          <option 
+            v-for="option in priorityOptions" 
+            :key="option.value" 
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+    </div>
 
-        <!-- блок добавления подзадач -->
-        <div v-if="isAddingTask === i" class="card p-3 mb-3">
-          <input
-            v-model="newTaskData.title"
-            type="text"
-            class="form-control mb-3"
-            placeholder="Название задачи"
-            autofocus
-          />
-          <textarea
-            v-model="newTaskData.description"
-            class="form-control mb-3"
-            placeholder="Описание"
-            rows="2"
-          ></textarea>
-          
-          <!-- Date and Priority Row -->
-          <div class="d-flex justify-content-between mb-3">
-            <div class="d-flex align-items-center gap-2">
-              <button 
-                class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                @click="showDatePicker = !showDatePicker"
+    <PerfectScrollbar class="kanban-container">
+      <SlickList axis="x" v-model:list="kanbanStore.columns" class="d-flex" useDragHandle>
+        <SlickItem
+          v-for="(column, i) in filteredColumns"
+          :key="column.section_id"
+          :index="sectionId"
+          class="kanban-column mx-2 flex-shrink-0"
+          style="width: 18rem"
+        >
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-inline-flex gap-1 text-truncate">
+              <DragHandle style="cursor: move"><GripVertical :size="18" /></DragHandle>
+              <h5
+                class="mb-0 text-truncate user-select-none"
+                contenteditable="true"
+                style="outline: none"
               >
-                <Calendar :size="16" />
-                <span>{{ newTaskData.dueDate ? formatDate(newTaskData.dueDate) : 'Дата' }}</span>
-              </button>
-              <input
-                v-if="showDatePicker"
-                v-model="newTaskData.dueDate"
-                type="date"
-                class="form-control form-control-sm"
-                style="width: 140px"
-                @change="showDatePicker = false"
-              />
+                {{ column.title }}
+              </h5>
+              <h5 class="mb-0 user-select-none">({{ column.cards.length }})</h5>
             </div>
-            
-            <div class="dropdown">
-              <button 
-                class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 dropdown-toggle"
-                type="button"
-                data-bs-toggle="dropdown"
-              >
-                <Flag :size="16" :color="priorityOptions.find(p => p.value === newTaskData.priority)?.color" />
-                <span>{{ priorityOptions.find(p => p.value === newTaskData.priority)?.label || 'Приоритет' }}</span>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li v-for="option in priorityOptions" :key="option.value">
-                  <a class="dropdown-item" href="#" @click.prevent="newTaskData.priority = option.value">
-                    <Flag :size="14" :color="option.color" class="me-2" />
-                    {{ option.label }}
-                  </a>
-                </li>
-              </ul>
-            </div>
+            <DropDown dropdownMenuClass="hover-section dropdown-menu-end bg-light-subtle">
+              <template #main>
+                <EllipsisVertical :size="19" />
+              </template>
+              <template #list>
+                <li class="dropdown-item">Изменить название</li>
+                <li class="dropdown-item" @click="deleteSection(column.id)">Удалить раздел</li>
+              </template>
+            </DropDown>
           </div>
-          
-          <!-- Reminders Section (Отключено, так как API пока не поддерживает) -->
-          <div v-if="false" class="mb-3">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <Bell :size="16" />
-              <h6 class="mb-0">Напоминания</h6>
-              <button 
-                class="btn btn-sm btn-outline-secondary ms-auto"
-                @click="showReminderPicker = !showReminderPicker"
+
+          <SlickList
+            axis="y"
+            v-model:list="kanbanStore.columns[i].cards"
+            group="tasks"
+            helper-class="selected-card-task"
+            :distance="10"
+            @sort-start="isCopyingText = false"
+            @sort-end="isCopyingText = true"
+            @sort-cancel="isCopyingText = true"
+          >
+            <SlickItem
+              v-for="(task, j) in column.cards"
+              :key="task.id"
+              :index="j"
+              class="my-2"
+            >
+              <div
+                class="kanban-card-task card"
+                :class="{ 'user-select-none': !isCopyingText }"
+                style="cursor: grab"
               >
-                Добавить
-              </button>
-            </div>
+                <KanbanTask 
+                  :task="task" 
+                  @task-updated="handleTaskUpdated"
+                />
+              </div>
+            </SlickItem>
+          </SlickList>
+
+          <!-- блок добавления подзадач -->
+          <div v-if="isAddingTask === i" class="card p-3 mb-3">
+            <input
+              v-model="newTaskData.title"
+              type="text"
+              class="form-control mb-3"
+              placeholder="Название задачи"
+              autofocus
+            />
+            <textarea
+              v-model="newTaskData.description"
+              class="form-control mb-3"
+              placeholder="Описание"
+              rows="2"
+            ></textarea>
             
-            <div v-if="showReminderPicker" class="d-flex align-items-center gap-2 mb-2">
-              <input
-                v-model="reminderDate"
-                type="datetime-local"
-                class="form-control form-control-sm"
-              />
-              <button class="btn btn-sm btn-primary" @click="addReminder">
-                OK
-              </button>
-            </div>
-            
-            <div v-if="newTaskData.reminders.length" class="reminders-list">
-              <div v-for="(reminder, index) in newTaskData.reminders" :key="index" class="d-flex align-items-center justify-content-between mb-1">
-                <small>{{ formatDate(reminder) }}</small>
+            <!-- Date and Priority Row -->
+            <div class="d-flex justify-content-between mb-3">
+              <div class="d-flex align-items-center gap-2 position-relative">
                 <button 
-                  class="btn btn-sm btn-link text-danger p-0"
-                  @click="removeReminder(index)"
+                  class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                  @click="showDatePicker = true; $nextTick(() => {$refs.datePicker.focus()})"
                 >
-                  ×
+                  <Calendar :size="16" />
+                  <span>{{ newTaskData.dueDate ? formatDate(newTaskData.dueDate) : 'Дата' }}</span>
+                </button>
+                <div v-if="showDatePicker" class="position-absolute" style="z-index: 1000; top: 100%; left: 0;">
+                  <input
+                    ref="datePicker"
+                    v-model="newTaskData.dueDate"
+                    type="date"
+                    class="form-control form-control-sm"
+                    style="width: 140px"
+                    @change="showDatePicker = false"
+                    @blur="showDatePicker = false"
+                    @click.stop
+                  />
+                </div>
+              </div>
+              
+              <div class="dropdown">
+                <button 
+                  class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                >
+                  <Flag :size="16" :color="priorityOptions.find(p => p.value === newTaskData.priority)?.color" />
+                  <span>{{ priorityOptions.find(p => p.value === newTaskData.priority)?.label || 'Приоритет' }}</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li v-for="option in priorityOptions.filter(o => o.value !== 'all')" :key="option.value">
+                    <a class="dropdown-item" href="#" @click.prevent="newTaskData.priority = option.value">
+                      <Flag :size="14" :color="option.color" class="me-2" />
+                      {{ option.label }}
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            
+            <!-- Bottom Section -->
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" @click="isAddingTask = -1">
+                  Отмена
+                </button>
+                <button class="btn btn-sm btn-primary" @click="submitNewTask(i)">
+                  Добавить
                 </button>
               </div>
             </div>
           </div>
-          
-          <!-- Bottom Section -->
-          <div class="d-flex justify-content-between align-items-center">
+
+          <div v-else class="add-task d-flex align-items-center gap-2 p-2" @click="startAddingTask(i)">
+            <Plus :size="16" />
+            <span class="text-nowrap">Добавить задачу</span>
+          </div>
+        </SlickItem>
+        <!-- Окончание блока с добавлением подзадач -->
+        <!-- Section Addition Block -->
+        <div v-if="!isAddingSection" class="add-column d-inline-flex justify-content-center gap-1 p-2" @click="startAddingSection">
+          <Plus :size="24" />
+          <h5 class="mb-0 text-nowrap">Добавить раздел</h5>
+        </div>
+
+        <div v-else class="kanban-column mx-2 flex-shrink-0" style="width: 18rem">
+          <div class="card p-3">
+            <input
+              v-model="newSectionName"
+              type="text"
+              class="form-control mb-2"
+              placeholder="Название раздела"
+              @keyup.enter="submitNewSection"
+              autofocus
+            />
             <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-secondary" @click="isAddingTask = -1">
-                Отмена
-              </button>
-              <button class="btn btn-sm btn-primary" @click="submitNewTask(i)">
+              <button class="btn btn-sm btn-primary" @click="submitNewSection">
                 Добавить
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" @click="isAddingSection = false">
+                Отмена
               </button>
             </div>
           </div>
         </div>
-        
-        <div v-else class="add-task d-flex align-items-center gap-2 p-2" @click="startAddingTask(i)">
-          <Plus :size="16" />
-          <span class="text-nowrap">Добавить задачу</span>
-        </div>
-      </SlickItem>
-     <!-- Окончание блока с добавлением подзадач -->
-      <!-- Section Addition Block -->
-      <div v-if="!isAddingSection" class="add-column d-inline-flex justify-content-center gap-1 p-2" @click="startAddingSection">
-    <Plus :size="24" />
-    <h5 class="mb-0 text-nowrap">Добавить раздел</h5>
-  </div>
+      </SlickList>
+    </PerfectScrollbar>
 
-     <div v-else class="kanban-column mx-2 flex-shrink-0" style="width: 18rem">
-    <div class="card p-3">
-      <input
-        v-model="newSectionName"
-        type="text"
-        class="form-control mb-2"
-        placeholder="Название раздела"
-        @keyup.enter="submitNewSection"
-        autofocus
-      />
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-primary" @click="submitNewSection">
-          Добавить
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" @click="isAddingSection = false">
-          Отмена
-        </button>
-      </div>
-    </div>
+    <KanbanEdit></KanbanEdit>
+    <KanbanTaskViewing v-if="kanbanStore.editableTask" :task="kanbanStore.editableTask" />
   </div>
-    </SlickList>
-  </PerfectScrollbar>
-
-  <KanbanEdit></KanbanEdit>
-  <KanbanTaskViewing v-if="kanbanStore.editableTask" :task="kanbanStore.editableTask" />
 </template>
 
 <style scoped lang="scss">
+.kanban-wrapper {
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
 .kanban-container {
-  height: 85dvh;
+  flex-grow: 1;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
 }
@@ -423,5 +432,13 @@ const formatDate = (date) => {
 
 .dropdown-toggle::after {
   margin-left: 0.25em;
+}
+
+.list-group-item {
+  &.active {
+    .flag-icon {
+      color: white;
+    }
+  }
 }
 </style>

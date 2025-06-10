@@ -10,8 +10,6 @@ const toast = useToast()
 const currentTask = computed(() => kanbanStore.editableTask)
 const isLoading = ref(false) // Добавляем состояние загрузки
 
-
-
 const isChecked = computed({
   get: () => currentTask.value?.is_completed || false,
   set: (value) => {
@@ -81,8 +79,6 @@ const subtasks = computed({
   }
 })
 
-
-
 const toggleSubtask = (subtaskId) => {
   subtasks.value = subtasks.value.map(subtask => 
     subtask.id === subtaskId 
@@ -101,7 +97,6 @@ const deleteSubtask = async (subtaskId) => {
     const { success } = await kanbanStore.deleteTask(subtaskId);
     
     if (success) {
-      // Удаляем подзадачу из локального списка только после успешного удаления на сервере
       subtasks.value = subtasks.value.filter(subtask => subtask.id !== subtaskId);
       toast.success('Подзадача успешно удалена');
     }
@@ -127,7 +122,6 @@ const deleteTask = async () => {
     
     const { success} = await kanbanStore.deleteTask(currentTask.value.id);
       if (success) {
-      // Удаляем задачу из локального списка только после успешного удаления на сервере
       toast.success('Задача успешно удалена');
     }
     if (success) {
@@ -153,7 +147,6 @@ const addSubtask = async () => {
   isLoading.value = true;
   
   try {
-    // Форматируем дату в YYYY-MM-DD
     const today = new Date();
     const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -165,8 +158,8 @@ const addSubtask = async () => {
       priority: currentTask.value.priority || 0,
       description: '',
       isdone: false,
-      deadline: formattedDate, // Используем отформатированную дату
-      dateofcreation: formattedDate // Используем отформатированную дату
+      deadline: formattedDate,
+      dateofcreation: formattedDate
     };
 
     const createdSubtask = await kanbanStore.createSubtask(subtaskData);
@@ -194,12 +187,13 @@ const closeModal = () => {
   kanbanStore.cleanSelectedTask()
 }
 </script>
+
 <template>
   <div v-if="currentTask" class="modal-overlay" @click.self="closeModal">
     <div class="task-modal">
       <button class="close-btn" @click="closeModal">×</button>
 
-      <h2 class="modal-title">{{ isChecked ? 'Редактировать задачу' : 'Новая задача' }}</h2>
+      <h2 class="modal-title">{{ 'Редактирование' }}</h2>
 
       <div class="form-group">
         <label class="form-label">Название задачи</label>
@@ -214,7 +208,7 @@ const closeModal = () => {
       <div class="form-row">
         <div class="form-group half">
           <label class="form-label">Исполнитель</label>
-          <select v-model="selectedWorker" class="select-field">
+          <select v-model="selectedWorker" class="select-field full-width-select">
             <option disabled value="">Выберите исполнителя</option>
             <option v-for="worker in workers" :key="worker.id" :value="worker.id">{{ worker.name }}</option>
           </select>
@@ -230,10 +224,10 @@ const closeModal = () => {
         <label class="form-label">Приоритет</label>
         <select v-model="selectedPriority" class="select-field">
           <option disabled value="">Выберите приоритет</option>
-          <option value="1">Критический</option>
-          <option value="2">Высокий</option>
-          <option value="3">Средний</option>
-          <option value="4">Низкий</option>
+          <option value="1">критическая</option>
+          <option value="2">важная</option>
+          <option value="3">срочная</option>
+          <option value="4">рутинная</option>
         </select>
       </div>
 
@@ -259,7 +253,7 @@ const closeModal = () => {
 
       <div class="actions">
         <button class="btn btn-secondary" @click="deleteTask" :disabled="!currentTask?.id">
-          Удалить задачу
+          Удалить
         </button>
         <button class="btn btn-primary" @click="saveTask">
           Сохранить
@@ -359,6 +353,15 @@ const closeModal = () => {
   transition: border-color 0.3s;
 }
 
+.full-width-select {
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  background-size: 1rem;
+}
+
 .input-field:focus,
 .select-field:focus {
   border-color: #cb2c20;
@@ -403,6 +406,7 @@ const closeModal = () => {
   font-size: 1.2rem;
   color: #cb2c20;
   cursor: pointer;
+  margin-left: auto;
 }
 
 .add-subtask {
@@ -421,6 +425,7 @@ const closeModal = () => {
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.3s;
+  flex-shrink: 0;
 }
 
 .btn-icon:hover {
@@ -435,12 +440,15 @@ const closeModal = () => {
 }
 
 .btn {
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
+  width: 120px;
+  text-align: center;
+  
 }
 
 .btn-primary {
