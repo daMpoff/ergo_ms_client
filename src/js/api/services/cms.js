@@ -152,17 +152,19 @@ export const CheckAccess = {
         }, true);
         return response;
     },
-    async AddGroupsPermissions(groupName, permissionsName) {
+    async AddGroupsPermissions(groupName, permissionsName, changeothergroups) {
         const response = await apiClient.post(endpoints.cms.addGroupsPermissions, {
             group_name: groupName,
             permissions_name: permissionsName,
+            change_other_groups: changeothergroups
         }, true);
         return response;
     },
-    async RemoveGroupsPermissions(groupName, permissionsName) {
+    async RemoveGroupsPermissions(groupName, permissionsName, changeothergroups) {
         const response = await apiClient.post(endpoints.cms.removeGroupsPermissions, {
              group_name: groupName,
-             permissions_name: permissionsName
+             permissions_name: permissionsName,
+             change_other_groups: changeothergroups
         }, true);
         return response;
     },
@@ -175,8 +177,6 @@ export const CheckAccess = {
         return response;
     },
     async PutPages(path, type) {
-        console.log(path)
-        console.log(type)
         const response = await apiClient.put(endpoints.cms.putpages, {
             path:path,
             limination_type: type
@@ -212,6 +212,11 @@ export const CheckAccess = {
 
     async GetPageComponents() {
         const response = await apiClient.get(endpoints.cms.getPageComponents, {}, true);
+        return response;
+    },
+
+    async GetClosedPagesForUser() {
+        const response = await apiClient.get(endpoints.cms.getClosedPagesForUser, {}, true);
         return response;
     }
 

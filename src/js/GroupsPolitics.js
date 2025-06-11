@@ -1,42 +1,58 @@
 import { CheckAccess } from './api/services/cms';
 import router from './routers';
-
-// Create a composable function for checking access
+import Cookies from 'js-cookie';
 export const checkAccessToPage = async (path) => {
-    const response = await CheckAccess.CheckAccesToPage(path);
-    const accessed = response.data.access;
-    if(!accessed) 
-        {
-            console.log(accessed);
+    if(Cookies.get('token')!= null){
+        if(path.includes('AdminPanel')){
+        let b = await CheckAccessToAdminPanel()
+        if(!b.access_to_panel){
             router.push('/:pathMatch(.*)*');
         }
+        else if( path == '/AdminPanel/CategoriesPanel'& !b.access_to_category){
+            router.push('/:pathMatch(.*)*');
+        }
+        }
+        else{
+            const response = await CheckAccess.CheckAccesToPage(path);
+            if(response.status!= 401){
+                const accessed = response.data.access;
+                if(!accessed) 
+                    {
+                        router.push('/:pathMatch(.*)*');
+                    }
+            }
+        }
+    }
 }
 
 export const CheckAccessToComponents = async (path) => {
-    const response = await CheckAccess.CheckAccesToComponent(path);
-    const accesses = response.data;
-    for (let acc of accesses){
-        console.log(acc)
-        if(!acc.write){
-            const element = document.getElementById(acc.component)
-            element.style.pointerEvents = 'none';
-            element.style.userSelect = 'none';
-            element.style.webkitUserSelect ='none'
-            element.style.MozUserSelect ='none'
-            element.style.msUserSelect ='none'
+    if(Cookies.get('token')!= null){
+        const response = await CheckAccess.CheckAccesToComponent(path);
+        if(response.status != 401){
+            const accesses = response.data;
+            for (let acc of accesses){
+                if(!acc.write){
+                    const element = document.getElementById(acc.component)
+                    element.style.pointerEvents = 'none';
+                    element.style.userSelect = 'none';
+                    element.style.webkitUserSelect ='none'
+                    element.style.MozUserSelect ='none'
+                    element.style.msUserSelect ='none'
+                }
+                if(!acc.read){
+                    const element = document.getElementById(acc.component)
+                    element.remove();
+                }
+            }
+            
+            return response;
         }
-        if(!acc.read){
-            const element = document.getElementById(acc.component)
-            element.remove();
-         }
     }
-    
-    return response;
 }
 
 export const CheckAccessToAdminPanel = async () => {
     const response = await CheckAccess.CheckAccesToAdminPanel();
-    return response.data.access;
+    return response.data;
 }
 
 export const AddGroupCategory = async (name, createGroup) => {
@@ -138,13 +154,13 @@ export const GetPermissionsByCategory = async (category) => {
     return response.data.permissions;
 }
 
-export const AddGroupsPermissions = async (groupName, permissionsName) => {
-    const response = await CheckAccess.AddGroupsPermissions(groupName, permissionsName);
+export const AddGroupsPermissions = async (groupName, permissionsName, changeothergroups) => {
+    const response = await CheckAccess.AddGroupsPermissions(groupName, permissionsName, changeothergroups);
     return response.data;
 }
 
-export const RemoveGroupsPermissions = async (groupName, permissionsName) => {
-    const response = await CheckAccess.RemoveGroupsPermissions(groupName, permissionsName);
+export const RemoveGroupsPermissions = async (groupName, permissionsName, changeothergroups) => {
+    const response = await CheckAccess.RemoveGroupsPermissions(groupName, permissionsName, changeothergroups);
     return response.data;
 }
 
@@ -179,5 +195,10 @@ export const GetPageComponents = async () => {
 
 export const GetClosedPages = async () => {
     const response = await CheckAccess.GetClosedPages();
+    return response.data.pages;
+}
+
+export const GetClosedPagesForUser = async () => {
+    const response = await CheckAccess.GetClosedPagesForUser();
     return response.data.pages;
 }

@@ -42,6 +42,7 @@ export const endpoints = {
         getpages:'cms/get-cms-pages',
         putpages:'cms/put-cms-pages',
         getClosedPages: 'cms/get-closed-pages/',
+        getClosedPagesForUser: 'cms/get-closed-pages-for-user/',
         
         addPageComponent: 'cms/add-page-component/',
         removePageComponent: 'cms/remove-page-component/',

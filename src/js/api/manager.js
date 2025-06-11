@@ -29,7 +29,7 @@ class ApiClient {
             return this.handleError(error);
         }
     }
-  }
+  
 
     // Метод для POST-запросов
     async post(endpoint, data = {}, needToken = true) {
@@ -54,7 +54,7 @@ class ApiClient {
             return this.handleError(error);
         }
     }
-  }
+  
 
     // Метод для PUT-запросов
     async put(endpoint, data = {}, needToken = true) {
@@ -79,7 +79,7 @@ class ApiClient {
             return this.handleError(error);
         }
     }
-  }
+  
 
     async patch(endpoint, data = {}, needToken = true) {
         try {
@@ -111,7 +111,7 @@ class ApiClient {
             return this.handleError(error);
         }
     }
-  }
+  
     async upload(endpoint, formData, needToken = true) {
         try {
             const config = {
@@ -153,7 +153,7 @@ class ApiClient {
         }
         return config;
     }
-  }
+  
 
   logout() {
     Cookies.remove('token')
@@ -205,7 +205,7 @@ class ApiClient {
         };
     }
   }
-}
+
 
 // Создать и экспортировать синглтон-объект
 export const apiClient = new ApiClient(); 

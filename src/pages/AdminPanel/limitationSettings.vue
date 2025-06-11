@@ -8,7 +8,6 @@
             </div>
             <div class="card-body">
               <div class="row">
-                <!-- Левая таблица -->
                 <div class="col-md-6 mb-4">
                   <h5>Список страниц</h5>
                   <table class="table table-bordered table-striped">
@@ -37,7 +36,6 @@
                   </table>
                 </div>
   
-                <!-- Правая таблица -->
                 <div class="col-md-6">
                   <h5>Компоненты</h5>
                   <form @submit.prevent="addComponent" class="mb-3">
@@ -117,6 +115,22 @@
         </div>
       </div>
     </div>
+    <div v-if="showErrorModal" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger">Ошибка</h5>
+          <button type="button" class="btn-close" @click="closeModal()"></button>
+        </div>
+        <div class="modal-body">
+          {{ errorMessage }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeModal()">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
   </template>
   
   <script setup>
@@ -124,10 +138,10 @@
   import { AddPageComponent, GetPageComponents, GetPages, PutPages, RemovePageComponent, UpdatePageComponent } from '@/js/GroupsPolitics';
 
   const editingIndex = ref(null);
-  const editingData = ref(''); // Храним временные данные
-
+  const editingData = ref(''); 
+  const showErrorModal = ref(false)
+  const errorMessage = ref('')
   const prevTypes = reactive({});
-  // Список страниц
   const pages = ref([]);
   const components = ref([]);
 onMounted(async()=>{
@@ -139,7 +153,9 @@ onMounted(async()=>{
         prevTypes[page.path] = page.type;
     }
 })
-
+function closeModal() {
+          showErrorModal.value = false;
+        }
   // Фильтруем страницы: только "Закрытые" и "С ограничениями"
   const ClosedOrWithLiminationsPages = computed(() => {
     return pages.value.filter(p => p.type !== 'withoutliminations');
@@ -165,7 +181,6 @@ onMounted(async()=>{
         alert('Такой компонент уже существует на этой странице');
         return;
       }
-      console.log(newComponent.value.page_path)
       await AddPageComponent(newComponent.value.page_path, newComponent.value.id)
       components.value.push({ ...newComponent.value });
       newComponent.value.id = '';
@@ -203,12 +218,14 @@ onMounted(async()=>{
   
   // Удаление компонента
   async function deleteComponent(index, path, compid) {
-    if (confirm('Вы уверены, что хотите удалить этот компонент?')) {
-      components.value.splice(index, 1);
-      console.log(path)
-      console.log(compid  )
-      await RemovePageComponent(path, compid)
-    }
+      const Response = await RemovePageComponent(path, compid)
+      if(Response.message== 'Компонент успешно удален'){
+        components.value.splice(index, 1);
+      }
+      else{
+        errorMessage.value = Response.message
+        showErrorModal.value = true
+      }
   }
   
   async function onPageTypeChange(page) {
