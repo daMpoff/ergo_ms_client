@@ -37,7 +37,6 @@ const updateTask = async (updatedData) => {
       success: true,
       updatedTask: response.data.task
     }
-
 }
 
 const saveTask = async () => {
@@ -61,7 +60,6 @@ const saveTask = async () => {
  
     isLoading.value = false
   }
-
 
 // Остальной код остается без изменений
 const isChecked = computed({
@@ -138,12 +136,23 @@ const subtasks = computed({
   }
 })
 
-const toggleSubtask = (subtaskId) => {
-  subtasks.value = subtasks.value.map(subtask => 
-    subtask.id === subtaskId 
-      ? { ...subtask, is_completed: !subtask.is_completed } 
-      : subtask
-  )
+// Измененная функция toggleSubtask - теперь использует метод toggleTask
+const toggleSubtask = async (subtaskId) => {
+  try {
+    const { success } = await kanbanStore.toggleTask(subtaskId)
+    
+    if (success) {
+      // Обновляем локальное состояние только после успешного ответа от сервера
+      subtasks.value = subtasks.value.map(subtask => 
+        subtask.id === subtaskId 
+          ? { ...subtask, is_completed: !subtask.is_completed } 
+          : subtask
+      )
+    }
+  } catch (error) {
+    console.error('Ошибка при изменении статуса подзадачи:', error)
+    toast.error('Не удалось изменить статус подзадачи')
+  }
 }
 
 const deleteSubtask = async (subtaskId) => {
@@ -291,7 +300,11 @@ const closeModal = () => {
         <label class="form-label">Подзадачи</label>
         <div class="subtasks-list">
           <div v-for="subtask in subtasks" :key="subtask.id" class="subtask-item">
-            <input type="checkbox" v-model="subtask.is_completed" @change="toggleSubtask(subtask.id)" />
+            <input 
+              type="checkbox" 
+              :checked="subtask.is_completed" 
+              @change="toggleSubtask(subtask.id)" 
+            />
             <span :class="{ completed: subtask.is_completed }">{{ subtask.title }}</span>
             <button class="delete-subtask" @click="deleteSubtask(subtask.id)">✕</button>
           </div>
@@ -320,6 +333,7 @@ const closeModal = () => {
 </template>
 
 <style scoped>
+/* Стили остаются без изменений */
 .modal-overlay {
   position: fixed;
   top: 0;
