@@ -111,13 +111,18 @@ const props = defineProps({
     default: () => [],
   },
 })
+
 const treeKey = ref(0)
 function forceTreeRerender() {
   treeKey.value++
 }
 
 function removeNode(uid) {
-  // Функция рекурсивно фильтрует дерево
+  // Проверяем, не последний ли элемент на корневом уровне
+  if (internalTree.value.length === 1 && internalTree.value[0].uid === uid) {
+    alert('Нельзя удалить последний компонент! В дереве должен быть хотя бы один элемент.')
+    return
+  }
   function deepRemove(arr) {
     return arr
       .filter((node) => node.uid !== uid)
@@ -126,7 +131,8 @@ function removeNode(uid) {
         children: node.children ? deepRemove(node.children) : [],
       }))
   }
-  emit('update:modelValue', deepRemove(internalTree.value))
+  const newTree = deepRemove(internalTree.value)
+  emit('update:modelValue', Array.isArray(newTree) ? newTree : [])
   forceTreeRerender()
 }
 
