@@ -19,7 +19,8 @@ import {
   KeySquare,
   BookOpen,
   NotepadTextDashed,
-  Video
+  Video,
+  Files
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -255,3 +256,15 @@ export const ExpertSystemSection = {
     { path: 'StudentsList', name: 'Студенты' }
   ],
 }
+
+export const FilesMenuSection = {
+  id: 21,
+  icon: Files,
+  routeName: 'FileManager',
+  path: '/files',
+  title: 'Файлы',
+  list: [
+    { path: 'FileManager', name: 'Обзор файлов' },
+    { path: 'UploadFile', name: 'Загрузка файлов' }
+  ],
+};

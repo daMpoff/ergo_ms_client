@@ -92,6 +92,15 @@ export const endpoints = {
         Upload: 'bi_analysis/bi_datasets/upload/',
         UploadedFiles: 'bi_analysis/bi_datasets/user-files/',
     },
+    file: 'cms/file/',
+    settings: {
+        generalSettings: 'cms/general-settings/',
+        mediaSettings: 'cms/media-settings/',
+        permalinkSettings: 'cms/permalink-settings/',
+        emailSettings: 'cms/email-settings/',
+        securitySettings: 'cms/security-settings/',
+        seoSettings: 'cms/seo-settings/',
+    },
     shortcodes: {
         templates: 'cms_shortcodes/templates/',
         pages: 'cms_shortcodes/pages/',

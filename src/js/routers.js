@@ -20,7 +20,6 @@ const mainRoutes = [
     },
   },
 ]
-
 // Панель управления
 const dashboardRoutes = [
   {
@@ -341,6 +340,30 @@ const componentsRoutes = [
         component: () => import('@/pages/components/TypographyComponents.vue'),
         meta: { title: 'Типография', requiresAuth: true },
       },
+    ],
+  },
+]
+// Управление маршрутами
+const controlRoutes = [
+  {
+    path: '/files',
+    name: 'Files',
+    component: () => import('@/pages/controlFiles/ParentLayout.vue'),
+    redirect: { name: 'FileManager' },
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'upload-file',
+        name: 'UploadFile',
+        component: () => import('@/pages/controlFiles/UploadFile.vue'),
+        meta: { title: 'Загрузка файлов', requiresAuth: true },
+      },
+      {
+        path: 'filemanager',
+        name: 'FileManager',
+        component: () => import('@/pages/controlFiles/FileManager.vue'),
+        meta: { requiresAuth: true, title: 'Файлы' }
+      }
     ],
   },
 ]
@@ -857,6 +880,7 @@ const routes = [
   ...shortcodeRoutes,
   ...expertSystemRoutes,
   ...learningAnalyticsRoutes,
+  ...controlRoutes,
 ]
 
 routes.forEach((route) => {
