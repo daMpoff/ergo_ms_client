@@ -19,6 +19,7 @@
       <!-- Drag & Drop дерево -->
       <Draggable
         v-model="internalTree"
+        :key="treeKey"
         :external-data-handler="externalDataHandler"
         :on-external-drag-over="() => true"
         :eachDroppable="eachDroppable"
@@ -42,13 +43,22 @@
                 ><br />
                 <small class="text-muted">{{ node.component_type }}</small>
               </div>
-              <button
-                class="btn btn-sm btn-outline-secondary"
-                @click="$emit('open-settings', node)"
-                title="Настроить компонент"
-              >
-                ⚙️
-              </button>
+              <div class="btn-group btn-group-sm">
+                <button
+                  class="btn btn-outline-secondary"
+                  @click="$emit('open-settings', node)"
+                  title="Настроить компонент"
+                >
+                  ⚙️
+                </button>
+                <button
+                  class="btn btn-outline-danger"
+                  @click="removeNode(node.uid)"
+                  title="Удалить компонент"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           </div>
         </template>
@@ -101,6 +111,25 @@ const props = defineProps({
     default: () => [],
   },
 })
+const treeKey = ref(0)
+function forceTreeRerender() {
+  treeKey.value++
+}
+
+function removeNode(uid) {
+  // Функция рекурсивно фильтрует дерево
+  function deepRemove(arr) {
+    return arr
+      .filter((node) => node.uid !== uid)
+      .map((node) => ({
+        ...node,
+        children: node.children ? deepRemove(node.children) : [],
+      }))
+  }
+  emit('update:modelValue', deepRemove(internalTree.value))
+  forceTreeRerender()
+}
+
 const emit = defineEmits(['update:modelValue', 'open-settings'])
 
 // Состояние для отображения debug-блока
@@ -210,6 +239,7 @@ async function loadFromDb() {
     const resp = await shortcodesService.getInstancesTree({ page: 1 })
     let data = resp.data || resp
     emit('update:modelValue', data)
+    forceTreeRerender()
   } catch (e) {
     alert('Ошибка загрузки: ' + (e?.message || e))
   }
