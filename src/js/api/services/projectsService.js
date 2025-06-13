@@ -233,3 +233,23 @@ export const leaveProject = async (userId,projectId) => {
     };
   }
 };
+
+export const fetchProjectUsers = async (projectId) => {
+  try {
+    const response = await apiClient.get(
+      endpoints.projects.usersproject.replace('{id}', projectId)
+    );
+
+    // Если структура ответа отличается, нужно адаптировать mapping
+    return response.data.users.map(user => ({
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      isNew: user.is_new,
+    }));
+    
+  } catch (error) {
+    console.error('Ошибка при загрузке участников проекта:', error);
+    return []; // Возвращаем пустой массив в случае ошибки
+  }
+};

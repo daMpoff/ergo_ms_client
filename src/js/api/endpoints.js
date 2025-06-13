@@ -29,6 +29,7 @@ export const endpoints = {
             delete_project:'crm/projects/delete-project/{id}/',
             leave_project:'crm/projects/leave-project/{id}/{project_id}',
             counttasks:'crm/projects/tasks-count/',
+            usersproject:'crm/projects/users-project/{id}/',
         }
     },
     expsys: {
