@@ -3,10 +3,6 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import MenuList from '@/components/menu/MenuList.vue'
 import TheHeader from '@/components/header/TheHeader.vue'
 
-import DatasetListPage from '@/pages/bi/DatasetListPage.vue'
-import ConnectionListPage from '@/pages/bi/ConnectionListPage.vue'
-import ChartListPage from '@/pages/bi/ChartListPage.vue'
-
 const leftPadding = ref('280px')
 const isMenuVisible = ref(window.innerWidth >= 1200)
 const isMenuToggledManually = ref(false)
@@ -54,6 +50,7 @@ function closeSidebar() {
 onMounted(() => {
   updateMenuVisibility()
   window.addEventListener('resize', updateMenuVisibility)
+  
 })
 
 onBeforeUnmount(() => {
@@ -101,7 +98,7 @@ function openSidebarFromMenu(pageName) {
       </h5>
       <button type="button" class="btn-close btn-close-white" @click="closeSidebar" aria-label="Закрыть" />
     </div>
-    <div class="offcanvas-body p-0">
+    <!--div class="offcanvas-body p-0">
       <component
         :is="{
           datasets: DatasetListPage,
@@ -109,7 +106,7 @@ function openSidebarFromMenu(pageName) {
           charts: ChartListPage
         }[currentSidebarPage] || null"
       />
-    </div>
+    </div-->
   </div>
 </template>
 

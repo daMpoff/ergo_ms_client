@@ -2,7 +2,7 @@
     <div class="container mt-5">
       <h2 class="mb-4">Создание нового теста</h2>
   
-      <div v-if="errors.length" class="alert alert-danger">
+      <div v-if="errors.length & submitted" class="alert alert-danger">
         <strong>Исправьте ошибки:</strong>
         <ul>
           <li v-for="(error, i) in errors" :key="i">{{ error }}</li>
@@ -87,7 +87,7 @@ import router from '@/js/routers'
   })
   const errors = ref([])
   const skills = ref([])
-
+const submitted = ref(false)
   
   // Методы
   function addQuestion() {
@@ -145,9 +145,14 @@ import router from '@/js/routers'
   }
   
  async  function saveTest() {
-    if (!validate()) return
+    if (!validate()) {
+      submitted.value = true
+      return
+    }
+    submitted.value = true
     await apiClient.post(endpoints.expert_system.createTest, test.value)
     router.push({name:'AllTests'})
+    submitted.value = false
   }
 
   onMounted(async()=>{

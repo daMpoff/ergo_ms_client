@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
 import { checkToken } from '@/js/api/services/auth-index'
 
 const mainRoutes = [
@@ -19,6 +18,14 @@ const mainRoutes = [
       requiresAuth: true,
     },
   },
+  {
+    path:'/logout',
+    name:'logout',
+    component:()=> import('@/components/header/Logout.vue'),
+    meta:{
+      title:'-',
+    }
+  }
 ]
 // Панель управления
 const dashboardRoutes = [
@@ -510,7 +517,7 @@ const adminpanelRoutes = [
     path: '/AdminPanel',
     name: 'AdminPanel',
     component: () => import('@/pages/AdminPanel/ParentLayout.vue'),
-    redirect: { name: 'CategoriesPanel' },
+    redirect: { name: 'GroupsPanel' },
     meta: { title: 'Админ-панель', requiresAuth: true },
     children: [
       {
@@ -536,6 +543,12 @@ const adminpanelRoutes = [
         name: 'UsersPanel',
         component: () => import('@/pages/AdminPanel/Users.vue'),
         meta: { title: 'Панель пользователей', requiresAuth: true },
+      },
+      {
+        path: 'LiminationsPanel',
+        name: 'LiminationPanel',
+        component: () => import('@/pages/AdminPanel/limitationSettings.vue'),
+        meta: { title: 'Панель Ограничений', requiresAuth: true },
       },
     ],
   },
@@ -810,6 +823,15 @@ const expertSystemRoutes = [
         })
       },
       {
+        path:'test-result/:id',
+        name:'TestResult',
+        component:()=> import('@/pages/expert-system/Tests/TestResult.vue'),
+        meta:{title:'Результат теста', requiresAuth:true},
+        props:(route)=>({
+          id:Number(route.params.id)
+        })
+      },
+      {
         path: 'vacancies',
         name: 'Vacancies',
         component: () => import('@/pages/expert-system/StudentVacancies.vue'),
@@ -939,5 +961,10 @@ async function runCheckToken() {
   const isChecked = await checkToken()
   return isChecked
 }
-
+import { checkAccessToPage, CheckAccessToComponents } from './GroupsPolitics'
 export default router
+router.beforeEach((to, from, next) => {
+    checkAccessToPage(to.path)
+    next()
+    CheckAccessToComponents(to.path)
+})

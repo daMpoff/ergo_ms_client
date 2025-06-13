@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex justify-content-center align-items-center" style="height: 80vh">
+  <div class="d-flex justify-content-center align-items-center" style="height: 70vh; margin-top: 65px">
     <div class="card" style="width: 500px">
       <div class="auth__title mb-4 fs-3 fw-bold text-center no-select">Укажите навыки, которыми вы владеете</div>
       <div class="scroll-container">

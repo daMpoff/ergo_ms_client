@@ -1,7 +1,7 @@
 <script setup>
-import { ref, watch } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
+import { onMounted, ref, watch } from 'vue'
 import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
 
 import {
@@ -33,21 +33,21 @@ import MenuGroup from '@/components/menu/MenuGroup.vue'
 import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { onMounted } from 'vue'
-import { CheckAccessToAdminPanel } from '@/js/GroupsPolitics.js'
+import { CheckAccessToAdminPanel, GetClosedPagesForUser } from '@/js/GroupsPolitics'
 const props = defineProps({
   isVisible: Boolean,
   currentPage: String
 })
-
 watch(
   () => props.isVisible,
   (newValue) => {
+    
     if (!newValue) {
       isHovering.value = true
     }
   },
 )
+
 
 const emit = defineEmits(['left-padding', 'open-datasets', 'open-sidebar', 'reset-page'])
 
@@ -80,7 +80,42 @@ watch(
   },
   { immediate: false },
 )
-
+onMounted(async()=>{
+  let closedpages = await GetClosedPagesForUser()  
+  for (let clpage of closedpages)
+  {
+      let name = router.getRoutes().find(p=> p.path == clpage.path).name
+      for(let menusection of menuSections.value){
+        if(menusection.routeName == name){
+          let index = menuSections.value.indexOf(menusection)
+          menuSections.value.splice(index,1)
+        }
+        else{
+        let b = menusection.list
+        if(b!= null){
+          for(let i=0; i<b.length; i++){
+          if(b[i].path == name){
+            menusection.list.splice(i,1)
+            break
+          }
+        }
+        }
+      }
+    }
+  }
+  const checkadm = await CheckAccessToAdminPanel()
+  if(!checkadm.access_to_panel)
+  {
+    let index = menuSections.value.indexOf(AdminPanelMenuSection);
+    if (index !== -1) {
+      menuSections.value.splice(index, 1);
+    }
+  }
+  else if (!checkadm.access_to_category){
+    AdminPanelMenuSection.list.splice(0,1)
+  }
+}
+)
 const toggleGroup = (id) => {
   openGroupId.value = openGroupId.value === id ? null : id
 }
@@ -108,7 +143,6 @@ function resetCurrentPage() {
 // Список секций меню
 const menuSections = ref([
   UserMenuSection,
-  AnalyzeMenuSection,
   SettingsMenuSection,
   BIMenuSection,
   EducationAnalyticMenuSection,
@@ -131,9 +165,9 @@ const menuSections = ref([
   CategoriesMenuSection,
 ])
 
-const separators = (index) => {
+const separators = (index) => {ф
   switch (index) {
-    case 2:
+    case 1:
       return 'Шаблоны'
   }
 }
@@ -187,7 +221,7 @@ onMounted(async () => {
           @navigate="handleNavigate"
           @reset-page="resetCurrentPage"
         />
-        <div v-if="[2].includes(index)" class="side-menu__divider side-divider py-3">
+        <div v-if="[1].includes(index)" class="side-menu__divider side-divider py-3">
           <div class="side-divider__icon"><Minus :size="20" /></div>
           <div class="side-divider__name text-smooth-animation" :class="{ hidden: !isHovering }">
             {{ separators(index) }}

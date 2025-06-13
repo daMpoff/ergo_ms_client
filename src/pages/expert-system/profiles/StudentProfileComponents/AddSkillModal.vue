@@ -20,7 +20,7 @@
 </template>
   
   <script setup>
-  import { ref, onMounted , defineExpose} from 'vue';
+  import { ref, onMounted } from 'vue';
   import { endpoints } from '@/js/api/endpoints';
   import { apiClient } from '@/js/api/manager';
   const skills = ref([]);
