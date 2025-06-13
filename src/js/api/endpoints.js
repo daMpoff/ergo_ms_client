@@ -79,9 +79,8 @@ export const endpoints = {
         orientationUserAnswers: 'expert_system/orientation-answers/',
         setUserSkillTest: 'expert_system/set-user-skill-test',
         getUserSkillTest: 'expert_system/get-user-skill-tests',
-        getUserSkills: 'expert_system/get-user-skills'
-        setUserSkills: 'expert_system/set-user-skills',
         getUserSkills: 'expert_system/get-user-skills',
+        setUserSkills: 'expert_system/set-user-skills',
 
         getAllTests: 'expert_system/get-all-tests',
         createTest: 'expert_system/create-test',

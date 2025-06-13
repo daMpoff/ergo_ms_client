@@ -201,7 +201,6 @@ class ApiClient {
             errors: error.response?.data
         };
     }
-  }
 }
 
 // Создать и экспортировать синглтон-объект
