@@ -367,7 +367,19 @@ const categoriesRoutes = [
         name: 'PageCategories',
         component: () => import('@/pages/categories/PageCategories.vue'),
         meta: { requiresAuth: true, title: 'Категории' }
-      }
+      },
+      {
+        path: 'categories-list',
+        name: 'PageCategoriesManager',
+        component:() => import('@/pages/categories/CategoriesManagerPage.vue'),
+        meta: { requiresAuth: true, title: 'Создание категорий' }
+      },
+      {
+        path: 'tags-list',
+        name: 'TagsManager',
+        component:() => import('@/pages/categories/TagsManagerPage.vue'),
+        meta: { requiresAuth: true, title: 'Создание тегов' }
+      } 
     ],
   },
 ]

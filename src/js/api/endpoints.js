@@ -93,6 +93,13 @@ export const endpoints = {
         UploadedFiles: 'bi_analysis/bi_datasets/user-files/',
     },
     file: 'settings/file/',
+    categories: {
+        list: 'settings/categories/',
+        create: 'settings/categories/',
+        update: id => `settings/categories/${id}/`, 
+        delete: id => `settings/categories/${id}/`
+},
+
     settings: {
         generalSettings: 'settings/general-settings/',
         lastSettings: 'settings/general-settings/last/',

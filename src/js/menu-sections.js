@@ -275,5 +275,7 @@ export const CategoriesMenuSection = {
   title: 'Категории страниц',
   list: [
     { path: 'PageCategories', name: 'Категории' },
+    { path: 'PageCategoriesManager', name: 'Создание категорий' },
+    { path: 'TagsManager', name: 'Создание тегов' },
   ],
 };
