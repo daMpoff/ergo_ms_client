@@ -4,7 +4,9 @@
       <ListTree class="me-2" />
       <h5 class="mb-0">Рабочая область</h5>
       <div class="ms-auto d-flex gap-2">
-        <button class="btn btn-sm btn-success" @click="loadFromDb">Загрузить из БД (page=1)</button>
+        <button class="btn btn-sm btn-success text-white" @click="loadFromDb">
+          Загрузить из БД (page=1)
+        </button>
         <button class="btn btn-sm btn-primary" @click="saveToDb" :disabled="isSaving">
           <span v-if="isSaving" class="spinner-border spinner-border-sm me-2"></span>
           Сохранить в БД
