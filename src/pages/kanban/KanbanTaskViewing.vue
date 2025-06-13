@@ -266,26 +266,17 @@ const closeModal = () => {
       </div>
 
       <div class="form-row">
+        
         <div class="form-group half">
-          <label class="form-label">Исполнитель</label>
-          <select v-model="selectedWorker" class="select-field full-width-select">
-            <option disabled value="">Выберите исполнителя</option>
-            <option v-for="worker in workers" :key="worker.id" :value="worker.id">{{ worker.name }}</option>
-          </select>
+          <label class="form-label">Срок выполнения</label>
+          <input 
+            type="date" 
+            v-model="deadline" 
+            class="input-field date-field"
+            :min="new Date().toISOString().split('T')[0]" 
+           />
         </div>
-
-       <div class="form-group half">
-  <label class="form-label">Срок выполнения</label>
-  <input 
-    type="date" 
-    v-model="deadline" 
-    class="input-field date-field"
-    :min="new Date().toISOString().split('T')[0]" 
-  />
-       </div>
-      </div>
-
-      <div class="form-group">
+        <div class="form-group">
         <label class="form-label">Приоритет</label>
         <select v-model="selectedPriority" class="select-field">
           <option disabled value="">Выберите приоритет</option>
@@ -295,6 +286,16 @@ const closeModal = () => {
           <option value="4">рутинная</option>
         </select>
       </div>
+      </div>
+        <div class="form-group half">
+          <label class="form-label">Исполнитель</label>
+          <select v-model="selectedWorker" class="select-field full-width-select">
+            <option disabled value="">Выберите исполнителя</option>
+            <option v-for="worker in workers" :key="worker.id" :value="worker.id">{{ worker.name }}</option>
+          </select>
+        </div>
+
+      
 
       <div class="form-group">
         <label class="form-label">Подзадачи</label>
@@ -311,7 +312,7 @@ const closeModal = () => {
           <div class="add-subtask">
             <input
               v-model="newSubtaskText"
-              placeholder="Добавить подзадачу..."
+              placeholder="Добавить подзадачу"
               @keyup.enter="addSubtask"
               class="input-field"
             />

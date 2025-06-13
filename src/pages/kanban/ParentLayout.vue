@@ -15,16 +15,11 @@ const props = defineProps({
   project_id: {
     type: [Number, String],
     required: true
-  },
-  project_name: {
-    type: String,
-    default: 'Проект'
   }
 })
 
 const route = useRoute()
-const projectId = ref(route.query.project_id || props.project_id)
-const projectTitle = ref(route.query.project_name || props.project_name) // Используем переданное название проекта
+const projectId = ref(null)
 const selectedPriorityFilter = ref('all')
 
 const kanbanStore = useKanbanStore()
@@ -43,39 +38,6 @@ const newTaskData = ref({
 const showDatePicker = ref(false)
 const showReminderPicker = ref(false)
 const reminderDate = ref(null)
-
-const editingSectionId = ref(null)
-const editingSectionName = ref('')
-
-const startEditingSection = (section) => {
-  editingSectionId.value = section.id
-  editingSectionName.value = section.title
-}
-
-// Функция для сохранения изменений
-const saveSectionName = async () => {
-  if (!editingSectionName.value.trim()) {
-    toast.error('Название раздела не может быть пустым')
-    return
-  }
-
-  try {
-    const { success } = await kanbanStore.updatesSection(editingSectionId.value, {
-      name: editingSectionName.value.trim()
-    })
-        await kanbanStore.fetchColumns(projectId.value);
-
-    
-    if (success) {
-      await kanbanStore.fetchColumns(props.project_id)
-      editingSectionId.value = null
-      editingSectionName.value = ''
-    }
-  } catch (error) {
-    console.error('Ошибка при обновлении раздела:', error)
-    toast.error('Не удалось обновить название раздела')
-  }
-}
 
 const priorityOptions = [
   { value: 'all', label: 'Все приоритеты' },
@@ -214,7 +176,7 @@ const handleTaskUpdated = async () => {
 }
 
 const formatDate = (date) => {
-  if (!date) return 'Нет срока'
+  if (!date) return ''
   return new Date(date).toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -226,9 +188,7 @@ const formatDate = (date) => {
 <template>
   <div class="kanban-wrapper">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <div class="d-flex align-items-center gap-2">
-        <h2 class="mb-0">{{ projectTitle }}</h2> <!-- Используем projectTitle вместо "Канбан-доска" -->
-      </div>
+      <h2 class="mb-0">Канбан-доска</h2>
       <div class="d-flex align-items-center">
         <Filter class="me-2" />
         <select 
@@ -256,38 +216,25 @@ const formatDate = (date) => {
           class="kanban-column mx-2 flex-shrink-0"
           style="width: 18rem"
         >
-          <!-- Заменяем статичный заголовок на редактируемый -->
           <div class="d-flex align-items-center justify-content-between mb-3">
-            <div v-if="editingSectionId !== column.id" class="d-inline-flex gap-1 text-truncate">
+            <div class="d-inline-flex gap-1 text-truncate">
               <DragHandle style="cursor: move"><GripVertical :size="18" /></DragHandle>
-              <h5 class="mb-0 text-truncate user-select-none">
+              <h5
+                class="mb-0 text-truncate user-select-none"
+                contenteditable="true"
+                style="outline: none"
+              >
                 {{ column.title }}
               </h5>
               <h5 class="mb-0 user-select-none">({{ column.cards.length }})</h5>
             </div>
-            
-            <!-- Форма редактирования (показывается только для текущего редактируемого раздела) -->
-            <div v-else class="d-flex align-items-center gap-2 w-100">
-              <input
-                v-model="editingSectionName"
-                type="text"
-                class="form-control form-control-sm"
-                @keyup.enter="saveSectionName"
-                @blur="saveSectionName"
-                autofocus
-              />
-              <button class="btn btn-sm btn-primary" @click="saveSectionName">
-                OK
-              </button>
-            </div>
-            
             <DropDown dropdownMenuClass="hover-section dropdown-menu-end bg-light-subtle">
               <template #main>
                 <EllipsisVertical :size="19" />
               </template>
               <template #list>
-                <li class="dropdown-item" @click="startEditingSection(column)">Изменить название</li>
-                <li class="dropdown-item" @click="deleteSection(column.id)">Удалить раздел</li>
+                <li class="dropdown-item">Изменить</li>
+                <li class="dropdown-item" @click="deleteSection(column.id)">Удалить</li>
               </template>
             </DropDown>
           </div>
@@ -322,82 +269,72 @@ const formatDate = (date) => {
           </SlickList>
 
           <!-- блок добавления подзадач -->
-          <div v-if="isAddingTask === i" class="card p-3 mb-3">
-            <input
-              v-model="newTaskData.title"
-              type="text"
-              class="form-control mb-3"
-              placeholder="Название задачи"
-              autofocus
-            />
-            <textarea
-              v-model="newTaskData.description"
-              class="form-control mb-3"
-              placeholder="Описание"
-              rows="2"
-            ></textarea>
-            
-            <!-- Date and Priority Row -->
-            <div class="d-flex justify-content-between mb-3">
-              <div class="d-flex align-items-center gap-2 position-relative">
-                <button 
-                  class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                  @click="showDatePicker = true; $nextTick(() => {$refs.datePicker.focus()})"
-                >
-                  <Calendar :size="16" />
-                  <span>{{ newTaskData.dueDate ? formatDate(newTaskData.dueDate) : 'Дата' }}</span>
-                </button>
-                <div v-if="showDatePicker" class="position-absolute" style="z-index: 1000; top: 100%; left: 0;">
-                  <input
-                    ref="datePicker"
-                    v-model="newTaskData.dueDate"
-                    type="date"
-                    class="form-control form-control-sm"
-                    style="width: 140px"
-                    @change="showDatePicker = false"
-                    @blur="showDatePicker = false"
-                    @click.stop
-                  />
-                </div>
-              </div>
-              
-              <div class="dropdown">
-                <button 
-                  class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                >
-                  <Flag :size="16" :color="priorityOptions.find(p => p.value === newTaskData.priority)?.color" />
-                  <span>{{ priorityOptions.find(p => p.value === newTaskData.priority)?.label || 'Приоритет' }}</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li v-for="option in priorityOptions.filter(o => o.value !== 'all')" :key="option.value">
-                    <a class="dropdown-item" href="#" @click.prevent="newTaskData.priority = option.value">
-                      <Flag :size="14" :color="option.color" class="me-2" />
-                      {{ option.label }}
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            
-            <!-- Bottom Section -->
-            <div class="d-flex justify-content-between align-items-center">
-              <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary" @click="isAddingTask = -1">
-                  Отмена
-                </button>
-                <button class="btn btn-sm btn-primary" @click="submitNewTask(i)">
-                  Добавить
-                </button>
-              </div>
-            </div>
-          </div>
+         <div v-if="isAddingTask === i" class="card p-3 mb-3">
+  <input
+    v-model="newTaskData.title"
+    type="text"
+    class="form-control mb-3"
+    placeholder="Название задачи"
+    autofocus
+  />
+  <textarea
+    v-model="newTaskData.description"
+    class="form-control mb-3"
+    placeholder="Описание"
+    rows="2"
+  ></textarea>
+  
+  <!-- Date and Priority Row -->
+<div class="d-flex justify-content-between mb-3">
+  <div class="d-flex align-items-center gap-2">
+    <input
+      v-model="newTaskData.dueDate"
+      type="date"
+      class="form-control form-control-sm"
+      style="width: 120px"
+    />
+  </div>
+  
+  <div class="dropdown">
+    <button 
+      class="form-control form-control-sm d-flex align-items-center justify-content-between gap-1 dropdown-toggle"
+      type="button"
+      data-bs-toggle="dropdown"
+      style="width: 120px; background-color: var(--bs-body-bg); text-align: left; cursor: pointer; appearance: none"
+    >
+      <span class="d-flex align-items-center gap-1 text-dark">
+        <Flag :size="16" :color="priorityOptions.find(p => p.value === newTaskData.priority)?.color" />
+        {{ priorityOptions.find(p => p.value === newTaskData.priority)?.label || 'Приоритет' }}
+      </span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li v-for="option in priorityOptions.filter(o => o.value !== 'all')" :key="option.value">
+        <a class="dropdown-item" href="#" @click.prevent="newTaskData.priority = option.value">
+          <Flag :size="14" :color="option.color" class="me-2" />
+          {{ option.label }}
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+  
+  <!-- Bottom Section -->
+  <div class="d-flex justify-content-end align-items-center">
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary" @click="isAddingTask = -1">
+        Отмена
+      </button>
+      <button class="btn btn-sm btn-primary" @click="submitNewTask(i)">
+        Добавить
+      </button>
+    </div>
+  </div>
+</div>
 
-          <div v-else class="add-task d-flex align-items-center gap-2 p-2" @click="startAddingTask(i)">
-            <Plus :size="16" />
-            <span class="text-nowrap">Добавить задачу</span>
-          </div>
+<div v-else class="add-task d-flex align-items-center gap-2 p-2" @click="startAddingTask(i)">
+  <Plus :size="16" />
+  <span class="text-nowrap">Добавить задачу</span>
+</div>  
         </SlickItem>
         <!-- Окончание блока с добавлением подзадач -->
         <!-- Section Addition Block -->
@@ -435,6 +372,11 @@ const formatDate = (date) => {
 </template>
 
 <style scoped lang="scss">
+
+.btn{
+  width: 80px;
+}
+
 .kanban-wrapper {
   height: calc(100vh - 120px);
   display: flex;
@@ -494,11 +436,4 @@ const formatDate = (date) => {
     }
   }
 }
-
-.kanban-column input.form-control {
-  padding: 0.25rem 0.5rem;
-  font-size: 1rem;
-  height: auto;
-}
-
 </style>

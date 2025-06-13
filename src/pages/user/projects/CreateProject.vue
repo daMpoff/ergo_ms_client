@@ -179,6 +179,7 @@ const saveProject = async () => {
 </template>
 
 <style scoped>
+
 .modal-overlay {
   position: fixed;
   top: 0;

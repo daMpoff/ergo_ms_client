@@ -287,11 +287,11 @@ watch(() => props.subjectId, (newVal) => {
               <h5 class="card-title">{{ competence.name }}</h5>
               <p class="card-text text-muted">{{ competence.description }}</p>
               <div class="mt-2 mb-3">
-                <span class="badge" 
+                <span class="badge text-white" 
                   :class="{
                     'bg-primary': competence.category === 'professional',
                     'bg-success': competence.category === 'general',
-                    'bg-info text-dark': competence.category === 'general_professional'
+                    'bg-info': competence.category === 'general_professional'
                   }"
                 >
                   {{
