@@ -103,7 +103,6 @@ function resetCurrentPage() {
 // Список секций меню
 const menuSections = ref([
   UserMenuSection,
-  AnalyzeMenuSection,
   SettingsMenuSection,
   BIMenuSection,
   EducationAnalyticMenuSection,
@@ -122,11 +121,12 @@ const menuSections = ref([
   WatermarkedVideoSection,
   ShortcodesMenuSection,
   ExpertSystemSection,
+  AnalyzeMenuSection,
 ])
 
 const separators = (index) => {
   switch (index) {
-    case 2:
+    case 1:
       return 'Шаблоны'
   }
 }
@@ -168,7 +168,7 @@ const separators = (index) => {
           @navigate="handleNavigate"
           @reset-page="resetCurrentPage"
         />
-        <div v-if="[2].includes(index)" class="side-menu__divider side-divider py-3">
+        <div v-if="[1].includes(index)" class="side-menu__divider side-divider py-3">
           <div class="side-divider__icon"><Minus :size="20" /></div>
           <div class="side-divider__name text-smooth-animation" :class="{ hidden: !isHovering }">
             {{ separators(index) }}
