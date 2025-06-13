@@ -20,7 +20,8 @@ import {
   BookOpen,
   NotepadTextDashed,
   Video,
-  Files
+  Files,
+  Layers
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -58,8 +59,7 @@ export const SettingsMenuSection = {
   list: [
     { path: 'AccountSettings', name: 'Аккаунт' },
     { path: 'SecuritySettings', name: 'Безопасность' },
-    { path: 'NotificationSettings', name: 'Уведомления' },
-    { path: 'ConnectionSettings', name: 'Связи' },
+    { path: 'SiteSettings', name: 'Настройки'},
     { path: 'Roles', name: 'Ролевые настройки' },
   ],
 }
@@ -265,6 +265,15 @@ export const FilesMenuSection = {
   title: 'Файлы',
   list: [
     { path: 'FileManager', name: 'Обзор файлов' },
-    { path: 'UploadFile', name: 'Загрузка файлов' }
+  ],
+}
+export const CategoriesMenuSection = {
+  id: 22,
+  icon: Layers,
+  routeName: 'Categories',
+  path: '/categories',
+  title: 'Категории страниц',
+  list: [
+    { path: 'PageCategories', name: 'Категории' },
   ],
 };

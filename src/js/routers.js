@@ -149,25 +149,17 @@ const settingsRoutes = [
         },
       },
       {
+        path: 'site-settings',
+        name: 'SiteSettings',
+        component: () => import('@/pages/settings/siteSettings/ParentLayout.vue'),
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
         path: 'billing',
         name: 'BillingSettings',
         component: () => import('@/pages/settings/billing/ParentLayout.vue'),
-        meta: {
-          requiresAuth: true,
-        },
-      },
-      {
-        path: 'notifications',
-        name: 'NotificationSettings',
-        component: () => import('@/pages/settings/notifications/ParentLayout.vue'),
-        meta: {
-          requiresAuth: true,
-        },
-      },
-      {
-        path: 'connections',
-        name: 'ConnectionSettings',
-        component: () => import('@/pages/settings/connections/ParentLayout.vue'),
         meta: {
           requiresAuth: true,
         },
@@ -353,12 +345,6 @@ const controlRoutes = [
     meta: { requiresAuth: true },
     children: [
       {
-        path: 'upload-file',
-        name: 'UploadFile',
-        component: () => import('@/pages/controlFiles/UploadFile.vue'),
-        meta: { title: 'Загрузка файлов', requiresAuth: true },
-      },
-      {
         path: 'filemanager',
         name: 'FileManager',
         component: () => import('@/pages/controlFiles/FileManager.vue'),
@@ -367,6 +353,25 @@ const controlRoutes = [
     ],
   },
 ]
+// Управление категориями
+const categoriesRoutes = [
+  {
+    path: '/categories',
+    name: 'Categories',
+    component: () => import('@/pages/categories/ParentLayout.vue'),
+    redirect: { name: 'PageCategories' },
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'page-categories',
+        name: 'PageCategories',
+        component: () => import('@/pages/categories/PageCategories.vue'),
+        meta: { requiresAuth: true, title: 'Категории' }
+      }
+    ],
+  },
+]
+
 
 // Маршрутизация страниц модуля учебной аналитики
 const learningAnalyticsRoutes = [
@@ -881,6 +886,7 @@ const routes = [
   ...expertSystemRoutes,
   ...learningAnalyticsRoutes,
   ...controlRoutes,
+  ...categoriesRoutes,
 ]
 
 routes.forEach((route) => {
