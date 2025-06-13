@@ -225,10 +225,10 @@
     <!-- Секция графика -->
     <h3>График изменения цены (Криптовалюты):</h3>
     <div class="chart-container" style="height: 450px; position: relative;">
-      <LineChart
+      <Line
         v-if="chartData.datasets.length > 0 && !loading"
         :key="chartKey"
-        :chart-data="chartData"
+        :data="chartData"
         :options="chartOptions"
         style="height: 100%; width: 100%;"
       />
@@ -437,7 +437,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
-import { LineChart } from 'vue-chart-3';
+import { Line } from 'vue-chartjs';
 import { Chart, registerables } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 
@@ -504,7 +504,8 @@ const showAdvancedParams = ref(false);
 const fetchData = async () => {
   console.log("Запрос цен КРИПТОВАЛЮТ...");
   try {
-    const response = await axios.get('http://127.0.0.1:8000/api/analyze/crypto-prices/');
+    const response = await axios.get('http://localhost:8000/api/ETL/analyze/crypto-prices/');
+    
     cryptoPrices.value = response.data.map(c => ({ ...c, timestamp: new Date(c.timestamp) })).sort((a, b) => a.timestamp - b.timestamp);
     console.log(`КРИПТОВАЛЮТЫ: получено ${cryptoPrices.value.length} записей.`);
     updateChartData();
@@ -519,7 +520,7 @@ const fetchData = async () => {
 const fetchAssetData = async () => {
   console.log("Запрос курсов ВАЛЮТ...");
   try {
-    const response = await axios.get('http://127.0.0.1:8000/api/analyze/assets-prices/');
+    const response = await axios.get('http://localhost:8000/api/ETL/analyze/assets-prices/');
     assetPrices.value = response.data.map(a => ({ ...a, timestamp: new Date(a.timestamp) })).sort((a, b) => a.timestamp - b.timestamp);
     console.log(`ВАЛЮТЫ: получено ${assetPrices.value.length} записей.`);
   } catch (error) {
@@ -532,7 +533,7 @@ const fetchAssetData = async () => {
 const fetchStockData = async () => {
   console.log("Запрос цен АКЦИЙ...");
   try {
-    const response = await axios.get('http://127.0.0.1:8000/api/analyze/stock-prices/');
+    const response = await axios.get('http://localhost:8000/api/ETL/analyze/stock-prices/');
     const tickerToNameMap = Object.fromEntries(
         Object.entries(availableStocks.value).map(([name, data]) => [data.ticker, name])
     );
@@ -555,7 +556,7 @@ const fetchNewsData = async (page = 1) => {
     try {
         const params = { page: page, page_size: newsPagination.value.pageSize, startDate: startDate.value, endDate: endDate.value, coins: newsFilterCoins.value.length > 0 ? newsFilterCoins.value.join(',') : undefined, sentiment: newsFilterSentiment.value || undefined };
         Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-        const response = await axios.get('http://127.0.0.1:8000/api/analyze/news/', { params });
+        const response = await axios.get('http://localhost:8000/api/ETL/analyze/news/', { params });
         newsArticles.value = response.data.results;
         newsPagination.value.totalCount = response.data.count; newsPagination.value.totalPages = Math.ceil(response.data.count / newsPagination.value.pageSize); newsPagination.value.currentPage = page;
         console.log(`Получено ${newsArticles.value.length} новостей (Всего: ${response.data.count}).`);
@@ -783,7 +784,7 @@ const fetchPrice = async () => {
     };
     console.log(`Запрос обновления цен/валют/акций:`, payload_price); showPopup('Обновление цен...', false, 3000);
     try {
-      const response_price = await axios.post('http://127.0.0.1:8000/api/analyze/execute-command/', payload_price);
+      const response_price = await axios.post('http://localhost:8000/api/ETL/analyze/execute-command/', payload_price);
       console.log("fetch_price выполнен:", response_price.data?.output); let msg = 'Данные цен обновлены!'; if (response_price.data?.errors) { msg += ` Предупреждения: ${response_price.data.errors.substring(0, 100)}...`; showPopup(msg, false, 6000); } else { showPopup(msg); }
     } catch (error) { console.error('Ошибка fetch_price:', error.response?.data || error.message); showPopup(`Ошибка обновления ЦЕН: ${error.response?.data?.message || error.message || 'Неизвестная'}`, true, 6000); }
   } else { console.log("Обновление цен пропущено, так как ничего не выбрано."); }
@@ -802,7 +803,7 @@ const confirmDeleteAll = () => { if (window.confirm('ВЫ УВЕРЕНЫ, что
 const deleteAllPrices = async () => {
     loading.value = true; clearPopups(); clearPredictions(); console.log("Запрос на удаление всех данных...");
     try {
-        const payload = { command: 'delete_all' }; const response = await axios.post('http://127.0.0.1:8000/api/analyze/execute-command/', payload);
+        const payload = { command: 'delete_all' }; const response = await axios.post('http://localhost:8000/api/ETL/analyze/execute-command/', payload);
         console.log("delete_all выполнен:", response.data); showPopup(response.data?.message || 'Все записи удалены!');
         cryptoPrices.value = []; assetPrices.value = []; stockPrices.value = [];
         predictedPrices.value = {}; predictionErrors.value = {};
@@ -816,7 +817,7 @@ const deleteModels = async () => {
     if (!window.confirm('ВЫ УВЕРЕНЫ, что хотите удалить все сохраненные (закэшированные) модели прогнозов?\n\nЭто действие не удалит данные из БД, но следующий запуск прогноза будет заново обучать модели.')) { console.log("Удаление моделей отменено."); return; }
     loading.value = true; clearPopups(); console.log("Запрос на удаление моделей прогнозов...");
     try {
-        const payload = { command: 'delete_models' }; const response = await axios.post('http://127.0.0.1:8000/api/analyze/execute-command/', payload);
+        const payload = { command: 'delete_models' }; const response = await axios.post('http://localhost:8000/api/ETL/analyze/execute-command/', payload);
         console.log("delete_models выполнен:", response.data); showPopup(response.data?.message || 'Модели прогнозов успешно удалены!');
     } catch (error) { console.error('Ошибка удаления моделей:', error.response?.data || error.message); showPopup(`Ошибка удаления моделей: ${error.response?.data?.message || error.message || 'Неизвестная'}`, true, 6000); } finally { loading.value = false; }
 };
@@ -843,14 +844,14 @@ const predictPrices = async () => {
     // 3. Обращение
     const coinPredictionPromises = selectedCoins.value.map(coin => {
         const payload = { coin, trainDays: trainDays.value, predictDays: predictDays.value, endDate: endDate.value, useSentiment: useSentiment.value, sentimentWindow: sentimentWindow.value, sentimentFactor: sentimentFactor.value };
-        return axios.post('http://127.0.0.1:8000/api/analyze/predict-crypto/', payload)
+        return axios.post('http://localhost:8000/api/ETL/analyze/predict-crypto/', payload)
             .then(response => ({ type: 'coin', name: coin, data: response.data, status: 'fulfilled' }))
             .catch(error => ({ type: 'coin', name: coin, error: error, status: 'rejected' }));
     });
 
     const assetPredictionPromises = selectedAssets.value.map(assetPair => {
         const payload = { asset_pair: assetPair, trainDays: trainDays.value, predictDays: predictDays.value, endDate: endDate.value, useSentiment: false }; // Sentiment выключен для валют
-        return axios.post('http://127.0.0.1:8000/api/analyze/predict-asset/', payload)
+        return axios.post('http://localhost:8000/api/ETL/analyze/predict-asset/', payload)
             .then(response => ({ type: 'asset', name: assetPair, data: response.data, status: 'fulfilled' }))
             .catch(error => ({ type: 'asset', name: assetPair, error: error, status: 'rejected' }));
     });
@@ -872,7 +873,7 @@ const predictPrices = async () => {
             predictDays: predictDays.value,
             endDate: endDate.value
         };
-        return axios.post('http://127.0.0.1:8000/api/analyze/predict-stock/', payload)
+        return axios.post('http://localhost:8000/api/ETL/analyze/predict-stock/', payload)
             .then(response => ({ type: 'stock', name: stockName, data: response.data, status: 'fulfilled' }))
             .catch(error => ({ type: 'stock', name: stockName, error: error, status: 'rejected' }));
     });
