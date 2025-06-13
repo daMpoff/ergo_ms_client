@@ -477,6 +477,33 @@ const updatesTask = async (taskId, updatedData) => {
     return { success: false }
   }
 }
+ const fetchTaskAssignee = async (taskId) => {
+  try {
+    const response = await apiClient.get(
+      endpoints.crm.tasks.assignee_task.replace('{id}', taskId)
+    );
+
+    console.log('Task Assignee API Response:', response.data);
+    
+    if (response.data && response.data.success && response.data.assignee) {
+      return {
+        id: response.data.assignee.id,
+        firstName: response.data.assignee.first_name,
+        lastName: response.data.assignee.last_name,
+        taskStatus: response.data.status, // 'done' или 'in_progress'
+        taskId: response.data.task_id,
+        taskText: response.data.task_text
+      };
+    }
+    
+    console.warn('Unexpected API response structure', response.data);
+    return null;
+    
+  } catch (error) {
+    console.error('Error fetching task assignee:', error);
+    throw new Error('Не удалось получить исполнителя задачи');
+  }
+};
 
 const updatesSection = async (sectionId, updatedData) => {
   try {
@@ -519,5 +546,6 @@ const updatesSection = async (sectionId, updatedData) => {
     toggleTask,
     updatesTask,
     updatesSection,
+    fetchTaskAssignee
   }
 })

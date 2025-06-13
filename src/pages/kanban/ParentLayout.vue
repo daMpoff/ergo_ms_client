@@ -430,8 +430,12 @@ const formatDate = (date) => {
     </PerfectScrollbar>
 
     <KanbanEdit></KanbanEdit>
-    <KanbanTaskViewing v-if="kanbanStore.editableTask" :task="kanbanStore.editableTask" />
-  </div>
+<KanbanTaskViewing 
+  v-if="kanbanStore.editableTask" 
+  :task="kanbanStore.editableTask"
+  :project_id="projectId"
+/>  
+</div>
 </template>
 
 <style scoped lang="scss">

@@ -237,19 +237,26 @@ export const leaveProject = async (userId,projectId) => {
 export const fetchProjectUsers = async (projectId) => {
   try {
     const response = await apiClient.get(
-      endpoints.projects.usersproject.replace('{id}', projectId)
+      endpoints.crm.projects.usersproject.replace('{id}', projectId)
     );
 
-    // Если структура ответа отличается, нужно адаптировать mapping
-    return response.data.users.map(user => ({
-      id: user.id,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      isNew: user.is_new,
-    }));
+    console.log('API Response:', response.data); // Добавляем логирование
+    
+    // Адаптируем под структуру вашего Python-кода
+    if (response.data && response.data.success && response.data.users) {
+      return response.data.users.map(user => ({
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        isNew: user.is_new,
+      }));
+    }
+    
+    console.warn('Unexpected API response structure', response.data);
+    return [];
     
   } catch (error) {
     console.error('Ошибка при загрузке участников проекта:', error);
-    return []; // Возвращаем пустой массив в случае ошибки
+    return [];
   }
 };

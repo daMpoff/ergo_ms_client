@@ -18,7 +18,7 @@ export const endpoints = {
             add_subtask:'crm/tasks/new-subtask/',
             toggle_task:'crm/tasks/toggle-task/{id}/',
             update_task:'crm/tasks/update-task/{id}/',
-
+            assignee_task:'crm/tasks/assignee/{id}/',
         },
         projects:
         {

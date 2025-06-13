@@ -88,7 +88,6 @@ const menuSections = [
   ChartsMenuSection,
   ComponentsMenuSection,
   InputsMenuSection,
-  KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
   TeamBuildingMenuSection,
