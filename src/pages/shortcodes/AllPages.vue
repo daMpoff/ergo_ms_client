@@ -59,7 +59,16 @@
       <div class="col-12 col-md-6 col-lg-4" v-for="page in filteredPages" :key="page.id">
         <div class="card h-100 shadow-sm">
           <div class="card-body">
-            <h5 class="card-title mb-1">{{ page.name }}</h5>
+            <h5 class="card-title mb-1">
+              <a
+                :href="pageUrl(page)"
+                class="text-decoration-none"
+                target="_blank"
+                style="color: inherit"
+              >
+                {{ page.name }}
+              </a>
+            </h5>
             <p class="card-subtitle mb-2 text-muted">/{{ page.slug }}</p>
             <div class="mb-2">
               <span class="badge bg-secondary me-1">
@@ -74,6 +83,13 @@
               class="btn btn-outline-primary btn-sm mt-2"
             >
               Редактировать
+            </a>
+            <a
+              :href="pageUrl(page)"
+              class="btn btn-outline-secondary btn-sm mt-2 ms-2"
+              target="_blank"
+            >
+              Открыть
             </a>
           </div>
         </div>
@@ -116,6 +132,18 @@ function buildTree(list) {
   })
   return roots
 }
+function pageUrl(page) {
+  // Если category — объект с полем parent (и parent — объект или null)
+  let slugs = []
+  let cat = page.category
+  while (cat) {
+    slugs.unshift(cat.slug)
+    cat = cat.parent // cat.parent должен быть объектом!
+  }
+  slugs.push(page.slug)
+  return '/' + slugs.filter(Boolean).join('/')
+}
+
 function filterTree(categories, search) {
   return categories
     .map((cat) => {
