@@ -50,6 +50,12 @@ export const endpoints = {
             update_subject:'/expsys_module/update-subject/{id}/',
             update_competence:'/expsys_module/update-competence/{id}/',
             update_indicator:'/expsys_module/update-indicator/{id}/',
+            countsstudents:'/expsys_module/countstudents-subject/',
+            countslessons:'/expsys_module/countlessons-subject/',
+            countstests:'/expsys_module/counttests-subject/',
+
+
+
 
         },
     

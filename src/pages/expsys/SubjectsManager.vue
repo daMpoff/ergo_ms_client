@@ -1,10 +1,29 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { fetchTeacherSubjects, createSubject, deleteSubject, updateSubject } from '@/js/api/services/expsysService';
+import {
+  ref,
+  onMounted
+} from 'vue';
+import {
+  fetchTeacherSubjects,
+  createSubject,
+  deleteSubject,
+  updateSubject,
+  fetchStudentsCountBySubject,
+  fetchLessonsCountBySubject,
+  fetchTestsCountBySubject // Новый импорт
+} from '@/js/api/services/expsysService';
 import { useToast } from 'vue-toastification';
 import CompetenciesManager from '@/pages/expsys/IndicatorsManager.vue';
 import DropDown from '@/components/DropDown.vue';
-import { EllipsisVertical, MessagesSquare, Trash, SquarePlus, UsersRound, LibraryBig, NotebookPen } from 'lucide-vue-next';
+import {
+  EllipsisVertical,
+  MessagesSquare,
+  Trash,
+  SquarePlus,
+  UsersRound,
+  LibraryBig,
+  NotebookPen
+} from 'lucide-vue-next';
 
 const toast = useToast();
 
@@ -27,14 +46,36 @@ const loadSubjects = async () => {
   try {
     const fetchedSubjects = await fetchTeacherSubjects();
     if (Array.isArray(fetchedSubjects)) {
-      subjects.value = fetchedSubjects.map(subject => ({
-        ...subject,
-        stats: {
-          students: subject.stats?.students || 0,
-          lessons: subject.stats?.lessons || 0,
-          tasks: subject.stats?.tasks || 0
-        }
-      }));
+      const subjectsWithStats = await Promise.all(
+        fetchedSubjects.map(async subject => {
+          try {
+            const [studentsStats, lessonsStats, testsStats] = await Promise.all([
+              fetchStudentsCountBySubject(subject.id),
+              fetchLessonsCountBySubject(subject.id),
+              fetchTestsCountBySubject(subject.id)
+            ]);
+            return {
+              ...subject,
+              stats: {
+                students: studentsStats.count || 0,
+                lessons: lessonsStats.count || 0,
+                tests: testsStats.count || 0 // заменено tasks -> tests
+              }
+            };
+          } catch (err) {
+            console.error(`Ошибка при загрузке статистики для предмета ${subject.id}:`, err);
+            return {
+              ...subject,
+              stats: {
+                students: 0,
+                lessons: 0,
+                tests: 0 // по умолчанию
+              }
+            };
+          }
+        })
+      );
+      subjects.value = subjectsWithStats;
     } else {
       throw new Error('Получены некорректные данные');
     }
@@ -56,10 +97,30 @@ function getEmptySubject() {
     stats: {
       students: 0,
       lessons: 0,
-      tasks: 0
+      tests: 0 // заменено tasks -> tests
     }
   };
 }
+
+const refreshSubjectStats = async (subjectId) => {
+  try {
+    const [studentsStats, lessonsStats, testsStats] = await Promise.all([
+      fetchStudentsCountBySubject(subjectId),
+      fetchLessonsCountBySubject(subjectId),
+      fetchTestsCountBySubject(subjectId)
+    ]);
+    const subjectIndex = subjects.value.findIndex(s => s.id === subjectId);
+    if (subjectIndex !== -1) {
+      subjects.value[subjectIndex].stats = {
+        students: studentsStats.count || 0,
+        lessons: lessonsStats.count || 0,
+        tests: testsStats.count || 0 // заменено tasks -> tests
+      };
+    }
+  } catch (err) {
+    console.error(`Ошибка при обновлении статистики для предмета ${subjectId}:`, err);
+  }
+};
 
 const addSubject = () => {
   editingSubject.value = getEmptySubject();
@@ -67,7 +128,7 @@ const addSubject = () => {
 };
 
 const editSubject = (subject) => {
-  editingSubject.value = { 
+  editingSubject.value = {
     ...subject,
     stats: subject.stats || getEmptySubject().stats
   };
@@ -79,9 +140,7 @@ const saveSubject = async () => {
     error.value = 'Введите название предмета';
     return;
   }
-
   error.value = null;
-  
   try {
     if (editingSubject.value.id) {
       const updatedSubject = await updateSubject(
@@ -91,13 +150,9 @@ const saveSubject = async () => {
           description: editingSubject.value.description?.trim() || ''
         }
       );
-      
       const index = subjects.value.findIndex(s => s.id === updatedSubject.id);
       if (index !== -1) {
-        subjects.value[index] = {
-          ...updatedSubject,
-          stats: subjects.value[index].stats // Сохраняем существующую статистику
-        };
+        await refreshSubjectStats(updatedSubject.id);
       }
       toast.success('Предмет успешно обновлен');
       closeModal();
@@ -110,6 +165,7 @@ const saveSubject = async () => {
         ...createdSubject,
         stats: getEmptySubject().stats
       });
+      await refreshSubjectStats(createdSubject.id);
       toast.success('Предмет успешно создан');
       closeModal();
     }
@@ -127,10 +183,8 @@ const confirmDelete = (subject) => {
 
 const deleteSubjectHandler = async () => {
   if (!subjectToDelete.value) return;
-
   try {
     const response = await deleteSubject(subjectToDelete.value.id);
-    
     if (response.success) {
       subjects.value = subjects.value.filter(s => s.id !== subjectToDelete.value.id);
       toast.success(response.message || 'Предмет успешно удален');
@@ -169,13 +223,10 @@ onMounted(() => {
 
 <template>
   <div class="subject-management">
-    <CompetenciesManager 
-      v-if="showCompetencies"
-      :subject-id="selectedSubjectId"
-      :subject-name="selectedSubjectName"
-      @back="backToSubjects"
-    />
-    
+    <CompetenciesManager v-if="showCompetencies"
+                         :subject-id="selectedSubjectId"
+                         :subject-name="selectedSubjectName"
+                         @back="backToSubjects" />
     <div v-if="!showCompetencies">
       <div class="row mb-4">
         <div class="col">
@@ -186,17 +237,14 @@ onMounted(() => {
           </button>
         </div>
       </div>
-      
       <div v-if="loading" class="text-center">
         <div class="spinner-border" role="status">
           <span class="visually-hidden">Загрузка...</span>
         </div>
       </div>
-      
       <div v-else-if="error" class="alert alert-danger">
         {{ error }}
       </div>
-      
       <div v-else class="row">
         <div class="col-md-4 mb-3" v-for="subject in subjects" :key="subject.id">
           <div class="card subject-card h-100">
@@ -216,22 +264,19 @@ onMounted(() => {
                   </template>
                 </DropDown>
               </div>
-
               <div class="card-body-1 p-4">
                 <div class="d-flex align-items-center mb-3">
                   <div class="border-start border-3 border-primary me-3" style="height: 40px;"></div>
                   <h5 class="card-title mb-0 fw-bold text-dark">{{ subject.name || 'Без названия' }}</h5>
                 </div>
-                
                 <p class="card-text text-muted mb-4">{{ subject.description || 'Описание отсутствует' }}</p>
-                
                 <div class="subject-stats d-flex justify-content-between mb-4 px-2">
                   <div class="stat-item text-center">
                     <div class="stat-icon bg-light rounded-circle p-2 mb-1 mx-auto">
                       <UsersRound class="icon" />
                     </div>
-                    <span class="small text-muted"> 
-                      {{ subject.stats?.students || 0 }} <br>студентов
+                    <span class="small text-muted">
+                      {{ subject.stats.students }} <br>студентов
                     </span>
                   </div>
                   <div class="stat-item text-center">
@@ -239,7 +284,7 @@ onMounted(() => {
                       <LibraryBig class="icon" />
                     </div>
                     <span class="small text-muted">
-                      {{ subject.stats?.lessons || 0 }}<br>уроков
+                      {{ subject.stats.lessons }}<br>уроков
                     </span>
                   </div>
                   <div class="stat-item text-center">
@@ -247,11 +292,10 @@ onMounted(() => {
                       <NotebookPen class="icon" />
                     </div>
                     <span class="small text-muted">
-                      {{ subject.stats?.tasks || 0 }}<br>заданий
+                      {{ subject.stats.tests }}<br>тестов
                     </span>
                   </div>
                 </div>
-                
                 <div class="text-center mt-2">
                   <button class="btn btn-primary px-4 rounded-pill fw-medium" @click="openCompetencies(subject)">
                     <i class="bi bi-bar-chart me-2"></i>Индикаторы
@@ -262,7 +306,6 @@ onMounted(() => {
           </div>
         </div>
       </div>
-
       <!-- Модальное окно добавления/редактирования -->
       <div class="modal fade" :class="{show: showAddModal}" tabindex="-1" style="display: block;" v-if="showAddModal">
         <div class="modal-dialog">
@@ -275,22 +318,11 @@ onMounted(() => {
               <form @submit.prevent="saveSubject">
                 <div class="mb-3">
                   <label class="form-label">Название</label>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    v-model="editingSubject.name" 
-                    required
-                    placeholder="Введите название предмета"
-                  >
+                  <input type="text" class="form-control" v-model="editingSubject.name" required placeholder="Введите название предмета">
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Описание</label>
-                  <textarea 
-                    class="form-control" 
-                    v-model="editingSubject.description" 
-                    rows="3" 
-                    placeholder="Введите описание предмета"
-                  ></textarea>
+                  <textarea class="form-control" v-model="editingSubject.description" rows="3" placeholder="Введите описание предмета"></textarea>
                 </div>
                 <div v-if="error" class="alert alert-danger mb-3">
                   {{ error }}
@@ -307,7 +339,6 @@ onMounted(() => {
         </div>
       </div>
       <div class="modal-backdrop fade show" v-if="showAddModal"></div>
-
       <!-- Модальное окно удаления -->
       <div class="modal fade" :class="{show: showDeleteModal}" tabindex="-1" style="display: block;" v-if="showDeleteModal">
         <div class="modal-dialog">
@@ -340,7 +371,6 @@ onMounted(() => {
     color: var(--bs-primary);
   }
 }
-
 .icon-container {
   width: 48px;
   height: 48px;
@@ -348,7 +378,6 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
 }
-
 .stat-icon {
   width: 36px;
   height: 36px;
@@ -356,18 +385,15 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
 }
-
 .subject-stats {
   border-top: 1px solid #f0f0f0;
   border-bottom: 1px solid #f0f0f0;
   padding: 12px 0;
 }
-
 .card-body {
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
-
 .subject-card {
   transition: transform 0.2s;
   &:hover {
@@ -375,7 +401,6 @@ onMounted(() => {
     box-shadow: 0 6px 12px rgba(0,0,0,0.1);
   }
 }
-
 .modal.show {
   display: block;
   background-color: rgba(0,0,0,0.5);

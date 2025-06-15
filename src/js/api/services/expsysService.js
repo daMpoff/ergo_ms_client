@@ -72,7 +72,8 @@ export const fetchIndicators = async () => {
     return response.data.data.map(comp => ({
       id: comp.id,
       name: comp.name,
-      description: comp.description
+      description: comp.description,
+      category:comp.category
     }));
   } catch (error) {
     console.error('Ошибка в fetchIndicators:', error.message);
@@ -486,7 +487,8 @@ export const updateIndicator = async (indicatorId, updateData) => {
     return {
       id: response.data.indicator.id,
       name: response.data.indicator.name,
-      description: response.data.indicator.description
+      description: response.data.indicator.description,
+      category:response.data.indicator.category
     }
     
   } catch (error) {
@@ -494,3 +496,98 @@ export const updateIndicator = async (indicatorId, updateData) => {
     throw error
   }
 }
+
+export const fetchStudentsCountBySubject = async (subjectId) => {
+  if (!subjectId && subjectId !== 0) { // учитываем 0 как валидный ID
+    throw new Error('ID предмета обязателен');
+  }
+
+  try {
+    const response = await apiClient.get(endpoints.expsys.subjects.countsstudents, {
+        subject_id: subjectId
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Ошибка при получении количества студентов');
+    }
+
+    return {
+      count: response.data.data?.student_count || 0,
+      subjectName: response.data.data?.subject_name || '',
+      subjectId: response.data.data?.subject_id || subjectId,
+      teacherName: response.data.data?.teacher_name || ''
+    };
+
+  } catch (error) {
+    console.error('Ошибка в fetchStudentsCountBySubject:', {
+      error: error.message,
+      response: error.response?.data || error.message
+    });
+
+    throw error; // пробрасываем ошибку дальше
+  }
+};
+
+export const fetchLessonsCountBySubject = async (subjectId) => {
+  if (!subjectId && subjectId !== 0) { // учитываем 0 как валидный ID
+    throw new Error('ID предмета обязателен');
+  }
+
+  try {
+    const response = await apiClient.get(endpoints.expsys.subjects.countslessons, {
+      
+        subject_id: subjectId
+      
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Ошибка при получении количества уроков');
+    }
+
+    return {
+      count: response.data.data?.lesson_count || 0,
+      subjectName: response.data.data?.subject_name || '',
+      subjectId: response.data.data?.subject_id || subjectId,
+      teacherName: response.data.data?.teacher_name || ''
+    };
+
+  } catch (error) {
+    console.error('Ошибка в fetchLessonsCountBySubject:', {
+      error: error.message,
+      response: error.response?.data || error.message
+    });
+
+    throw error; // пробрасываем ошибку дальше
+  }
+};
+
+export const fetchTestsCountBySubject = async (subjectId) => {
+  if (!subjectId && subjectId !== 0) { // учитываем 0 как валидный ID
+    throw new Error('ID предмета обязателен');
+  }
+
+  try {
+    const response = await apiClient.get(endpoints.expsys.subjects.countstests, {
+        subject_id: subjectId
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Ошибка при получении количества тестов');
+    }
+
+    return {
+      count: response.data.data?.test_count || 0,
+      subjectName: response.data.data?.subject_name || '',
+      subjectId: response.data.data?.subject_id || subjectId,
+      teacherName: response.data.data?.teacher_name || ''
+    };
+
+  } catch (error) {
+    console.error('Ошибка в fetchTestsCountBySubject:', {
+      error: error.message,
+      response: error.response?.data || error.message
+    });
+
+    throw error; // пробрасываем ошибку дальше
+  }
+};

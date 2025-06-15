@@ -15,7 +15,6 @@ import { EllipsisVertical, Edit, Trash, Info, SquarePlus, ArrowLeftToLine } from
 import { onMounted } from 'vue'
 import CompetenceStats from '@/pages/expsys/CompetenceStats.vue'
 import { useToast } from 'vue-toastification'
-
 const toast = useToast()
 
 const props = defineProps({
@@ -44,7 +43,6 @@ const props = defineProps({
     default: false
   }
 })
-
 const emit = defineEmits(['back', 'close'])
 
 // Реактивные состояния
@@ -58,56 +56,50 @@ const selectedIndicator = ref(null)
 const saving = ref(false)
 const deleting = ref(false)
 const subjectsCounts = ref({})
+const editingIndicator = ref(getEmptyIndicator())
 
-const editingIndicator = ref({
-  id: null,
-  name: '',
-  description: '',
-})
-
-// Методы
 function getEmptyIndicator() {
   return {
     id: null,
     name: '',
     description: '',
+    category: ''
   }
 }
 
 async function saveIndicator() {
   saving.value = true
   error.value = null
-
   try {
+    if (!editingIndicator.value.name?.trim()) {
+      throw new Error('Название индикатора обязательно')
+    }
+
+    const payload = {
+      name: editingIndicator.value.name.trim(),
+      description: editingIndicator.value.description?.trim() || '',
+      category: editingIndicator.value.category?.trim() || '',
+      ...(props.subjectId && { subject_id: props.subjectId }),
+      ...(props.competenceId && { competence_id: props.competenceId })
+    }
+
+    let updatedIndicator
+
     if (editingIndicator.value.id) {
       // Редактирование существующего индикатора
-      const updatedIndicator = await updateIndicator(
-        editingIndicator.value.id,
-        {
-          name: editingIndicator.value.name,
-          description: editingIndicator.value.description
-        }
-      )
-      
-      // Обновляем список индикаторов
+      updatedIndicator = await updateIndicator(editingIndicator.value.id, payload)
       const index = indicators.value.findIndex(i => i.id === updatedIndicator.id)
       if (index !== -1) {
         indicators.value[index] = updatedIndicator
       }
-      toast.success('Индикатор успешно обновлен')
+      toast.success('Индикатор успешно обновлён')
     } else {
       // Создание нового индикатора
-      const createdIndicator = await createIndicator({
-        name: editingIndicator.value.name,
-        description: editingIndicator.value.description,
-        ...(props.subjectId && { subject_id: props.subjectId }),
-        ...(props.competenceId && { competence_id: props.competenceId })
-      })
-
-      indicators.value.unshift(createdIndicator)
+      updatedIndicator = await createIndicator(payload)
+      indicators.value.unshift(updatedIndicator)
       toast.success('Индикатор успешно создан')
     }
-    
+
     closeModal()
   } catch (err) {
     error.value = err.message || 'Не удалось сохранить индикатор'
@@ -121,7 +113,6 @@ async function saveIndicator() {
 async function loadIndicators() {
   loading.value = true
   error.value = null
-
   try {
     if (props.isIndicator && props.subjectId) {
       // Загрузка для предмета
@@ -146,14 +137,12 @@ async function loadIndicators() {
 async function loadSubjectsCounts() {
   try {
     if (!indicators.value.length) return
-
     const countsPromises = indicators.value.map(async indicator => {
       try {
         if (indicator.id === undefined || indicator.id === null) {
           console.warn('Невалидный ID индикатора:', indicator)
           return { id: indicator.id, count: 0 }
         }
-
         const res = await fetchSubjectsCountByIndicator(indicator.id)
         return { id: indicator.id, count: res.count }
       } catch (err) {
@@ -161,9 +150,7 @@ async function loadSubjectsCounts() {
         return { id: indicator.id, count: 0 }
       }
     })
-
     const counts = await Promise.all(countsPromises)
-
     subjectsCounts.value = counts.reduce((acc, { id, count }) => {
       if (id !== undefined && id !== null) {
         acc[id] = count
@@ -220,17 +207,15 @@ function confirmDelete(indicator) {
 
 async function deleteIndicators() {
   if (!indicatorToDelete.value) return
-  
   deleting.value = true
   error.value = null
-  
   try {
     await deleteIndicator(indicatorToDelete.value.id)
     // Удаляем индикатор из списка
     indicators.value = indicators.value.filter(i => i.id !== indicatorToDelete.value.id)
     showDeleteModal.value = false
     indicatorToDelete.value = null
-    toast.success('Индикатор успешно удален')
+    toast.success('Индикатор успешно удалён')
   } catch (err) {
     error.value = err.message || 'Не удалось удалить индикатор'
     toast.error(error.value)
@@ -283,7 +268,6 @@ onMounted(() => {
         Назад
       </button>
     </div>
-
     <div v-if="loading" class="text-center">
       <div class="spinner-border"></div>
     </div>
@@ -327,16 +311,17 @@ onMounted(() => {
           <div class="card-body">
             <h5 class="card-title">{{ indicator.name }}</h5>
             <p class="card-text text-muted">{{ indicator.description }}</p>
+            <div class="mt-2">
+              <span class="badge bg-light text-dark">
+                Категория: {{ indicator.category || 'не указана' }}
+              </span>
+            </div>
             <div class="mt-3">
               <span class="badge bg-light text-dark">
                 Коэффициент освоенности: {{ 100 / subjectsCounts[indicator.id] || 0 }} %
               </span>
             </div>
-            <div class="text-center mt-3">
-              <button class="btn btn-primary" @click="openStats(indicator)">
-                Статистика освоения
-              </button>
-            </div>
+      
           </div>
         </div>
       </div>
@@ -388,6 +373,7 @@ onMounted(() => {
                   v-model="editingIndicator.name" 
                   class="form-control" 
                   required 
+                  placeholder="Введите название индикатора"
                 />
               </div>
               <div class="mb-3">
@@ -396,8 +382,17 @@ onMounted(() => {
                   v-model="editingIndicator.description" 
                   rows="3" 
                   class="form-control" 
-                  required
+                  placeholder="Введите описание индикатора"
                 ></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Категория</label>
+                <input 
+                  type="text" 
+                  v-model="editingIndicator.category" 
+                  class="form-control" 
+                  placeholder="Введите категорию индикатора"
+                />
               </div>
               <div v-if="error" class="alert alert-danger">{{ error }}</div>
               <div class="d-flex justify-content-end">
@@ -422,7 +417,8 @@ onMounted(() => {
       :class="{ show: showDeleteModal }" 
       tabindex="-1" 
       style="display: block;" 
-      v-if="showDeleteModal">
+      v-if="showDeleteModal"
+    >
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -486,7 +482,6 @@ onMounted(() => {
   align-items: center;
   z-index: 1050;
 }
-
 .stats-modal-content {
   background: white;
   border-radius: 8px;
@@ -499,7 +494,6 @@ onMounted(() => {
   z-index: 2;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
-
 .stats-modal-header {
   display: flex;
   justify-content: space-between;
@@ -508,7 +502,6 @@ onMounted(() => {
   padding-bottom: 15px;
   border-bottom: 1px solid #eee;
 }
-
 .stats-modal-backdrop {
   position: fixed;
   top: 0;
@@ -518,7 +511,6 @@ onMounted(() => {
   background: rgba(0, 0, 0, 0.5);
   z-index: 1;
 }
-
 .btn-close {
   font-size: 1.5rem;
   padding: 0.5rem;
