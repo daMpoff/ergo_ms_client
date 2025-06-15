@@ -40,7 +40,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { FileText, Copy, Grid2x2, Tag } from 'lucide-vue-next'
+import { FileText, Copy, Grid2x2 } from 'lucide-vue-next'
 
 const router = useRouter()
 const navigateTo = (route) => router.push(route)
