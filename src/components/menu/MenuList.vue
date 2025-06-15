@@ -178,11 +178,12 @@ onMounted(async () => {
   const res = await apiClient.get(endpoints.settings.lastSettings)
   if (res.success) {
     const settings = Array.isArray(res.data) ? res.data[0] : res.data
-    siteName.value = settings?.site_name || 'ERG0 MS'
+    siteName.value = settings?.site_name || 'ERGO MS'
   } else {
-    siteName.value = 'Ошибка загрузки'
+    siteName.value = 'ERGO MS'
   }
 })
+
 </script>
 
 <template>
