@@ -3,27 +3,34 @@ import { checkToken } from '@/js/api/services/auth-index'
 
 const mainRoutes = [
   {
-    path: '/',
+    path: '/account',
     redirect: { name: 'Account' },
     meta: {
       requiresAuth: true,
     },
   },
   {
+    path: '/:parts(.*)+',
+    name: 'CmsAnyDepthPage',
+    component: () => import('@/pages/shortcodes/CmsPage.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/pages/NotFound.vue'),
     meta: {
+      public: true,
       title: 'Страница не найдена',
       requiresAuth: true,
     },
   },
   {
-    path:'/logout',
-    name:'logout',
-    component:()=> import('@/components/header/Logout.vue'),
-    meta:{
-      title:'-',
+    path: '/logout',
+    name: 'logout',
+    component: () => import('@/components/header/Logout.vue'),
+    meta: {
+      title: '-',
     }
   }
 ]
@@ -599,7 +606,7 @@ const shortcodeRoutes = [
     name: 'Shortcodes',
     component: () => import('@/pages/shortcodes/ParentLayout.vue'),
     meta: { title: 'Конструктор сайта', requiresAuth: true },
-    redirect: { name: 'ShortcodeEditor' },
+    redirect: { name: 'MainShortcodePage' },
     children: [
       {
         path: 'editor',
@@ -783,12 +790,12 @@ const expertSystemRoutes = [
         })
       },
       {
-        path:'test-result/:id',
-        name:'TestResult',
-        component:()=> import('@/pages/expert-system/Tests/TestResult.vue'),
-        meta:{title:'Результат теста', requiresAuth:true},
-        props:(route)=>({
-          id:Number(route.params.id)
+        path: 'test-result/:id',
+        name: 'TestResult',
+        component: () => import('@/pages/expert-system/Tests/TestResult.vue'),
+        meta: { title: 'Результат теста', requiresAuth: true },
+        props: (route) => ({
+          id: Number(route.params.id)
         })
       },
       {
@@ -922,7 +929,7 @@ async function runCheckToken() {
 import { checkAccessToPage, CheckAccessToComponents } from './GroupsPolitics'
 export default router
 router.beforeEach((to, from, next) => {
-    checkAccessToPage(to.path)
-    next()
-    CheckAccessToComponents(to.path)
+  checkAccessToPage(to.path)
+  next()
+  CheckAccessToComponents(to.path)
 })
