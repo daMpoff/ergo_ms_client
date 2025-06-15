@@ -24,7 +24,7 @@ export const shortcodesService = {
     return apiClient.get(endpoints.shortcodes.pages)
   },
 
-  getPage(slug) {
+  getPageSlug(slug) {
     return apiClient.get(`${endpoints.shortcodes.pages}${slug}/`)
   },
 
