@@ -703,6 +703,15 @@ const shortcodeRoutes = [
         },
       },
       {
+        path: 'pages/',
+        name: 'Pages',
+        component: () => import('@/pages/shortcodes/AllPages.vue'),
+        meta: {
+          title: 'Страницы',
+          requiresAuth: true
+        },
+      },
+      {
         path: 'templates/:id?',
         name: 'TemplateEditor',
         component: import('@/pages/shortcodes/editor/TemplateEditor.vue'),

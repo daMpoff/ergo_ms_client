@@ -23,6 +23,12 @@ export const shortcodesService = {
   getPages() {
     return apiClient.get(endpoints.shortcodes.pages)
   },
+  getCategories() {
+    return apiClient.get(endpoints.categories.list)
+  },
+  getTags() {
+    return apiClient.get(endpoints.tags.list)
+  },
 
   getPageSlug(slug) {
     return apiClient.get(`${endpoints.shortcodes.pages}${slug}/`)

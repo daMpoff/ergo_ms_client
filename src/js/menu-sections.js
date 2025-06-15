@@ -206,6 +206,7 @@ export const ShortcodesMenuSection = {
   list: [
     { path: 'MainShortcodePage', name: 'Главная' },
     { path: 'Templates', name: 'Компоненты' },
+    { path: 'Pages', name: 'Страницы' },
   ],
 }
 
