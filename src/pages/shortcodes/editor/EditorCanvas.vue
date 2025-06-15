@@ -4,114 +4,123 @@
       <ListTree class="me-2" />
       <h5 class="mb-0">Рабочая область</h5>
       <div class="ms-auto d-flex gap-2">
-        <button class="btn btn-sm btn-success text-white" @click="loadFromDb">
-          Загрузить из БД (page=1)
-        </button>
-        <button class="btn btn-sm btn-primary" @click="saveToDb" :disabled="isSaving">
-          <span v-if="isSaving" class="spinner-border spinner-border-sm me-2"></span>
-          Сохранить в БД
-        </button>
-        <!-- Кнопка для скрытия/отображения debug-блока -->
         <button class="btn btn-sm btn-outline-warning" @click="showDebug = !showDebug">
           {{ showDebug ? 'Скрыть отладку' : 'Отладка для опытных' }}
         </button>
       </div>
     </div>
     <div class="card-body p-0 position-relative">
-      <!-- Drag & Drop дерево -->
-      <Draggable
-        v-model="internalTree"
-        :key="treeKey"
-        :external-data-handler="externalDataHandler"
-        :on-external-drag-over="() => true"
-        :eachDroppable="eachDroppable"
-        tree-line
-        value-key="uid"
-        class="drop-area overflow-auto p-3"
-      >
-        <template #default="{ node, stat }">
-          <div>
-            <OpenIcon
-              v-if="stat.children.length"
-              :open="stat.open"
-              class="me-2 text-primary"
-              @click="stat.open = !stat.open"
-            />
-            <div
-              class="d-flex justify-content-between align-items-center p-2 mb-2 bg-white rounded shadow-sm"
-            >
-              <div>
-                <b>{{ node.template_name }}</b
-                ><br />
-                <small class="text-muted">{{ node.component_type }}</small>
-              </div>
-              <div class="btn-group btn-group-sm">
-                <button
-                  class="btn btn-outline-secondary"
-                  @click="$emit('open-settings', node)"
-                  title="Настроить компонент"
-                >
-                  ⚙️
-                </button>
-                <button
-                  class="btn btn-outline-danger"
-                  @click="removeNode(node.uid)"
-                  title="Удалить компонент"
-                >
-                  🗑️
-                </button>
+      <div v-if="loadError" class="alert alert-danger m-4">{{ loadError }}</div>
+      <template v-else>
+        <!-- Drag & Drop дерево -->
+        <Draggable
+          v-model="internalTree"
+          :key="treeKey"
+          :external-data-handler="externalDataHandler"
+          :on-external-drag-over="() => true"
+          :eachDroppable="eachDroppable"
+          tree-line
+          value-key="uid"
+          class="drop-area overflow-auto p-3"
+        >
+          <template #default="{ node, stat }">
+            <div>
+              <OpenIcon
+                v-if="stat.children.length"
+                :open="stat.open"
+                class="me-2 text-primary"
+                @click="stat.open = !stat.open"
+              />
+              <div
+                class="d-flex justify-content-between align-items-center p-2 mb-2 bg-white rounded shadow-sm"
+              >
+                <div>
+                  <b>{{ node.template_name }}</b
+                  ><br />
+                  <small class="text-muted">{{ node.component_type }}</small>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button
+                    class="btn btn-outline-secondary"
+                    @click="$emit('open-settings', node)"
+                    title="Настроить компонент"
+                  >
+                    ⚙️
+                  </button>
+                  <button
+                    class="btn btn-outline-danger"
+                    @click="removeNode(node.uid)"
+                    title="Удалить компонент"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
             </div>
+          </template>
+        </Draggable>
+        <div class="d-flex justify-content-end mt-4 mb-2 px-3">
+          <button
+            class="btn btn-success text-white btn-lg px-5 py-2 fs-5"
+            @click="saveToDb"
+            :disabled="isSaving || !internalTree.length"
+          >
+            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+            Опубликовать
+          </button>
+        </div>
+        <div v-if="showDebug">
+          <div class="row mt-4">
+            <div class="col-12 col-md-4">
+              <h6>Исходное дерево:</h6>
+              <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
+                >{{ JSON.stringify(internalTree, null, 2) }}
+              </pre>
+            </div>
+            <div class="col-12 col-md-4">
+              <h6>Flat-дерево (Линейное дерево):</h6>
+              <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
+                >{{ JSON.stringify(flatTree, null, 2) }}
+              </pre>
+            </div>
+            <div class="col-12 col-md-4">
+              <h6>Реверсивно-восстановленное дерево:</h6>
+              <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
+                >{{ JSON.stringify(rebuiltTree, null, 2) }}
+              </pre>
+            </div>
           </div>
-        </template>
-      </Draggable>
-
-      <!-- Debug-блок (деревья, плоское, сравнение) отображается только если showDebug === true -->
-      <div v-if="showDebug">
-        <div class="row mt-4">
-          <div class="col-12 col-md-4">
-            <h6>Исходное дерево:</h6>
-            <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
-              >{{ JSON.stringify(internalTree, null, 2) }}
-            </pre>
-          </div>
-          <div class="col-12 col-md-4">
-            <h6>Flat-дерево (Линейное дерево):</h6>
-            <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
-              >{{ JSON.stringify(flatTree, null, 2) }}
-            </pre>
-          </div>
-          <div class="col-12 col-md-4">
-            <h6>Реверсивно-восстановленное дерево:</h6>
-            <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
-              >{{ JSON.stringify(rebuiltTree, null, 2) }}
+          <div class="mt-3">
+            <h6>Различия (Изначальное дерево vs Восстановленное дерево):</h6>
+            <pre class="bg-white border rounded p-2" style="max-height: 220px; overflow: auto"
+              >{{ diffResult || 'Нет различий!' }}
             </pre>
           </div>
         </div>
-        <div class="mt-3">
-          <h6>Различия (Изначальное дерево vs Восстановленное дерево):</h6>
-          <pre class="bg-white border rounded p-2" style="max-height: 220px; overflow: auto"
-            >{{ diffResult || 'Нет различий!' }}
-          </pre>
-        </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ListTree } from 'lucide-vue-next'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Draggable, OpenIcon } from '@he-tree/vue'
 import { v4 as uuidv4 } from 'uuid'
 import { shortcodesService } from '@/js/api/services/shortcodes'
+import { useRoute } from 'vue-router'
 
-// Модель данных, для привязки свойств
 const props = defineProps({
-  modelValue: {
-    type: Array,
-    default: () => [],
-  },
+  modelValue: { type: Array, default: () => [] },
+})
+const emit = defineEmits(['update:modelValue', 'open-settings'])
+
+const route = useRoute()
+const pageId = computed(() => {
+  const val = route.query.page ?? route.params.page
+  if (!val) return null
+  const num = Number(val)
+  return isNaN(num) ? null : num
 })
 
 const treeKey = ref(0)
@@ -119,8 +128,17 @@ function forceTreeRerender() {
   treeKey.value++
 }
 
+const showDebug = ref(false)
+const isSaving = ref(false)
+const loadError = ref('')
+
+// Двунаправленное дерево
+const internalTree = computed({
+  get: () => props.modelValue,
+  set: (val) => emit('update:modelValue', val),
+})
+
 function removeNode(uid) {
-  // Проверяем, не последний ли элемент на корневом уровне
   if (internalTree.value.length === 1 && internalTree.value[0].uid === uid) {
     alert('Нельзя удалить последний компонент! В дереве должен быть хотя бы один элемент.')
     return
@@ -138,24 +156,9 @@ function removeNode(uid) {
   forceTreeRerender()
 }
 
-const emit = defineEmits(['update:modelValue', 'open-settings'])
-
-// Состояние для отображения debug-блока
-const showDebug = ref(false)
-
-// Флаг сохранения (loader)
-const isSaving = ref(false)
-
-// Двунаправленное дерево
-const internalTree = computed({
-  get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val),
-})
-
 // Drag & Drop: проверка на разрешённость вложенности
 const eachDroppable = (targetStat) => targetStat.data.allow_children === true
 
-// Обработка внешнего перетаскивания
 const externalDataHandler = (event) => {
   const tpl = JSON.parse(event.dataTransfer.getData('application/json'))
   return assignUidsRecursively({
@@ -165,7 +168,6 @@ const externalDataHandler = (event) => {
   })
 }
 
-// Рекурсивное присваивание уникальных uid для каждого узла дерева
 function assignUidsRecursively(node) {
   return {
     ...node,
@@ -174,7 +176,6 @@ function assignUidsRecursively(node) {
   }
 }
 
-// Прямое дерево: "выпрямляем" дерево в список объектов с parent, position и т.д.
 function flattenTree(tree, parent = null) {
   let result = []
   tree.forEach((node, idx) => {
@@ -194,20 +195,15 @@ function flattenTree(tree, parent = null) {
 }
 const flatTree = computed(() => flattenTree(internalTree.value))
 
-// === Восстанавливаем дерево из плоской структуры-структуры ===
 function rebuildTree(flat) {
   if (!Array.isArray(flat)) return []
   const map = {}
   const roots = []
-  // Создаём копии узлов без детей
   flat.forEach((item) => (map[item.uid] = { ...item, children: [] }))
-  // Связываем детей с родителями
   flat.forEach((item) => {
     if (item.parent) {
-      // Добавляем как дочерний элемент к родителю
       map[item.parent]?.children.push(map[item.uid])
     } else {
-      // Корневые узлы
       roots.push(map[item.uid])
     }
   })
@@ -215,7 +211,6 @@ function rebuildTree(flat) {
 }
 const rebuiltTree = computed(() => rebuildTree(flatTree.value))
 
-// Проверка по алгоритму на различия: сравниваем исходное дерево и восстановленное дерево по полям
 function simpleDiff(a, b, path = '') {
   let out = []
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -241,24 +236,31 @@ function simpleDiff(a, b, path = '') {
 }
 const diffResult = computed(() => simpleDiff(internalTree.value, rebuiltTree.value).join('\n'))
 
-// Подгрузка дерева из БД
+// Загружаем данные по странице
 async function loadFromDb() {
+  if (!pageId.value) {
+    loadError.value = 'Не передан pageId в параметрах URL'
+    return
+  }
   try {
-    const resp = await shortcodesService.getInstancesTree({ page: 1 })
+    loadError.value = ''
+    const resp = await shortcodesService.getInstancesTree({ page: pageId.value })
     let data = resp.data || resp
-    emit('update:modelValue', data)
+    emit('update:modelValue', Array.isArray(data) ? data : [])
     forceTreeRerender()
   } catch (e) {
-    alert('Ошибка загрузки: ' + (e?.message || e))
+    loadError.value = 'Ошибка загрузки: ' + (e?.message || e)
   }
 }
 
-// Сохранение дерева в БД
 async function saveToDb() {
+  if (!pageId.value) {
+    alert('Нет pageId — невозможно сохранить!')
+    return
+  }
   isSaving.value = true
   try {
-    // РЕАЛИЗАЦИЯ ТОЛЬКО ДЛЯ Page.ID = 1, нужна мне для тестирования
-    const data = flatTree.value.map((node) => ({ ...node, page: 1 }))
+    const data = flatTree.value.map((node) => ({ ...node, page: pageId.value }))
     await shortcodesService.bulkCreateInstances(data)
     await loadFromDb()
   } catch (e) {
@@ -267,6 +269,10 @@ async function saveToDb() {
     isSaving.value = false
   }
 }
+
+onMounted(() => {
+  loadFromDb()
+})
 </script>
 
 <style scoped>

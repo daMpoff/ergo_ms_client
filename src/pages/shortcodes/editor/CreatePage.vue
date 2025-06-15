@@ -11,7 +11,6 @@
               type="text"
               class="form-control form-control-lg"
               placeholder="Введите название"
-              style="font-size: 1.15rem"
             />
           </div>
           <div class="mb-4">
@@ -21,7 +20,6 @@
               type="text"
               class="form-control form-control-lg"
               @input="onSlugInput"
-              style="font-size: 1.08rem"
             />
           </div>
           <div class="mb-4">
@@ -33,27 +31,46 @@
             <div
               v-if="selectedCategory"
               class="alert alert-info py-3 px-4 mt-2 d-flex align-items-center mb-2 fs-6"
-              style="font-size: 1.1rem"
             >
               <span>
                 <span class="text-secondary">Путь:</span>
                 <b class="ms-2">{{ categoryPathString }}</b>
               </span>
-              <button
-                class="btn btn-link text-danger ms-auto fs-4 p-0 lh-1"
-                style="margin-top: -5px"
-                @click="resetCategory"
-                title="Сбросить выбор"
-              >
+              <button class="btn btn-link text-danger ms-auto fs-4 p-0 lh-1" @click="resetCategory">
                 &times;
               </button>
             </div>
             <div v-else class="form-text text-muted fs-6 mt-1 mb-0">Выберите категорию справа</div>
           </div>
+          <!-- Теги -->
+          <div class="mb-4">
+            <label class="form-label fs-5">Теги страницы:</label>
+            <div v-if="tagsOfCurrentCategory.length" class="d-flex flex-wrap gap-2">
+              <span
+                v-for="tag in tagsOfCurrentCategory"
+                :key="tag.id"
+                class="badge tag-badge px-3 py-2 fs-6"
+                :class="
+                  selectedTagIds.includes(tag.id)
+                    ? 'bg-primary text-white'
+                    : 'bg-light text-primary border border-primary'
+                "
+                style="cursor: pointer; user-select: none"
+                @click="toggleTag(tag.id)"
+              >
+                {{ tag.name }}
+              </span>
+            </div>
+            <div v-else class="form-text text-muted">Для этой категории нет тегов</div>
+            <div class="form-text mt-1">
+              Выбрано: <span v-if="selectedTagNames.length">{{ selectedTagNames.join(', ') }}</span>
+              <span v-else>нет</span>
+            </div>
+          </div>
           <button
             class="btn btn-success text-white btn-lg mt-2 px-5 py-2 fs-5"
             @click="savePage"
-            :disabled="!meta.title || !meta.slug"
+            :disabled="!meta.title || !meta.slug || !selectedCategory"
           >
             Создать страницу
           </button>
@@ -67,7 +84,6 @@
                 class="form-control form-control-lg mb-3 fs-5"
                 type="text"
                 placeholder="Поиск категории..."
-                style="font-size: 1.12rem"
               />
               <div class="category-scroll border rounded bg-light py-2 px-2">
                 <CategoryTree
@@ -85,93 +101,28 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { slugify as translitSlugify } from 'transliteration'
+import { shortcodesService } from '@/js/api/services/shortcodes'
 import CategoryTree from './CategoryTree.vue'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
-// тестовые данные
-const mockCategories = [
-  {
-    id: 1,
-    name: 'Электроника',
-    slug: 'electronics',
-    children: [
-      {
-        id: 2,
-        name: 'Ноутбуки',
-        slug: 'notebooks',
-        children: [
-          { id: 3, name: 'Dell', slug: 'dell' },
-          { id: 4, name: 'HP', slug: 'hp' },
-        ],
-      },
-      {
-        id: 5,
-        name: 'Смартфоны',
-        slug: 'smartphones',
-        children: [
-          { id: 6, name: 'Apple', slug: 'apple' },
-          { id: 7, name: 'Samsung', slug: 'samsung' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 11,
-    name: 'Одежда',
-    slug: 'clothes',
-    children: [
-      {
-        id: 12,
-        name: 'Мужская',
-        slug: 'mens',
-        children: [
-          { id: 13, name: 'Рубашки', slug: 'shirts' },
-          { id: 14, name: 'Джинсы', slug: 'jeans' },
-        ],
-      },
-      {
-        id: 15,
-        name: 'Женская',
-        slug: 'womens',
-        children: [
-          { id: 16, name: 'Платья', slug: 'dresses' },
-          { id: 17, name: 'Юбки', slug: 'skirts' },
-        ],
-      },
-    ],
-  },
-]
-const categoriesTree = ref(mockCategories)
-
-// поиск и фильтрация категорий
-const categorySearch = ref('')
-function filterTree(categories, search) {
-  return categories
-    .map((cat) => {
-      let found = cat.name.toLowerCase().includes(search)
-      let filteredChildren = cat.children ? filterTree(cat.children, search) : []
-      if (filteredChildren.length) found = true
-      if (found)
-        return {
-          ...cat,
-          children: filteredChildren,
-        }
-      return null
-    })
-    .filter(Boolean)
-}
-const filteredCategories = computed(() => {
-  if (!categorySearch.value.trim()) return categoriesTree.value
-  return filterTree(categoriesTree.value, categorySearch.value.trim().toLowerCase())
-})
-
-// генерация slug
+// Состояния страницы
 const meta = ref({
   title: '',
   slug: '',
 })
 const slugEdited = ref(false)
+
+// --- Категории ---
+const categories = ref([])
+const categorySearch = ref('')
+const selectedCategory = ref(null)
+const selectedPath = ref([])
+const router = useRouter()
+
 function makeSlug(text) {
   return translitSlugify(text, { lowercase: true, separator: '-' })
 }
@@ -194,9 +145,26 @@ watch(
   }
 )
 
-// Выбор категории
-const selectedCategory = ref(null)
-const selectedPath = ref([])
+function filterTree(categories, search) {
+  return categories
+    .map((cat) => {
+      let found = cat.name.toLowerCase().includes(search)
+      let filteredChildren = cat.children ? filterTree(cat.children, search) : []
+      if (filteredChildren.length) found = true
+      if (found)
+        return {
+          ...cat,
+          children: filteredChildren,
+        }
+      return null
+    })
+    .filter(Boolean)
+}
+const filteredCategories = computed(() => {
+  if (!categorySearch.value.trim()) return categories.value
+  return filterTree(categories.value, categorySearch.value.trim().toLowerCase())
+})
+
 function handleSelect({ category, path }) {
   selectedCategory.value = category
   selectedPath.value = path.concat([{ name: category.name, slug: category.slug, id: category.id }])
@@ -204,6 +172,7 @@ function handleSelect({ category, path }) {
 function resetCategory() {
   selectedCategory.value = null
   selectedPath.value = []
+  selectedTagIds.value = []
 }
 const categoryPathString = computed(() => selectedPath.value.map((p) => p.name).join(' → '))
 const categoryPathSlugs = computed(() => selectedPath.value.map((p) => p.slug))
@@ -214,11 +183,70 @@ const fullUrl = computed(() => {
   return '/' + [...categoryPathSlugs.value, meta.value.slug].join('/')
 })
 
-function savePage() {
-  alert(
-    `Создана страница:\nНазвание: ${meta.value.title}\nSlug: ${meta.value.slug}\nКатегория: ${categoryPathString.value}\nURL: ${fullUrl.value}`
-  )
+// Теги
+const allTags = ref([])
+const selectedTagIds = ref([])
+
+const tagsOfCurrentCategory = computed(() => {
+  if (!selectedCategory.value) return []
+  return allTags.value.filter((tag) => tag.category === selectedCategory.value.id)
+})
+const selectedTagNames = computed(() =>
+  allTags.value.filter((tag) => selectedTagIds.value.includes(tag.id)).map((tag) => tag.name)
+)
+function toggleTag(id) {
+  const idx = selectedTagIds.value.indexOf(id)
+  if (idx === -1) selectedTagIds.value.push(id)
+  else selectedTagIds.value.splice(idx, 1)
 }
+// если сменили категорию — очищаем выбранные теги
+watch(selectedCategory, () => {
+  selectedTagIds.value = []
+})
+
+// Загрузка тегов
+async function fetchCategories() {
+  const resp = await apiClient.get(endpoints.categories.list)
+  categories.value = Array.isArray(resp.data)
+    ? buildTree(resp.data)
+    : buildTree(resp.data.results || [])
+}
+function buildTree(list) {
+  const map = {}
+  const roots = []
+  list.forEach((item) => {
+    map[item.id] = { ...item, children: [] }
+  })
+  list.forEach((item) => {
+    if (item.parent === null || item.parent === undefined) {
+      roots.push(map[item.id])
+    } else if (map[item.parent]) {
+      map[item.parent].children.push(map[item.id])
+    }
+  })
+  return roots
+}
+async function fetchTags() {
+  const resp = await apiClient.get(endpoints.tags.list)
+  allTags.value = Array.isArray(resp.data) ? resp.data : resp.data.results || []
+}
+
+// --- Сохранение страницы ---
+async function savePage() {
+  const resp = await shortcodesService.createPage({
+    name: meta.value.title,
+    slug: meta.value.slug,
+    category_id: selectedCategory.value.id,
+    tags_ids: selectedTagIds.value,
+  })
+  const pageId = resp.data.id
+  router.push({ path: '/shortcodes/shortcode-editor', query: { page: pageId } })
+}
+
+onMounted(() => {
+  fetchCategories()
+  fetchTags()
+})
 </script>
 
 <style scoped>
@@ -240,6 +268,19 @@ function savePage() {
 .form-label {
   font-weight: 600;
   color: #2a384c;
+}
+.tag-badge {
+  cursor: pointer;
+  font-size: 1.1rem;
+  border-radius: 2rem;
+  transition: background 0.15s, color 0.15s, border 0.15s;
+  user-select: none;
+}
+.tag-badge.bg-primary {
+  box-shadow: 0 2px 12px #2688eb22;
+}
+.tag-badge.bg-light {
+  border: 1.5px solid #2688eb !important;
 }
 .btn-outline-primary {
   transition: background 0.15s, color 0.15s, border 0.15s;
