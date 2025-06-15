@@ -4,6 +4,8 @@ import {
   fetchCompetencies,
   createCompetence,
   deleteCompetence,
+  fetchCompetenceMastery,
+  updateCompetence
 } from '@/js/api/services/expsysService'
 import IndicatorDetailsModal from './IndicatorDetailsModal.vue'
 import IndicatorsManager from './IndicatorsManager.vue'
@@ -11,6 +13,9 @@ import DropDown from '@/components/DropDown.vue'
 import { EllipsisVertical, Edit, Trash, Info, SquarePlus, ArrowLeftToLine, Filter } from 'lucide-vue-next'
 import { onMounted } from 'vue'
 import CompetenceStats from '@/pages/expsys/CompetenceStats.vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 const props = defineProps({
   subjectId: {
@@ -23,6 +28,9 @@ const props = defineProps({
   },
 })
 
+const currentCompetence = ref(null)
+const currentStats = ref([])
+const statsLoading = ref(false)
 const emit = defineEmits(['back'])
 
 // Состояния для управления отображением
@@ -80,16 +88,38 @@ async function saveCompetence() {
   error.value = null
 
   try {
-    const createdCompetence = await createCompetence({
-      name: editingCompetence.value.name,
-      description: editingCompetence.value.description,
-      category: editingCompetence.value.type
-    })
-
-    competencies.value.unshift(createdCompetence)
-    showAddModal.value = false
+    if (editingCompetence.value.id) {
+      // Редактирование существующей компетенции
+      const updatedCompetence = await updateCompetence(
+        editingCompetence.value.id,
+        {
+          name: editingCompetence.value.name,
+          description: editingCompetence.value.description,
+          category: editingCompetence.value.type
+        }
+      )
+      
+      // Обновляем список компетенций
+      const index = competencies.value.findIndex(c => c.id === updatedCompetence.id)
+      if (index !== -1) {
+        competencies.value[index] = updatedCompetence
+      }
+      toast.success('Компетенция успешно обновлена')
+    } else {
+      // Создание новой компетенции
+      const createdCompetence = await createCompetence({
+        name: editingCompetence.value.name,
+        description: editingCompetence.value.description,
+        category: editingCompetence.value.type
+      })
+      competencies.value.unshift(createdCompetence)
+      toast.success('Компетенция успешно создана')
+    }
+    
+    closeModal()
   } catch (err) {
     error.value = err.message || 'Не удалось сохранить компетенцию'
+    toast.error(error.value)
     console.error('Ошибка сохранения компетенции:', err)
   } finally {
     saving.value = false
@@ -135,7 +165,12 @@ function addCompetence() {
 }
 
 function editCompetence(competence) {
-  editingCompetence.value = { ...competence }
+  editingCompetence.value = { 
+    id: competence.id,
+    name: competence.name,
+    description: competence.description,
+    type: competence.category || 'professional'
+  }
   showAddModal.value = true
 }
 
@@ -149,14 +184,17 @@ function closeDetails() {
 
 const showStatsModal = ref(false)
 
-async function openStats() {
+async function openStats(competence) {
   try {
+    statsLoading.value = true
+    currentCompetence.value = competence
+    currentStats.value = await fetchCompetenceMastery(competence.id)
     showStatsModal.value = true
   } catch (err) {
     error.value = 'Не удалось загрузить статистику'
     console.error('Ошибка загрузки статистики:', err)
   } finally {
-    loading.value = false
+    statsLoading.value = false
   }
 }
 
@@ -177,8 +215,10 @@ async function deleteCompetences() {
     competencies.value = competencies.value.filter(c => c.id !== competenceToDelete.value.id)
     showDeleteModal.value = false
     competenceToDelete.value = null
+    toast.success('Компетенция успешно удалена')
   } catch (err) {
     error.value = err.message || 'Не удалось удалить компетенцию'
+    toast.error(error.value)
     console.error('Ошибка удаления компетенции:', err)
   } finally {
     deleting.value = false
@@ -319,7 +359,8 @@ watch(() => props.subjectId, (newVal) => {
         </div>
       </div>
     </div>
-          <!-- Модальное окно статистики -->
+    
+    <!-- Модальное окно статистики -->
     <div v-if="showStatsModal" class="stats-modal">
       <div class="stats-modal-backdrop" @click="closeStatsModal"></div>
       <div class="stats-modal-content">
@@ -339,6 +380,7 @@ watch(() => props.subjectId, (newVal) => {
         />
       </div>
     </div>
+    
     <!-- Модальное окно добавления/редактирования -->
     <div 
       class="modal fade" 
@@ -398,7 +440,7 @@ watch(() => props.subjectId, (newVal) => {
                 </button>
                 <button class="btn btn-primary" :disabled="saving">
                   <span v-if="saving" class="spinner-border spinner-border-sm"></span>
-                  Сохранить
+                  {{ editingCompetence.id ? 'Обновить' : 'Сохранить' }}
                 </button>
               </div>
             </form>

@@ -80,6 +80,44 @@ export const fetchIndicators = async () => {
   }
 };
 
+export const fetchCompetenceMastery = async (competenceId) => {
+  try {
+    const response = await apiClient.get(endpoints.expsys.subjects.information, {
+      competence_id: competenceId
+    });
+
+    if (!response.success) {
+      throw new Error(response.errors?.message || 'Ошибка при загрузке данных об освоении компетенции');
+    }
+
+    // Преобразуем данные в удобный формат
+    return {
+      competenceId: response.data.data.competence_id,
+      competenceName: response.data.data.competence_name,
+      indicatorsCount: response.data.data.indicators_count,
+      averageMastery: response.data.data.average_mastery,
+      students: response.data.data.students.map(student => ({
+        studentId: student.student_id,
+        studentFio: student.student_fio,
+        totalMastery: student.total_mastery,
+        subjects: student.subjects.map(subject => ({
+          subjectId: subject.subject_id,
+          subjectName: subject.subject_name,
+          indicatorId: subject.indicator_id,
+          indicatorName: subject.indicator_name,
+          grade: subject.grade,
+          masteryContribution: subject.mastery_contribution,
+          gradeDate: subject.grade_date
+        }))
+      }))
+    };
+    
+  } catch (error) {
+    console.error('Ошибка в fetchCompetenceMastery:', error.message);
+    throw error;
+  }
+};
+
 
 export const fetchCompetencies = async () => {
   try {
@@ -380,3 +418,79 @@ export const deleteIndicator = async (indicatorId) => {
     };
   }
 };
+
+export const updateSubject = async (subjectId, updateData) => {
+  try {
+    // Заменяем {id} в URL на реальный ID предмета
+    const url = endpoints.expsys.subjects.update_subject.replace('{id}', subjectId)
+    
+    const response = await apiClient.post(url, updateData)
+
+    if (!response.success) {
+      throw new Error(response.errors?.message || 'Ошибка при обновлении предмета')
+    }
+
+    // Возвращаем обновленные данные предмета
+    return {
+      id: response.data.subject.id,
+      name: response.data.subject.name,
+      description: response.data.subject.description,
+      creationDate: response.data.subject.creationdate,
+      lastUpdate: response.data.subject.lastupdate,
+      teacher: response.data.subject.teacher
+    }
+    
+  } catch (error) {
+    console.error('Ошибка в updateSubject:', error.message)
+    throw error
+  }
+}
+
+export const updateCompetence = async (competenceId, updateData) => {
+  try {
+    // Заменяем {id} в URL на реальный ID компетенции
+    const url = endpoints.expsys.subjects.update_competence.replace('{id}', competenceId)
+    
+    const response = await apiClient.post(url, updateData)
+
+    if (!response.success) {
+      throw new Error(response.errors?.message || 'Ошибка при обновлении компетенции')
+    }
+
+    // Возвращаем обновленные данные компетенции
+    return {
+      id: response.data.competence.id,
+      name: response.data.competence.name,
+      description: response.data.competence.description,
+      category: response.data.competence.category
+    }
+    
+  } catch (error) {
+    console.error('Ошибка в updateCompetence:', error.message)
+    throw error
+  }
+}
+
+export const updateIndicator = async (indicatorId, updateData) => {
+  try {
+    // Заменяем {id} в URL на реальный ID индикатора
+    const url = endpoints.expsys.subjects.update_indicator.replace('{id}', indicatorId)
+    
+    const response = await apiClient.post(url, updateData)
+
+    if (!response.success) {
+      throw new Error(response.errors?.message || 'Ошибка при обновлении индикатора')
+    }
+
+    // Возвращаем обновленные данные индикатора
+    return {
+      id: response.data.indicator.id,
+      name: response.data.indicator.name,
+      description: response.data.indicator.description
+    }
+    
+  } catch (error) {
+    console.error('Ошибка в updateIndicator:', error.message)
+    throw error
+  }
+}

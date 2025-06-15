@@ -6,13 +6,17 @@ import {
   fetchSubjectsCountByIndicator,
   fetchIndicatorsCompetencie,
   createIndicator,
-  deleteIndicator
+  deleteIndicator,
+  updateIndicator
 } from '@/js/api/services/expsysService'
 import IndicatorDetailsModal from './IndicatorDetailsModal.vue'
 import DropDown from '@/components/DropDown.vue'
 import { EllipsisVertical, Edit, Trash, Info, SquarePlus, ArrowLeftToLine } from 'lucide-vue-next'
 import { onMounted } from 'vue'
 import CompetenceStats from '@/pages/expsys/CompetenceStats.vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 const props = defineProps({
   subjectId: {
@@ -75,17 +79,39 @@ async function saveIndicator() {
   error.value = null
 
   try {
-    const createdIndicator = await createIndicator({
-      name: editingIndicator.value.name,
-      description: editingIndicator.value.description,
-      ...(props.subjectId && { subject_id: props.subjectId }),
-      ...(props.competenceId && { competence_id: props.competenceId })
-    })
+    if (editingIndicator.value.id) {
+      // Редактирование существующего индикатора
+      const updatedIndicator = await updateIndicator(
+        editingIndicator.value.id,
+        {
+          name: editingIndicator.value.name,
+          description: editingIndicator.value.description
+        }
+      )
+      
+      // Обновляем список индикаторов
+      const index = indicators.value.findIndex(i => i.id === updatedIndicator.id)
+      if (index !== -1) {
+        indicators.value[index] = updatedIndicator
+      }
+      toast.success('Индикатор успешно обновлен')
+    } else {
+      // Создание нового индикатора
+      const createdIndicator = await createIndicator({
+        name: editingIndicator.value.name,
+        description: editingIndicator.value.description,
+        ...(props.subjectId && { subject_id: props.subjectId }),
+        ...(props.competenceId && { competence_id: props.competenceId })
+      })
 
-    indicators.value.unshift(createdIndicator)
-    showAddModal.value = false
+      indicators.value.unshift(createdIndicator)
+      toast.success('Индикатор успешно создан')
+    }
+    
+    closeModal()
   } catch (err) {
     error.value = err.message || 'Не удалось сохранить индикатор'
+    toast.error(error.value)
     console.error('Ошибка сохранения индикатора:', err)
   } finally {
     saving.value = false
@@ -204,8 +230,10 @@ async function deleteIndicators() {
     indicators.value = indicators.value.filter(i => i.id !== indicatorToDelete.value.id)
     showDeleteModal.value = false
     indicatorToDelete.value = null
+    toast.success('Индикатор успешно удален')
   } catch (err) {
     error.value = err.message || 'Не удалось удалить индикатор'
+    toast.error(error.value)
     console.error('Ошибка удаления индикатора:', err)
   } finally {
     deleting.value = false
@@ -378,7 +406,7 @@ onMounted(() => {
                 </button>
                 <button class="btn btn-primary" :disabled="saving">
                   <span v-if="saving" class="spinner-border spinner-border-sm"></span>
-                  Сохранить
+                  {{ editingIndicator.id ? 'Обновить' : 'Сохранить' }}
                 </button>
               </div>
             </form>

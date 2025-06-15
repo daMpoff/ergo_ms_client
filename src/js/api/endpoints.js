@@ -46,6 +46,10 @@ export const endpoints = {
             indicatorscompenencies:'/expsys_module/competenceindicators/',
             delete_competence:'/expsys_module/delete-competence/{id}/',
             delete_indicator:'/expsys_module/delete-indicator/{id}/',
+            information:'/expsys_module/information-competence/',
+            update_subject:'/expsys_module/update-subject/{id}/',
+            update_competence:'/expsys_module/update-competence/{id}/',
+            update_indicator:'/expsys_module/update-indicator/{id}/',
 
         },
     
