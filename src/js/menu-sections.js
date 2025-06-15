@@ -48,7 +48,7 @@ export const SettingsMenuSection = {
   list: [
     { path: 'AccountSettings', name: 'Аккаунт' },
     { path: 'SecuritySettings', name: 'Безопасность' },
-    { path: 'SiteSettings', name: 'Настройки'},
+    { path: 'SiteSettings', name: 'Настройки' },
     { path: 'Roles', name: 'Ролевые настройки' },
   ],
 }
@@ -162,7 +162,7 @@ export const AdminPanelMenuSection = {
     { path: 'GroupsPanel', name: 'Настройка групп' },
     { path: 'PermissionsPanel', name: 'Настройка прав' },
     { path: 'UsersPanel', name: 'Настройка пользователей' },
-    { path: 'LiminationPanel', name:'Настройка ограничений'}
+    { path: 'LiminationPanel', name: 'Настройка ограничений' }
   ],
 }
 
@@ -205,7 +205,6 @@ export const ShortcodesMenuSection = {
   title: 'Редактор страниц',
   list: [
     { path: 'MainShortcodePage', name: 'Главная' },
-    { path: 'ShortcodeEditor', name: 'Редактор страниц' },
     { path: 'Templates', name: 'Компоненты' },
   ],
 }
