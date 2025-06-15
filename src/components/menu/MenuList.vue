@@ -165,7 +165,7 @@ const menuSections = ref([
   CategoriesMenuSection,
 ])
 
-const separators = (index) => {ф
+const separators = (index) => {
   switch (index) {
     case 1:
       return 'Шаблоны'
