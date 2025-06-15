@@ -70,19 +70,13 @@ const shortcodeOptions = [
   {
     title: 'Галерея компонентов',
     description: 'Просмотр и добавление шорткодов',
-    route: '/shortcodes/templates',
+    route: '/shortcodes/templates/',
     icon: Grid2x2,
-  },
-  {
-    title: 'Управление категориями компонентов',
-    description: 'Создание и редактирование категорий',
-    route: '/shortcodes/categories-page',
-    icon: Tag,
   },
   {
     title: 'Редактор шаблонов шорткодов',
     description: 'Создание и управление шаблонами компонентов',
-    route: '/shortcodes/templates',
+    route: 'templates',
     icon: Copy,
   },
 ]

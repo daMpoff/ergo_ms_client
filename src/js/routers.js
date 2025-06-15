@@ -385,15 +385,15 @@ const categoriesRoutes = [
       {
         path: 'categories-list',
         name: 'PageCategoriesManager',
-        component:() => import('@/pages/categories/CategoriesManagerPage.vue'),
+        component: () => import('@/pages/categories/CategoriesManagerPage.vue'),
         meta: { requiresAuth: true, title: 'Создание категорий' }
       },
       {
         path: 'tags-list',
         name: 'TagsManager',
-        component:() => import('@/pages/categories/TagsManagerPage.vue'),
+        component: () => import('@/pages/categories/TagsManagerPage.vue'),
         meta: { requiresAuth: true, title: 'Создание тегов' }
-      } 
+      }
     ],
   },
 ]
@@ -694,7 +694,7 @@ const shortcodeRoutes = [
         },
       },
       {
-        path: 'templates',
+        path: 'templates/',
         name: 'Templates',
         component: () => import('@/pages/shortcodes/editor/TemplateManager.vue'),
         meta: {
