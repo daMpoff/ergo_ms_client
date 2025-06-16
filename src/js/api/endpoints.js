@@ -77,19 +77,40 @@ export const endpoints = {
 
         setUserSkillTest: 'expert_system/set-user-skill-test',
         getUserSkillTest: 'expert_system/get-user-skill-tests',
-        getUserSkills: 'expert_system/get-user-skills'
-    },
-    crm: {
-      monthlyStats: 'crm/stats/monthly/',
-      priorityStats: 'crm/stats/priority/',
-      sectionStats: 'crm/stats/sections/',
-      projectCompletionStats: 'crm/stats/project-completion/',
-      userProductivityStats: 'crm/stats/user-productivity/',
-      deadlineAnalysis: 'crm/stats/deadline-analysis/',
-      taskCreationTrend: 'crm/stats/task-creation-trend/',
-      projectTimelineStats: 'crm/stats/project-timeline/',
-      calendarActivityStats: 'crm/stats/calendar-activity/',
-      taskComplexityStats: 'crm/stats/task-complexity/'
+        getUserSkills: 'expert_system/get-user-skills',
+        setUserSkills: 'expert_system/set-user-skills',
+
+        getAllTests: 'expert_system/get-all-tests',
+        createTest: 'expert_system/create-test',
+        deleteTest: 'expert_system/delete-test',
+        getTest: 'expert_system/get-test',
+        updateTest: 'expert_system/patch-test',
+        getSkillsForCreate: 'expert_system/get-skills-for-create-test',
+        getSkillsForRedact: 'expert_system/get-skills-for-redact-test',
+        getTestIdBySkill: 'expert_system/get-test-id-by-skill',
+        getTestForRedact: 'expert_system/get-test-for-redact',
+        evaluateTest: 'expert_system/evaluate-test',
+        saveOrientationTestResult: 'expert_system/orientation-test-results/',
+        saveBestRoleToStudent: 'expert_system/students/me/set-role/',
+        setStudentRole: 'expert_system/students/me/set-role/',
+        getTestResult: 'expert_system/get-test-result',
+        courses: 'expert_system/courses/',
+        getTestResultBySkillId: 'expert_system/get-test-result-by-skill-id',
+        deleteTestResultBySkill: 'expert_system/delete-test-result-by-skill',
+        dashboard: {
+          metrics: 'expert_system/dashboard/metrics/',
+          summary: 'expert_system/dashboard/summary/',
+          skillsAnalytics: 'expert_system/dashboard/skills-analytics/',
+          popularSkills: 'expert_system/dashboard/popular-skills/',
+          studentsOverview: 'expert_system/dashboard/students-overview/',
+          studentGroupsStats: 'expert_system/dashboard/student-groups-stats/',
+          studentActivityTimeline: 'expert_system/dashboard/student-activity-timeline/',
+          companiesVacanciesStats: 'expert_system/dashboard/companies-vacancies-stats/',
+          popularVacancySkills: 'expert_system/dashboard/popular-vacancy-skills/',
+          testResultsAnalytics: 'expert_system/dashboard/test-results-analytics/',
+          difficultTests: 'expert_system/dashboard/difficult-tests/',
+          rolePopularityStats: 'expert_system/dashboard/role-popularity-stats/'
+      }
     },
   bi: {
         DatasetsList: 'bi_analysis/bi_datasets/',
@@ -237,5 +258,17 @@ export const endpoints = {
             get: 'learning_analytics/data_formalization_submodule/import_stats/',
             update: (pk) => `learning_analytics/data_formalization_submodule/import_stats/${pk}/`,
         },
+    },
+    crm: {
+      monthlyStats: 'crm/stats/monthly/',
+      priorityStats: 'crm/stats/priority/',
+      sectionStats: 'crm/stats/sections/',
+      projectCompletionStats: 'crm/stats/project-completion/',
+      userProductivityStats: 'crm/stats/user-productivity/',
+      deadlineAnalysis: 'crm/stats/deadline-analysis/',
+      taskCreationTrend: 'crm/stats/task-creation-trend/',
+      projectTimelineStats: 'crm/stats/project-timeline/',
+      calendarActivityStats: 'crm/stats/calendar-activity/',
+      taskComplexityStats: 'crm/stats/task-complexity/'
     },
 };

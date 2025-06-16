@@ -386,7 +386,7 @@ const categoriesRoutes = [
         name: 'TagsManager',
         component:() => import('@/pages/categories/TagsManagerPage.vue'),
         meta: { requiresAuth: true, title: 'Создание тегов' }
-      } 
+      }
     ],
   },
 ]
@@ -891,6 +891,16 @@ const expertSystemRoutes = [
           requiresAuth: true,
         },
       },
+      {
+        path: '/expert-system/dashboard',
+        name: 'Dashboard',
+        component: () => import('@/pages/expert-system/DashboardPage.vue'),
+        meta:
+        {
+          title: 'Дэшборд',
+          requiresAuth: true,
+        }
+      }
     ],
   },
 ]
