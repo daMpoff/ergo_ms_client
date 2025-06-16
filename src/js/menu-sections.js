@@ -1,9 +1,13 @@
 import {
   AtSign,
+  Braces,
   Calendar,
+  ChartBarStacked,
   ChartSpline,
+  ChartCandlestick,
   CircleUserRound,
   Component,
+  Code2,
   Grid2x2,
   Map,
   MessagesSquare,
@@ -13,6 +17,10 @@ import {
   UserCog,
   Wallet,
   HandHeart,
+  KeySquare,
+  Video,
+  Files,
+  Layers
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -26,9 +34,9 @@ export const UserMenuSection = {
     { path: 'Teams', name: 'Команды' },
     { path: 'Projects', name: 'Проекты' },
     { path: 'Connections', name: 'Связи' },
-    { path: 'Analytics', name: 'Статистика' },
   ],
 }
+
 
 // Настройки аккаунта
 export const SettingsMenuSection = {
@@ -39,8 +47,7 @@ export const SettingsMenuSection = {
   list: [
     { path: 'AccountSettings', name: 'Аккаунт' },
     { path: 'SecuritySettings', name: 'Безопасность' },
-    { path: 'NotificationSettings', name: 'Уведомления' },
-    { path: 'ConnectionSettings', name: 'Связи' },
+    { path: 'SiteSettings', name: 'Настройки'},
     { path: 'Roles', name: 'Ролевые настройки' },
   ],
 }
@@ -129,7 +136,6 @@ export const InputsMenuSection = {
   title: 'Формы ввода',
 }
 
-// Модальные окна
 export const ComponentsMenuSection = {
   id: 13,
   icon: Component,
@@ -143,16 +149,148 @@ export const ComponentsMenuSection = {
     { path: 'Typography', name: 'Типография' },
   ],
 }
+
+// Админ-панель
+export const AdminPanelMenuSection = {
+  id: 14,
+  icon: KeySquare,
+  routeName: 'AdminPanel',
+  title: 'Админ-панель',
+  list: [
+    { path: 'CategoriesPanel', name: 'Настройка категорий' },
+    { path: 'GroupsPanel', name: 'Настройка групп' },
+    { path: 'PermissionsPanel', name: 'Настройка прав' },
+    { path: 'UsersPanel', name: 'Настройка пользователей' },
+    { path: 'LiminationPanel', name:'Настройка ограничений'}
+  ],
+}
+
+export const WatermarkedVideoSection = {
+  id: 15,
+  icon: Video,
+  routeName: 'Watermarked-Video',
+  title: 'Видео с вотермаркой',
+}
+
+// BI секция
+export const BIMenuSection = {
+  id: 16,
+  icon: ChartSpline,
+  routeName: 'BI',
+  title: 'BI',
+  list: [
+    {
+      name: 'Датасеты',
+      page: 'datasets',
+      isOffcanvas: true
+    },
+    {
+      name: 'Подключения',
+      page: 'connections',
+      isOffcanvas: true
+    },
+    {
+      name: 'Чарты',
+      page: 'charts',
+      isOffcanvas: true
+    },
+  ],
+}
+
+export const ShortcodesMenuSection = {
+  id: 17,
+  icon: Braces,
+  routeName: 'Shortcodes',
+  title: 'Редактор страниц',
+  list: [
+    { path: 'MainShortcodePage', name: 'Главная' },
+    { path: 'ShortcodeEditor', name: 'Редактор страниц' },
+    { path: 'Templates', name: 'Компоненты' },
+  ],
+}
+
+// Модуль учебной аналитики
+export const EducationAnalyticMenuSection = {
+  id: 18,
+  icon: ChartCandlestick,
+  routeName: 'EducationAnalyticModule',
+  title: 'Учебная аналитика',
+  list: [
+    { path: 'MainPage', name: "Общее" },
+    { path: 'StatsPage', name: "Статистика" },
+    { path: 'LearningTrackPage', name: "Траектория" },
+    { path: 'ReportsPage', name: "Отчёты" },
+    { path: 'ProfilePage', name: "Профиль" },
+    { path: 'AdminPanelPage', name: "Админ-панель" },
+    { path: 'SuperUserPage', name: "SAdmin  " },
+  ],
+}
+
+// Модуль экспертной системы
+export const ExpertSystemSection = {
+  id: 19,
+  icon: ChartBarStacked,
+  routeName: 'ExpertSystem',
+  title: 'Экспертная система вакансий',
+  list: [
+    { path: 'Skills', name: 'Навыки' },
+    { path: 'Profile', name: 'Профиль' },
+    { path: 'Groups', name: 'Группы' },
+    { path: 'Vacancies', name: 'Вакансии' },
+    { path: 'Proforientation', name: 'Профориентация' },
+    { path: 'Profession', name: 'Менеджер профессий' },
+    { path: 'OrientationTest', name: 'Менеджер тестов' },
+    { path: 'AllTests', name: 'Управление тестами для навыков' },
+    { path: 'StudentCourses', name: 'Рекомендованные курсы' },
+    { path: 'StudentsList', name: 'Студенты' }
+  ],
+}
+
+// Аналитика
+export const AnalyzeMenuSection = {
+  id: 20,
+  icon: Code2,
+  routeName: 'Analyze',
+  title: 'Анализ',
+  list: [
+    { path: 'DatabaseAnalyze', name: 'Анализ Bitcoin' },
+  ],
+};
+
+export const FilesMenuSection = {
+  id: 21,
+  icon: Files,
+  routeName: 'FileManager',
+  path: '/files',
+  title: 'Файлы',
+  list: [
+    { path: 'FileManager', name: 'Обзор файлов' },
+  ],
+}
+
+export const CategoriesMenuSection = {
+  id: 22,
+  icon: Layers,
+  routeName: 'Categories',
+  path: '/categories',
+  title: 'Категории страниц',
+  list: [
+    { path: 'PageCategories', name: 'Категории' },
+    { path: 'PageCategoriesManager', name: 'Создание категорий' },
+    { path: 'TagsManager', name: 'Создание тегов' },
+  ],
+};
+
 // Формирование команды
 export const TeamBuildingMenuSection = {
-  id: 14,
+  id: 23,
   icon: HandHeart,
   routeName: 'TeamBuilding',
   title: 'Формирование команды',
 }
 // ЭС компетенции
 export const ExpsysMenuSection = {
-  id: 15,
+  id: 24,
   icon: HandHeart,
   routeName: 'Expsys',
   title: 'Экспертная система',

@@ -1,10 +1,8 @@
-<script setup></script>
-
 <template>
   <div class="row row-gap-4">
-    <div class="col-12 col-md-6">
-      <div class="card">
-        <h4 class="mb-3">Значки по умолчанию</h4>
+    <div id="1" class="col-12 col-md-6">
+      <div  class="card">
+        <h4  class="mb-3" >Значки по умолчанию</h4>
         <div class="d-flex gap-2 flex-wrap">
           <span class="badge text-bg-primary">Primary</span>
           <span class="badge text-bg-secondary">Secondary</span>
@@ -16,7 +14,7 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6" id="1">
       <div class="card">
         <h4 class="mb-3">Контурные значки</h4>
         <div class="d-flex gap-2 flex-wrap">
@@ -30,7 +28,7 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6" id="2">
       <div class="card">
         <h4 class="mb-3">Таблетки по умолчанию</h4>
         <div class="d-flex gap-2 flex-wrap">
@@ -44,9 +42,9 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6" id="3">
       <div class="card">
-        <h4 class="mb-3">Контурные таблетки</h4>
+        <h4 class="mb-3" >Контурные таблетки </h4>
         <div class="d-flex gap-2 flex-wrap">
           <span class="badge rounded-pill border border-primary text-primary">Primary</span>
           <span class="badge rounded-pill border border-secondary text-secondary">Secondary</span>
@@ -187,5 +185,6 @@
     </div>
   </div>
 </template>
+
 
 <style scoped lang="scss"></style>

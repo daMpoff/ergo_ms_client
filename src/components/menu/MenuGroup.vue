@@ -7,8 +7,18 @@ const props = defineProps({
   isOpen: { type: Boolean, required: true },
   isCollapsed: { type: Boolean, required: true },
   isHovering: { type: Boolean, required: true },
+  currentPage: { type: String, required: true },
 })
+
 const showFull = computed(() => props.isCollapsed || props.isHovering)
+
+const emit = defineEmits(['toggle', 'action', 'navigate', 'reset-page'])
+
+function emitNavigate(item) {
+  if (item.page) {
+    emit('navigate', item)
+  }
+}
 </script>
 
 <template>
@@ -18,7 +28,7 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
       class="side-title nav-btn"
       active-class="side-title--active"
       exact-active-class="side-title--exact-active"
-      @click="$emit('toggle')"
+      @click="$emit('toggle'); $emit('reset-page')"
     >
       <div class="side-title__label">
         <div class="side-icon icon-flex">
@@ -32,6 +42,7 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
         <ChevronRight :size="20" :class="{ rotated: isOpen }" />
       </div>
     </RouterLink>
+
     <ul
       v-if="data.list"
       class="side-group__list"
@@ -43,24 +54,49 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
         class="side-group__list-item"
         :style="{ transitionDelay: `${index * 50}ms` }"
       >
-        <RouterLink
-          :to="{ name: item.path }"
-          class="side-subtitle nav-btn"
-          active-class="side-subtitle--active"
-          exact-active-class="side-subtitle--exact-active"
-        >
-          <div class="side-subtitle__label">
-            <div class="nav-icon icon-flex"><Dot :size="20" /></div>
-            <div
-              v-if="showFull"
-              class="d-inline-block text-truncate side-subtitle__name"
-              style="max-width: 9.375rem"
-              :title="item.name"
-            >
-              {{ item.name }}
+        <!-- 🔷 BI-вкладки -->
+        <template v-if="item.isOffcanvas">
+          <a
+            href="#"
+            class="side-subtitle nav-btn"
+            :class="{ 'side-subtitle--active': item.page === currentPage }"
+            @click.prevent="emitNavigate(item)"
+          >
+            <div class="side-subtitle__label">
+              <div class="nav-icon icon-flex"><Dot :size="20" /></div>
+              <div
+                v-if="showFull"
+                class="d-inline-block text-truncate side-subtitle__name"
+                style="max-width: 9.375rem"
+                :title="item.name"
+              >
+                {{ item.name }}
+              </div>
             </div>
-          </div>
-        </RouterLink>
+          </a>
+        </template>
+
+        <!-- 🔶 Обычные Vue страницы -->
+        <template v-else>
+          <RouterLink
+            :to="{ name: item.path }"
+            class="side-subtitle nav-btn"
+            active-class="side-subtitle--active"
+            exact-active-class="side-subtitle--exact-active"
+          >
+            <div class="side-subtitle__label">
+              <div class="nav-icon icon-flex"><Dot :size="20" /></div>
+              <div
+                v-if="showFull"
+                class="d-inline-block text-truncate side-subtitle__name"
+                style="max-width: 9.375rem"
+                :title="item.name"
+              >
+                {{ item.name }}
+              </div>
+            </div>
+          </RouterLink>
+        </template>
       </li>
     </ul>
   </li>
@@ -71,12 +107,10 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
   @include flex-column-gap(2px);
 }
 
-// Заголовок группы
 .side-title,
 .side-subtitle {
   @include flex-row-gap(0, center, space-between);
   cursor: pointer;
-
   color: var(--color-primary-text);
   text-decoration: none;
 
@@ -84,6 +118,7 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
     @include flex-row-gap($padding-internal, center, space-between);
   }
 }
+
 .side-title--active {
   color: var(--bs-primary);
   background-color: var(--bs-primary-bg-subtle);
@@ -91,13 +126,12 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
 .side-subtitle--active .nav-icon,
 .side-subtitle--active .side-subtitle__name {
   color: var(--bs-primary);
+  padding-left: 0.5rem;
 }
 
-// Кнопка навигации
 .nav-btn {
   padding: $padding-internal $padding-external;
   border-radius: $radius-small;
-
   transition: all $transition;
   overflow: hidden;
 
@@ -109,12 +143,15 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
   }
 }
 
-// Название
+.side-subtitle--active {
+  background-color: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary);
+}
+
 .side-title__name {
   white-space: nowrap;
 }
 
-// Анимация иконки
 .nav-icon svg {
   transition: transform 0.3s ease;
 }
@@ -122,7 +159,6 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
   transform: rotate(90deg);
 }
 
-// Анимация для списка
 .side-group__list {
   overflow: hidden;
   max-height: 0;
@@ -137,15 +173,13 @@ const showFull = computed(() => props.isCollapsed || props.isHovering)
 }
 
 .side-group__list.is-open {
-  max-height: 320px;
+  max-height: none;
   opacity: 1;
 }
 
-// Элементы списка с задержкой
 .side-group__list-item {
   opacity: 0;
   transform: translateY(-10px);
-
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
