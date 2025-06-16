@@ -11,47 +11,48 @@ const error = ref(null)
 const details = ref(null)
 const notFound = ref(false)
 const page = ref(null)
-const components = ref([]) // header + page + footer
+const components = ref([])
 
-/* ---------- helper: полный путь ----------- */
-const fullPath = ref(pathFromRoute(route))
+/* ——— helper ——— */
 function pathFromRoute(r) {
   const parts = Array.isArray(r.params.parts) ? r.params.parts : [r.params.parts]
-  return parts.filter(Boolean).join('/') || 'home'
+  return parts.filter(Boolean).join('/') // ‘’ для «домашней»
 }
+const fullPath = ref(pathFromRoute(route))
 
+/* ——— навигация ——— */
 const goHome = () => router.push('/')
 const goShortcodes = () => router.push('/shortcodes')
 
+/* ——— загрузка ——— */
 async function loadPage() {
   loading.value = true
   error.value = null
   notFound.value = false
   components.value = []
 
+  /* (0) fullPath → ‘’ / 'home'  */
+  const queryPath = fullPath.value || 'home' // ← фикc
+
   try {
-    /* 1. Layout (header/footer + menu_pages) */
     const lResp = await shortcodesService.getSiteLayout()
     const layout = Array.isArray(lResp.data) ? lResp.data[0] : lResp.data
 
-    /* 2. Сама страница */
-    const pResp = await shortcodesService.getPageByFullPath(fullPath.value)
+    const pResp = await shortcodesService.getPageByFullPath(queryPath)
     if (!pResp.data?.id) throw new Error('Page not found')
     page.value = pResp.data
 
-    /* 3. helper: template → виртуальный instance
-          если это header — прокинем menu_pages в extra_data */
-    const wrapTpl = async (tplId, withMenu = false) => {
+    const wrapTpl = async (tplId, inject = false) => {
       if (!tplId) return []
       const { data: tpl } = await shortcodesService.getTemplate(tplId)
       return [
         {
-          uid: `tpl-${tpl.id}`,
+          uid: 'tpl-' + tpl.id,
           template: tpl.id,
           template_name: tpl.name,
           component_type: tpl.component_type,
           class_list: tpl.class_list,
-          extra_data: withMenu
+          extra_data: inject
             ? { ...tpl.extra_data, menu_pages: layout?.menu_pages || [] }
             : tpl.extra_data,
           allow_children: tpl.allow_children,
@@ -61,7 +62,6 @@ async function loadPage() {
       ]
     }
 
-    /* 4. параллельно собираем блоки */
     const [header, body, footer] = await Promise.all([
       wrapTpl(layout?.header_template, true),
       shortcodesService
@@ -81,6 +81,7 @@ async function loadPage() {
   }
 }
 
+/* ——— реагируем на смену маршрута ——— */
 watch(
   () => route.params.parts,
   () => {
@@ -93,7 +94,7 @@ watch(
 
 <template>
   <div class="my-2">
-    <h2 class="mb-4">CMS-страница: {{ page?.name || fullPath }}</h2>
+    <h2 class="mb-4">CMS-страница: {{ page?.name || fullPath || 'home' }}</h2>
 
     <div v-if="loading">Загрузка…</div>
 
@@ -114,8 +115,6 @@ watch(
       </div>
     </template>
 
-    <template v-else>
-      <PublicCanvas :components="components" />
-    </template>
+    <PublicCanvas v-else :components="components" />
   </div>
 </template>
