@@ -268,6 +268,7 @@ export const FilesMenuSection = {
     { path: 'FileManager', name: 'Обзор файлов' },
   ],
 }
+
 export const CategoriesMenuSection = {
   id: 22,
   icon: Layers,
