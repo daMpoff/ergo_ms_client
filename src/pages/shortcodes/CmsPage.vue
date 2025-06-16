@@ -6,72 +6,85 @@ import PublicCanvas from './PublicCanvas.vue'
 
 const route = useRoute()
 const router = useRouter()
-
 const loading = ref(true)
 const error = ref(null)
-const errorDetails = ref(null)
-const page = ref(null)
-const components = ref([])
+const details = ref(null)
 const notFound = ref(false)
+const page = ref(null)
+const components = ref([]) // header + page + footer
 
-const fullPath = ref(getFullPathFromRoute(route))
-
-function getFullPathFromRoute(routeObj) {
-  const parts = Array.isArray(routeObj.params.parts)
-    ? routeObj.params.parts
-    : [routeObj.params.parts]
-  // Очищаем пустые
-  const cleaned = parts.filter(Boolean)
-  // Если путь пустой — главная страница
-  return cleaned.length === 0 ? 'home' : cleaned.join('/')
+/* ---------- helper: полный путь ----------- */
+const fullPath = ref(pathFromRoute(route))
+function pathFromRoute(r) {
+  const parts = Array.isArray(r.params.parts) ? r.params.parts : [r.params.parts]
+  return parts.filter(Boolean).join('/') || 'home'
 }
 
-function goHome() {
-  router.push('/')
-}
-function goShortcodes() {
-  router.push('/shortcodes')
-}
+const goHome = () => router.push('/')
+const goShortcodes = () => router.push('/shortcodes')
 
 async function loadPage() {
   loading.value = true
   error.value = null
-  errorDetails.value = null
-  page.value = null
-  components.value = []
   notFound.value = false
+  components.value = []
 
   try {
-    const pageResp = await shortcodesService.getPageByFullPath(fullPath.value)
-    if (!pageResp.data || !pageResp.data.id) {
-      throw new Error('Page not found')
+    /* 1. Layout (header/footer + menu_pages) */
+    const lResp = await shortcodesService.getSiteLayout()
+    const layout = Array.isArray(lResp.data) ? lResp.data[0] : lResp.data
+
+    /* 2. Сама страница */
+    const pResp = await shortcodesService.getPageByFullPath(fullPath.value)
+    if (!pResp.data?.id) throw new Error('Page not found')
+    page.value = pResp.data
+
+    /* 3. helper: template → виртуальный instance
+          если это header — прокинем menu_pages в extra_data */
+    const wrapTpl = async (tplId, withMenu = false) => {
+      if (!tplId) return []
+      const { data: tpl } = await shortcodesService.getTemplate(tplId)
+      return [
+        {
+          uid: `tpl-${tpl.id}`,
+          template: tpl.id,
+          template_name: tpl.name,
+          component_type: tpl.component_type,
+          class_list: tpl.class_list,
+          extra_data: withMenu
+            ? { ...tpl.extra_data, menu_pages: layout?.menu_pages || [] }
+            : tpl.extra_data,
+          allow_children: tpl.allow_children,
+          icon_name: tpl.icon_name,
+          children: [],
+        },
+      ]
     }
-    page.value = pageResp.data
-    const instResp = await shortcodesService.getInstancesTree({ page: page.value.id })
-    components.value = instResp.data
+
+    /* 4. параллельно собираем блоки */
+    const [header, body, footer] = await Promise.all([
+      wrapTpl(layout?.header_template, true),
+      shortcodesService
+        .getInstancesTree({ page: page.value.id })
+        .then((r) => (Array.isArray(r.data) ? r.data : [])),
+      wrapTpl(layout?.footer_template),
+    ])
+
+    components.value = [...header, ...body, ...footer]
     loading.value = false
-  } catch (err) {
-    console.log('Error object:', err)
-    if (
-      (err.response && err.response.status === 404) ||
-      (err.message && err.message.toLowerCase().includes('not found'))
-    ) {
-      error.value = 'Страница не найдена'
-      notFound.value = true
-    } else {
-      error.value = err.message || 'Ошибка загрузки страницы'
-    }
+  } catch (e) {
+    console.error(e)
     loading.value = false
-    page.value = null
-    components.value = []
-    errorDetails.value = err
+    error.value = e.message || 'Ошибка загрузки страницы'
+    details.value = e
+    notFound.value = /not found/i.test(e.message) || e.response?.status === 404
   }
 }
 
 watch(
   () => route.params.parts,
   () => {
-    fullPath.value = getFullPathFromRoute(route)
+    fullPath.value = pathFromRoute(route)
     loadPage()
   },
   { immediate: true }
@@ -79,34 +92,30 @@ watch(
 </script>
 
 <template>
-  <div>
-    <h2>CMS Страница: {{ page?.name || pageSlug }}</h2>
-    <div v-if="loading">Загрузка...</div>
-    <!-- 404 Не найдена -->
-    <div v-else-if="notFound">
-      <div class="d-flex flex-column align-items-center mt-5">
-        <div class="my-4">
-          <img
-            src="@/assets/NotFound.svg"
-            alt="404 Not Found"
-            style="max-width: 500px; width: 100%"
-          />
-        </div>
-        <div class="alert alert-warning text-center mt-4">
-          {{ error }}
-          <button class="btn btn-outline-primary ms-3" @click="goHome">На главную</button>
-          <button class="btn btn-primary ms-3" @click="goShortcodes">Управление страницами</button>
+  <div class="my-2">
+    <h2 class="mb-4">CMS-страница: {{ page?.name || fullPath }}</h2>
+
+    <div v-if="loading">Загрузка…</div>
+
+    <template v-else-if="notFound">
+      <div class="alert alert-warning">
+        {{ error }}
+        <div class="mt-3">
+          <button class="btn btn-outline-primary me-2" @click="goHome">На главную</button>
+          <button class="btn btn-primary" @click="goShortcodes">Управление страницами</button>
         </div>
       </div>
-    </div>
-    <div v-else-if="error">
+    </template>
+
+    <template v-else-if="error">
       <div class="alert alert-danger">
         {{ error }}
-        <pre class="bg-light p-2 rounded">{{ JSON.stringify(errorDetails, null, 2) }}</pre>
+        <pre class="bg-light p-2 mt-3 rounded">{{ JSON.stringify(details, null, 2) }}</pre>
       </div>
-    </div>
-    <div v-else>
+    </template>
+
+    <template v-else>
       <PublicCanvas :components="components" />
-    </div>
+    </template>
   </div>
 </template>
