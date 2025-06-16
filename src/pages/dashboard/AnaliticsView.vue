@@ -1,7 +1,6 @@
 <script setup>
 import CardMonthStats from './cards/CardMonthStats.vue'
 import CardPriorityChart from './cards/CardPriorityChart.vue'
-import CardEfficiencyStats from './cards/CardEfficiencyStats.vue'
 import CardSectionDistribution from './cards/CardSectionDistribution.vue'
 </script>
 
@@ -14,9 +13,7 @@ import CardSectionDistribution from './cards/CardSectionDistribution.vue'
       <div class="col-md-6">
         <CardPriorityChart />
       </div>
-      <div class="col-md-6">
-        <CardEfficiencyStats />
-      </div>
+
       <div class="col-12">
         <CardSectionDistribution />
       </div>

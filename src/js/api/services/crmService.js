@@ -30,17 +30,6 @@ export const crmService = {
         }
     },
 
-    async getEfficiencyStats() {
-        try {
-            const url = `${API_URL}${endpoints.crm.efficiencyStats}`;
-            const response = await axios.get(url);
-            return response.data;
-        } catch (error) {
-            console.error('Ошибка при получении данных об эффективности:', error);
-            throw error;
-        }
-    },
-
     async getSectionStats() {
         try {
             const url = `${API_URL}${endpoints.crm.sectionStats}`;
