@@ -466,7 +466,6 @@ const updatesTask = async (taskId, updatedData) => {
       updatedData
     )
     
-    toast.success('Задача успешно обновлена')
     return { 
       success: true,
       updatedTask: response.data.task

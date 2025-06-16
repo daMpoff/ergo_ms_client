@@ -150,8 +150,10 @@ const updateTask = async (updatedData) => {
   
   try {
     const response = await kanbanStore.updatesTask(currentTask.value.id, backendData)
+    //response.updatedTask.assignee_id = response.updatedTask.user
+
     console.log('Update response:', response); // Логирование для отладки
-    return { success: true, updatedTask: response.data.task }
+    return { success: true, updatedTask: response.updatedTask }
   } catch (error) {
     console.error('Update task error:', error);
     toast.error('Не удалось обновить задачу');

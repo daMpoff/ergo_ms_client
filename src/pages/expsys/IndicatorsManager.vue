@@ -182,17 +182,6 @@ function closeDetails() {
 
 const showStatsModal = ref(false)
 
-async function openStats() {
-  try {
-    showStatsModal.value = true
-  } catch (err) {
-    error.value = 'Не удалось загрузить статистику'
-    console.error('Ошибка загрузки статистики:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
 function saveIndicatorLocal(updatedIndicator) {
   const index = indicators.value.findIndex(i => i.id === updatedIndicator.id)
   if (index !== -1) {
