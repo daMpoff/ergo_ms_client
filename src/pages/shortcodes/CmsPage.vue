@@ -14,24 +14,25 @@ const page = ref(null)
 const components = ref([])
 const notFound = ref(false)
 
-const pageSlug = ref(getPageSlugFromRoute(route))
+const fullPath = ref(getFullPathFromRoute(route))
 
-function getPageSlugFromRoute(routeObj) {
+function getFullPathFromRoute(routeObj) {
   const parts = Array.isArray(routeObj.params.parts)
     ? routeObj.params.parts
     : [routeObj.params.parts]
-  return parts.length === 0 || !parts[0] ? 'home' : parts[parts.length - 1]
+  // Очищаем пустые
+  const cleaned = parts.filter(Boolean)
+  // Если путь пустой — главная страница
+  return cleaned.length === 0 ? 'home' : cleaned.join('/')
 }
 
 function goHome() {
   router.push('/')
 }
-
 function goShortcodes() {
   router.push('/shortcodes')
 }
 
-// асинхронная загрузка страницы и компонентов
 async function loadPage() {
   loading.value = true
   error.value = null
@@ -41,7 +42,7 @@ async function loadPage() {
   notFound.value = false
 
   try {
-    const pageResp = await shortcodesService.getPageSlug(pageSlug.value)
+    const pageResp = await shortcodesService.getPageByFullPath(fullPath.value)
     if (!pageResp.data || !pageResp.data.id) {
       throw new Error('Page not found')
     }
@@ -70,7 +71,7 @@ async function loadPage() {
 watch(
   () => route.params.parts,
   () => {
-    pageSlug.value = getPageSlugFromRoute(route)
+    fullPath.value = getFullPathFromRoute(route)
     loadPage()
   },
   { immediate: true }
