@@ -1,104 +1,119 @@
 <template>
   <div>
-    <!-- Название и текст -->
     <div class="mb-4">
       <label class="form-label fw-bold">Название</label>
-      <input v-model="component.name" type="text" class="form-control" />
+      <input v-model="component.template_name" class="form-control" />
     </div>
     <div class="mb-4">
       <label class="form-label fw-bold">Текст</label>
-      <input v-model="component.extra_data.text" type="text" class="form-control" />
+      <input v-model="component.extra_data.text" class="form-control" />
     </div>
 
-    <div class="accordion" id="settingsAccordion">
-      <!-- Визуальные настройки -->
+    <div v-if="component.component_type === 'Image'" class="card p-3 mb-4">
+      <h6 class="fw-semibold mb-3">Изображение</h6>
+
+      <img :src="previewSrc" class="img-fluid rounded border mb-3" style="max-height: 140px" />
+
+      <div class="mb-3">
+        <label class="form-label">URL</label>
+        <input v-model="component.extra_data.src" class="form-control" />
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Alt‑текст</label>
+        <input v-model="component.extra_data.alt" class="form-control" />
+      </div>
+
+      <div
+        class="border rounded p-4 text-center bg-light"
+        @drop.prevent="uploadFile"
+        @dragover.prevent
+      >
+        <p class="mb-2">Перетащите файл сюда либо</p>
+        <input
+          v-model="altName"
+          class="form-control mb-2"
+          placeholder="Альтернативное название (необязательно)"
+          maxlength="255"
+        />
+        <button class="btn btn-primary" @click="fileInput.click()">Выбрать файл</button>
+        <input ref="fileInput" type="file" class="d-none" @change="uploadFile" />
+      </div>
+
+      <div v-if="uploading" class="alert alert-info py-2 mt-3">Загрузка…</div>
+      <div v-if="error" class="alert alert-danger py-2 mt-3">{{ error }}</div>
+    </div>
+
+    <div class="accordion" id="visAcc">
       <div class="accordion-item">
-        <h2 class="accordion-header" id="headingVisual">
-          <button
-            class="accordion-button bg-light"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapseVisual"
-            aria-expanded="true"
-            aria-controls="collapseVisual"
-          >
+        <h2 class="accordion-header">
+          <button class="accordion-button bg-light" data-bs-toggle="collapse" data-bs-target="#vis">
             🎨 Визуальные настройки
           </button>
         </h2>
-        <div
-          id="collapseVisual"
-          class="accordion-collapse collapse show"
-          aria-labelledby="headingVisual"
-        >
+        <div id="vis" class="accordion-collapse collapse show">
           <div class="accordion-body">
             <!-- Размер текста -->
             <div class="mb-3">
               <label class="form-label">Размер текста</label>
               <div class="btn-group flex-wrap">
                 <button
-                  v-for="size in fontSizes"
-                  :key="size"
-                  type="button"
+                  v-for="s in fontSizes"
+                  :key="s"
                   class="btn btn-outline-primary m-1"
-                  :class="{ active: hasClass(size) }"
-                  @click="toggleClass(size, fontSizes)"
+                  :class="{ active: hasClass(s) }"
+                  @click="toggleClass(s, fontSizes)"
                 >
-                  {{ size }}
+                  {{ s }}
                 </button>
               </div>
             </div>
 
-            <!-- Цвет фона -->
             <div class="mb-3">
               <label class="form-label">Цвет фона</label>
               <div class="btn-group flex-wrap">
                 <button
-                  v-for="color in bgColors"
-                  :key="color"
-                  type="button"
+                  v-for="c in bgColors"
+                  :key="c"
                   class="btn m-1"
-                  :class="['btn-' + color, { active: hasClass('bg-' + color) }]"
+                  :class="['btn-' + c, { active: hasClass('bg-' + c) }]"
                   @click="
                     toggleClass(
-                      'bg-' + color,
-                      bgColors.map((c) => 'bg-' + c),
+                      'bg-' + c,
+                      bgColors.map((b) => 'bg-' + b)
                     )
                   "
                 >
-                  {{ color }}
+                  {{ c }}
                 </button>
               </div>
             </div>
 
-            <!-- Цвет текста -->
             <div class="mb-3">
               <label class="form-label">Цвет текста</label>
               <div class="btn-group flex-wrap">
                 <button
-                  v-for="color in textColors"
-                  :key="color"
-                  type="button"
+                  v-for="c in textColors"
+                  :key="c"
                   class="btn m-1"
-                  :class="['btn-outline-' + color, { active: hasClass('text-' + color) }]"
+                  :class="['btn-outline-' + c, { active: hasClass('text-' + c) }]"
                   @click="
                     toggleClass(
-                      'text-' + color,
-                      textColors.map((c) => 'text-' + c),
+                      'text-' + c,
+                      textColors.map((t) => 'text-' + t)
                     )
                   "
                 >
-                  {{ color }}
+                  {{ c }}
                 </button>
               </div>
             </div>
 
-            <!-- Выравнивание -->
             <div class="mb-3">
               <label class="form-label">Выравнивание</label>
               <select v-model="component.extra_data.align" class="form-select">
-                <option value="">По умолчанию</option>
+                <option value="">auto</option>
                 <option value="text-start">Слева</option>
-                <option value="text-center">По центру</option>
+                <option value="text-center">Центр</option>
                 <option value="text-end">Справа</option>
               </select>
             </div>
@@ -106,34 +121,26 @@
         </div>
       </div>
 
-      <!-- Отступы (Padding) -->
       <div class="accordion-item">
-        <h2 class="accordion-header" id="headingPadding">
+        <h2 class="accordion-header">
           <button
             class="accordion-button collapsed bg-light"
-            type="button"
             data-bs-toggle="collapse"
-            data-bs-target="#collapsePadding"
-            aria-expanded="false"
-            aria-controls="collapsePadding"
+            data-bs-target="#pad"
           >
             📏 Внутренние отступы (Padding)
           </button>
         </h2>
-        <div
-          id="collapsePadding"
-          class="accordion-collapse collapse"
-          aria-labelledby="headingPadding"
-        >
+        <div id="pad" class="accordion-collapse collapse">
           <div class="accordion-body">
-            <div v-for="prefix in paddingKeys" :key="prefix" class="mb-3">
-              <label class="form-label">{{ spacingPrefixes[prefix] }}</label>
+            <div v-for="p in paddingKeys" :key="p" class="mb-2">
+              <label class="form-label">{{ spacingPrefixes[p] }}</label>
               <input
                 type="range"
                 min="0"
                 max="5"
-                v-model.number="spacingValues[prefix]"
-                @input="applySpacing(prefix, spacingValues[prefix])"
+                v-model.number="spacingValues[p]"
+                @input="applySpacing(p, spacingValues[p])"
                 class="form-range"
               />
             </div>
@@ -141,34 +148,26 @@
         </div>
       </div>
 
-      <!-- Отступы (Margin) -->
       <div class="accordion-item">
-        <h2 class="accordion-header" id="headingMargin">
+        <h2 class="accordion-header">
           <button
             class="accordion-button collapsed bg-light"
-            type="button"
             data-bs-toggle="collapse"
-            data-bs-target="#collapseMargin"
-            aria-expanded="false"
-            aria-controls="collapseMargin"
+            data-bs-target="#mar"
           >
             📐 Внешние отступы (Margin)
           </button>
         </h2>
-        <div
-          id="collapseMargin"
-          class="accordion-collapse collapse"
-          aria-labelledby="headingMargin"
-        >
+        <div id="mar" class="accordion-collapse collapse">
           <div class="accordion-body">
-            <div v-for="prefix in marginKeys" :key="prefix" class="mb-3">
-              <label class="form-label">{{ spacingPrefixes[prefix] }}</label>
+            <div v-for="p in marginKeys" :key="p" class="mb-2">
+              <label class="form-label">{{ spacingPrefixes[p] }}</label>
               <input
                 type="range"
                 min="0"
                 max="5"
-                v-model.number="spacingValues[prefix]"
-                @input="applySpacing(prefix, spacingValues[prefix])"
+                v-model.number="spacingValues[p]"
+                @input="applySpacing(p, spacingValues[p])"
                 class="form-range"
               />
             </div>
@@ -176,62 +175,99 @@
         </div>
       </div>
 
-      <!-- Прочее -->
       <div class="accordion-item">
-        <h2 class="accordion-header" id="headingExtra">
+        <h2 class="accordion-header">
           <button
             class="accordion-button collapsed bg-light"
-            type="button"
             data-bs-toggle="collapse"
-            data-bs-target="#collapseExtra"
-            aria-expanded="false"
-            aria-controls="collapseExtra"
+            data-bs-target="#misc"
           >
             ⚙️ Прочее
           </button>
         </h2>
-        <div id="collapseExtra" class="accordion-collapse collapse" aria-labelledby="headingExtra">
+        <div id="misc" class="accordion-collapse collapse">
           <div class="accordion-body">
-            <div class="form-check mb-3">
+            <div class="form-check">
               <input
                 class="form-check-input"
                 type="checkbox"
-                id="toggleVisibility"
+                id="hide"
                 :checked="hasClass('d-none')"
                 @change="toggleVisibility"
               />
-              <label class="form-check-label" for="toggleVisibility">
-                Скрыть компонент (d-none)
-              </label>
+              <label class="form-check-label" for="hide">Скрыть (d-none)</label>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Предпросмотр классов -->
-    <div class="alert alert-secondary mt-4">
+    <div class="alert alert-secondary mt-4 small">
       <code>{{ component.class_list }}</code>
     </div>
-
-    <button type="button" class="btn btn-outline-danger w-100 mt-2" @click="resetSettings">
-      🔄 Сбросить настройки
-    </button>
+    <button class="btn btn-outline-danger w-100 mt-2" @click="resetSettings">🔄 Сбросить</button>
   </div>
 </template>
 
 <script setup>
-import { reactive, toRefs, watch } from 'vue'
+import { ref, reactive, toRefs, watch, computed } from 'vue'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
-const props = defineProps({
-  component: { type: Object, required: true },
-})
-
+const props = defineProps({ component: Object })
 const { component } = toRefs(props)
+
+function normalizeUrl(raw = '') {
+  if (!raw) return ''
+  const backendHost = apiClient.baseUrl.replace(/^https?:\/\//, '').replace(/\/+\$/, '')
+  if (raw.startsWith('http')) return raw.replace(/localhost:\d+/, backendHost)
+  return `${apiClient.baseUrl.replace(/\/+\$/, '')}${raw.startsWith('/') ? raw : '/' + raw}`
+}
+
+const uploading = ref(false)
+const error = ref(null)
+const altName = ref('')
+const fileInput = ref(null)
+
+const uploadFile = async (e) => {
+  const file = e.target.files?.[0] || e.dataTransfer?.files?.[0]
+  if (!file) return
+  const fd = new FormData()
+  fd.append('file', file)
+  if (altName.value) fd.append('alt_name', altName.value)
+  uploading.value = true
+  error.value = null
+  try {
+    const { data } = await apiClient.post(endpoints.file, fd, false)
+    component.value.extra_data.src = normalizeUrl(data.url || data.file)
+    component.value.extra_data.alt = data.alt_name || altName.value
+    altName.value = ''
+  } catch (err) {
+    console.error(err)
+    error.value = 'Ошибка загрузки'
+  } finally {
+    uploading.value = false
+  }
+}
+
+const previewSrc = computed(
+  () =>
+    normalizeUrl(component.value.extra_data.src) ||
+    'https://via.placeholder.com/240x140?text=preview'
+)
 
 const fontSizes = ['fs-1', 'fs-2', 'fs-3', 'fs-4', 'fs-5']
 const bgColors = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark']
 const textColors = ['dark', 'light', 'primary', 'secondary', 'success', 'danger', 'warning', 'info']
+
+function hasClass(c) {
+  return component.value.class_list?.includes(c)
+}
+function toggleClass(cls, group) {
+  const list = (component.value.class_list || []).filter((c) => !group.includes(c))
+  list.push(cls)
+  component.value.class_list = list
+}
 
 const spacingPrefixes = {
   px: 'Горизонтальные внутренние отступы (px)',
@@ -248,63 +284,50 @@ const spacingPrefixes = {
 }
 const paddingKeys = ['px', 'py', 'pt', 'pb', 'ps', 'pe']
 const marginKeys = ['mx', 'mb', 'mt', 'me', 'ms']
-
 const spacingValues = reactive({})
-// При старте и при любом изменении class_list — синхронизируем начальные значения
+
 watch(
   () => component.value.class_list,
   (list) => {
-    paddingKeys.concat(marginKeys).forEach((prefix) => {
-      spacingValues[prefix] = extractSpacing(prefix, list)
+    ;[...paddingKeys, ...marginKeys].forEach((p) => {
+      spacingValues[p] = extractSpacing(p, list)
     })
   },
-  { immediate: true },
+  { immediate: true }
 )
 
-function hasClass(cls) {
-  return Array.isArray(component.value.class_list) && component.value.class_list.includes(cls)
+function applySpacing(prefix, val) {
+  toggleClass(
+    `${prefix}-${val}`,
+    Array.from({ length: 6 }, (_, i) => `${prefix}-${i}`)
+  )
 }
-
-// Включить/выключить класс из группы
-function toggleClass(targetClass, classGroup) {
-  const list = Array.isArray(component.value.class_list) ? [...component.value.class_list] : []
-
-  const filtered = list.filter((c) => !classGroup.includes(c))
-  // добавляем новую
-  filtered.push(targetClass)
-  component.value.class_list = filtered
-}
-
-// Установить отступ по префиксу и значению
-function applySpacing(prefix, value) {
-  const group = Array.from({ length: 6 }, (_, i) => `${prefix}-${i}`)
-  toggleClass(`${prefix}-${value}`, group)
-}
-
-// Вытащить число отступа из массива классов
 function extractSpacing(prefix, list) {
   if (!Array.isArray(list)) return 0
-  const cls = list.find((c) => c.startsWith(`${prefix}-`))
-  return cls ? Number(cls.split('-')[1]) : 0
+  const f = list.find((c) => c.startsWith(`${prefix}-`))
+  return f ? +f.split('-')[1] : 0
 }
 
-// Скрыть / показать (d-none)
-function toggleVisibility(event) {
-  const list = Array.isArray(component.value.class_list) ? [...component.value.class_list] : []
-  const idx = list.indexOf('d-none')
-  if (event.target.checked && idx === -1) {
-    list.push('d-none')
-  } else if (!event.target.checked && idx !== -1) {
-    list.splice(idx, 1)
-  }
+function toggleVisibility(e) {
+  const list = [...(component.value.class_list || [])]
+  const i = list.indexOf('d-none')
+  e.target.checked && i === -1
+    ? list.push('d-none')
+    : !e.target.checked && i !== -1 && list.splice(i, 1)
   component.value.class_list = list
 }
-
-// Полный сброс
 function resetSettings() {
-  component.value.class_list = []
-  paddingKeys.concat(marginKeys).forEach((prefix) => {
-    spacingValues[prefix] = 0
+  component.value.class_list = [...paddingKeys, ...marginKeys].forEach((p) => {
+    spacingValues[p] = 0
   })
 }
 </script>
+
+<style scoped>
+.accordion-button {
+  font-weight: 600;
+}
+.border {
+  border-style: dashed !important;
+}
+</style>
