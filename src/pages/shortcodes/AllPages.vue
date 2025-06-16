@@ -3,9 +3,9 @@
     <div class="d-flex align-items-center mb-4">
       <h2 class="mb-4 fw-semibold">Список страниц</h2>
       <button
-        class="btn btn-success text-white ms-3"
+        class="btn btn-success text-white mb-3 ms-3"
         @click="goCreatePage"
-        style="font-size: 1.13rem; font-weight: 500"
+        style="font-size: 1.3rem; font-weight: 500"
       >
         + Создать страницу
       </button>
