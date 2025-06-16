@@ -207,7 +207,8 @@ export const ShortcodesMenuSection = {
     { path: 'MainShortcodePage', name: 'Главная' },
     { path: 'Templates', name: 'Компоненты' },
     { path: 'Pages', name: 'Страницы' },
-    { path: 'Layouts', name: 'Разметка сайта' }
+    { path: 'Layouts', name: 'Разметка сайта' },
+    { path: 'PageShortcodeCategories', name: 'Категории шорткодов' },
   ],
 }
 

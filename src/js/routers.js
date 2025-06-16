@@ -686,7 +686,7 @@ const shortcodeRoutes = [
       },
       {
         path: 'categories-page',
-        name: 'PageCategories',
+        name: 'PageShortcodeCategories',
         component: () => import('@/pages/shortcodes/editor/PageCategories.vue'),
         meta: {
           title: 'Категории страниц',
