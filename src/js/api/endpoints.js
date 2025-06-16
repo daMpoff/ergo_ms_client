@@ -1,13 +1,13 @@
 export const endpoints = {
-  auth: {
-    login: 'cms/adp/authorization/',
-    validateRegistration: 'cms/adp/validate_registration/',
-    sendCode: 'cms/adp/send_code/',
-    verifyCode: 'cms/adp/verify_code/',
-    registration: 'cms/adp/registration/',
-    protected: 'cms/adp/protected/',
-  },
-  cms: {
+    auth: {
+        login: 'cms/adp/authorization/',
+        validateRegistration: 'cms/adp/validate_registration/',
+        sendCode: 'cms/adp/send_code/',
+        verifyCode: 'cms/adp/verify_code/',
+        registration: 'cms/adp/registration/',
+        protected: 'cms/adp/protected/',
+    },
+    cms: {
         checkAccessToPage: 'cms/check_access_to_page/',
         checkAccessToComponent: 'cms/check_access_to_component/',
         checkAccessToAdminPanel: 'cms/check_access_to_admin_panel/',
@@ -39,6 +39,15 @@ export const endpoints = {
         removeGroupsPermissions: 'cms/remove_groups_permissions/',
         getPermissionsByCategory: 'cms/get_permissions_by_category/',
         getUserName: 'cms/get_user_name/',
+        getpages:'cms/get-cms-pages',
+        putpages:'cms/put-cms-pages',
+        getClosedPages: 'cms/get-closed-pages/',
+        getClosedPagesForUser: 'cms/get-closed-pages-for-user/',
+
+        addPageComponent: 'cms/add-page-component/',
+        removePageComponent: 'cms/remove-page-component/',
+        updatePageComponent: 'cms/update-page-component/',
+        getPageComponents: 'cms/get-page-components/'
     },
     expert_system: {
         studyGroups: 'expert_system/study-groups/',
@@ -48,18 +57,24 @@ export const endpoints = {
         companiesMe: 'expert_system/companies/me/',
         skills: 'expert_system/skills/',
         userSkills: 'expert_system/user-skills/',
+        myVacancies: 'expert_system/companies/my-vacancies/',
         roles: 'expert_system/roles/',
         trajectorySteps: 'expert_system/trajectory-steps/',
         orientationTests: 'expert_system/orientation-tests/',
         orientationQuestions: 'expert_system/orientation-questions/',
         orientationAnswers: 'expert_system/orientation-answers/',
+        orientationResults: 'expert_system/orientation-results/',
+        orientationUserAnswers: 'expert_system/orientation-user-answers/',
+
         skillTests: 'expert_system/skill-tests/',
         skillQuestions: 'expert_system/skill-questions/',
         skillAnswers: 'expert_system/skill-answers/',
         testResults: 'expert_system/test-results/',
+
         vacancies: 'expert_system/vacancies/',
         vacancySkills: 'expert_system/vacancy-skills/',
         applications: 'expert_system/applications/',
+
         orientationResults: 'expert_system/orientation-results/',
         orientationUserAnswers: 'expert_system/orientation-answers/',
         setUserSkillTest: 'expert_system/set-user-skill-test',
@@ -78,118 +93,144 @@ export const endpoints = {
         ChartsList: 'bi_analysis/bi_charts/',
         Upload: 'bi_analysis/bi_datasets/upload/',
         UploadedFiles: 'bi_analysis/bi_datasets/user-files/',
-  },
-  shortcodes: {
-    templates: 'cms_shortcodes/templates/',
-    pages: 'cms_shortcodes/pages/',
-    instances: 'cms_shortcodes/instances/',
-    categories: 'cms_shortcodes/categories/',
-  },
-  learning_analytics: {
-      tables: 'learning_analytics/tables/',
-      clearTables: 'learning_analytics/tables/clear/',
+    },
+    file: 'settings/file/',
+    categories: {
+        list: 'settings/categories/',
+        create: 'settings/categories/',
+        update: id => `settings/categories/${id}/`,
+        delete: id => `settings/categories/${id}/`
+    },
+    tags: {
+        list: 'settings/tags/',
+        create: 'settings/tags/',
+        update: id => `settings/tags/${id}/`,
+        delete: id => `settings/tags/${id}/`
+    },
+    userAvatars: {
+        list: 'settings/user-avatars/',
+        create: 'settings/user-avatars/',
+        delete: id => `settings/user-avatars/${id}/`
+    },
+    settings: {
+        generalSettings: 'settings/general-settings/',
+        lastSettings: 'settings/general-settings/last/',
+        mediaSettings: 'settings/media-settings/',
+        permalinkSettings: 'settings/permalink-settings/',
+        emailSettings: 'settings/email-settings/',
+        securitySettings: 'settings/security-settings/',
+    },
+    shortcodes: {
+        templates: 'cms_shortcodes/templates/',
+        pages: 'cms_shortcodes/pages/',
+        instances: 'cms_shortcodes/instances/',
+        categories: 'cms_shortcodes/categories/',
+    },
+    learning_analytics: {
+        tables: 'learning_analytics/tables/',
+        clearTables: 'learning_analytics/tables/clear/',
 
-      excel: {
-          upload: 'learning_analytics/data_formalization_submodule/upload-excel/',
-          process: 'learning_analytics/data_formalization_submodule/process-excel/'
-      },
+        excel: {
+            upload: 'learning_analytics/data_formalization_submodule/upload-excel/',
+            process: 'learning_analytics/data_formalization_submodule/process-excel/'
+        },
 
-      relations: {
-          disciplineTechnology: 'learning_analytics/data_formalization_submodule/relations/discipline-technology/',
-          disciplineCompetency: 'learning_analytics/data_formalization_submodule/relations/discipline-competency/',
-          vacancyTechnology: 'learning_analytics/data_formalization_submodule/relations/vacancy-technology/',
-          vacancyCompetency: 'learning_analytics/data_formalization_submodule/relations/vacancy-competency/',
-          vcmTechnology: 'learning_analytics/data_formalization_submodule/relations/vcm-technology/',
-          vcmCompetency: 'learning_analytics/data_formalization_submodule/relations/vcm-competency/',
-      },
+        relations: {
+            disciplineTechnology: 'learning_analytics/data_formalization_submodule/relations/discipline-technology/',
+            disciplineCompetency: 'learning_analytics/data_formalization_submodule/relations/discipline-competency/',
+            vacancyTechnology: 'learning_analytics/data_formalization_submodule/relations/vacancy-technology/',
+            vacancyCompetency: 'learning_analytics/data_formalization_submodule/relations/vacancy-competency/',
+            vcmTechnology: 'learning_analytics/data_formalization_submodule/relations/vcm-technology/',
+            vcmCompetency: 'learning_analytics/data_formalization_submodule/relations/vcm-competency/',
+        },
 
-      employers: {
-          get: 'learning_analytics/employers/',
-          create: 'learning_analytics/employers/',
-          update: (pk) => `learning_analytics/employers/${pk}/`,
-          delete: (pk) => `learning_analytics/employers/${pk}/`,
-          loadSampleData: 'learning_analytics/employers/loadsampledata/',
-      },
+        employers: {
+            get: 'learning_analytics/employers/',
+            create: 'learning_analytics/employers/',
+            update: (pk) => `learning_analytics/employers/${pk}/`,
+            delete: (pk) => `learning_analytics/employers/${pk}/`,
+            loadSampleData: 'learning_analytics/employers/loadsampledata/',
+        },
 
-      specialities: {
-          get: 'learning_analytics/data_formalization_submodule/specialities/',
-          create: 'learning_analytics/data_formalization_submodule/specialities/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/specialities/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/specialities/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/specialities/loadsampledata/',
-      },
-      curriculums: {
-          get: 'learning_analytics/data_formalization_submodule/curriculums/',
-          create: 'learning_analytics/data_formalization_submodule/curriculums/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/curriculums/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/curriculums/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/curriculums/loadsampledata/',
-      },
-      technologies: {
-          get: 'learning_analytics/data_formalization_submodule/technologies/',
-          create: 'learning_analytics/data_formalization_submodule/technologies/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/technologies/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/technologies/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/technologies/loadsampledata/',
-      },
-      competencies: {
-          get: 'learning_analytics/data_formalization_submodule/competencies/',
-          create: 'learning_analytics/data_formalization_submodule/competencies/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/competencies/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/competencies/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/competencies/loadsampledata/',
-      },
-      baseDisciplines: {
-          get: 'learning_analytics/data_formalization_submodule/base_disciplines/',
-          create: 'learning_analytics/data_formalization_submodule/base_disciplines/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/base_disciplines/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/base_disciplines/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/base_disciplines/loadsampledata/',
-      },
-      disciplines: {
-          get: 'learning_analytics/data_formalization_submodule/disciplines/',
-          create: 'learning_analytics/data_formalization_submodule/disciplines/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/disciplines/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/disciplines/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/disciplines/loadsampledata/',
-      },
-      vacancies: {
-          get: 'learning_analytics/data_formalization_submodule/vacancies/',
-          create: 'learning_analytics/data_formalization_submodule/vacancies/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/vacancies/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/vacancies/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/vacancies/loadsampledata/',
-      },
-      acms: {
-          get: 'learning_analytics/data_formalization_submodule/acms/',
-          create: 'learning_analytics/data_formalization_submodule/acms/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/acms/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/acms/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/acms/loadsampledata/',
-      },
-      vcms: {
-          get: 'learning_analytics/data_formalization_submodule/vcms/',
-          create: 'learning_analytics/data_formalization_submodule/vcms/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/vcms/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/vcms/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/vcms/loadsampledata/',
-      },
-      ucms: {
-          get: 'learning_analytics/data_formalization_submodule/ucms/',
-          create: 'learning_analytics/data_formalization_submodule/ucms/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/ucms/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/ucms/${pk}/`,
-          loadSampleData: 'learning_analytics/data_formalization_submodule/ucms/loadsampledata/',
-      },
-      importHistory: {
-          get: 'learning_analytics/data_formalization_submodule/import_history/',
-          create: 'learning_analytics/data_formalization_submodule/import_history/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/import_history/${pk}/`,
-          delete: (pk) => `learning_analytics/data_formalization_submodule/import_history/${pk}/`,
-      },
-      importStats: {
-          get: 'learning_analytics/data_formalization_submodule/import_stats/',
-          update: (pk) => `learning_analytics/data_formalization_submodule/import_stats/${pk}/`,
-      },
-  },
+        specialities: {
+            get: 'learning_analytics/data_formalization_submodule/specialities/',
+            create: 'learning_analytics/data_formalization_submodule/specialities/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/specialities/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/specialities/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/specialities/loadsampledata/',
+        },
+        curriculums: {
+            get: 'learning_analytics/data_formalization_submodule/curriculums/',
+            create: 'learning_analytics/data_formalization_submodule/curriculums/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/curriculums/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/curriculums/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/curriculums/loadsampledata/',
+        },
+        technologies: {
+            get: 'learning_analytics/data_formalization_submodule/technologies/',
+            create: 'learning_analytics/data_formalization_submodule/technologies/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/technologies/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/technologies/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/technologies/loadsampledata/',
+        },
+        competencies: {
+            get: 'learning_analytics/data_formalization_submodule/competencies/',
+            create: 'learning_analytics/data_formalization_submodule/competencies/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/competencies/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/competencies/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/competencies/loadsampledata/',
+        },
+        baseDisciplines: {
+            get: 'learning_analytics/data_formalization_submodule/base_disciplines/',
+            create: 'learning_analytics/data_formalization_submodule/base_disciplines/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/base_disciplines/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/base_disciplines/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/base_disciplines/loadsampledata/',
+        },
+        disciplines: {
+            get: 'learning_analytics/data_formalization_submodule/disciplines/',
+            create: 'learning_analytics/data_formalization_submodule/disciplines/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/disciplines/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/disciplines/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/disciplines/loadsampledata/',
+        },
+        vacancies: {
+            get: 'learning_analytics/data_formalization_submodule/vacancies/',
+            create: 'learning_analytics/data_formalization_submodule/vacancies/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/vacancies/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/vacancies/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/vacancies/loadsampledata/',
+        },
+        acms: {
+            get: 'learning_analytics/data_formalization_submodule/acms/',
+            create: 'learning_analytics/data_formalization_submodule/acms/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/acms/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/acms/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/acms/loadsampledata/',
+        },
+        vcms: {
+            get: 'learning_analytics/data_formalization_submodule/vcms/',
+            create: 'learning_analytics/data_formalization_submodule/vcms/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/vcms/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/vcms/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/vcms/loadsampledata/',
+        },
+        ucms: {
+            get: 'learning_analytics/data_formalization_submodule/ucms/',
+            create: 'learning_analytics/data_formalization_submodule/ucms/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/ucms/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/ucms/${pk}/`,
+            loadSampleData: 'learning_analytics/data_formalization_submodule/ucms/loadsampledata/',
+        },
+        importHistory: {
+            get: 'learning_analytics/data_formalization_submodule/import_history/',
+            create: 'learning_analytics/data_formalization_submodule/import_history/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/import_history/${pk}/`,
+            delete: (pk) => `learning_analytics/data_formalization_submodule/import_history/${pk}/`,
+        },
+        importStats: {
+            get: 'learning_analytics/data_formalization_submodule/import_stats/',
+            update: (pk) => `learning_analytics/data_formalization_submodule/import_stats/${pk}/`,
+        },
+    },
 };
