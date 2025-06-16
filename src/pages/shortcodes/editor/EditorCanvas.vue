@@ -1,16 +1,40 @@
+<!-- WorkArea.vue -->
 <template>
   <div class="card shadow-sm mb-4">
-    <div class="card-header bg-primary text-white d-flex align-items-center">
+    <div class="card-header bg-primary text-white d-flex align-items-center flex-wrap gap-2">
       <ListTree class="me-2" />
-      <h5 class="mb-0">Рабочая область</h5>
-      <div class="ms-auto d-flex gap-2">
-        <button class="btn btn-sm btn-outline-warning" @click="showDebug = !showDebug">
-          {{ showDebug ? 'Скрыть отладку' : 'Отладка для опытных' }}
-        </button>
+      <h5 class="mb-0 me-auto">Рабочая область</h5>
+
+      <!-- Информация о текущей странице -->
+      <div v-if="pageInfo" class="page-info text-white-50 me-auto small lh-sm">
+        <span class="d-block fw-semibold">{{ pageInfo.name }}</span>
+        <span class="d-block">{{ pageInfo.full_url }}</span>
       </div>
+
+      <!-- Выбор шаблона из той же категории -->
+      <select
+        v-if="templatePages.length"
+        v-model="selectedTemplateId"
+        class="form-select form-select-sm w-auto"
+      >
+        <option :value="null" disabled>Загрузить шаблон…</option>
+        <option v-for="p in templatePages" :key="p.id" :value="p.id">
+          {{ p.name }}
+        </option>
+      </select>
+      <button v-if="selectedTemplateId" class="btn btn-sm btn-outline-light" @click="applyTemplate">
+        Загрузить
+      </button>
+
+      <!-- Переключатель отладочных данных -->
+      <button class="btn btn-sm btn-outline-warning ms-2" @click="showDebug = !showDebug">
+        {{ showDebug ? 'Скрыть отладку' : 'Отладка для опытных' }}
+      </button>
     </div>
+
     <div class="card-body p-0 position-relative">
       <div v-if="loadError" class="alert alert-danger m-4">{{ loadError }}</div>
+
       <template v-else>
         <!-- Drag & Drop дерево -->
         <Draggable
@@ -59,6 +83,8 @@
             </div>
           </template>
         </Draggable>
+
+        <!-- Кнопка публикации -->
         <div class="d-flex justify-content-end mt-4 mb-2 px-3">
           <button
             class="btn btn-success text-white btn-lg px-5 py-2 fs-5"
@@ -69,32 +95,26 @@
             Опубликовать
           </button>
         </div>
-        <div v-if="showDebug">
-          <div class="row mt-4">
+
+        <!-- Отладочные данные -->
+        <div v-if="showDebug" class="p-3 bg-light border-top">
+          <div class="row">
             <div class="col-12 col-md-4">
-              <h6>Исходное дерево:</h6>
-              <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
-                >{{ JSON.stringify(internalTree, null, 2) }}
-              </pre>
+              <h6>Исходное дерево</h6>
+              <pre class="debug-box">{{ JSON.stringify(internalTree, null, 2) }}</pre>
             </div>
             <div class="col-12 col-md-4">
-              <h6>Flat-дерево (Линейное дерево):</h6>
-              <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
-                >{{ JSON.stringify(flatTree, null, 2) }}
-              </pre>
+              <h6>Flat-дерево</h6>
+              <pre class="debug-box">{{ JSON.stringify(flatTree, null, 2) }}</pre>
             </div>
             <div class="col-12 col-md-4">
-              <h6>Реверсивно-восстановленное дерево:</h6>
-              <pre class="bg-white border rounded p-2" style="max-height: 320px; overflow: auto"
-                >{{ JSON.stringify(rebuiltTree, null, 2) }}
-              </pre>
+              <h6>Восстановленное дерево</h6>
+              <pre class="debug-box">{{ JSON.stringify(rebuiltTree, null, 2) }}</pre>
             </div>
           </div>
           <div class="mt-3">
-            <h6>Различия (Изначальное дерево vs Восстановленное дерево):</h6>
-            <pre class="bg-white border rounded p-2" style="max-height: 220px; overflow: auto"
-              >{{ diffResult || 'Нет различий!' }}
-            </pre>
+            <h6>Различия</h6>
+            <pre class="debug-box">{{ diffResult || 'Нет различий!' }}</pre>
           </div>
         </div>
       </template>
@@ -103,12 +123,13 @@
 </template>
 
 <script setup>
-import { ListTree } from 'lucide-vue-next'
 import { ref, computed, onMounted } from 'vue'
-import { Draggable, OpenIcon } from '@he-tree/vue'
-import { v4 as uuidv4 } from 'uuid'
-import { shortcodesService } from '@/js/api/services/shortcodes'
 import { useRoute } from 'vue-router'
+import { v4 as uuidv4 } from 'uuid'
+import { Draggable, OpenIcon } from '@he-tree/vue'
+import { ListTree } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { shortcodesService } from '@/js/api/services/shortcodes'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -116,23 +137,26 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'open-settings'])
 
 const route = useRoute()
+const router = useRouter()
 const pageId = computed(() => {
   const val = route.query.page ?? route.params.page
-  if (!val) return null
   const num = Number(val)
   return isNaN(num) ? null : num
 })
 
 const treeKey = ref(0)
-function forceTreeRerender() {
-  treeKey.value++
-}
-
 const showDebug = ref(false)
 const isSaving = ref(false)
 const loadError = ref('')
 
-// Двунаправленное дерево
+const pageInfo = ref(null)
+const allPages = ref([])
+const selectedTemplateId = ref(null)
+
+function forceTreeRerender() {
+  treeKey.value++
+}
+
 const internalTree = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val),
@@ -140,24 +164,19 @@ const internalTree = computed({
 
 function removeNode(uid) {
   if (internalTree.value.length === 1 && internalTree.value[0].uid === uid) {
-    alert('Нельзя удалить последний компонент! В дереве должен быть хотя бы один элемент.')
+    alert('Нельзя удалить последний компонент!')
     return
   }
-  function deepRemove(arr) {
-    return arr
+  const deepRemove = (arr) =>
+    arr
       .filter((node) => node.uid !== uid)
-      .map((node) => ({
-        ...node,
-        children: node.children ? deepRemove(node.children) : [],
-      }))
-  }
-  const newTree = deepRemove(internalTree.value)
-  emit('update:modelValue', Array.isArray(newTree) ? newTree : [])
+      .map((node) => ({ ...node, children: node.children ? deepRemove(node.children) : [] }))
+
+  emit('update:modelValue', deepRemove(internalTree.value))
   forceTreeRerender()
 }
 
-// Drag & Drop: проверка на разрешённость вложенности
-const eachDroppable = (targetStat) => targetStat.data.allow_children === true
+const eachDroppable = (stat) => stat.data.allow_children === true
 
 const externalDataHandler = (event) => {
   const tpl = JSON.parse(event.dataTransfer.getData('application/json'))
@@ -177,36 +196,26 @@ function assignUidsRecursively(node) {
 }
 
 function flattenTree(tree, parent = null) {
-  let result = []
-  tree.forEach((node, idx) => {
+  return tree.flatMap((node, idx) => {
     const { children, ...rest } = node
-    const nodeWithTemplate = {
+    const item = {
       ...rest,
       template: rest.template ?? rest.id,
       parent: parent ? parent.uid : null,
       position: idx,
     }
-    result.push(nodeWithTemplate)
-    if (children && children.length > 0) {
-      result = result.concat(flattenTree(children, node))
-    }
+    return [item, ...(children ? flattenTree(children, node) : [])]
   })
-  return result
 }
 const flatTree = computed(() => flattenTree(internalTree.value))
 
 function rebuildTree(flat) {
   if (!Array.isArray(flat)) return []
-  const map = {}
+  const map = Object.fromEntries(flat.map((i) => [i.uid, { ...i, children: [] }]))
   const roots = []
-  flat.forEach((item) => (map[item.uid] = { ...item, children: [] }))
-  flat.forEach((item) => {
-    if (item.parent) {
-      map[item.parent]?.children.push(map[item.uid])
-    } else {
-      roots.push(map[item.uid])
-    }
-  })
+  flat.forEach((item) =>
+    item.parent ? map[item.parent]?.children.push(map[item.uid]) : roots.push(map[item.uid])
+  )
   return roots
 }
 const rebuiltTree = computed(() => rebuildTree(flatTree.value))
@@ -231,22 +240,38 @@ function simpleDiff(a, b, path = '') {
     }
     return out
   }
-  if (a !== b) return [`${path}: "${a}" != "${b}"`]
+  if (a !== b) return [`${path}: "${a}" ≠ "${b}"`]
   return []
 }
 const diffResult = computed(() => simpleDiff(internalTree.value, rebuiltTree.value).join('\n'))
 
-// Загружаем данные по странице
+const templatePages = computed(() =>
+  pageInfo.value
+    ? allPages.value.filter(
+        (p) => p.id !== pageInfo.value.id && p.category?.id === pageInfo.value.category?.id
+      )
+    : []
+)
+
+async function loadPageInfo() {
+  try {
+    const resp = await shortcodesService.getPages()
+    allPages.value = Array.isArray(resp.data) ? resp.data : resp.data.results || []
+    pageInfo.value = allPages.value.find((p) => p.id === pageId.value) || null
+  } catch (e) {
+    console.error('Не удалось получить список страниц:', e)
+  }
+}
+
 async function loadFromDb() {
   if (!pageId.value) {
-    loadError.value = 'Не передан pageId в параметрах URL'
+    loadError.value = 'Не передан pageId в URL'
     return
   }
   try {
     loadError.value = ''
     const resp = await shortcodesService.getInstancesTree({ page: pageId.value })
-    let data = resp.data || resp
-    emit('update:modelValue', Array.isArray(data) ? data : [])
+    emit('update:modelValue', Array.isArray(resp.data) ? resp.data : [])
     forceTreeRerender()
   } catch (e) {
     loadError.value = 'Ошибка загрузки: ' + (e?.message || e)
@@ -260,9 +285,15 @@ async function saveToDb() {
   }
   isSaving.value = true
   try {
-    const data = flatTree.value.map((node) => ({ ...node, page: pageId.value }))
+    const data = flatTree.value.map((n) => ({ ...n, page: pageId.value }))
     await shortcodesService.bulkCreateInstances(data)
     await loadFromDb()
+    if (pageInfo.value && pageInfo.value.full_url) {
+      const url = pageInfo.value.full_url.startsWith('/')
+        ? pageInfo.value.full_url
+        : '/' + pageInfo.value.full_url
+      router.push(url)
+    }
   } catch (e) {
     alert('Ошибка сохранения: ' + (e?.message || e))
   } finally {
@@ -270,8 +301,32 @@ async function saveToDb() {
   }
 }
 
-onMounted(() => {
-  loadFromDb()
+async function applyTemplate() {
+  if (!selectedTemplateId.value) return
+  if (
+    !confirm(
+      'Заменить текущее дерево компонентами из выбранной страницы? ' +
+        'Несохранённые изменения будут потеряны.'
+    )
+  )
+    return
+  try {
+    const resp = await shortcodesService.getInstancesTree({
+      page: selectedTemplateId.value,
+    })
+    const tplTree = Array.isArray(resp.data) ? resp.data : []
+    // генерируем новые UID, чтобы не конфликтовали
+    const newTree = tplTree.map(assignUidsRecursively)
+    emit('update:modelValue', newTree)
+    forceTreeRerender()
+    selectedTemplateId.value = null
+  } catch (e) {
+    alert('Не удалось загрузить шаблон: ' + (e?.message || e))
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([loadFromDb(), loadPageInfo()])
 })
 </script>
 
@@ -286,9 +341,15 @@ onMounted(() => {
 .drop-area:hover {
   background-color: rgba(var(--bs-primary-rgb), 0.1);
 }
-.placeholder-text {
-  font-style: italic;
-  user-select: none;
-  font-weight: bold;
+
+.debug-box {
+  max-height: 320px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  font-family: monospace;
+  font-size: 0.825rem;
 }
 </style>
