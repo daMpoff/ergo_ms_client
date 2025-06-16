@@ -57,5 +57,16 @@ export const shortcodesService = {
 
   getInstancesTree(params) {
     return apiClient.get(endpoints.shortcodes.instancesTree, params)
-  }
+  },
+
+  createSiteLayout(data) {
+    return apiClient.post(endpoints.shortcodes.layout, data)
+  },
+
+  getSiteLayout() {
+    return apiClient.get(endpoints.shortcodes.layout)
+  },
+  updateSiteLayout(id, data) {
+    return apiClient.patch(`${endpoints.shortcodes.layout}${id}/`, data)
+  },
 }

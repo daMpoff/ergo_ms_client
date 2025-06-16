@@ -139,6 +139,7 @@ export const endpoints = {
         instancesTree: 'cms_shortcodes/instances/tree/',
         categories: 'cms_shortcodes/categories/',
         pageByPath: 'cms_shortcodes/pages/by_path/',
+        layout: 'cms_shortcodes/layout/',
     },
     learning_analytics: {
         tables: 'learning_analytics/tables/',

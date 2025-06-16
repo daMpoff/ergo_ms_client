@@ -712,6 +712,15 @@ const shortcodeRoutes = [
         },
       },
       {
+        path: 'site-layouts/',
+        name: 'Layouts',
+        component: () => import('@/pages/shortcodes/SiteLayout.vue'),
+        meta: {
+          title: 'Страницы',
+          requiresAuth: true
+        },
+      },
+      {
         path: 'templates/:id?',
         name: 'TemplateEditor',
         component: import('@/pages/shortcodes/editor/TemplateEditor.vue'),
