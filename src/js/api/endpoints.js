@@ -39,11 +39,11 @@ export const endpoints = {
         removeGroupsPermissions: 'cms/remove_groups_permissions/',
         getPermissionsByCategory: 'cms/get_permissions_by_category/',
         getUserName: 'cms/get_user_name/',
-        getpages:'cms/get-cms-pages',
-        putpages:'cms/put-cms-pages',
+        getpages: 'cms/get-cms-pages',
+        putpages: 'cms/put-cms-pages',
         getClosedPages: 'cms/get-closed-pages/',
         getClosedPagesForUser: 'cms/get-closed-pages-for-user/',
-        
+
         addPageComponent: 'cms/add-page-component/',
         removePageComponent: 'cms/remove-page-component/',
         updatePageComponent: 'cms/update-page-component/',
@@ -74,7 +74,7 @@ export const endpoints = {
         vacancies: 'expert_system/vacancies/',
         vacancySkills: 'expert_system/vacancy-skills/',
         applications: 'expert_system/applications/',
-      
+
         orientationResults: 'expert_system/orientation-results/',
         orientationUserAnswers: 'expert_system/orientation-answers/',
         setUserSkillTest: 'expert_system/set-user-skill-test',
@@ -112,7 +112,7 @@ export const endpoints = {
     categories: {
         list: 'settings/categories/',
         create: 'settings/categories/',
-        update: id => `settings/categories/${id}/`, 
+        update: id => `settings/categories/${id}/`,
         delete: id => `settings/categories/${id}/`
     },
     tags: {
@@ -140,6 +140,7 @@ export const endpoints = {
         instances: 'cms_shortcodes/instances/',
         instancesTree: 'cms_shortcodes/instances/tree/',
         categories: 'cms_shortcodes/categories/',
+        pageByPath: 'cms_shortcodes/pages/by_path/',
     },
     learning_analytics: {
         tables: 'learning_analytics/tables/',

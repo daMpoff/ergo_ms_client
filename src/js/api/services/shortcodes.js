@@ -23,6 +23,10 @@ export const shortcodesService = {
   getPages() {
     return apiClient.get(endpoints.shortcodes.pages)
   },
+  getPageByFullPath(fullPath) {
+    return apiClient.get('cms_shortcodes/pages/by_path/', { full_path: fullPath });
+  },
+
   getCategories() {
     return apiClient.get(endpoints.categories.list)
   },
