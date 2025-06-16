@@ -39,7 +39,73 @@ export const crmService = {
             console.error('Ошибка при получении статистики по секциям:', error);
             throw error;
         }
+    },
+
+    async getProjectCompletionStats() {
+      try {
+          const url = `${API_URL}${endpoints.crm.projectCompletionStats}`;
+          const response = await axios.get(url);
+          return response.data;
+      } catch (error) {
+          console.error('Ошибка при получении статистики завершенности проектов:', error);
+          throw error;
+      }
+  },
+
+  async getUserProductivityStats() {
+      try {
+          const url = `${API_URL}${endpoints.crm.userProductivityStats}`;
+          const response = await axios.get(url);
+          return response.data;
+      } catch (error) {
+          console.error('Ошибка при получении статистики продуктивности пользователей:', error);
+          throw error;
+      }
+  },
+
+    async getDeadlineAnalysis() {
+      try {
+          const url = `${API_URL}${endpoints.crm.deadlineAnalysis}`;
+          const response = await axios.get(url);
+          return response.data;
+      } catch (error) {
+          console.error('Ошибка при получении анализа дедлайнов:', error);
+          throw error;
+      }
+  },
+
+  async getTaskCreationTrend() {
+      try {
+          const url = `${API_URL}${endpoints.crm.taskCreationTrend}`;
+          const response = await axios.get(url);
+          return response.data;
+      } catch (error) {
+          console.error('Ошибка при получении тренда создания задач:', error);
+          throw error;
+      }
+  },
+
+  async getProjectTimelineStats() {
+    try {
+        const url = `${API_URL}${endpoints.crm.projectTimelineStats}`;
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error('Ошибка при получении статистики временных рамок проектов:', error);
+        throw error;
     }
+  },
+
+  async getCalendarActivityStats() {
+    try {
+        const url = `${API_URL}${endpoints.crm.calendarActivityStats}`;
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error('Ошибка при получении статистики активности календаря:', error);
+        throw error;
+    }
+  },
 };
 
 export default crmService;

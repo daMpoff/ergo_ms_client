@@ -75,17 +75,22 @@ export const endpoints = {
         vacancySkills: 'expert_system/vacancy-skills/',
         applications: 'expert_system/applications/',
 
-        orientationResults: 'expert_system/orientation-results/',
-        orientationUserAnswers: 'expert_system/orientation-answers/',
         setUserSkillTest: 'expert_system/set-user-skill-test',
         getUserSkillTest: 'expert_system/get-user-skill-tests',
         getUserSkills: 'expert_system/get-user-skills'
-  },
-  crm: {
-    monthlyStats: 'crm/stats/monthly/',
-    priorityStats: 'crm/stats/priority/',
-    sectionStats: 'crm/stats/sections/'
-},
+    },
+    crm: {
+      monthlyStats: 'crm/stats/monthly/',
+      priorityStats: 'crm/stats/priority/',
+      sectionStats: 'crm/stats/sections/',
+      projectCompletionStats: 'crm/stats/project-completion/',
+      userProductivityStats: 'crm/stats/user-productivity/',
+      deadlineAnalysis: 'crm/stats/deadline-analysis/',
+      taskCreationTrend: 'crm/stats/task-creation-trend/',
+      projectTimelineStats: 'crm/stats/project-timeline/',
+      calendarActivityStats: 'crm/stats/calendar-activity/',
+      taskComplexityStats: 'crm/stats/task-complexity/'
+    },
   bi: {
         DatasetsList: 'bi_analysis/bi_datasets/',
         ConnectionsList: 'bi_analysis/bi_connections/',
