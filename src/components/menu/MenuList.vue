@@ -161,6 +161,7 @@ const menuSections = ref([
   WatermarkedVideoSection,
   ShortcodesMenuSection,
   ExpertSystemSection,
+  AnalyzeMenuSection,
   FilesMenuSection,
   CategoriesMenuSection,
 ])
