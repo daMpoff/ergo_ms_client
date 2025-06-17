@@ -107,6 +107,7 @@ export const endpoints = {
         UploadedFiles: 'bi_analysis/bi_datasets/user-files/',
     },
     file: 'settings/file/',
+    audit: 'settings/audit-logs/',
     categories: {
         list: 'settings/categories/',
         create: 'settings/categories/',
