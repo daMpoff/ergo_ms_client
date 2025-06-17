@@ -16,9 +16,8 @@ import {
   TextCursorInput,
   UserCog,
   Wallet,
+  HandHeart,
   KeySquare,
-  BookOpen,
-  NotepadTextDashed,
   Video,
   Files,
   Layers
@@ -283,3 +282,24 @@ export const CategoriesMenuSection = {
     { path: 'TagsManager', name: 'Создание тегов' },
   ],
 };
+
+// Формирование команды
+export const TeamBuildingMenuSection = {
+  id: 23,
+  icon: HandHeart,
+  routeName: 'TeamBuilding',
+  title: 'Формирование команды',
+}
+// ЭС компетенции
+export const ExpsysMenuSection = {
+  id: 24,
+  icon: HandHeart,
+  routeName: 'Expsys',
+  title: 'Экспертная система',
+    list: [
+    { path: 'Subjects', name: 'Предметы' },
+    { path: 'Competencies', name: 'Компетенции' },
+    { path: 'Indicators', name: 'Индикаторы компетенций' },
+    { path: 'Vectors', name: 'Вектор развития' },
+  ],
+}

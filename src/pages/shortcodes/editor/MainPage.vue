@@ -4,7 +4,7 @@
       <div class="fancy-title mx-auto">Система управления контентом</div>
 
       <!-- Главные действия -->
-      <h5 class="section-title mt-4 mb-2">Страницы и шаблоны</h5>
+      <h5 class="section-title mt-4 mb-2">Страницы</h5>
       <div class="row gx-4 gy-4">
         <div v-for="opt in pageOptions" :key="opt.title" class="col-12 col-md-6">
           <div class="option-card" @click="navigateTo(opt.route)">
@@ -53,12 +53,6 @@ const pageOptions = [
     icon: FileText,
   },
   {
-    title: 'Создать шаблон страницы',
-    description: 'Шаблон для повторного использования',
-    route: '/shortcodes/create-template',
-    icon: Copy,
-  },
-  {
     title: 'Список страниц',
     description: 'Все страницы сайта',
     route: '/shortcodes/pages',
@@ -94,6 +88,7 @@ const shortcodeOptions = [
   position: relative;
   display: inline-block;
 }
+
 .fancy-title::after {
   content: '';
   position: absolute;
@@ -123,6 +118,7 @@ const shortcodeOptions = [
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-left-width 0.3s ease;
   cursor: pointer;
 }
+
 .option-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
@@ -145,6 +141,7 @@ const shortcodeOptions = [
   font-weight: 500;
   color: #212529;
 }
+
 .option-desc {
   font-size: 0.95rem;
   color: #495057;

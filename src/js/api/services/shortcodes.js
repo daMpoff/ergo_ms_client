@@ -50,6 +50,9 @@ export const shortcodesService = {
   createPage(data) {
     return apiClient.post(endpoints.shortcodes.pages, data)
   },
+  deletePage(slug) {
+    return apiClient.delete(`${endpoints.shortcodes.pages}${slug}/`);
+  },
 
   bulkCreateInstances(data) {
     return apiClient.post(endpoints.shortcodes.instances + 'bulk_create/', data)
@@ -69,4 +72,11 @@ export const shortcodesService = {
   updateSiteLayout(id, data) {
     return apiClient.patch(`${endpoints.shortcodes.layout}${id}/`, data)
   },
+  getLatestPages(categoryId, limit = 6) {
+    return apiClient.get(
+      endpoints.shortcodes.latest,
+      { category_id: categoryId, limit },
+      false
+    )
+  }
 }
