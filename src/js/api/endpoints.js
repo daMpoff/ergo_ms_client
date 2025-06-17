@@ -133,6 +133,7 @@ export const endpoints = {
         securitySettings: 'settings/security-settings/',
     },
     shortcodes: {
+        latest: 'cms_shortcodes/pages/latest/',
         templates: 'cms_shortcodes/templates/',
         pages: 'cms_shortcodes/pages/',
         instances: 'cms_shortcodes/instances/',

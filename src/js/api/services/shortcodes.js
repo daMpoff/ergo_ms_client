@@ -69,4 +69,11 @@ export const shortcodesService = {
   updateSiteLayout(id, data) {
     return apiClient.patch(`${endpoints.shortcodes.layout}${id}/`, data)
   },
+  getLatestPages(categoryId, limit = 6) {
+    return apiClient.get(
+      endpoints.shortcodes.latest,
+      { category_id: categoryId, limit },
+      false
+    )
+  }
 }
