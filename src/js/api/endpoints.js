@@ -7,6 +7,64 @@ export const endpoints = {
         registration: 'cms/adp/registration/',
         protected: 'cms/adp/protected/',
     },
+    crm: {
+        tasks: {
+            sectionTasks: 'crm/tasks/section-tasks/',
+            add_task:'crm/tasks/task-new/',
+            add_section:'crm/tasks/section-new/',
+            delete_task:'crm/tasks/delete-task/{id}/',
+            delete_section:'crm/tasks/delete-section/{id}/',
+            update_section:'crm/tasks/update-section/{id}/',
+            add_subtask:'crm/tasks/new-subtask/',
+            toggle_task:'crm/tasks/toggle-task/{id}/',
+            update_task:'crm/tasks/update-task/{id}/',
+            assignee_task:'crm/tasks/assignee/{id}/',
+            alendarTasks: 'crm/calendar/tasks/',
+        },
+        projects:
+        {
+            allprojects:'crm/projects/project-all/',
+            personalprojects:'crm/projects/project-personal/',
+            invitedprojects:'crm/projects/project-invited/',
+            addproject:'crm/projects/project-new-add/',
+            delete_project:'crm/projects/delete-project/{id}/',
+            leave_project:'crm/projects/leave-project/{id}/{project_id}',
+            counttasks:'crm/projects/tasks-count/',
+            usersproject:'crm/projects/users-project/{id}/',
+        },
+        calendar:{
+
+          createTask: 'crm/tasks/task/',
+        }
+    },
+    expsys: {
+        subjects: {
+            allsubjects: '/expsys_module/subjects-all/',
+            create:'/expsys_module/subject-create/',
+            delete_subject:'/expsys_module/delete-subject/{id}/',
+            create_competencies:'/expsys_module/competence-create/',
+            create_indicator:'/expsys_module/indicator-create/',
+            allcompenencies:'/expsys_module/subjectsindicators/',
+            competencies:'/expsys_module/allcompetencies',
+            countsubjectsind:'/expsys_module/indicator-subjects-count',
+            indicators:'/expsys_module/allindicators',
+            indicatorscompenencies:'/expsys_module/competenceindicators/',
+            delete_competence:'/expsys_module/delete-competence/{id}/',
+            delete_indicator:'/expsys_module/delete-indicator/{id}/',
+            information:'/expsys_module/information-competence/',
+            update_subject:'/expsys_module/update-subject/{id}/',
+            update_competence:'/expsys_module/update-competence/{id}/',
+            update_indicator:'/expsys_module/update-indicator/{id}/',
+            countsstudents:'/expsys_module/countstudents-subject/',
+            countslessons:'/expsys_module/countlessons-subject/',
+            countstests:'/expsys_module/counttests-subject/',
+
+
+
+
+        },
+
+    },
     cms: {
         checkAccessToPage: 'cms/check_access_to_page/',
         checkAccessToComponent: 'cms/check_access_to_component/',
@@ -43,7 +101,7 @@ export const endpoints = {
         putpages:'cms/put-cms-pages',
         getClosedPages: 'cms/get-closed-pages/',
         getClosedPagesForUser: 'cms/get-closed-pages-for-user/',
-        
+
         addPageComponent: 'cms/add-page-component/',
         removePageComponent: 'cms/remove-page-component/',
         updatePageComponent: 'cms/update-page-component/',
@@ -74,9 +132,9 @@ export const endpoints = {
         vacancies: 'expert_system/vacancies/',
         vacancySkills: 'expert_system/vacancy-skills/',
         applications: 'expert_system/applications/',
-      
-        orientationResults: 'expert_system/orientation-results/',
-        orientationUserAnswers: 'expert_system/orientation-answers/',
+
+        //orientationResults: 'expert_system/orientation-results/',
+        //orientationUserAnswers: 'expert_system/orientation-answers/',
         setUserSkillTest: 'expert_system/set-user-skill-test',
         getUserSkillTest: 'expert_system/get-user-skill-tests',
         getUserSkills: 'expert_system/get-user-skills',
@@ -107,6 +165,32 @@ export const endpoints = {
         ChartsList: 'bi_analysis/bi_charts/',
         Upload: 'bi_analysis/bi_datasets/upload/',
         UploadedFiles: 'bi_analysis/bi_datasets/user-files/',
+    },
+    file: 'settings/file/',
+    categories: {
+        list: 'settings/categories/',
+        create: 'settings/categories/',
+        update: id => `settings/categories/${id}/`,
+        delete: id => `settings/categories/${id}/`
+    },
+    tags: {
+        list: 'settings/tags/',
+        create: 'settings/tags/',
+        update: id => `settings/tags/${id}/`,
+        delete: id => `settings/tags/${id}/`
+    },
+    userAvatars: {
+        list: 'settings/user-avatars/',
+        create: 'settings/user-avatars/',
+        delete: id => `settings/user-avatars/${id}/`
+    },
+    settings: {
+        generalSettings: 'settings/general-settings/',
+        lastSettings: 'settings/general-settings/last/',
+        mediaSettings: 'settings/media-settings/',
+        permalinkSettings: 'settings/permalink-settings/',
+        emailSettings: 'settings/email-settings/',
+        securitySettings: 'settings/security-settings/',
     },
     shortcodes: {
         templates: 'cms_shortcodes/templates/',

@@ -16,11 +16,15 @@ import {
   TextCursorInput,
   UserCog,
   Wallet,
+  HandHeart,
   KeySquare,
   BookOpen,
   NotepadTextDashed,
   Video,
   GraduationCapIcon,
+  Video,
+  Files,
+  Layers
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -47,8 +51,7 @@ export const SettingsMenuSection = {
   list: [
     { path: 'AccountSettings', name: 'Аккаунт' },
     { path: 'SecuritySettings', name: 'Безопасность' },
-    { path: 'NotificationSettings', name: 'Уведомления' },
-    { path: 'ConnectionSettings', name: 'Связи' },
+    { path: 'SiteSettings', name: 'Настройки'},
     { path: 'Roles', name: 'Ролевые настройки' },
   ],
 }
@@ -260,7 +263,7 @@ export const AnalyzeMenuSection = {
 
 //LMS
 export const LMSMenuSection = {
-    id: 21,
+    id: 25,
     icon: GraduationCapIcon,
     routeName: 'LMS',
     title: 'Образование',
