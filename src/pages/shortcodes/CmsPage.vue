@@ -13,26 +13,22 @@ const notFound = ref(false)
 const page = ref(null)
 const components = ref([])
 
-/* ——— helper ——— */
 function pathFromRoute(r) {
   const parts = Array.isArray(r.params.parts) ? r.params.parts : [r.params.parts]
-  return parts.filter(Boolean).join('/') // ‘’ для «домашней»
+  return parts.filter(Boolean).join('/')
 }
 const fullPath = ref(pathFromRoute(route))
 
-/* ——— навигация ——— */
 const goHome = () => router.push('/')
 const goShortcodes = () => router.push('/shortcodes')
 
-/* ——— загрузка ——— */
 async function loadPage() {
   loading.value = true
   error.value = null
   notFound.value = false
   components.value = []
 
-  /* (0) fullPath → ‘’ / 'home'  */
-  const queryPath = fullPath.value || 'home' // ← фикc
+  const queryPath = fullPath.value || 'home'
 
   try {
     const lResp = await shortcodesService.getSiteLayout()
@@ -81,7 +77,6 @@ async function loadPage() {
   }
 }
 
-/* ——— реагируем на смену маршрута ——— */
 watch(
   () => route.params.parts,
   () => {
@@ -99,14 +94,23 @@ watch(
     <div v-if="loading">Загрузка…</div>
 
     <template v-else-if="notFound">
-      <div class="alert alert-warning">
-        {{ error }}
-        <div class="mt-3">
-          <button class="btn btn-outline-primary me-2" @click="goHome">На главную</button>
-          <button class="btn btn-primary" @click="goShortcodes">Управление страницами</button>
+      <div class="d-flex flex-column align-items-center text-center my-5">
+        <img src="@/assets/NotFound.svg" alt="404" class="img-fluid mb-4" style="max-width: 500px" />
+
+        <h2 class="mb-2">Страница не найдена</h2>
+        <p class="text-muted mb-4">
+          К сожалению, запрошенная страница отсутствует или была удалена.
+        </p>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" @click="goHome">На главную</button>
+          <button class="btn btn-outline-secondary" @click="goShortcodes">
+            Управление страницами
+          </button>
         </div>
       </div>
     </template>
+
 
     <template v-else-if="error">
       <div class="alert alert-danger">
