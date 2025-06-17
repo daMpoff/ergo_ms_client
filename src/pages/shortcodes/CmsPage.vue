@@ -1,6 +1,6 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { shortcodesService } from '@/js/api/services/shortcodes'
 import PublicCanvas from './PublicCanvas.vue'
 
@@ -12,6 +12,10 @@ const details = ref(null)
 const notFound = ref(false)
 const page = ref(null)
 const components = ref([])
+
+const editLink = computed(() =>
+  page.value ? `/shortcodes/shortcode-editor?page=${page.value.id}` : null
+)
 
 function pathFromRoute(r) {
   const parts = Array.isArray(r.params.parts) ? r.params.parts : [r.params.parts]
@@ -89,7 +93,17 @@ watch(
 
 <template>
   <div class="my-2">
-    <h2 class="mb-4">CMS-страница: {{ page?.name || fullPath || 'home' }}</h2>
+    <div class="d-flex align-items-center mb-4">
+      <h2 class="mb-0 me-3">
+        CMS-страница: {{ page?.name || fullPath || 'home' }}
+      </h2>
+
+      <!-- показываем кнопку, только когда страница существует -->
+      <router-link v-if="editLink" :to="editLink" class="btn btn-outline-primary btn-sm">
+        ✏️ Редактировать
+      </router-link>
+    </div>
+
 
     <div v-if="loading">Загрузка…</div>
 
