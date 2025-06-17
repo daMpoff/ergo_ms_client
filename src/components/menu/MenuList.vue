@@ -22,6 +22,7 @@ import {
   ShortcodesMenuSection,
   EducationAnalyticMenuSection,
   ExpertSystemSection,
+  LMSMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
@@ -157,6 +158,7 @@ const menuSections = ref([
   ShortcodesMenuSection,
   ExpertSystemSection,
   AnalyzeMenuSection,
+  LMSMenuSection,
 ])
 
 const separators = (index) => {

@@ -19,7 +19,8 @@ import {
   KeySquare,
   BookOpen,
   NotepadTextDashed,
-  Video
+  Video,
+  GraduationCapIcon,
 } from 'lucide-vue-next'
 
 // Аккаунт
@@ -256,3 +257,16 @@ export const AnalyzeMenuSection = {
     { path: 'DatabaseAnalyze', name: 'Анализ Bitcoin' },
   ],
 };
+
+//LMS
+export const LMSMenuSection = {
+    id: 21,
+    icon: GraduationCapIcon,
+    routeName: 'LMS',
+    title: 'Образование',
+    list: [
+        { path: 'Subjects', name: 'Предметы' },
+        { path: 'ForStudent', name: 'Статистика' },
+        { path: 'ForTheacher', name: 'Для преподователей' },
+    ],
+}
