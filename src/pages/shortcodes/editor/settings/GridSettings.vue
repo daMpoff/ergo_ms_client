@@ -1,94 +1,101 @@
 <script setup>
 import { toRefs, ref, computed, onMounted, watch } from 'vue'
 import CategoryTree from '../CategoryTree.vue'
+import { shortcodesService } from '@/js/api/services/shortcodes'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 
-const props = defineProps({
-    component: { type: Object, required: true }
-})
+const props = defineProps({ component: Object })
 const { component } = toRefs(props)
-
 if (!component.value.extra_data) component.value.extra_data = {}
 
 const cols = ref(component.value.extra_data.cols ?? 3)
 const limit = ref(component.value.extra_data.limit ?? 6)
 const categoryId = ref(component.value.extra_data.category_id ?? null)
+const templateId = ref(component.value.extra_data.template_id ?? null)
+
+const templates = ref([])
+const loadTemplates = async () => {
+    const r = await shortcodesService.getTemplates()
+    if (r.success)
+        templates.value = (r.data || []).filter(t => t.component_type === 'PageCard')
+}
 
 const categories = ref([])
 const categorySearch = ref('')
 const selectedPath = ref([])
-
-function buildTree(list) {
-    const map = Object.fromEntries(list.map(i => [i.id, { ...i, children: [] }]))
-    const roots = []
-    list.forEach(i => (i.parent ? map[i.parent]?.children.push(map[i.id]) : roots.push(map[i.id])))
+const buildTree = list => {
+    const m = {}, roots = []
+    list.forEach(i => m[i.id] = { ...i, children: [] })
+    list.forEach(i => i.parent ? m[i.parent]?.children.push(m[i.id]) : roots.push(m[i.id]))
     return roots
 }
-
-async function fetchCategories() {
+const fetchCategories = async () => {
     const r = await apiClient.get(endpoints.categories.list)
-    const data = Array.isArray(r.data) ? r.data : r.data.results || []
-    categories.value = buildTree(data)
+    categories.value = buildTree(Array.isArray(r.data) ? r.data : r.data.results || [])
 }
+onMounted(() => { fetchCategories(); loadTemplates() })
 
-onMounted(fetchCategories)
-
-function filterTree(nodes, q) {
-    return nodes
-        .map(n => {
-            const hit = n.name.toLowerCase().includes(q)
-            const kids = n.children ? filterTree(n.children, q) : []
-            return (hit || kids.length) ? { ...n, children: kids } : null
-        })
-        .filter(Boolean)
-}
-
-const filteredCategories = computed(() =>
-    categorySearch.value.trim() ? filterTree(categories.value, categorySearch.value.trim().toLowerCase()) : categories.value
-)
+const filterTree = (n, q) => n.map(c => {
+    const hit = c.name.toLowerCase().includes(q)
+    const kids = c.children ? filterTree(c.children, q) : []
+    return hit || kids.length ? { ...c, children: kids } : null
+}).filter(Boolean)
+const filteredCategories = computed(() => categorySearch.value.trim()
+    ? filterTree(categories.value, categorySearch.value.trim().toLowerCase())
+    : categories.value)
 
 function handleSelect({ category, path }) {
     categoryId.value = category.id
     selectedPath.value = path.concat([{ id: category.id, name: category.name }])
 }
-
 function resetCategory() {
     categoryId.value = null
     selectedPath.value = []
 }
 
-watch([cols, limit, categoryId], () => {
+watch([cols, limit, categoryId, templateId], () => {
     component.value.extra_data = {
         ...component.value.extra_data,
         cols: cols.value,
         limit: limit.value,
-        category_id: categoryId.value
+        category_id: categoryId.value,
+        template_id: templateId.value,
     }
 })
 </script>
 
 <template>
-    <div class="settings-grid">
+    <div>
         <div class="mb-3">
-            <label class="form-label fw-bold">Количество колонок</label>
-            <input v-model.number="cols" type="number" min="1" class="form-control" />
+            <label class="form-label fw-bold">Кол-во колонок</label>
+            <input v-model.number="cols" type="number" min="1" class="form-control form-control-sm" />
         </div>
 
-        <!-- Лимит -->
         <div class="mb-3">
-            <label class="form-label fw-bold">Число карточек</label>
-            <input v-model.number="limit" type="number" min="1" class="form-control" />
+            <label class="form-label fw-bold">Карточек в авто-секции</label>
+            <input v-model.number="limit" type="number" min="1" class="form-control form-control-sm" />
+        </div>
+
+        <!-- выбор шаблона карточки -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Шаблон PageCard</label>
+            <select v-model="templateId" class="form-select form-select-sm">
+                <option :value="null">Стандартный PageCardBlock</option>
+                <option v-for="t in templates" :key="t.id" :value="t.id">
+                    {{ t.name }} (id={{ t.id }})
+                </option>
+            </select>
         </div>
 
         <!-- Категория -->
         <div class="mb-3">
-            <label class="form-label fw-bold">Категория</label>
+            <label class="form-label fw-bold">Категория авто-страниц</label>
 
-            <input v-model="categorySearch" class="form-control form-control-sm mb-2" type="text"
-                placeholder="Поиск категории…" />
+            <input v-model="categorySearch" type="text" class="form-control form-control-sm mb-2"
+                placeholder="Поиск…" />
 
-            <div class="border rounded bg-light p-2" style="max-height: 260px; overflow-y: auto">
+            <div class="border rounded bg-light p-2" style="max-height:260px;overflow:auto">
                 <CategoryTree :categories="filteredCategories" :selectedPath="selectedPath" @select="handleSelect" />
             </div>
 
@@ -101,7 +108,7 @@ watch([cols, limit, categoryId], () => {
 </template>
 
 <style scoped>
-.settings-grid .form-label {
+.form-label {
     font-weight: 600;
 }
 </style>

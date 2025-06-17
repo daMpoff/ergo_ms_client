@@ -1,7 +1,14 @@
 <script setup>
 import { toRefs, ref, watch } from 'vue'
 
-const { component } = toRefs(defineProps({ component: Object }))
+const props = defineProps({
+    component: {
+        type: Object,
+        required: true
+    }
+})
+
+const { component } = toRefs(props)
 if (!component.value.extra_data) component.value.extra_data = {}
 
 const placeholder = ref(component.value.extra_data.placeholder_title ?? 'Новость')
@@ -15,6 +22,7 @@ watch([placeholder, overrideUrl], () => {
     }
 })
 </script>
+
 
 <template>
     <div>
