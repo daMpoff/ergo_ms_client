@@ -420,7 +420,7 @@ const categoriesRoutes = [
         name: 'TagsManager',
         component:() => import('@/pages/categories/TagsManagerPage.vue'),
         meta: { requiresAuth: true, title: 'Создание тегов' }
-      } 
+      }
     ],
   },
 ]
@@ -571,6 +571,12 @@ const expsysRoutes = [
         component: () => import('@/pages/expsys/CompetenceManager.vue'),
         meta: { title: 'Компетенции', requiresAuth: true },
            },
+           {
+        path: 'vectors',
+        name: 'Vectors',
+        component: () => import('@/pages/expsys/VektorDevelopment.vue'),
+        meta: { title: 'Вектор развития', requiresAuth: true },
+      },
       ]
 }]
 

@@ -298,6 +298,6 @@ export const ExpsysMenuSection = {
     { path: 'Subjects', name: 'Предметы' },
     { path: 'Competencies', name: 'Компетенции' },
     { path: 'Indicators', name: 'Индикаторы компетенций' },
-
+    { path: 'Vectors', name: 'Вектор развития' },
   ],
 }

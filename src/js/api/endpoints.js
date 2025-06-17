@@ -19,6 +19,7 @@ export const endpoints = {
             toggle_task:'crm/tasks/toggle-task/{id}/',
             update_task:'crm/tasks/update-task/{id}/',
             assignee_task:'crm/tasks/assignee/{id}/',
+            alendarTasks: 'crm/calendar/tasks/',
         },
         projects:
         {
@@ -30,6 +31,10 @@ export const endpoints = {
             leave_project:'crm/projects/leave-project/{id}/{project_id}',
             counttasks:'crm/projects/tasks-count/',
             usersproject:'crm/projects/users-project/{id}/',
+        },
+        calendar:{
+
+          createTask: 'crm/tasks/task/',
         }
     },
     expsys: {
@@ -58,8 +63,8 @@ export const endpoints = {
 
 
         },
-    
-    },   
+
+    },
     cms: {
         checkAccessToPage: 'cms/check_access_to_page/',
         checkAccessToComponent: 'cms/check_access_to_component/',
@@ -96,7 +101,7 @@ export const endpoints = {
         putpages:'cms/put-cms-pages',
         getClosedPages: 'cms/get-closed-pages/',
         getClosedPagesForUser: 'cms/get-closed-pages-for-user/',
-        
+
         addPageComponent: 'cms/add-page-component/',
         removePageComponent: 'cms/remove-page-component/',
         updatePageComponent: 'cms/update-page-component/',
@@ -127,9 +132,9 @@ export const endpoints = {
         vacancies: 'expert_system/vacancies/',
         vacancySkills: 'expert_system/vacancy-skills/',
         applications: 'expert_system/applications/',
-      
-        orientationResults: 'expert_system/orientation-results/',
-        orientationUserAnswers: 'expert_system/orientation-answers/',
+
+        //orientationResults: 'expert_system/orientation-results/',
+        //orientationUserAnswers: 'expert_system/orientation-answers/',
         setUserSkillTest: 'expert_system/set-user-skill-test',
         getUserSkillTest: 'expert_system/get-user-skill-tests',
         getUserSkills: 'expert_system/get-user-skills',
@@ -165,7 +170,7 @@ export const endpoints = {
     categories: {
         list: 'settings/categories/',
         create: 'settings/categories/',
-        update: id => `settings/categories/${id}/`, 
+        update: id => `settings/categories/${id}/`,
         delete: id => `settings/categories/${id}/`
     },
     tags: {
