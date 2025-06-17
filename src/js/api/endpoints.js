@@ -97,19 +97,12 @@ export const endpoints = {
         courses: 'expert_system/courses/',
         getTestResultBySkillId: 'expert_system/get-test-result-by-skill-id',
         deleteTestResultBySkill: 'expert_system/delete-test-result-by-skill',
-        dashboard: {
-          metrics: 'expert_system/dashboard/metrics/',
-          summary: 'expert_system/dashboard/summary/',
-          skillsAnalytics: 'expert_system/dashboard/skills-analytics/',
-          popularSkills: 'expert_system/dashboard/popular-skills/',
-          studentsOverview: 'expert_system/dashboard/students-overview/',
-          studentGroupsStats: 'expert_system/dashboard/student-groups-stats/',
-          studentActivityTimeline: 'expert_system/dashboard/student-activity-timeline/',
-          companiesVacanciesStats: 'expert_system/dashboard/companies-vacancies-stats/',
-          popularVacancySkills: 'expert_system/dashboard/popular-vacancy-skills/',
-          testResultsAnalytics: 'expert_system/dashboard/test-results-analytics/',
-          difficultTests: 'expert_system/dashboard/difficult-tests/',
-          rolePopularityStats: 'expert_system/dashboard/role-popularity-stats/'
+        analytics: {
+          systemMetrics: 'expert_system/analytics/system-metrics/',
+          skillsData: 'expert_system/analytics/skills-data/',
+          topSkills: 'expert_system/analytics/top-skills/',
+          studentsStats: 'expert_system/analytics/students-stats/',
+          testingData: 'expert_system/analytics/testing-data/',
       }
     },
   bi: {

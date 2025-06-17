@@ -21,6 +21,7 @@ import {
   NotepadTextDashed,
   Video,
   Files,
+  BarChart3,
   Layers
 } from 'lucide-vue-next'
 
@@ -245,7 +246,7 @@ export const ExpertSystemSection = {
     { path: 'AllTests', name: 'Управление тестами для навыков' },
     { path: 'StudentCourses', name: 'Рекомендованные курсы' },
     { path: 'StudentsList', name: 'Студенты' },
-    { path: 'Dashboard', name: 'Статистика' }
+    { path: 'ExpertDashboard', name: 'Дашборд'}
   ],
 }
 
