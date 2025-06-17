@@ -5,6 +5,8 @@ import VisualStyles from './settings/VisualStyles.vue'
 import SpacingControls from './settings/SpacingControls.vue'
 import MiscControls from './settings/MiscControls.vue'
 import ButtonSettings from './settings/ButtonSettings.vue'
+import GridSettings from './settings/GridSettings.vue'
+import PageCardSettings from './settings/PageCardSettings.vue'
 
 const props = defineProps({ component: Object })
 const { component } = toRefs(props)
@@ -30,8 +32,17 @@ const { component } = toRefs(props)
     <section v-if="component.component_type === 'Button'" class="settings-section mb-4">
       <ButtonSettings :component="component" />
     </section>
+
     <section v-if="component.component_type === 'Image'" class="settings-section mb-4">
       <ImageSettings :component="component" />
+    </section>
+
+    <section v-if="component.component_type === 'Grid'" class="settings-section mb-4">
+      <GridSettings :component="component" />
+    </section>
+
+    <section v-if="component.component_type === 'PageCard'" class="settings-section mb-4">
+      <PageCardSettings :component="component" />
     </section>
 
     <section class="settings-section mb-4">
