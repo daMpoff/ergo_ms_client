@@ -130,11 +130,11 @@ const handleApiError = async (response) => {
   if (!response.ok) {
     const errorData = await response.text();
     try {
-      // Пробуем распарсить JSON-ошибку
+
       const jsonError = JSON.parse(errorData);
       throw new Error(jsonError.message || 'Unknown server error');
     } catch {
-      // Если это HTML-ответ
+
       if (errorData.startsWith('<!doctype')) {
         throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }
