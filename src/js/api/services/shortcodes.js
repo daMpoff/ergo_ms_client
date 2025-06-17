@@ -50,6 +50,9 @@ export const shortcodesService = {
   createPage(data) {
     return apiClient.post(endpoints.shortcodes.pages, data)
   },
+  deletePage(slug) {
+    return apiClient.delete(`${endpoints.shortcodes.pages}${slug}/`);
+  },
 
   bulkCreateInstances(data) {
     return apiClient.post(endpoints.shortcodes.instances + 'bulk_create/', data)
