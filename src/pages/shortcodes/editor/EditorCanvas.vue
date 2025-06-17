@@ -10,56 +10,34 @@
       </h5>
 
       <!-- Шаг 3 -->
-      <div
-        v-if="pageInfo"
-        class="page-info text-white-50 me-auto small lh-sm"
-        data-step="3"
-        data-intro="Текущая страница и её URL"
-      >
+      <div v-if="pageInfo" class="page-info text-white-50 me-auto small lh-sm" data-step="3"
+        data-intro="Текущая страница и её URL">
         <span class="d-block fw-semibold">{{ pageInfo.name }}</span>
         <span class="d-block">{{ pageInfo.full_url }}</span>
       </div>
 
       <!-- Шаг 4 -->
-      <select
-        v-if="templatePages.length"
-        v-model="selectedTemplateId"
-        class="form-select form-select-sm w-auto"
-        data-step="4"
-        data-intro="Выберите готовую страницу как шаблон"
-      >
+      <select v-if="templatePages.length" v-model="selectedTemplateId" class="form-select form-select-sm w-auto"
+        data-step="4" data-intro="Выберите готовую страницу как шаблон">
         <option :value="null" disabled>Загрузить шаблон…</option>
         <option v-for="p in templatePages" :key="p.id" :value="p.id">{{ p.name }}</option>
       </select>
 
       <!-- Шаг 5 -->
-      <button
-        v-if="selectedTemplateId"
-        class="btn btn-sm btn-outline-light"
-        @click="applyTemplate"
-        data-step="5"
-        data-intro="Загрузить выбранный шаблон"
-      >
+      <button v-if="selectedTemplateId" class="btn btn-sm btn-outline-light" @click="applyTemplate" data-step="5"
+        data-intro="Загрузить выбранный шаблон">
         Загрузить
       </button>
 
       <!-- Шаг 6 -->
-      <button
-        class="btn btn-sm btn-outline-light ms-2"
-        @click="startIntro(true)"
-        data-step="6"
-        data-intro="Перезапустить тур подсказок"
-      >
+      <button class="btn btn-sm btn-outline-light ms-2" @click="startIntro(true)" data-step="6"
+        data-intro="Перезапустить тур подсказок">
         ❓
       </button>
 
       <!-- Шаг 7 -->
-      <button
-        class="btn btn-sm btn-outline-warning ms-2"
-        @click="showDebug = !showDebug"
-        data-step="7"
-        data-intro="Показать/скрыть отладочную информацию"
-      >
+      <button class="btn btn-sm btn-outline-warning ms-2" @click="showDebug = !showDebug" data-step="7"
+        data-intro="Показать/скрыть отладочную информацию">
         {{ showDebug ? 'Скрыть отладку' : 'Отладка для опытных' }}
       </button>
     </div>
@@ -68,44 +46,25 @@
       <div v-if="loadError" class="alert alert-danger m-4">{{ loadError }}</div>
 
       <!-- Аудит H1 -->
-      <div
-        v-if="showAudit"
-        class="alert alert-info d-flex align-items-center m-3"
-        data-step="8"
-        data-intro="Добавьте H1‑заголовок — это важно для SEO и доступности"
-      >
+      <div v-if="showAudit" class="alert alert-info d-flex align-items-center m-3" data-step="8"
+        data-intro="Добавьте H1‑заголовок — это важно для SEO и доступности">
         <strong class="me-2">ℹ️</strong>
         Страница пока без <code>&lt;h1&gt;</code>. Рекомендуем добавить главный заголовок.
         <button class="btn-close ms-auto" @click="showAudit = false" />
       </div>
 
       <!-- Drag & Drop дерево -->
-      <Draggable
-        v-model="internalTree"
-        :key="treeKey"
-        :external-data-handler="externalDataHandler"
-        :on-external-drag-over="() => true"
-        :eachDroppable="eachDroppable"
-        tree-line
-        value-key="uid"
-        class="drop-area overflow-auto p-3"
-        data-step="9"
-        data-intro="Перетаскивайте блоки, чтобы сформировать страницу"
-      >
+      <Draggable v-model="internalTree" :key="treeKey" :external-data-handler="externalDataHandler"
+        :on-external-drag-over="() => true" :eachDroppable="eachDroppable" tree-line value-key="uid"
+        class="drop-area overflow-auto p-3" data-step="9"
+        data-intro="Перетаскивайте блоки, чтобы сформировать страницу">
         <template #default="{ node, stat }">
           <div>
-            <OpenIcon
-              v-if="stat.children.length"
-              :open="stat.open"
-              class="me-2 text-primary"
-              @click="stat.open = !stat.open"
-            />
-            <div
-              class="d-flex justify-content-between align-items-center p-2 mb-2 bg-white rounded shadow-sm"
-            >
+            <OpenIcon v-if="stat.children.length" :open="stat.open" class="me-2 text-primary"
+              @click="stat.open = !stat.open" />
+            <div class="d-flex justify-content-between align-items-center p-2 mb-2 bg-white rounded shadow-sm">
               <div>
-                <b>{{ node.template_name }}</b
-                ><br />
+                <b>{{ node.template_name }}</b><br />
                 <small class="text-muted">{{ node.component_type }}</small>
               </div>
               <div class="btn-group btn-group-sm">
@@ -120,28 +79,17 @@
       </Draggable>
 
       <!-- Кнопка публикации -->
-      <div
-        class="d-flex justify-content-end mt-4 mb-2 px-3"
-        data-step="10"
-        data-intro="Сохранить и посмотреть страницу"
-      >
-        <button
-          class="btn btn-success text-white btn-lg px-5 py-2 fs-5"
-          :disabled="isSaving || !internalTree.length"
-          @click="saveToDb"
-        >
+      <div class="d-flex justify-content-end mt-4 mb-2 px-3" data-step="10"
+        data-intro="Сохранить и посмотреть страницу">
+        <button class="btn btn-success text-white btn-lg px-5 py-2 fs-5" :disabled="isSaving || !internalTree.length"
+          @click="saveToDb">
           <span v-if="isSaving" class="spinner-border spinner-border-sm me-2"></span>
           Опубликовать
         </button>
       </div>
 
       <!-- Отладка -->
-      <div
-        v-if="showDebug"
-        class="p-3 bg-light border-top"
-        data-step="11"
-        data-intro="Внутренние структуры и различия"
-      >
+      <div v-if="showDebug" class="p-3 bg-light border-top" data-step="11" data-intro="Внутренние структуры и различия">
         <div class="row">
           <div class="col-12 col-md-4">
             <h6>Исходное дерево</h6>
@@ -216,15 +164,32 @@ const flatTree = computed(() => flattenTree(internalTree.value))
 const rebuiltTree = computed(() => rebuildTree(flatTree.value))
 const diffResult = computed(() => simpleDiff(internalTree.value, rebuiltTree.value).join('\n'))
 
-const hasH1 = computed(() =>
-  internalTree.value.some((n) => n.component_type?.toLowerCase() === 'h1')
-)
+const hasH1 = computed(() => {
+  const isH1 = (node) => {
+    const type = (node.component_type || '').toLowerCase()
+
+    if (type === 'h1')
+      return true
+
+    if (
+      type === 'heading' &&
+      (node.extra_data?.level === 1 ||
+        (node.extra_data?.tag || '').toLowerCase() === 'h1')
+    ) {
+      return true
+    }
+
+    return /(^|\s)h1\b/i.test(node.template_name || '')
+  }
+
+  return flatTree.value.some(isH1)
+})
 
 const templatePages = computed(() =>
   pageInfo.value
     ? allPages.value.filter(
-        (p) => p.id !== pageInfo.value.id && p.category?.id === pageInfo.value.category?.id
-      )
+      (p) => p.id !== pageInfo.value.id && p.category?.id === pageInfo.value.category?.id
+    )
     : []
 )
 
@@ -419,9 +384,11 @@ watch(hasH1, (v) => {
   background-color: var(--bs-light);
   transition: background-color 0.2s ease;
 }
+
 .drop-area:hover {
   background-color: rgba(var(--bs-primary-rgb), 0.1);
 }
+
 .debug-box {
   max-height: 320px;
   overflow: auto;
@@ -432,6 +399,7 @@ watch(hasH1, (v) => {
   font-family: monospace;
   font-size: 0.825rem;
 }
+
 .customTooltip {
   background: #fff;
   color: #333;
@@ -440,16 +408,19 @@ watch(hasH1, (v) => {
   padding: 1rem;
   max-width: 320px;
 }
+
 .customHighlight {
   box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.25);
   border-radius: 8px;
 }
+
 .introjs-tooltip-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
 }
+
 .introjs-skipbutton {
   margin-left: auto !important;
   color: #dc3545 !important;
