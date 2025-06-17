@@ -9,8 +9,13 @@ const cls = [
   data.fluid ? 'img-fluid' : '',
   data.rounded ? 'rounded' : '',
 ]
+const style = {
+  width: data.width ? (typeof data.width === 'string' && data.width.endsWith('%') ? data.width : data.width + 'px') : '',
+  height: data.height ? (typeof data.height === 'string' && data.height.endsWith('%') ? data.height : data.height + 'px') : '',
+  objectFit: 'contain'
+}
 </script>
 
 <template>
-  <img :src="src" :alt="alt" :class="cls" />
+  <img :src="src" :alt="alt" :class="cls" :style="style" />
 </template>
