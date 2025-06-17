@@ -29,6 +29,14 @@ const { component } = toRefs(props)
       </div>
     </section>
 
+    <section v-if="component.component_type === 'Heading'">
+      <HeadingSettings :component="component" />
+    </section>
+
+    <section v-if="component.component_type === 'Text'">
+      <TextSettings :component="component" />
+    </section>
+
     <section v-if="component.component_type === 'Button'" class="settings-section mb-4">
       <ButtonSettings :component="component" />
     </section>
