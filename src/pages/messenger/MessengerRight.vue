@@ -107,7 +107,7 @@ const actions = ref([
     </ul>
   </div>
 
-  <div class="py-3">
+  <div class="pb-3">
     <h6 class="mb-1">Опции</h6>
     <ul class="list-unstyled mb-0">
       <li v-for="(action, index) in actions" :key="index" class="hover-section rounded p-2">

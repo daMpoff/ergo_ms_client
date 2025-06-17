@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Bolt, CircleUserRound, DollarSign, Power } from 'lucide-vue-next'
+import { Bolt, CircleUserRound, Power } from 'lucide-vue-next'
 
 const userDropdownMenu = ref([
   {

@@ -32,16 +32,19 @@ $card-bg: var(--color-primary-background);
 // Кнопка
 @each $color, $value in $theme-colors {
   .btn-#{$color} {
-    box-shadow: 0 .125rem .25rem 0 rgba($value, 0.4);
+    box-shadow: 0 0.125rem 0.25rem 0 rgba($value, 0.4);
   }
 }
+
+// Канвас
+$offcanvas-bg-color: $card-bg;
 
 // Таблица
 $table-color: var(--bs-card-color);
 $table-bg: var(--bs-card-bg);
 
 // Форма
-$input-border-width: 0.100rem;
+$input-border-width: 0.1rem;
 $input-focus-color: none;
 $input-focus-bg: none;
 $input-focus-box-shadow: none;
@@ -60,7 +63,7 @@ $form-check-input-focus-box-shadow: none;
 .form-switch .form-check-input,
 .form-switch .form-check-input:focus-within {
   cursor: pointer;
-  box-shadow: 0 0 .25rem 0 rgba(0, 0, 0, 0.16) inset;
+  box-shadow: 0 0 0.25rem 0 rgba(0, 0, 0, 0.16) inset;
   border: none;
 }
 .form-switch .form-check-input:not(:checked):focus-within {
@@ -69,7 +72,7 @@ $form-check-input-focus-box-shadow: none;
 .form-check .form-check-input:checked,
 .form-switch .form-check-input:checked {
   cursor: pointer;
-  box-shadow: 0 .125rem .25rem 0 rgba($primary, 0.4);
+  box-shadow: 0 0.125rem 0.25rem 0 rgba($primary, 0.4);
   border: none;
 }
 
@@ -86,7 +89,7 @@ $progress-height: 0.5rem;
 // Выпадающее окно
 $dropdown-border-width: none;
 $dropdown-border-color: none;
-$dropdown-box-shadow: 0 2px 8px 2px rgba(13, 35, 67, 0.2);
+$dropdown-box-shadow: 0 0.25rem 0.75rem 0 rgba(34, 48, 62, 0.14);
 $dropdown-bg: var(--bs-card-bg);
 
 $dropdown-link-active-color: var(--bs-primary);
@@ -99,7 +102,10 @@ $dropdown-link-active-bg: var(--bs-primary-bg-subtle);
 // Анимация
 .dropdown .dropdown-menu,
 .dropdown-center .dropdown-menu {
-  transition: max-height 0.3s, opacity 0.2s 0.1s, visibility 0s 0.3s;
+  transition:
+    max-height 0.3s,
+    opacity 0.2s 0.1s,
+    visibility 0s 0.3s;
 
   max-height: 0;
   display: block;
@@ -115,7 +121,10 @@ $dropdown-link-active-bg: var(--bs-primary-bg-subtle);
 
 .dropdown .dropdown-menu.show,
 .dropdown-center .dropdown-menu.show {
-  transition: max-height 0.3s, opacity 0.2s, visibility 0s;
+  transition:
+    max-height 0.3s,
+    opacity 0.2s,
+    visibility 0s;
 
   max-height: 190px;
   opacity: 1;
@@ -138,4 +147,3 @@ $dropdown-link-active-bg: var(--bs-primary-bg-subtle);
   opacity: 1;
   transform: translateY(0);
 }
-
