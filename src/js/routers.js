@@ -744,15 +744,6 @@ const shortcodeRoutes = [
         },
       },
       {
-        path: 'create-template',
-        name: 'CreateTemplate',
-        component: () => import('@/pages/shortcodes/editor/CreateTemplate.vue'),
-        meta: {
-          title: 'Создание шаблонов',
-          requiresAuth: true
-        },
-      },
-      {
         path: 'categories-page',
         name: 'PageShortcodeCategories',
         component: () => import('@/pages/shortcodes/editor/PageCategories.vue'),
