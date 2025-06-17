@@ -1,11 +1,7 @@
 <script setup>
-import { apiClient } from '@/js/api/manager'
-import { endpoints } from '@/js/api/endpoints'
-import { onMounted, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { ChevronLeft, Cog, Minus } from 'lucide-vue-next'
-
 import {
-  AnalyzeMenuSection,
   ChatMenuSection,
   EmailMenuSection,
   SettingsMenuSection,
@@ -16,50 +12,43 @@ import {
   ChartsMenuSection,
   ComponentsMenuSection,
   InputsMenuSection,
+  KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
   TeamBuildingMenuSection,
-  ExpsysMenuSection,
-  AdminPanelMenuSection,
-  WatermarkedVideoSection,
-  BIMenuSection,
-  ShortcodesMenuSection,
-  EducationAnalyticMenuSection,
-  ExpertSystemSection,
-  FilesMenuSection,
-  CategoriesMenuSection,
+  CompetenciesMenuSection,
 } from '@/js/menu-sections.js'
 
 import MenuGroup from '@/components/menu/MenuGroup.vue'
 import { useRoute } from 'vue-router'
-import { useRouter } from 'vue-router'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { CheckAccessToAdminPanel, GetClosedPagesForUser } from '@/js/GroupsPolitics'
+
 const props = defineProps({
   isVisible: Boolean,
-  currentPage: String
 })
+
 watch(
   () => props.isVisible,
   (newValue) => {
-    
     if (!newValue) {
       isHovering.value = true
     }
   },
 )
 
-
-const emit = defineEmits(['left-padding', 'open-datasets', 'open-sidebar', 'reset-page'])
+const emit = defineEmits(['left-padding'])
 
 // Состояние меню
 const isCollapsed = ref(false)
 const isHovering = ref(true)
+
+// Переключение состояния
 const toggleMenu = () => {
   isCollapsed.value = !isCollapsed.value
   emit('left-padding', isCollapsed.value ? '120px' : '280px')
 }
 
+// Наведение на меню
 const handleMouseEnter = () => {
   if (isCollapsed.value) isHovering.value = true
 }
@@ -67,13 +56,14 @@ const handleMouseLeave = () => {
   if (isCollapsed.value) isHovering.value = false
 }
 
+// Текущая группа
 const route = useRoute()
 const openGroupId = ref(null)
 
 watch(
   () => route.matched,
   (newMatched) => {
-    for (let i of menuSections.value) {
+    for (let i of menuSections) {
       if (i.routeName === newMatched[0].name) {
         openGroupId.value = i.id
       }
@@ -81,72 +71,15 @@ watch(
   },
   { immediate: false },
 )
-onMounted(async()=>{
-  let closedpages = await GetClosedPagesForUser()  
-  for (let clpage of closedpages)
-  {
-      let name = router.getRoutes().find(p=> p.path == clpage.path).name
-      for(let menusection of menuSections.value){
-        if(menusection.routeName == name){
-          let index = menuSections.value.indexOf(menusection)
-          menuSections.value.splice(index,1)
-        }
-        else{
-        let b = menusection.list
-        if(b!= null){
-          for(let i=0; i<b.length; i++){
-          if(b[i].path == name){
-            menusection.list.splice(i,1)
-            break
-          }
-        }
-        }
-      }
-    }
-  }
-  const checkadm = await CheckAccessToAdminPanel()
-  if(!checkadm.access_to_panel)
-  {
-    let index = menuSections.value.indexOf(AdminPanelMenuSection);
-    if (index !== -1) {
-      menuSections.value.splice(index, 1);
-    }
-  }
-  else if (!checkadm.access_to_category){
-    AdminPanelMenuSection.list.splice(0,1)
-  }
-}
-)
+
 const toggleGroup = (id) => {
   openGroupId.value = openGroupId.value === id ? null : id
 }
 
-function handleAction(action) {
-  if (action === 'openDatasetSidebar') {
-    emit('open-datasets')
-  }
-}
-
-const router = useRouter()
-
-function handleNavigate(item) {
-  if (['datasets', 'connections', 'charts'].includes(item.page)) {
-    emit('open-sidebar', item.page)
-  } else if (item.path) {
-    router.push({ name: item.path })
-  }
-}
-
-function resetCurrentPage() {
-  emit('reset-page')  
-}
-
 // Список секций меню
-const menuSections = ref([
+const menuSections = [
   UserMenuSection,
   SettingsMenuSection,
-  BIMenuSection,
-  EducationAnalyticMenuSection,
   EmailMenuSection,
   ChatMenuSection,
   MapsMenuSection,
@@ -155,38 +88,20 @@ const menuSections = ref([
   ChartsMenuSection,
   ComponentsMenuSection,
   InputsMenuSection,
+  KanbanMenuSection,
   TablesMenuSection,
   ModalWindowsMenuSection,
   TeamBuildingMenuSection,
-  ExpsysMenuSection,
-  AdminPanelMenuSection,
-  WatermarkedVideoSection,
-  ShortcodesMenuSection,
-  ExpertSystemSection,
-  AnalyzeMenuSection,
-  FilesMenuSection,
-  CategoriesMenuSection,
-])
+  CompetenciesMenuSection,
+]
 
+// Список разделителей
 const separators = (index) => {
   switch (index) {
     case 1:
       return 'Шаблоны'
   }
 }
-
-const siteName = ref('...')
-
-onMounted(async () => {
-  const res = await apiClient.get(endpoints.settings.lastSettings)
-  if (res.success) {
-    const settings = Array.isArray(res.data) ? res.data[0] : res.data
-    siteName.value = settings?.site_name || 'ERGO MS'
-  } else {
-    siteName.value = 'ERGO MS'
-  }
-})
-
 </script>
 
 <template>
@@ -202,7 +117,7 @@ onMounted(async () => {
           <Cog :size="32" />
         </div>
         <div class="side-header__title text-smooth-animation" :class="{ hidden: !isHovering }">
-          {{ siteName }}
+          ERGO MS
         </div>
       </RouterLink>
       <div class="side-menu__toggle">
@@ -219,11 +134,7 @@ onMounted(async () => {
           :is-collapsed="!isCollapsed"
           :is-open="openGroupId === section.id"
           :data="section"
-          :current-page="props.currentPage"
           @toggle="toggleGroup(section.id)"
-          @action="handleAction"
-          @navigate="handleNavigate"
-          @reset-page="resetCurrentPage"
         />
         <div v-if="[1].includes(index)" class="side-menu__divider side-divider py-3">
           <div class="side-divider__icon"><Minus :size="20" /></div>

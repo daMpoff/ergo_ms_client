@@ -86,6 +86,30 @@ const userRoutes = [
         },
       },
       {
+        path: 'projects',
+        name: 'PersonalProjects',
+        component: () => import('@/pages/user/projects/ParentLayout.vue'),
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
+        path: 'projects',
+        name: 'InvitedProjects',
+        component: () => import('@/pages/user/projects/ParentLayout.vue'),
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
+        path: 'createproject',
+        name: 'CreateProject',
+        component: () => import('@/pages/user/projects/CreateProject.vue'),
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
         path: 'connections',
         name: 'Connections',
         component: () => import('@/pages/user/connections/ParentLayout.vue'),
@@ -300,6 +324,16 @@ const inputsRoutes = [
     meta: { title: 'Формы ввода', requiresAuth: true },
   },
 ]
+// формирование команды
+const teambuildingRoutes = [
+  {
+    path: '/teambuilding',
+    name: 'TeamBuilding',
+    component: () => import('@/pages/teambuilding/ParentLayout.vue'),
+    meta: { title: 'Формирование команды', requiresAuth: true },
+  },
+]
+// ЭС компетенции
 
 // Компоненты
 const componentsRoutes = [
@@ -386,7 +420,7 @@ const categoriesRoutes = [
         name: 'TagsManager',
         component:() => import('@/pages/categories/TagsManagerPage.vue'),
         meta: { requiresAuth: true, title: 'Создание тегов' }
-      } 
+      }
     ],
   },
 ]
@@ -511,6 +545,40 @@ const startRoutes = [
     },
   },
 ]
+// экспертная система
+const expsysRoutes = [
+  {
+    path: '/expsys',
+    name: 'Expsys',
+    component: () => import('@/pages/expsys/ParentLayout.vue'),
+    redirect: { name: 'Subjects' },
+    children: [
+      {
+        path: 'subjects',
+        name: 'Subjects',
+        component: () => import('@/pages/expsys/SubjectsManager.vue'),
+        meta: { title: 'Предметы', requiresAuth: true },
+      },
+      {
+        path: 'indicators',
+        name: 'Indicators',
+        component: () => import('@/pages/expsys/IndicatorsManager.vue'),
+        meta: { title: 'Индикаторы', requiresAuth: true },
+      },
+           {
+        path: 'competencies',
+        name: 'Competencies',
+        component: () => import('@/pages/expsys/CompetenceManager.vue'),
+        meta: { title: 'Компетенции', requiresAuth: true },
+           },
+           {
+        path: 'vectors',
+        name: 'Vectors',
+        component: () => import('@/pages/expsys/VektorDevelopment.vue'),
+        meta: { title: 'Вектор развития', requiresAuth: true },
+      },
+      ]
+}]
 
 const adminpanelRoutes = [
   {
@@ -913,6 +981,8 @@ const routes = [
   ...modalWindowsRoutes,
   ...inputsRoutes,
   ...componentsRoutes,
+  ...teambuildingRoutes,
+  ...expsysRoutes,
   ...adminpanelRoutes,
   ...waterMarkvideoRoute,
   ...biRoutes,

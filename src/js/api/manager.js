@@ -152,10 +152,10 @@ class ApiClient {
     }
 
     logout() {
-        Cookies.remove('token')
-        Cookies.remove('refresh')
+        Cookies.remove('token');
+        Cookies.remove('refresh');
+        Cookies.remove('userId');
     }
-
     // Обработчики ответов
     handleResponse(response) {
         // Успешные статусы: 200 OK, 201 Created, 204 No Content и т.д.
