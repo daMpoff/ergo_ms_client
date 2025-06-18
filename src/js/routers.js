@@ -3,27 +3,34 @@ import { checkToken } from '@/js/api/services/auth-index'
 
 const mainRoutes = [
   {
-    path: '/',
+    path: '/account',
     redirect: { name: 'Account' },
     meta: {
       requiresAuth: true,
     },
   },
   {
+    path: '/:parts(.*)+',
+    name: 'CmsAnyDepthPage',
+    component: () => import('@/pages/shortcodes/CmsPage.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/pages/NotFound.vue'),
     meta: {
+      public: true,
       title: 'Страница не найдена',
       requiresAuth: true,
     },
   },
   {
-    path:'/logout',
-    name:'logout',
-    component:()=> import('@/components/header/Logout.vue'),
-    meta:{
-      title:'-',
+    path: '/logout',
+    name: 'logout',
+    component: () => import('@/components/header/Logout.vue'),
+    meta: {
+      title: '-',
     }
   }
 ]
@@ -412,13 +419,13 @@ const categoriesRoutes = [
       {
         path: 'categories-list',
         name: 'PageCategoriesManager',
-        component:() => import('@/pages/categories/CategoriesManagerPage.vue'),
+        component: () => import('@/pages/categories/CategoriesManagerPage.vue'),
         meta: { requiresAuth: true, title: 'Создание категорий' }
       },
       {
         path: 'tags-list',
         name: 'TagsManager',
-        component:() => import('@/pages/categories/TagsManagerPage.vue'),
+        component: () => import('@/pages/categories/TagsManagerPage.vue'),
         meta: { requiresAuth: true, title: 'Создание тегов' }
       }
     ],
@@ -719,7 +726,7 @@ const shortcodeRoutes = [
         },
       },
       {
-        path: 'editor',
+        path: 'shortcode-editor',
         name: 'ShortcodeEditor',
         component: () => import('@/pages/shortcodes/editor/ShortcodeEditor.vue'),
         meta: {
@@ -737,17 +744,8 @@ const shortcodeRoutes = [
         },
       },
       {
-        path: 'create-template',
-        name: 'CreateTemplate',
-        component: () => import('@/pages/shortcodes/editor/CreateTemplate.vue'),
-        meta: {
-          title: 'Создание шаблонов',
-          requiresAuth: true
-        },
-      },
-      {
         path: 'categories-page',
-        name: 'PageCategories',
+        name: 'PageShortcodeCategories',
         component: () => import('@/pages/shortcodes/editor/PageCategories.vue'),
         meta: {
           title: 'Категории страниц',
@@ -755,11 +753,29 @@ const shortcodeRoutes = [
         },
       },
       {
-        path: 'templates',
+        path: 'templates/',
         name: 'Templates',
         component: () => import('@/pages/shortcodes/editor/TemplateManager.vue'),
         meta: {
           title: 'Компоненты',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'pages/',
+        name: 'Pages',
+        component: () => import('@/pages/shortcodes/AllPages.vue'),
+        meta: {
+          title: 'Страницы',
+          requiresAuth: true
+        },
+      },
+      {
+        path: 'site-layouts/',
+        name: 'Layouts',
+        component: () => import('@/pages/shortcodes/SiteLayout.vue'),
+        meta: {
+          title: 'Страницы',
           requiresAuth: true
         },
       },
@@ -891,12 +907,12 @@ const expertSystemRoutes = [
         })
       },
       {
-        path:'test-result/:id',
-        name:'TestResult',
-        component:()=> import('@/pages/expert-system/Tests/TestResult.vue'),
-        meta:{title:'Результат теста', requiresAuth:true},
-        props:(route)=>({
-          id:Number(route.params.id)
+        path: 'test-result/:id',
+        name: 'TestResult',
+        component: () => import('@/pages/expert-system/Tests/TestResult.vue'),
+        meta: { title: 'Результат теста', requiresAuth: true },
+        props: (route) => ({
+          id: Number(route.params.id)
         })
       },
       {
@@ -1034,7 +1050,7 @@ async function runCheckToken() {
 import { checkAccessToPage, CheckAccessToComponents } from './GroupsPolitics'
 export default router
 router.beforeEach((to, from, next) => {
-    checkAccessToPage(to.path)
-    next()
-    CheckAccessToComponents(to.path)
+  checkAccessToPage(to.path)
+  next()
+  CheckAccessToComponents(to.path)
 })

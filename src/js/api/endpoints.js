@@ -97,8 +97,8 @@ export const endpoints = {
         removeGroupsPermissions: 'cms/remove_groups_permissions/',
         getPermissionsByCategory: 'cms/get_permissions_by_category/',
         getUserName: 'cms/get_user_name/',
-        getpages:'cms/get-cms-pages',
-        putpages:'cms/put-cms-pages',
+        getpages: 'cms/get-cms-pages',
+        putpages: 'cms/put-cms-pages',
         getClosedPages: 'cms/get-closed-pages/',
         getClosedPagesForUser: 'cms/get-closed-pages-for-user/',
 
@@ -133,8 +133,6 @@ export const endpoints = {
         vacancySkills: 'expert_system/vacancy-skills/',
         applications: 'expert_system/applications/',
 
-        //orientationResults: 'expert_system/orientation-results/',
-        //orientationUserAnswers: 'expert_system/orientation-answers/',
         setUserSkillTest: 'expert_system/set-user-skill-test',
         getUserSkillTest: 'expert_system/get-user-skill-tests',
         getUserSkills: 'expert_system/get-user-skills',
@@ -167,6 +165,7 @@ export const endpoints = {
         UploadedFiles: 'bi_analysis/bi_datasets/user-files/',
     },
     file: 'settings/file/',
+    audit: 'settings/audit-logs/',
     categories: {
         list: 'settings/categories/',
         create: 'settings/categories/',
@@ -193,10 +192,14 @@ export const endpoints = {
         securitySettings: 'settings/security-settings/',
     },
     shortcodes: {
+        latest: 'cms_shortcodes/pages/latest/',
         templates: 'cms_shortcodes/templates/',
         pages: 'cms_shortcodes/pages/',
         instances: 'cms_shortcodes/instances/',
+        instancesTree: 'cms_shortcodes/instances/tree/',
         categories: 'cms_shortcodes/categories/',
+        pageByPath: 'cms_shortcodes/pages/by_path/',
+        layout: 'cms_shortcodes/layout/',
     },
     learning_analytics: {
         tables: 'learning_analytics/tables/',
