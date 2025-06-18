@@ -558,11 +558,11 @@ const expsysRoutes = [
     path: '/expsys',
     name: 'Expsys',
     component: () => import('@/pages/expsys/ParentLayout.vue'),
-    redirect: { name: 'Subjects' },
+    redirect: { name: 'CRMSubjects' },
     children: [
       {
-        path: 'subjects',
-        name: 'Subjects',
+        path: 'crm_subjects',
+        name: 'CRMSubjects',
         component: () => import('@/pages/expsys/SubjectsManager.vue'),
         meta: { title: 'Предметы', requiresAuth: true },
       },
@@ -995,10 +995,10 @@ const LMSRouters = [{
     component: () =>
         import ('@/pages/LMS/ParentLayout.vue'),
     //meta: { title: 'LMS', requiresAuth: true },
-    redirect: { name: 'Subjects' },
+    redirect: { name: 'LMSSubjects' },
     children: [{
-            path: 'subjects',
-            name: 'Subjects',
+            path: 'lms_subjects',
+            name: 'LMSSubjects',
             component: () =>
                 import ('@/pages/LMS/Lesson/SubjectsLMS.vue'),
             meta: { title: 'Предметы', requiresAuth: true },

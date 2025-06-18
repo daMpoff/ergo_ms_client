@@ -303,7 +303,7 @@ export const ExpsysMenuSection = {
   routeName: 'Expsys',
   title: 'Экспертная система',
     list: [
-    { path: 'Subjects', name: 'Предметы' },
+    { path: 'CRMSubjects', name: 'Предметы' },
     { path: 'Competencies', name: 'Компетенции' },
     { path: 'Indicators', name: 'Индикаторы компетенций' },
     { path: 'Vectors', name: 'Вектор развития' },
@@ -316,7 +316,7 @@ export const LMSMenuSection = {
     routeName: 'LMS',
     title: 'Образование',
     list: [
-        { path: 'Subjects', name: 'Предметы' },
+        { path: 'LMSSubjects', name: 'Предметы' },
         { path: 'ForStudent', name: 'Статистика' },
         { path: 'ForTheacher', name: 'Для преподователей' },
     ],
