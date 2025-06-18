@@ -988,6 +988,52 @@ const expertSystemRoutes = [
   },
 ]
 
+// LMS
+const LMSRouters = [{
+    path: '/LMS',
+    name: 'LMS',
+    component: () =>
+        import ('@/pages/LMS/ParentLayout.vue'),
+    //meta: { title: 'LMS', requiresAuth: true },
+    redirect: { name: 'Subjects' },
+    children: [{
+            path: 'subjects',
+            name: 'Subjects',
+            component: () =>
+                import ('@/pages/LMS/Lesson/SubjectsLMS.vue'),
+            meta: { title: 'Предметы', requiresAuth: true },
+        },
+        {
+            path: 'forStudent',
+            name: 'ForStudent',
+            component: () =>
+                import ('@/pages/LMS/ForStudent/ForStudentLMS.vue'),
+            meta: { title: 'Статистика', requiresAuth: true },
+        },
+        {
+            path: 'forTheacher',
+            name: 'ForTheacher',
+            component: () =>
+                import ('@/pages/LMS/ForTheacher/ForTheacherLMS.vue'),
+            meta: { title: 'Для преподавателя', requiresAuth: true },
+        },
+        {
+            path: 'lesson',
+            name: 'Lesson',
+            component:() =>
+                import ('@/pages/LMS/Lesson/LessonLMS.vue'),
+            meta: {title: 'Уроки', requiresAuth: true},
+        },
+        {
+            path: 'createLesson',
+            name: 'CreateLesson',
+            component:() =>
+                import ('@/pages/LMS/ForTheacher/CreateLessonLMS.vue'),
+            meta: {title: 'Создание урока', requiresAuth: true}
+        }
+    ]
+}, ]
+
 const routes = [
   ...startRoutes,
   ...mainRoutes,
@@ -1016,6 +1062,7 @@ const routes = [
   ...learningAnalyticsRoutes,
   ...controlRoutes,
   ...categoriesRoutes,
+  ...LMSRouters,
 ]
 
 routes.forEach((route) => {

@@ -18,6 +18,10 @@ import {
   Wallet,
   HandHeart,
   KeySquare,
+  BookOpen,
+  NotepadTextDashed,
+  Video,
+  GraduationCapIcon,
   Video,
   Files,
   BarChart3,
@@ -262,47 +266,15 @@ export const AnalyzeMenuSection = {
   ],
 };
 
-export const FilesMenuSection = {
-  id: 21,
-  icon: Files,
-  routeName: 'FileManager',
-  path: '/files',
-  title: 'Файлы',
-  list: [
-    { path: 'FileManager', name: 'Обзор файлов' },
-  ],
-}
-
-export const CategoriesMenuSection = {
-  id: 22,
-  icon: Layers,
-  routeName: 'Categories',
-  path: '/categories',
-  title: 'Категории страниц',
-  list: [
-    { path: 'PageCategories', name: 'Категории' },
-    { path: 'PageCategoriesManager', name: 'Создание категорий' },
-    { path: 'TagsManager', name: 'Создание тегов' },
-  ],
-};
-
-// Формирование команды
-export const TeamBuildingMenuSection = {
-  id: 23,
-  icon: HandHeart,
-  routeName: 'TeamBuilding',
-  title: 'Формирование команды',
-}
-// ЭС компетенции
-export const ExpsysMenuSection = {
-  id: 24,
-  icon: HandHeart,
-  routeName: 'Expsys',
-  title: 'Экспертная система',
+//LMS
+export const LMSMenuSection = {
+    id: 25,
+    icon: GraduationCapIcon,
+    routeName: 'LMS',
+    title: 'Образование',
     list: [
-    { path: 'Subjects', name: 'Предметы' },
-    { path: 'Competencies', name: 'Компетенции' },
-    { path: 'Indicators', name: 'Индикаторы компетенций' },
-    { path: 'Vectors', name: 'Вектор развития' },
-  ],
+        { path: 'Subjects', name: 'Предметы' },
+        { path: 'ForStudent', name: 'Статистика' },
+        { path: 'ForTheacher', name: 'Для преподователей' },
+    ],
 }

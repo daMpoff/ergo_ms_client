@@ -26,6 +26,7 @@ import {
   ShortcodesMenuSection,
   EducationAnalyticMenuSection,
   ExpertSystemSection,
+  LMSMenuSection,
   FilesMenuSection,
   CategoriesMenuSection,
 } from '@/js/menu-sections.js'
@@ -164,6 +165,7 @@ const menuSections = ref([
   ShortcodesMenuSection,
   ExpertSystemSection,
   AnalyzeMenuSection,
+  LMSMenuSection,
   FilesMenuSection,
   CategoriesMenuSection,
 ])
