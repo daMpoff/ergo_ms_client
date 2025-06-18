@@ -22,7 +22,6 @@ import {
   NotepadTextDashed,
   Video,
   GraduationCapIcon,
-  Video,
   Files,
   BarChart3,
   Layers
@@ -266,7 +265,51 @@ export const AnalyzeMenuSection = {
   ],
 };
 
-//LMS
+export const FilesMenuSection = {
+  id: 21,
+  icon: Files,
+  routeName: 'FileManager',
+  path: '/files',
+  title: 'Файлы',
+  list: [
+    { path: 'FileManager', name: 'Обзор файлов' },
+  ],
+}
+
+export const CategoriesMenuSection = {
+  id: 22,
+  icon: Layers,
+  routeName: 'Categories',
+  path: '/categories',
+  title: 'Категории страниц',
+  list: [
+    { path: 'PageCategories', name: 'Категории' },
+    { path: 'PageCategoriesManager', name: 'Создание категорий' },
+    { path: 'TagsManager', name: 'Создание тегов' },
+  ],
+};
+
+// Формирование команды
+export const TeamBuildingMenuSection = {
+  id: 23,
+  icon: HandHeart,
+  routeName: 'TeamBuilding',
+  title: 'Формирование команды',
+}
+// ЭС компетенции
+export const ExpsysMenuSection = {
+  id: 24,
+  icon: HandHeart,
+  routeName: 'Expsys',
+  title: 'Экспертная система',
+    list: [
+    { path: 'Subjects', name: 'Предметы' },
+    { path: 'Competencies', name: 'Компетенции' },
+    { path: 'Indicators', name: 'Индикаторы компетенций' },
+    { path: 'Vectors', name: 'Вектор развития' },
+  ],
+}
+
 export const LMSMenuSection = {
     id: 25,
     icon: GraduationCapIcon,

@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps } from 'vue'
+import { ref, watch } from 'vue'
 import { ScanEye } from 'lucide-vue-next'
 
 import RecursiveRenderer from './RecursiveRenderer.vue'
