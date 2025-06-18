@@ -1,7 +1,6 @@
 <script setup>
 defineProps({
   modalId: { type: String, required: true, default: 'centralModal' },
-  customClass: { type: String, required: false, default: '' },
   title: { type: String, required: true },
   showFooter: { type: Boolean, required: false, default: false },
 })
@@ -10,7 +9,6 @@ defineProps({
 <template>
   <div
     class="modal fade"
-    :class="customClass"
     :id="modalId"
     tabindex="-1"
     aria-labelledby="centralModalLabel"
@@ -60,9 +58,9 @@ defineProps({
 }
 
 // Блюр
-//.modal {
-//  backdrop-filter: blur(5px);
-//}
+.modal {
+  backdrop-filter: blur(5px);
+}
 
 // Стилизация прокрутки
 .modal-body {

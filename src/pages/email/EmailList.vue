@@ -28,7 +28,7 @@ defineEmits(['toggleSelectionEmail', 'toggleEmailPage', 'markEmail'])
         <label class="form-check-label" :for="`checkbox-${email.id}`"></label>
       </div>
       <div
-        class="markEmail d-none d-lg-inline-flex rounded-circle p-1"
+        class="markEmail d-none d-lg-inline-flex rounded-circle p-1 z-9999"
         @click="$emit('markEmail', email.id)"
       >
         <Star

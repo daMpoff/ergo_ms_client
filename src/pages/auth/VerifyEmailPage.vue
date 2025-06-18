@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { verifyConfirmationCode } from '@/js/api/services/auth-index'
+import { verifyConfirmationCode } from '@/js/auth';
 
 const codeChecked = ref(false)
 const router = useRouter()

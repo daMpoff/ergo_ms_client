@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { authorization } from '@/js/api/services/auth-index'
+import { authorization } from '@/js/auth';
 
 import { validateAuthorizationForm, validateAuthorizationMethod } from '@/js/validation'
 
@@ -24,37 +24,39 @@ const errors = reactive({
 
 const validateForm = () => {
   const { loginError, passwordError, passwordConfirmError } = validateAuthorizationForm(
-    form.login,
-    form.password,
-    form.passwordConfirm,
-  )
+    form.login, 
+    form.password, 
+    form.passwordConfirm
+  );
 
-  errors.login = loginError
-  errors.password = passwordError
-  errors.passwordConfirm = passwordConfirmError
+  errors.login = loginError;
+  errors.password = passwordError;
+  errors.passwordConfirm = passwordConfirmError;
 
   return !errors.login && !errors.password && !errors.passwordConfirm
 }
 
 const submitForm = async () => {
-  if (validateForm()) {
-    loggedIn.value = true
+  if (validateForm())
+  {
+    loggedIn.value = true;
+  
+    const authResult = await authorization(form.login, form.password);
 
-    const authResult = await authorization(form.login, form.password)
-
-    if (authResult.success === true) {
+    if (authResult.success === true)
+    {
       router.push({ name: 'Dashboard' })
-    } else {
-      const { loginError, passwordError, passwordConfirmError } = validateAuthorizationMethod(
-        authResult.errors,
-      )
-
-      errors.login = loginError
-      errors.password = passwordError
-      errors.passwordConfirm = passwordConfirmError
-
-      loggedIn.value = false
     }
+    else
+    {
+      const { loginError, passwordError, passwordConfirmError } = validateAuthorizationMethod(authResult.errors)
+
+      errors.login = loginError;
+      errors.password = passwordError;
+      errors.passwordConfirm = passwordConfirmError;
+
+      loggedIn.value = false;
+    } 
   }
 }
 </script>
@@ -65,6 +67,7 @@ const submitForm = async () => {
       <div class="auth__title mb-4 fs-3 fw-bold text-center no-select">Вход в аккаунт</div>
 
       <form @submit.prevent="submitForm" novalidate>
+        
         <div class="form-floating mb-3 no-select" v-auto-animate>
           <input
             type="text"
@@ -144,6 +147,7 @@ const submitForm = async () => {
             Зарегистрироваться
           </RouterLink>
         </div>
+
       </form>
     </div>
   </div>

@@ -1,15 +1,12 @@
 import {
   AtSign,
   Calendar,
-  ChartSpline,
   CircleUserRound,
-  Component,
   Grid2x2,
-  Map,
+  House,
+  KeyRound,
+  Lock,
   MessagesSquare,
-  PictureInPicture2,
-  Table2,
-  TextCursorInput,
   UserCog,
   Wallet,
 } from 'lucide-vue-next'
@@ -40,7 +37,7 @@ export const SettingsMenuSection = {
     { path: 'SecuritySettings', name: 'Безопасность' },
     { path: 'NotificationSettings', name: 'Уведомления' },
     { path: 'ConnectionSettings', name: 'Связи' },
-    { path: 'Roles', name: 'Ролевые настройки' },
+    { path: 'Roles', name: 'Ролевые настройки'}
   ],
 }
 
@@ -58,87 +55,4 @@ export const ChatMenuSection = {
   icon: MessagesSquare,
   routeName: 'Messenger',
   title: 'Мессенджер',
-}
-
-// Карты
-export const MapsMenuSection = {
-  id: 5,
-  icon: Map,
-  routeName: 'Maps',
-  title: 'Карты',
-}
-
-// Ценовой план
-export const BillingMenuSection = {
-  id: 6,
-  icon: Wallet,
-  routeName: 'Billing',
-  title: 'Ценовой план',
-}
-
-// Календарь
-export const CalendarMenuSection = {
-  id: 7,
-  icon: Calendar,
-  routeName: 'Calendar',
-  title: 'Календарь',
-}
-
-// Канбан-доска
-export const KanbanMenuSection = {
-  id: 8,
-  icon: Grid2x2,
-  routeName: 'Kanban',
-  title: 'Канбан-доска',
-}
-
-// Таблицы
-export const TablesMenuSection = {
-  id: 9,
-  icon: Table2,
-  routeName: 'Tables',
-  title: 'Таблицы',
-}
-
-// Графики
-export const ChartsMenuSection = {
-  id: 10,
-  icon: ChartSpline,
-  routeName: 'Charts',
-  title: 'Графики',
-  list: [
-    { path: 'ChartsJS', name: 'ChartsJS' },
-    { path: 'ApexCharts', name: 'ApexCharts' },
-  ],
-}
-
-// Модальные окна
-export const ModalWindowsMenuSection = {
-  id: 11,
-  icon: PictureInPicture2,
-  routeName: 'ModalWindows',
-  title: 'Модальные окна',
-}
-
-// Модальные окна
-export const InputsMenuSection = {
-  id: 12,
-  icon: TextCursorInput,
-  routeName: 'Inputs',
-  title: 'Формы ввода',
-}
-
-// Модальные окна
-export const ComponentsMenuSection = {
-  id: 13,
-  icon: Component,
-  routeName: 'Components',
-  title: 'Остальные',
-  list: [
-    { path: 'Alerts', name: 'Уведомления' },
-    { path: 'Badges', name: 'Значки' },
-    { path: 'Carousel', name: 'Карусель' },
-    { path: 'ListGroups', name: 'Группы списков' },
-    { path: 'Typography', name: 'Типография' },
-  ],
 }

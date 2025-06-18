@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 
 import { validateRegistrationForm, validateRegistrationMethod } from '@/js/validation'
 
-import { registration } from '@/js/api/services/auth-index';
+import { registration } from '@/js/auth';
 
 const router = useRouter()
 const loggedIn = ref(false)

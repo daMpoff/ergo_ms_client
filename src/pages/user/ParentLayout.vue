@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { ChartNoAxesCombined, LayoutGrid, Link, UserRound, UsersRound } from 'lucide-vue-next'
+import { ChartNoAxesCombined, ChartPie, LayoutGrid, Link, UserRound, UsersRound } from 'lucide-vue-next'
 
 import MainInfo from '@/pages/user/CardMain.vue'
 import NavigationButtons from '@/components/NavigationButtons.vue'
@@ -18,7 +18,6 @@ const navigationButtons = ref([
   <div class="rounded overflow-hidden mb-4">
     <MainInfo />
   </div>
-
   <div class="mb-4">
     <NavigationButtons :data="navigationButtons" />
   </div>

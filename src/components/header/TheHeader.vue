@@ -4,14 +4,12 @@ import { Menu, Search } from 'lucide-vue-next'
 import UserMenu from '@/components/header/UserMenu.vue'
 import ToggleTheme from '@/components/header/ToggleTheme.vue'
 import UserNotifications from '@/components/header/UserNotifications.vue'
-
-defineEmits(['toggleMenu'])
 </script>
 
 <template>
   <header class="card header">
     <div class="header__search search">
-      <div class="header__menu" @click="$emit('toggleMenu', true)">
+      <div class="header__menu" @click="$emit('toggle-menu', true)">
         <div class="header-btn" v-tooltip title="Меню"><Menu /></div>
       </div>
       <div class="search__icon"><Search :size="24" /></div>

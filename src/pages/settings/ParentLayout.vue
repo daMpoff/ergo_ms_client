@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Bell, KeyRound, Link, Lock, UserRound } from 'lucide-vue-next'
+import { Bell, Coins, KeyRound, Link, Lock, UserRound } from 'lucide-vue-next'
 
 import NavigationButtons from '@/components/NavigationButtons.vue'
 

@@ -20,6 +20,6 @@ const currentLayout = computed(() => {
 
 <template>
   <div v-if="isReady">
-    <component :is="currentLayout" />
+    <component :is="currentLayout"/>
   </div>
 </template>

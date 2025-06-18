@@ -7,7 +7,7 @@ import ModalCenter from '@/components/ModalCenter.vue'
 // Информация о подписке
 const subscriptionInfo = ref({
   plan: 'Базовый',
-  date: new Date('2025-02-05 17:27:31'),
+  date: new Date('2025-01-01 17:27:31'),
 })
 
 // Получение дней

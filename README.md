@@ -1,48 +1,35 @@
-# Инструкция по установке и запуску
+# vue-project
 
-## Установка
-```bash
-# Установка зависимостей
+This template should help get you started developing with Vue 3 in Vite.
+
+## Recommended IDE Setup
+
+[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+
+## Customize configuration
+
+See [Vite Configuration Reference](https://vite.dev/config/).
+
+## Project Setup
+
+```sh
 npm install
 ```
 
-## Основные команды
+### Compile and Hot-Reload for Development
 
-### Разработка
-```bash
-# Запуск проекта в режиме разработки
+```sh
 npm run dev
 ```
 
-### Сборка
-```bash
-# Сборка проекта
+### Compile and Minify for Production
+
+```sh
 npm run build
-
-# Предварительный просмотр сборки
-npm run preview
 ```
 
-### Линтинг и форматирование
-```bash
-# Проверка кода линтером
+### Lint with [ESLint](https://eslint.org/)
+
+```sh
 npm run lint
-
-# Форматирование кода
-npm run format
-```
-
-### Очистка
-```bash
-# Очистка кэша npm
-npm cache clean --force
-```
-
-## Дополнительно
-
-При возникновении проблем с зависимостями:
-1. Удалите папку node_modules
-2. Удалите файл package-lock.json
-3. Очистите кэш npm: `npm cache clean --force`
-4. Переустановите зависимости: `npm install`
 ```

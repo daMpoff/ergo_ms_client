@@ -102,12 +102,12 @@ const handleCategoryChange = (category) => {
   left: 0;
   width: 16.25rem;
   height: 100%;
-  z-index: 11;
+  z-index: 1050;
 }
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: all $transition;
+  transition: all 0.6s ease-in-out;
 }
 .slide-enter-from,
 .slide-leave-to {

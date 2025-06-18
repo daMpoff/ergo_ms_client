@@ -27,6 +27,9 @@ const updateMenuVisibility = () => {
   }
 }
 
+// Обработчик события изменения размера окна
+const handleResize = () => updateMenuVisibility()
+
 // Переключение видимости меню
 const toggleMenu = (isVisible) => {
   isMenuToggledManually.value = true
@@ -44,13 +47,14 @@ const closeMenu = () => {
 // Инициализация
 onMounted(() => {
   updateMenuVisibility()
-  window.addEventListener('resize', updateMenuVisibility)
+  window.addEventListener('resize', handleResize)
 })
 
 // Очистка
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateMenuVisibility)
+  window.removeEventListener('resize', handleResize)
 })
+
 </script>
 
 <template>
