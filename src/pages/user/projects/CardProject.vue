@@ -1,6 +1,6 @@
 <script setup>
 import { EllipsisVertical, MessagesSquare, Trash, ArrowLeftToLine } from 'lucide-vue-next'
-import { computed, defineProps } from 'vue'
+import { computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { deleteProject,leaveProject  } from '@/js/api/services/projectsService'
 import Cookies from 'js-cookie'

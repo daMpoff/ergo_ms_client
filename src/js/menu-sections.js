@@ -18,8 +18,12 @@ import {
   Wallet,
   HandHeart,
   KeySquare,
+  BookOpen,
+  NotepadTextDashed,
   Video,
+  GraduationCapIcon,
   Files,
+  BarChart3,
   Layers
 } from 'lucide-vue-next'
 
@@ -34,6 +38,7 @@ export const UserMenuSection = {
     { path: 'Teams', name: 'Команды' },
     { path: 'Projects', name: 'Проекты' },
     { path: 'Connections', name: 'Связи' },
+    { path: 'Analitics', name: 'Статистика'}
   ],
 }
 
@@ -244,7 +249,8 @@ export const ExpertSystemSection = {
     { path: 'OrientationTest', name: 'Менеджер тестов' },
     { path: 'AllTests', name: 'Управление тестами для навыков' },
     { path: 'StudentCourses', name: 'Рекомендованные курсы' },
-    { path: 'StudentsList', name: 'Студенты' }
+    { path: 'StudentsList', name: 'Студенты' },
+    { path: 'ExpertDashboard', name: 'Дашборд'}
   ],
 }
 
@@ -297,9 +303,21 @@ export const ExpsysMenuSection = {
   routeName: 'Expsys',
   title: 'Экспертная система',
     list: [
-    { path: 'Subjects', name: 'Предметы' },
+    { path: 'CRMSubjects', name: 'Предметы' },
     { path: 'Competencies', name: 'Компетенции' },
     { path: 'Indicators', name: 'Индикаторы компетенций' },
     { path: 'Vectors', name: 'Вектор развития' },
   ],
+}
+
+export const LMSMenuSection = {
+    id: 25,
+    icon: GraduationCapIcon,
+    routeName: 'LMS',
+    title: 'Образование',
+    list: [
+        { path: 'LMSSubjects', name: 'Предметы' },
+        { path: 'ForStudent', name: 'Статистика' },
+        { path: 'ForTheacher', name: 'Для преподователей' },
+    ],
 }

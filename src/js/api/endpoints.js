@@ -8,6 +8,16 @@ export const endpoints = {
         protected: 'cms/adp/protected/',
     },
     crm: {
+        monthlyStats: 'crm/stats/monthly/',
+        priorityStats: 'crm/stats/priority/',
+        sectionStats: 'crm/stats/sections/',
+        projectCompletionStats: 'crm/stats/project-completion/',
+        userProductivityStats: 'crm/stats/user-productivity/',
+        deadlineAnalysis: 'crm/stats/deadline-analysis/',
+        taskCreationTrend: 'crm/stats/task-creation-trend/',
+        projectTimelineStats: 'crm/stats/project-timeline/',
+        calendarActivityStats: 'crm/stats/calendar-activity/',
+        taskComplexityStats: 'crm/stats/task-complexity/',
         tasks: {
             sectionTasks: 'crm/tasks/section-tasks/',
             add_task:'crm/tasks/task-new/',
@@ -155,8 +165,15 @@ export const endpoints = {
         courses: 'expert_system/courses/',
         getTestResultBySkillId: 'expert_system/get-test-result-by-skill-id',
         deleteTestResultBySkill: 'expert_system/delete-test-result-by-skill',
+        analytics: {
+          systemMetrics: 'expert_system/analytics/system-metrics/',
+          skillsData: 'expert_system/analytics/skills-data/',
+          topSkills: 'expert_system/analytics/top-skills/',
+          studentsStats: 'expert_system/analytics/students-stats/',
+          testingData: 'expert_system/analytics/testing-data/',
+      }
     },
-    bi: {
+  bi: {
         DatasetsList: 'bi_analysis/bi_datasets/',
         ConnectionsList: 'bi_analysis/bi_connections/',
         CheckConnection: 'bi_analysis/bi_connections/check-connection/',

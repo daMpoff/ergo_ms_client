@@ -39,7 +39,7 @@ const dashboardRoutes = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('@/pages/dashboard/ParentLayout.vue'),
+    component: () => import('@/pages/dashboard/AnaliticsView.vue'),
     redirect: { name: 'Analytics' },
     meta: {
       requiresAuth: true,
@@ -48,7 +48,7 @@ const dashboardRoutes = [
       {
         path: 'analytics',
         name: 'Analytics',
-        component: () => import('@/pages/dashboard/ParentLayout.vue'),
+        component: () => import('@/pages/dashboard/AnaliticsView.vue'),
         meta: {
           requiresAuth: true,
         },
@@ -125,9 +125,9 @@ const userRoutes = [
         },
       },
       {
-        path: 'analytics',
-        name: 'Analytics',
-        component: () => import('@/pages/dashboard/ParentLayout.vue'),
+        path: 'analitics',
+        name: 'Analitics',
+        component: () => import('@/pages/dashboard/AnaliticsView.vue'),
         meta: {
           requiresAuth: true,
         },
@@ -558,11 +558,11 @@ const expsysRoutes = [
     path: '/expsys',
     name: 'Expsys',
     component: () => import('@/pages/expsys/ParentLayout.vue'),
-    redirect: { name: 'Subjects' },
+    redirect: { name: 'CRMSubjects' },
     children: [
       {
-        path: 'subjects',
-        name: 'Subjects',
+        path: 'crm_subjects',
+        name: 'CRMSubjects',
         component: () => import('@/pages/expsys/SubjectsManager.vue'),
         meta: { title: 'Предметы', requiresAuth: true },
       },
@@ -975,9 +975,64 @@ const expertSystemRoutes = [
           requiresAuth: true,
         },
       },
+      {
+        path: 'expdashboard',
+        name: 'ExpertDashboard',
+        component: () => import('@/pages/expert-system/ExpertSystemDashboard.vue'),
+        meta: {
+          requiresAuth: true,
+          title: 'Дашборд экспертной системы'
+        }
+      },
     ],
   },
 ]
+
+// LMS
+const LMSRouters = [{
+    path: '/LMS',
+    name: 'LMS',
+    component: () =>
+        import ('@/pages/LMS/ParentLayout.vue'),
+    //meta: { title: 'LMS', requiresAuth: true },
+    redirect: { name: 'LMSSubjects' },
+    children: [{
+            path: 'lms_subjects',
+            name: 'LMSSubjects',
+            component: () =>
+                import ('@/pages/LMS/Lesson/SubjectsLMS.vue'),
+            meta: { title: 'Предметы', requiresAuth: true },
+        },
+        {
+            path: 'forStudent',
+            name: 'ForStudent',
+            component: () =>
+                import ('@/pages/LMS/ForStudent/ForStudentLMS.vue'),
+            meta: { title: 'Статистика', requiresAuth: true },
+        },
+        {
+            path: 'forTheacher',
+            name: 'ForTheacher',
+            component: () =>
+                import ('@/pages/LMS/ForTheacher/ForTheacherLMS.vue'),
+            meta: { title: 'Для преподавателя', requiresAuth: true },
+        },
+        {
+            path: 'lesson',
+            name: 'Lesson',
+            component:() =>
+                import ('@/pages/LMS/Lesson/LessonLMS.vue'),
+            meta: {title: 'Уроки', requiresAuth: true},
+        },
+        {
+            path: 'createLesson',
+            name: 'CreateLesson',
+            component:() =>
+                import ('@/pages/LMS/ForTheacher/CreateLessonLMS.vue'),
+            meta: {title: 'Создание урока', requiresAuth: true}
+        }
+    ]
+}, ]
 
 const routes = [
   ...startRoutes,
@@ -1007,6 +1062,7 @@ const routes = [
   ...learningAnalyticsRoutes,
   ...controlRoutes,
   ...categoriesRoutes,
+  ...LMSRouters,
 ]
 
 routes.forEach((route) => {
@@ -1024,33 +1080,30 @@ const router = createRouter({
   },
 })
 
-router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth) {
-    runCheckToken()
-      .then((isChecked) => {
-        if (isChecked === false) {
-          next({ name: 'StartPage' })
-        } else {
-          next(true)
-        }
-      })
-      .catch((error) => {
-        console.error('Ошибка проверки токена:', error)
-        next({ name: 'StartPage' })
-      })
-  } else {
-    next()
-  }
-})
-
+import { checkAccessToPage, CheckAccessToComponents } from './GroupsPolitics'
 async function runCheckToken() {
   const isChecked = await checkToken()
   return isChecked
 }
-import { checkAccessToPage, CheckAccessToComponents } from './GroupsPolitics'
-export default router
-router.beforeEach((to, from, next) => {
-  checkAccessToPage(to.path)
-  next()
-  CheckAccessToComponents(to.path)
+
+router.beforeEach(async (to, from, next) => {
+  try {
+    // 1) нужна авторизация?
+    if (to.meta.requiresAuth && !(await runCheckToken())) {
+      return next({ name: 'StartPage' })
+    }
+
+    // 2) page / component ACL (выполняем параллельно)
+    await Promise.all([
+      checkAccessToPage(to.path),
+      CheckAccessToComponents(to.path),
+    ])
+
+    next()
+  } catch (err) {
+    console.error('Router guard error:', err)
+    next({ name: 'StartPage' })
+  }
 })
+
+export default router;
