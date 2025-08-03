@@ -31,7 +31,7 @@
         <button class="add-selector-btn" @click="addNewSelector"><span class="plus-icon">➕</span>Добавить селектор</button>
       </div>
       <button class="advanced-settings-btn" @click="openAdvancedSettings">
-        <Settings size="16" />
+        <Settings size="16" class="settings-icon" />
         Расширенные настройки
       </button>
     </div>
@@ -417,6 +417,68 @@
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно расширенных настроек -->
+    <div v-if="isAdvancedSettingsModalOpen" class="advanced-settings-modal-overlay" @click.self="closeAdvancedSettings">
+      <div class="advanced-settings-modal-container">
+        <div class="advanced-settings-modal-header">
+          <h6 class="advanced-settings-modal-title">Настройки группы селекторов</h6>
+          <button class="advanced-settings-modal-close" @click="closeAdvancedSettings" title="Закрыть">
+            <span class="close-icon">×</span>
+          </button>
+        </div>
+        <div class="advanced-settings-modal-content">
+          <div class="settings-section">
+            <h6 class="section-title">Параметры группы</h6>
+            
+            <div class="setting-item">
+              <label class="setting-label">
+                <input 
+                  type="checkbox" 
+                  v-model="selectorGroupSettings.applyButton"
+                  class="setting-checkbox"
+                />
+                Кнопка «Применить»
+              </label>
+              <span class="setting-hint">Добавляет кнопку для применения выбранных фильтров</span>
+            </div>
+
+            <div class="setting-item">
+              <label class="setting-label">
+                <input 
+                  type="checkbox" 
+                  v-model="selectorGroupSettings.clearButton"
+                  class="setting-checkbox"
+                />
+                Кнопка «Сбросить»
+              </label>
+              <span class="setting-hint">Добавляет кнопку для сброса всех фильтров</span>
+            </div>
+
+            <div class="setting-item">
+              <label class="setting-label">
+                <input 
+                  type="checkbox" 
+                  v-model="selectorGroupSettings.autoHeight"
+                  class="setting-checkbox"
+                />
+                Автовысота
+              </label>
+              <span class="setting-hint">Автоматически подстраивает высоту под содержимое</span>
+            </div>
+          </div>
+          
+          <div class="modal-actions">
+            <button class="btn btn-secondary" @click="closeAdvancedSettings">
+              Отмена
+            </button>
+            <button class="btn btn-primary" @click="saveAdvancedSettings">
+              Сохранить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -466,12 +528,20 @@ const activeSelectorIndex = ref(0);
 const draggedIndex = ref(null);
 const dragOverIndex = ref(null);
 const isDatasetModalOpen = ref(false);
+const isAdvancedSettingsModalOpen = ref(false);
 const availableDatasets = ref([]);
 const availableFields = ref([]);
 const selectorOptions = ref([]);
 const isDatasetsLoading = ref(false);
 
 const originalData = ref(null);
+
+// Настройки группы селекторов
+const selectorGroupSettings = ref({
+  applyButton: false,
+  clearButton: false,
+  autoHeight: false
+});
 
 const currentSelector = computed(() => {
   return selectorsList.value[activeSelectorIndex.value] || {};
@@ -736,7 +806,17 @@ function toggleFavorite(index) {
 }
 
 function openAdvancedSettings() {
-  console.log('Открытие расширенных настроек');
+  isAdvancedSettingsModalOpen.value = true;
+}
+
+function closeAdvancedSettings() {
+  isAdvancedSettingsModalOpen.value = false;
+}
+
+function saveAdvancedSettings() {
+  // Здесь можно добавить логику сохранения настроек группы селекторов
+  console.log('Сохранение настроек группы селекторов:', selectorGroupSettings.value);
+  closeAdvancedSettings();
 }
 
 function openDatasetModal() {
@@ -931,7 +1011,9 @@ function handleClickOutside(event) {
 
 function handleKeyDown(event) {
   if (event.key === 'Escape') {
-    if (isDatasetModalOpen.value) {
+    if (isAdvancedSettingsModalOpen.value) {
+      isAdvancedSettingsModalOpen.value = false;
+    } else if (isDatasetModalOpen.value) {
       isDatasetModalOpen.value = false;
     } else if (isDropdownOpen.value) {
       isDropdownOpen.value = false;
@@ -1314,10 +1396,21 @@ function onSubmit() {
   cursor: pointer;
   margin: 0 12px 24px 12px;
   transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  font-weight: 400;
   
   &:hover {
     color: var(--color-primary);
+    background-color: var(--color-hover-background);
+    
+    .settings-icon {
+      transform: rotate(180deg);
+    }
   }
+}
+
+.settings-icon {
+  transition: transform 0.3s ease;
 }
 
 .widget-settings-right-side {
@@ -2511,5 +2604,131 @@ button.cancel:hover {
     color: var(--color-text-secondary);
     font-size: 14px;
   }
+}
+
+/* Стили для модального окна расширенных настроек */
+.advanced-settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.advanced-settings-modal-container {
+  background: var(--color-primary-background);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.advanced-settings-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.advanced-settings-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-primary-text);
+  margin: 0;
+}
+
+.advanced-settings-modal-close {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-secondary-text);
+  border-radius: 6px;
+  
+  &:hover {
+    color: var(--color-primary-text);
+    background: var(--color-hover-background);
+  }
+  
+  .close-icon {
+    font-size: 24px;
+    font-weight: 300;
+  }
+}
+
+.advanced-settings-modal-content {
+  padding: 24px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.setting-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary-text);
+  cursor: pointer;
+}
+
+.setting-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.setting-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-left: 26px;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.modal-actions .btn {
+  padding: 8px 20px;
+  border-radius: 0.5rem;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 </style>
