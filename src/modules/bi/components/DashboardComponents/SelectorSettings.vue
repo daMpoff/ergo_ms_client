@@ -112,13 +112,56 @@
                       <CheckCircle v-if="urlValidationResult.isValid" size="16" />
                       <CircleAlert v-else size="16" />
                     </span>
-                    <span class="validation-text">{{ urlValidationResult.message }}</span>
+                    <div class="validation-content">
+                      <span class="validation-text">{{ urlValidationResult.message }}</span>
+                      <div v-if="urlValidationResult.isValid && urlValidationResult.datasetName" class="dataset-info">
+                        <strong>Датасет:</strong> {{ urlValidationResult.datasetName }}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
             
             <div class="settings-row" v-if="currentSelector.sourceType === 'dataset' && currentSelector.selectedDataset">
+              <div class="settings-label">Поле</div>
+              <div class="settings-control">
+                <div class="field-selector-container">
+                  <div class="custom-field-select">
+                    <button class="field-select-button" @click="toggleFieldDropdown" :class="{ 'open': isFieldDropdownOpen }">
+                      <FieldTypeIcon 
+                        v-if="selectedFieldType"
+                        :field-type="selectedFieldType"
+                        :size="14"
+                        class="selected-field-icon"
+                      />
+                      <span class="field-select-text">
+                        {{ selectedFieldName || 'Выберите поле' }}
+                      </span>
+                      <ChevronDown size="14" class="dropdown-arrow" />
+                    </button>
+                    <div v-if="isFieldDropdownOpen" class="field-dropdown-menu">
+                      <div 
+                        v-for="field in availableFields" 
+                        :key="field.id"
+                        class="field-dropdown-item"
+                        :class="{ 'selected': currentSelector.selectedField === field.id }"
+                        @click="selectField(field.id)"
+                      >
+                        <FieldTypeIcon 
+                          :field-type="field.type"
+                          :size="14"
+                          class="field-icon"
+                        />
+                        <span class="field-name">{{ field.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="settings-row" v-if="currentSelector.sourceType === 'url' && urlValidationResult && urlValidationResult.isValid && currentSelector.selectedDatasetId">
               <div class="settings-label">Поле</div>
               <div class="settings-control">
                 <div class="field-selector-container">
@@ -250,7 +293,6 @@
                     v-model="currentSelector.defaultValue"
                     :multiple-selection="currentSelector.multipleSelection"
                     :placeholder="currentSelector.required ? 'Выберите значения по умолчанию (обязательно)' : 'Выберите значения по умолчанию'"
-                    @mounted="handleDefaultValueSelectorMounted"
                     :class="{ 'is-invalid': currentSelector.required && (!currentSelector.defaultValue || currentSelector.defaultValue.length === 0) }"
                   />
                   <div v-if="currentSelector.required && (!currentSelector.defaultValue || currentSelector.defaultValue.length === 0)" class="invalid-feedback">
@@ -409,7 +451,7 @@
         </div>
         <div class="dataset-modal-content">
           <DatasetsTooltip
-            :selected-dataset="currentSelector.selectedDataset"
+            :selected-dataset="currentSelector.selectedDataset ? { name: currentSelector.selectedDataset, id: currentSelector.selectedDatasetId } : null"
             :datasets="availableDatasets"
             :is-loading="isDatasetsLoading"
             @select="selectDataset"
@@ -491,6 +533,8 @@ import FieldTypeIcon from './FieldTypeIcon.vue';
 import DefaultValueSelector from './DefaultValueSelector.vue';
 import datasetService from '../../js/datasetService.js';
 import { getFieldTypeTooltip } from './js/fieldTypeIcons.js';
+import { validateDatasetUrlWithAccess } from './js/datasetUrlUtils.js';
+import { apiClient } from '@/js/api/manager.js';
 
 const props = defineProps({
   data: {
@@ -536,7 +580,6 @@ const isDatasetsLoading = ref(false);
 
 const originalData = ref(null);
 
-// Настройки группы селекторов
 const selectorGroupSettings = ref({
   applyButton: false,
   clearButton: false,
@@ -552,14 +595,7 @@ const isFormValid = computed(() => {
   return selector.title && selector.title.trim().length > 0;
 });
 
-const sourceInputValue = computed(() => {
-  if (currentSelector.value.sourceType === 'dataset') {
-    return currentSelector.value.selectedDataset || '';
-  } else if (currentSelector.value.sourceType === 'url') {
-    return currentSelector.value.datasetUrl || '';
-  }
-  return '';
-});
+const sourceInputValue = ref('');
 
 const sourceInputPlaceholder = computed(() => {
   if (currentSelector.value.sourceType === 'dataset') {
@@ -814,8 +850,6 @@ function closeAdvancedSettings() {
 }
 
 function saveAdvancedSettings() {
-  // Здесь можно добавить логику сохранения настроек группы селекторов
-  console.log('Сохранение настроек группы селекторов:', selectorGroupSettings.value);
   closeAdvancedSettings();
 }
 
@@ -835,7 +869,6 @@ async function loadAvailableDatasets() {
     const response = await datasetService.getUserDatasets();
     availableDatasets.value = response.data || [];
   } catch (error) {
-    console.error('Ошибка загрузки датасетов:', error);
     availableDatasets.value = [];
   } finally {
     isDatasetsLoading.value = false;
@@ -908,7 +941,6 @@ function selectSelectorType(type) {
   const selectorType = selectorTypesWithAvailability.value.find(t => t.value === type);
   
   if (!selectorType || !selectorType.isAvailable) {
-    console.warn(`Тип селектора "${type}" не доступен для поля типа "${selectedFieldType.value}"`);
     return;
   }
   
@@ -960,17 +992,50 @@ function handleSourceInputChange() {
   }
 }
 
+let validationTimeout = null;
+
 function validateUrl(url) {
+  if (validationTimeout) {
+    clearTimeout(validationTimeout);
+  }
+  
   isUrlValidating.value = true;
   urlValidationResult.value = null;
-  setTimeout(() => {
-    const isValid = /^https?:\/\/[^\s]+$/.test(url);
-    urlValidationResult.value = {
-      isValid: isValid,
-      message: isValid ? 'URL валиден' : 'Пожалуйста, введите корректный URL (например, https://example.com)'
-    };
+  
+  if (!url || !url.trim()) {
     isUrlValidating.value = false;
-  }, 1000);
+    return;
+  }
+  
+  validationTimeout = setTimeout(async () => {
+    try {
+      const result = await validateDatasetUrlWithAccess(url.trim(), apiClient, true);
+      
+      urlValidationResult.value = {
+        isValid: result.isValid,
+        message: result.isValid ? 'URL датасета корректен!' : result.error,
+        datasetId: result.datasetId,
+        datasetName: result.datasetName
+      };
+      
+      if (result.isValid) {
+        currentSelector.value.selectedDatasetId = result.datasetId;
+        currentSelector.value.selectedDataset = result.datasetName;
+        loadAvailableFields();
+      }
+      
+    } catch (error) {
+      console.error('Ошибка при валидации URL датасета:', error);
+      urlValidationResult.value = {
+        isValid: false,
+        message: 'Произошла ошибка при проверке URL',
+        datasetId: null,
+        datasetName: null
+      };
+    } finally {
+      isUrlValidating.value = false;
+    }
+  }, 500);
 }
 
 function handleClickOutside(event) {
@@ -1035,6 +1100,10 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside, true);
   document.removeEventListener('keydown', handleKeyDown);
+  
+  if (validationTimeout) {
+    clearTimeout(validationTimeout);
+  }
 });
 
 watch(() => props.data, (newData) => {
@@ -1043,6 +1112,10 @@ watch(() => props.data, (newData) => {
     
     selectorsList.value = JSON.parse(JSON.stringify(newData.selectorsList));
     activeSelectorIndex.value = newData.activeSelectorIndex || 0;
+
+    if (newData.selectorGroupSettings) {
+      selectorGroupSettings.value = { ...newData.selectorGroupSettings };
+    }
     
     selectorsList.value.forEach((selector, index) => {
       if (selector.isFavorite === undefined) {
@@ -1057,11 +1130,18 @@ watch(() => props.data, (newData) => {
       if (selector.selectedDatasetId === undefined) {
         selector.selectedDatasetId = null;
       }
+      if (selector.selectedField === undefined) {
+        selector.selectedField = '';
+      }
     });
     
     const hasFavorite = selectorsList.value.some(selector => selector.isFavorite);
     if (!hasFavorite && selectorsList.value.length > 0) {
       selectorsList.value[0].isFavorite = true;
+    }
+    
+    if (currentSelector.value.selectedDatasetId) {
+      loadAvailableFields();
     }
   }
 }, { immediate: true });
@@ -1070,30 +1150,49 @@ watch(() => currentSelector.value, (newSelector) => {
   if (newSelector) {
     urlValidationResult.value = null;
     isUrlValidating.value = false;
+    
+    if (newSelector.sourceType === 'dataset') {
+      sourceInputValue.value = newSelector.selectedDataset || '';
+    } else if (newSelector.sourceType === 'url') {
+      sourceInputValue.value = newSelector.datasetUrl || '';
+      if (newSelector.datasetUrl && newSelector.datasetUrl.trim()) {
+        validateUrl(newSelector.datasetUrl.trim());
+      }
+    }
+    
+    if (newSelector.selectedDatasetId) {
+      loadAvailableFields();
+    }
   }
 }, { immediate: true });
 
-// Отслеживаем изменения типа поля и сбрасываем тип селектора если он стал недоступен
+watch(sourceInputValue, (newValue) => {
+  if (!currentSelector.value) return;
+  
+  if (currentSelector.value.sourceType === 'dataset') {
+    return;
+  } else if (currentSelector.value.sourceType === 'url') {
+    currentSelector.value.datasetUrl = newValue;
+  }
+});
+
 watch(selectedFieldType, (newFieldType) => {
   if (!newFieldType || !currentSelector.value) return;
   
   const currentSelectorType = currentSelector.value.selectorType;
   const isCurrentTypeAvailable = availableSelectorTypes.value.some(type => type.value === currentSelectorType);
   
-  // Если текущий тип селектора больше не доступен, сбрасываем на "Список"
   if (!isCurrentTypeAvailable) {
     currentSelector.value.selectorType = 'list';
     currentSelector.value.multipleSelection = false;
   }
   
-  // Проверяем доступность текущей операции
   const currentOperation = currentSelector.value.operation;
   if (currentOperation) {
     const isCurrentOperationAvailable = availableOperations.value.some(
       op => op.value === currentOperation
     );
     
-    // Если текущая операция больше не доступна, сбрасываем её
     if (!isCurrentOperationAvailable) {
       currentSelector.value.operation = '';
     }
@@ -1102,7 +1201,11 @@ watch(selectedFieldType, (newFieldType) => {
 
 function onCancel() {
   if (originalData.value) {
-    emit('save', originalData.value);
+    const restoredData = { ...originalData.value };
+    if (originalData.value.selectorGroupSettings) {
+      restoredData.selectorGroupSettings = { ...originalData.value.selectorGroupSettings };
+    }
+    emit('save', restoredData);
   }
   emit('close');
 }
@@ -1111,15 +1214,12 @@ function updateHintText(value) {
   currentSelector.value.hintText = value;
 }
 
-function handleDefaultValueSelectorMounted() {
-  console.log('DefaultValueSelector mounted with datasetId:', currentSelector.value.selectedDatasetId, 'fieldId:', currentSelector.value.selectedField);
-}
-
 function onSubmit() {
   const settings = {
     ...props.data,
     selectorsList: selectorsList.value,
-    activeSelectorIndex: activeSelectorIndex.value
+    activeSelectorIndex: activeSelectorIndex.value,
+    selectorGroupSettings: selectorGroupSettings.value
   };
   
   emit('save', settings);
@@ -1900,56 +2000,89 @@ button.cancel:hover {
 }
 
 .url-validation-result {
-  margin-top: 8px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  background-color: var(--color-background);
-  border: 1px solid var(--color-border);
+  background-color: transparent;
+  border: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   font-size: 13px;
-  color: var(--color-text-primary);
 }
 
 .validation-loading {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-primary);
+  color: #6366f1;
+  font-weight: 500;
+  width: 100%;
 }
 
 .loading-spinner {
-  border: 2px solid var(--color-text-secondary);
-  border-top: 2px solid var(--color-primary);
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  border-top: 2px solid #6366f1;
   border-radius: 50%;
   width: 16px;
   height: 16px;
   animation: spin 1s linear infinite;
+  flex-shrink: 0;
 }
 
 .loading-text {
-  color: var(--color-text-secondary);
+  color: #6366f1;
+  font-weight: 500;
 }
 
 .validation-message {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-weight: 500;
+  width: 100%;
 }
 
 .validation-icon {
-  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.validation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.dataset-info {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.dataset-info strong {
+  font-weight: 600;
 }
 
 .success-message {
-  color: var(--color-success);
-  border-color: var(--color-success);
+  color: #22c55e;
+  display: flex;
+  align-items: center;
+}
+
+.success-message .validation-icon {
+  color: #22c55e;
+  display: flex;
 }
 
 .error-message {
-  color: var(--color-error);
-  border-color: var(--color-error);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+}
+
+.error-message .validation-icon {
+  color: #ef4444;
+  display: flex;
 }
 
 @keyframes spin {
