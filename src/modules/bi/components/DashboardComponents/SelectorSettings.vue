@@ -436,8 +436,15 @@
         </div>
       </div>
       <div class="widget-settings-right-side-actions">
-        <button @click="onCancel" class="cancel">Отменить</button>
-        <button class="btn btn-primary" @click="onSubmit" :disabled="!isFormValid">Сохранить</button>
+        <div v-if="!isFormValid && validationMessage" class="validation-hint" :class="{ 'clickable': invalidSelectorIndex !== activeSelectorIndex }" @click="goToInvalidSelector">
+          <CircleAlert size="14" class="hint-icon" />
+          <span class="hint-text">{{ validationMessage }}</span>
+          <span v-if="invalidSelectorIndex !== activeSelectorIndex" class="hint-action">Нажмите для перехода</span>
+        </div>
+        <div class="action-buttons">
+          <button @click="onCancel" class="cancel">Отменить</button>
+          <button class="btn btn-primary" @click="onSubmit" :disabled="!isFormValid">Сохранить</button>
+        </div>
       </div>
     </div>
     
@@ -590,10 +597,118 @@ const currentSelector = computed(() => {
   return selectorsList.value[activeSelectorIndex.value] || {};
 });
 
+function validateSelector(selector, isCurrentSelector = false) {
+  if (!selector.title || selector.title.trim().length === 0) {
+    return false;
+  }
+  
+  if (selector.sourceType === 'dataset') {
+    if (!selector.selectedDataset || !selector.selectedDatasetId) {
+      return false;
+    }
+  } else if (selector.sourceType === 'url') {
+    if (isCurrentSelector) {
+      if (!urlValidationResult.value || !urlValidationResult.value.isValid || !selector.selectedDatasetId) {
+        return false;
+      }
+    } else {
+      if (!selector.selectedDatasetId) {
+        return false;
+      }
+    }
+  }
+  
+  if (!selector.selectedField) {
+    return false;
+  }
+  
+  if (selector.required) {
+    if (!selector.defaultValue || 
+        (Array.isArray(selector.defaultValue) && selector.defaultValue.length === 0) ||
+        (typeof selector.defaultValue === 'string' && selector.defaultValue.trim().length === 0)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 const isFormValid = computed(() => {
-  const selector = currentSelector.value;
-  return selector.title && selector.title.trim().length > 0;
+  for (let i = 0; i < selectorsList.value.length; i++) {
+    const selector = selectorsList.value[i];
+    const isCurrentSelector = i === activeSelectorIndex.value;
+    
+    if (!validateSelector(selector, isCurrentSelector)) {
+      return false;
+    }
+  }
+  
+  return true;
 });
+
+const validationMessage = computed(() => {
+  for (let i = 0; i < selectorsList.value.length; i++) {
+    const selector = selectorsList.value[i];
+    const isCurrentSelector = i === activeSelectorIndex.value;
+    const selectorNumber = i + 1;
+    
+    if (!selector.title || selector.title.trim().length === 0) {
+      return `Селектор ${selectorNumber}: Заполните заголовок`;
+    }
+    
+    if (selector.sourceType === 'dataset') {
+      if (!selector.selectedDataset || !selector.selectedDatasetId) {
+        return `Селектор ${selectorNumber}: Выберите датасет`;
+      }
+    } else if (selector.sourceType === 'url') {
+      if (isCurrentSelector) {
+        if (!urlValidationResult.value || !urlValidationResult.value.isValid) {
+          return `Селектор ${selectorNumber}: Введите корректный URL датасета`;
+        }
+        if (!selector.selectedDatasetId) {
+          return `Селектор ${selectorNumber}: Дождитесь загрузки данных датасета`;
+        }
+      } else {
+        if (!selector.selectedDatasetId) {
+          return `Селектор ${selectorNumber}: Настройте источник данных (URL)`;
+        }
+      }
+    }
+    
+    if (!selector.selectedField) {
+      return `Селектор ${selectorNumber}: Выберите поле датасета`;
+    }
+    
+    if (selector.required) {
+      if (!selector.defaultValue || 
+          (Array.isArray(selector.defaultValue) && selector.defaultValue.length === 0) ||
+          (typeof selector.defaultValue === 'string' && selector.defaultValue.trim().length === 0)) {
+        return `Селектор ${selectorNumber}: Выберите значение по умолчанию (обязательный)`;
+      }
+    }
+  }
+  
+  return '';
+});
+
+const invalidSelectorIndex = computed(() => {
+  for (let i = 0; i < selectorsList.value.length; i++) {
+    const selector = selectorsList.value[i];
+    const isCurrentSelector = i === activeSelectorIndex.value;
+    
+    if (!validateSelector(selector, isCurrentSelector)) {
+      return i;
+    }
+  }
+  
+  return -1;
+});
+
+function goToInvalidSelector() {
+  if (invalidSelectorIndex.value >= 0) {
+    activeSelectorIndex.value = invalidSelectorIndex.value;
+  }
+}
 
 const sourceInputValue = ref('');
 
@@ -1676,6 +1791,21 @@ function onSubmit() {
   &.has-icon {
     padding-left: 40px;
   }
+  
+  &.is-invalid {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+    
+    &:hover {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+    }
+    
+    &:focus {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
+    }
+  }
 }
 
 .input-group {
@@ -1889,11 +2019,58 @@ function onSubmit() {
 
 .widget-settings-right-side-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px 24px 24px 24px;
   background: var(--color-primary-background);
   flex-shrink: 0;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.validation-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  
+  &.clickable {
+    cursor: pointer;
+    
+    &:hover {
+      background-color: rgba(239, 68, 68, 0.15);
+      border-color: #dc2626;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.validation-hint .hint-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.validation-hint .hint-text {
+  flex: 1;
+}
+
+.validation-hint .hint-action {
+  font-size: 11px;
+  opacity: 0.8;
+  font-style: italic;
+  margin-left: 8px;
 }
 
 button.cancel {
@@ -2699,6 +2876,23 @@ button.cancel:hover {
 
 .default-value-selector-container {
   width: 100%;
+  
+  &.is-invalid {
+    :deep(.default-value-selector) {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+      
+      &:hover {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+      }
+      
+      &:focus-within {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
+      }
+    }
+  }
 }
 
 .default-input-container {
@@ -2711,17 +2905,13 @@ button.cancel:hover {
   padding: 4px 12px;
 }
 
-.is-invalid {
-  border-color: #dc3545 !important;
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
-}
-
 .invalid-feedback {
   display: block;
-  width: 100%;
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  color: #dc3545;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+  padding-left: 4px;
 }
 
 .other-selector-type {
