@@ -144,5 +144,11 @@ export default {
   },
   addRelation({ datasetId, ...rest }) {
     return apiClient.post(`/bi_analysis/bi_datasets/${datasetId}/add-relation/`, rest)
+  },
+
+  // ===== Field Values =====
+  getFieldValues(datasetId, fieldId) {
+    // GET /api/bi_analysis/bi_datasets/{datasetId}/field-values/{fieldId}/
+    return apiClient.get(`${BASE}${datasetId}/field-values/${fieldId}/`)
   }
 }
