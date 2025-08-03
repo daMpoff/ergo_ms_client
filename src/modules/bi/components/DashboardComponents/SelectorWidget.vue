@@ -5,118 +5,93 @@
         <Loader2 class="spinner" :size="24" />
         <span>Загрузка селектора...</span>
       </div>
-      
+
       <div v-else-if="error" class="selector-error">
         <AlertCircle :size="24" />
         <span>{{ error }}</span>
       </div>
-      
+
       <div v-else-if="!currentSelector" class="selector-empty">
         <Filter :size="48" />
         <span>Селектор не выбран</span>
       </div>
-      
-              <div v-else class="selector-render-container">
-          <!-- Отображение селектора в зависимости от типа -->
-          <div v-if="currentSelector.selectorType === 'list'" class="selector-list" :class="getSelectorClasses()">
-            <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
-              {{ getDisplayTitle() }}
-            </label>
-            <select class="selector-dropdown" v-model="selectedValue" @change="handleSelectionChange">
-              <option value="">{{ currentSelector.defaultValue || 'Выберите значение' }}</option>
-              <option v-for="option in selectorOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-        
-        <div v-else-if="currentSelector.selectorType === 'dropdown'" class="selector-dropdown-container" :class="getSelectorClasses()">
+
+      <div v-else class="selector-render-container">
+        <div v-if="currentSelector.selectorType === 'list'" class="selector-list" :class="getSelectorClasses()">
+          <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
+            {{ getDisplayTitle() }}
+          </label>
+          <select class="selector-dropdown" v-model="selectedValue" @change="handleSelectionChange">
+            <option value="">{{ getDefaultValueText() || 'Выберите значение' }}</option>
+            <option v-for="option in selectorOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <div v-else-if="currentSelector.selectorType === 'dropdown'" class="selector-dropdown-container"
+          :class="getSelectorClasses()">
           <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
             {{ getDisplayTitle() }}
           </label>
           <div class="custom-dropdown">
             <button class="dropdown-button" @click="toggleDropdown">
-              <span>{{ selectedLabel || currentSelector.defaultValue || 'Выберите значение' }}</span>
+              <span>{{ selectedLabel || getDefaultValueText() || 'Выберите значение' }}</span>
               <ChevronDown :size="16" class="dropdown-icon" />
             </button>
             <div v-if="isDropdownOpen" class="dropdown-menu">
-              <div 
-                v-for="option in selectorOptions" 
-                :key="option.value"
-                class="dropdown-item"
-                :class="{ 'selected': selectedValue === option.value }"
-                @click="selectOption(option)"
-              >
+              <div v-for="option in selectorOptions" :key="option.value" class="dropdown-item"
+                :class="{ 'selected': selectedValue === option.value }" @click="selectOption(option)">
                 {{ option.label }}
               </div>
             </div>
           </div>
         </div>
-        
+
         <div v-else-if="currentSelector.selectorType === 'radio'" class="selector-radio" :class="getSelectorClasses()">
           <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
             {{ getDisplayTitle() }}
           </label>
           <div class="radio-group">
             <label v-for="option in selectorOptions" :key="option.value" class="radio-item">
-              <input 
-                type="radio" 
-                :value="option.value" 
-                v-model="selectedValue"
-                @change="handleSelectionChange"
-              />
+              <input type="radio" :value="option.value" v-model="selectedValue" @change="handleSelectionChange" />
               <span class="radio-label">{{ option.label }}</span>
             </label>
           </div>
         </div>
-        
-        <div v-else-if="currentSelector.selectorType === 'checkbox'" class="selector-checkbox" :class="getSelectorClasses()">
+
+        <div v-else-if="currentSelector.selectorType === 'checkbox'" class="selector-checkbox"
+          :class="getSelectorClasses()">
           <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
             {{ getDisplayTitle() }}
           </label>
           <div class="checkbox-group">
             <label v-for="option in selectorOptions" :key="option.value" class="checkbox-item">
-              <input 
-                type="checkbox" 
-                :value="option.value" 
-                v-model="selectedValues"
-                @change="handleMultiSelectionChange"
-              />
+              <input type="checkbox" :value="option.value" v-model="selectedValues"
+                @change="handleMultiSelectionChange" />
               <span class="checkbox-label">{{ option.label }}</span>
             </label>
           </div>
         </div>
-        
+
         <div v-else-if="currentSelector.selectorType === 'date'" class="selector-date" :class="getSelectorClasses()">
           <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
             {{ getDisplayTitle() }}
           </label>
-          <input 
-            type="date" 
-            v-model="selectedValue"
-            @change="handleSelectionChange"
-            class="date-input"
-          />
+          <input type="date" v-model="selectedValue" @change="handleSelectionChange" class="date-input" />
         </div>
-        
+
         <div v-else-if="currentSelector.selectorType === 'range'" class="selector-range" :class="getSelectorClasses()">
           <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
             {{ getDisplayTitle() }}
           </label>
           <div class="range-container">
-            <input 
-              type="range" 
-              v-model="selectedValue"
-              :min="rangeMin" 
-              :max="rangeMax" 
-              :step="rangeStep"
-              @input="handleSelectionChange"
-              class="range-input"
-            />
+            <input type="range" v-model="selectedValue" :min="rangeMin" :max="rangeMax" :step="rangeStep"
+              @input="handleSelectionChange" class="range-input" />
             <span class="range-value">{{ selectedValue }}</span>
           </div>
         </div>
-        
+
         <div v-else class="selector-default" :class="getSelectorClasses()">
           <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
             {{ getDisplayTitle() }}
@@ -129,7 +104,7 @@
           </select>
         </div>
       </div>
-      
+
       <div v-else class="selector-empty">
         <Filter :size="48" />
         <span>Настройте селектор</span>
@@ -234,6 +209,22 @@ function getSelectorClasses() {
   return classes;
 }
 
+function getDefaultValueText() {
+  if (!currentSelector.value?.defaultValue) return '';
+
+  // Handle both old string format and new array format
+  if (Array.isArray(currentSelector.value.defaultValue)) {
+    if (currentSelector.value.defaultValue.length === 0) return '';
+    if (currentSelector.value.defaultValue.length === 1) {
+      return currentSelector.value.defaultValue[0];
+    }
+    return currentSelector.value.defaultValue.join(', ');
+  }
+
+  // Fallback for old string format
+  return currentSelector.value.defaultValue || '';
+}
+
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value;
 }
@@ -262,30 +253,30 @@ function handleMultiSelectionChange() {
 
 function calculateWidgetHeight() {
   if (!effectiveAutoHeight.value || !selectorWidgetRef.value) return;
-  
+
   nextTick(() => {
     const element = selectorWidgetRef.value;
     if (element) {
       element.style.height = 'auto';
-      
+
       nextTick(() => {
         const rect = element.getBoundingClientRect();
         let newHeight = rect.height;
-        
+
         const children = element.children;
         let totalChildrenHeight = 0;
-        
+
         for (let child of children) {
           const childRect = child.getBoundingClientRect();
           totalChildrenHeight += childRect.height;
-          
+
           const computedStyle = window.getComputedStyle(child);
           totalChildrenHeight += parseFloat(computedStyle.marginTop) + parseFloat(computedStyle.marginBottom);
         }
-        
+
         newHeight = Math.max(newHeight, totalChildrenHeight);
         newHeight = Math.max(newHeight, 100);
-        
+
         if (calculatedHeight.value !== newHeight) {
           calculatedHeight.value = newHeight;
           emit('content-resized', newHeight);
@@ -309,7 +300,7 @@ function handleClickOutside(event) {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
-  
+
   if (effectiveAutoHeight.value) {
     calculateWidgetHeight();
   }
@@ -350,7 +341,7 @@ defineExpose({
   border-radius: 8px;
   padding: 16px;
   box-sizing: border-box;
-  
+
   &.auto-height {
     height: auto;
   }
@@ -371,15 +362,20 @@ defineExpose({
   color: var(--color-text-secondary);
   font-size: 14px;
   height: 100%;
-  
+
   .spinner {
     animation: spin 1s linear infinite;
   }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .selector-error {
@@ -415,12 +411,12 @@ defineExpose({
   font-weight: 500;
   color: var(--color-text-primary);
   margin-bottom: 4px;
-  
+
   &.title-left {
     margin-bottom: 0;
     margin-right: 8px;
   }
-  
+
   &.title-top {
     margin-bottom: 8px;
   }
@@ -437,12 +433,12 @@ defineExpose({
     display: flex;
     align-items: center;
     gap: 8px;
-    
+
     .selector-label {
       flex-shrink: 0;
       margin-bottom: 0;
     }
-    
+
     .selector-dropdown,
     .custom-dropdown,
     .radio-group,
@@ -452,7 +448,7 @@ defineExpose({
       flex: 1;
     }
   }
-  
+
   &.with-color-accent {
     border: 2px solid var(--color-primary);
     border-radius: 6px;
@@ -468,7 +464,7 @@ defineExpose({
   background: var(--color-background);
   color: var(--color-text-primary);
   font-size: 14px;
-  
+
   &:focus {
     outline: none;
     border-color: var(--color-primary);
@@ -492,7 +488,7 @@ defineExpose({
   color: var(--color-text-primary);
   font-size: 14px;
   cursor: pointer;
-  
+
   &:hover {
     border-color: var(--color-primary);
   }
@@ -521,11 +517,11 @@ defineExpose({
   cursor: pointer;
   font-size: 14px;
   color: var(--color-text-primary);
-  
+
   &:hover {
     background: var(--color-hover-background);
   }
-  
+
   &.selected {
     background: var(--color-primary-background);
     color: white;
@@ -545,7 +541,7 @@ defineExpose({
   cursor: pointer;
   font-size: 14px;
   color: var(--color-text-primary);
-  
+
   input[type="radio"] {
     accent-color: var(--color-primary);
   }
@@ -564,7 +560,7 @@ defineExpose({
   cursor: pointer;
   font-size: 14px;
   color: var(--color-text-primary);
-  
+
   input[type="checkbox"] {
     accent-color: var(--color-primary);
   }
@@ -578,7 +574,7 @@ defineExpose({
   background: var(--color-background);
   color: var(--color-text-primary);
   font-size: 14px;
-  
+
   &:focus {
     outline: none;
     border-color: var(--color-primary);
@@ -598,7 +594,7 @@ defineExpose({
   background: var(--color-border);
   outline: none;
   cursor: pointer;
-  
+
   &::-webkit-slider-thumb {
     appearance: none;
     width: 16px;
@@ -607,7 +603,7 @@ defineExpose({
     background: var(--color-primary);
     cursor: pointer;
   }
-  
+
   &::-moz-range-thumb {
     width: 16px;
     height: 16px;
@@ -624,4 +620,4 @@ defineExpose({
   min-width: 40px;
   text-align: center;
 }
-</style> 
+</style>

@@ -44,7 +44,6 @@
       </div>
       <div class="widget-settings-right-side-content">
         <div class="settings-table">
-          <!-- Секция "Данные" -->
           <div class="settings-section">
             <h6 class="section-title">Данные</h6>
             
@@ -103,7 +102,6 @@
                   </div>
                 </div>
                 
-                <!-- Результат валидации URL источника -->
                 <div v-if="currentSelector.sourceType === 'url' && (isUrlValidating || urlValidationResult)" class="url-validation-result">
                   <div v-if="isUrlValidating" class="validation-loading">
                     <span class="loading-spinner"></span>
@@ -123,17 +121,42 @@
             <div class="settings-row" v-if="currentSelector.sourceType === 'dataset' && currentSelector.selectedDataset">
               <div class="settings-label">Поле</div>
               <div class="settings-control">
-                <select v-model="currentSelector.selectedField" class="form-select form-select-sm">
-                  <option value="">Выберите поле</option>
-                  <option v-for="field in availableFields" :key="field.id" :value="field.id">
-                    {{ field.name }}
-                  </option>
-                </select>
+                <div class="field-selector-container">
+                  <div class="custom-field-select">
+                    <button class="field-select-button" @click="toggleFieldDropdown" :class="{ 'open': isFieldDropdownOpen }">
+                      <FieldTypeIcon 
+                        v-if="selectedFieldType"
+                        :field-type="selectedFieldType"
+                        :size="14"
+                        class="selected-field-icon"
+                      />
+                      <span class="field-select-text">
+                        {{ selectedFieldName || 'Выберите поле' }}
+                      </span>
+                      <ChevronDown size="14" class="dropdown-arrow" />
+                    </button>
+                    <div v-if="isFieldDropdownOpen" class="field-dropdown-menu">
+                      <div 
+                        v-for="field in availableFields" 
+                        :key="field.id"
+                        class="field-dropdown-item"
+                        :class="{ 'selected': currentSelector.selectedField === field.id }"
+                        @click="selectField(field.id)"
+                      >
+                        <FieldTypeIcon 
+                          :field-type="field.type"
+                          :size="14"
+                          class="field-icon"
+                        />
+                        <span class="field-name">{{ field.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           
-          <!-- Секция "Фильтрация" -->
           <div class="settings-section">
             <h6 class="section-title">Фильтрация</h6>
             
@@ -141,11 +164,7 @@
               <div class="settings-label">Тип селектора</div>
               <div class="settings-control">
                 <div class="selector-type-dropdown">
-                  <button 
-                    class="selector-type-toggle"
-                    @click="toggleSelectorTypeDropdown"
-                    :class="{ 'open': isSelectorTypeDropdownOpen }"
-                  >
+                  <button class="selector-type-toggle" @click="toggleSelectorTypeDropdown" :class="{ 'open': isSelectorTypeDropdownOpen }">
                     <span class="selector-type-icon">
                       <List v-if="currentSelector.selectorType === 'list'" size="16" />
                       <Type v-else-if="currentSelector.selectorType === 'input'" size="16" />
@@ -207,12 +226,18 @@
             <div class="settings-row">
               <div class="settings-label">Значение по умолчанию</div>
               <div class="settings-control">
-                <select v-model="currentSelector.defaultValue" class="form-select form-select-sm">
-                  <option value="">Не определено</option>
-                  <option v-for="option in selectorOptions" :key="option.value" :value="option.value">
-                    {{ option.label }}
-                  </option>
-                </select>
+                <div v-if="shouldShowDefaultValueSelector" class="default-value-selector-container">
+                  <DefaultValueSelector
+                    :dataset-id="Number(currentSelector.selectedDatasetId)"
+                    :field-id="Number(currentSelector.selectedField)"
+                    v-model="currentSelector.defaultValue"
+                    placeholder="Выберите значения по умолчанию"
+                    @mounted="handleDefaultValueSelectorMounted"
+                  />
+                </div>
+                <div v-else class="no-field-selected">
+                  <span class="text-muted">Сначала выберите поле датасета</span>
+                </div>
               </div>
             </div>
             
@@ -224,7 +249,6 @@
             </div>
           </div>
           
-          <!-- Секция "Отображение" -->
           <div class="settings-section">
             <h6 class="section-title">Отображение</h6>
             
@@ -335,7 +359,6 @@
       </div>
     </div>
     
-    <!-- Модальное окно выбора датасетов с использованием DatasetsTooltip -->
     <div v-if="isDatasetModalOpen" class="dataset-modal-overlay" @click.self="closeDatasetModal">
       <div class="dataset-modal-container">
         <div class="dataset-modal-header">
@@ -362,6 +385,8 @@ import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { Star, GripVertical, Settings, Database, HelpCircle, ChevronDown, Link, CheckCircle, CircleAlert, List, Type, Calendar, CheckSquare } from 'lucide-vue-next';
 import DatasetsTooltip from '../ChartComponents/DatasetsTooltip.vue';
 import TextEditor from './TextEditor.vue';
+import FieldTypeIcon from './FieldTypeIcon.vue';
+import DefaultValueSelector from './DefaultValueSelector.vue';
 import datasetService from '../../js/datasetService.js';
 
 const props = defineProps({
@@ -390,7 +415,7 @@ const selectorsList = ref([
     selectorType: 'list',
     operation: '',
     multipleSelection: false,
-    defaultValue: '',
+    defaultValue: [],
     required: false,
     isFavorite: true
   }
@@ -434,8 +459,34 @@ const sourceInputPlaceholder = computed(() => {
   return '';
 });
 
+const selectedFieldType = computed(() => {
+  if (!currentSelector.value.selectedField) return null;
+  
+  const selectedField = availableFields.value.find(field => field.id === currentSelector.value.selectedField);
+  return selectedField ? selectedField.type : null;
+});
+
+const selectedFieldName = computed(() => {
+  if (!currentSelector.value.selectedField) return null;
+  
+  const selectedField = availableFields.value.find(field => field.id === currentSelector.value.selectedField);
+  return selectedField ? selectedField.name : null;
+});
+
+const shouldShowDefaultValueSelector = computed(() => {
+  const hasField = currentSelector.value.selectedField && 
+                   currentSelector.value.selectedField !== '' && 
+                   currentSelector.value.selectedField !== null;
+  const hasDataset = currentSelector.value.selectedDatasetId && 
+                     currentSelector.value.selectedDatasetId !== '' && 
+                     currentSelector.value.selectedDatasetId !== null;
+  
+  return hasField && hasDataset;
+});
+
 const isDropdownOpen = ref(false);
 const isSelectorTypeDropdownOpen = ref(false);
+const isFieldDropdownOpen = ref(false);
 const isUrlValidating = ref(false);
 const urlValidationResult = ref(null);
 const showColorAccentTooltip = ref(false);
@@ -466,7 +517,7 @@ function createNewSelector() {
     selectorType: 'list',
     operation: '',
     multipleSelection: false,
-    defaultValue: '',
+    defaultValue: [],
     required: false,
     isFavorite: false
   };
@@ -575,12 +626,9 @@ function openAdvancedSettings() {
   console.log('Открытие расширенных настроек');
 }
 
-function handleDatasetInputClick() {
-  openDatasetModal();
-}
-
 function openDatasetModal() {
   isDatasetModalOpen.value = true;
+  availableDatasets.value = [];
   loadAvailableDatasets();
 }
 
@@ -602,6 +650,11 @@ async function loadAvailableDatasets() {
 }
 
 function selectDataset(dataset) {
+  const availableDatasetIds = availableDatasets.value.map(d => d.id);
+  if (!availableDatasetIds.includes(dataset.id)) {
+    return;
+  }
+  
   currentSelector.value.selectedDataset = dataset.name;
   currentSelector.value.selectedDatasetId = dataset.id;
   currentSelector.value.sourceType = 'dataset';
@@ -624,21 +677,12 @@ async function loadAvailableFields() {
     const response = await datasetService.listFields({ dataset: currentSelector.value.selectedDatasetId });
     availableFields.value = response.data || [];
   } catch (error) {
-    console.error('Ошибка загрузки полей:', error);
     availableFields.value = [];
   }
 }
 
-function specifyDatasetLink() {
-  console.log('Указание ссылки на датасет');
-}
-
 function setTitlePosition(position) {
   currentSelector.value.titlePosition = position;
-}
-
-function toggleTitleDropdown() {
-  console.log('Переключение выпадающего списка заголовков');
 }
 
 function toggleDropdown() {
@@ -647,6 +691,15 @@ function toggleDropdown() {
 
 function toggleSelectorTypeDropdown() {
   isSelectorTypeDropdownOpen.value = !isSelectorTypeDropdownOpen.value;
+}
+
+function toggleFieldDropdown() {
+  isFieldDropdownOpen.value = !isFieldDropdownOpen.value;
+}
+
+function selectField(fieldId) {
+  currentSelector.value.selectedField = fieldId;
+  isFieldDropdownOpen.value = false;
 }
 
 function selectSelectorType(type) {
@@ -708,7 +761,7 @@ function validateUrl(url) {
 }
 
 function handleClickOutside(event) {
-  if (!isDropdownOpen.value && !isSelectorTypeDropdownOpen.value) {
+  if (!isDropdownOpen.value && !isSelectorTypeDropdownOpen.value && !isFieldDropdownOpen.value) {
     return;
   }
   
@@ -716,6 +769,8 @@ function handleClickOutside(event) {
   const dropdownMenu = event.target.closest('.dropdown-menu');
   const selectorTypeToggle = event.target.closest('.selector-type-toggle');
   const selectorTypeMenu = event.target.closest('.selector-type-menu');
+  const fieldSelectButton = event.target.closest('.field-select-button');
+  const fieldDropdownMenu = event.target.closest('.field-dropdown-menu');
    
   if (dropdownToggle || dropdownMenu) {
     return;
@@ -725,8 +780,13 @@ function handleClickOutside(event) {
     return;
   }
   
+  if (fieldSelectButton || fieldDropdownMenu) {
+    return;
+  }
+  
   isDropdownOpen.value = false;
   isSelectorTypeDropdownOpen.value = false;
+  isFieldDropdownOpen.value = false;
 }
 
 function handleKeyDown(event) {
@@ -737,6 +797,8 @@ function handleKeyDown(event) {
       isDropdownOpen.value = false;
     } else if (isSelectorTypeDropdownOpen.value) {
       isSelectorTypeDropdownOpen.value = false;
+    } else if (isFieldDropdownOpen.value) {
+      isFieldDropdownOpen.value = false;
     }
   }
 }
@@ -796,6 +858,10 @@ function onCancel() {
 
 function updateHintText(value) {
   currentSelector.value.hintText = value;
+}
+
+function handleDefaultValueSelectorMounted() {
+  console.log('DefaultValueSelector mounted with datasetId:', currentSelector.value.selectedDatasetId, 'fieldId:', currentSelector.value.selectedField);
 }
 
 function onSubmit() {
@@ -1497,7 +1563,6 @@ button.cancel:hover {
   }
 }
 
-/* Стили для модального окна выбора датасетов */
 .dataset-modal-overlay {
   position: fixed;
   top: 0;
@@ -1572,7 +1637,6 @@ button.cancel:hover {
   flex-direction: column;
 }
 
-/* Стили для валидации URL */
 .url-validation-result {
   margin-top: 8px;
   padding: 8px 12px;
@@ -1631,7 +1695,6 @@ button.cancel:hover {
   100% { transform: rotate(360deg); }
 }
 
-/* Стили для source-selector */
 .source-selector {
   display: flex;
   flex-direction: column;
@@ -1848,7 +1911,6 @@ button.cancel:hover {
   }
 }
 
-/* Стили для выпадающего списка типов селекторов */
 .selector-type-dropdown {
   position: relative;
   width: 100%;
@@ -1948,7 +2010,6 @@ button.cancel:hover {
   }
 }
 
-/* Стили для кастомного тултипа */
 .help-icon-wrapper {
   position: relative;
   display: inline-block;
@@ -1995,7 +2056,6 @@ button.cancel:hover {
   position: relative;
 }
 
-/* Стили для обертки TextEditor в настройках */
 .text-editor-wrapper {
   max-width: 100%;
   overflow: hidden;
@@ -2025,5 +2085,125 @@ button.cancel:hover {
       }
     }
   }
+}
+
+.field-selector-container {
+  position: relative;
+  width: 100%;
+}
+
+.custom-field-select {
+  position: relative;
+  width: 100%;
+}
+
+.field-select-button {
+  width: 100%;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: var(--color-primary);
+  }
+  
+  &.open {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.field-select-text {
+  flex: 1;
+  text-align: left;
+}
+
+.selected-field-icon {
+  margin-right: 8px;
+  margin-left: 0;
+}
+
+.dropdown-arrow {
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease;
+  
+  .open & {
+    transform: rotate(180deg);
+  }
+}
+
+.field-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 2px;
+}
+
+.field-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background: var(--color-hover-background);
+  }
+  
+  &.selected {
+    background: var(--color-primary-background);
+    color: white;
+    
+    .field-icon {
+      color: white;
+    }
+  }
+}
+
+.field-name {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
+}
+
+.field-icon {
+  flex-shrink: 0;
+}
+
+.no-field-selected {
+  display: flex;
+  align-items: center;
+  height: 31px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background-muted);
+  
+  .text-muted {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
+}
+
+.default-value-selector-container {
+  width: 100%;
 }
 </style>
