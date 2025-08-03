@@ -17,8 +17,8 @@
         
         <div class="tabs-container">
           <button class="tab-btn" :class="{ 'active': activeTab === 'all' }" @click="setActiveTab('all')">Все</button>
-          <button class="tab-btn" :class="{ 'active': activeTab === 'selected' }" @click="setActiveTab('selected')">Выбранные</button>
-          <button class="clear-btn" @click="clearAll" v-if="selectedValues.length > 0">Очистить</button>
+          <button class="tab-btn" :class="{ 'active': activeTab === 'selected' }" @click="setActiveTab('selected')" v-if="props.multipleSelection">Выбранные</button>
+          <button class="clear-btn" @click="clearAll" v-if="selectedValues.length > 0 && props.multipleSelection">Очистить</button>
         </div>
         
         <div class="values-list">
@@ -59,6 +59,10 @@ const props = defineProps({
   placeholder: {
     type: String,
     default: 'Выберите значения по умолчанию'
+  },
+  multipleSelection: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -84,6 +88,9 @@ const selectedValuesText = computed(() => {
   if (selectedValues.value.length === 1) {
     return selectedValues.value[0];
   }
+  if (!props.multipleSelection) {
+    return selectedValues.value[0] || props.placeholder;
+  }
   return `${selectedValues.value.length} значений выбрано`;
 });
 
@@ -108,7 +115,12 @@ function toggleValue(value) {
   if (index > -1) {
     selectedValues.value = selectedValues.value.filter(v => v !== value);
   } else {
-    selectedValues.value = [...selectedValues.value, value];
+    if (props.multipleSelection) {
+      selectedValues.value = [...selectedValues.value, value];
+    } else {
+      selectedValues.value = [value];
+      isDropdownOpen.value = false;
+    }
   }
 }
 
@@ -187,6 +199,16 @@ onUnmounted(() => {
 watch([() => props.datasetId, () => props.fieldId], () => {
   if (isDropdownOpen.value) {
     loadFieldValues();
+  }
+});
+
+watch(() => props.multipleSelection, (newValue) => {
+  if (!newValue && activeTab.value === 'selected') {
+    activeTab.value = 'all';
+  }
+  
+  if (!newValue && selectedValues.value.length > 1) {
+    selectedValues.value = [selectedValues.value[0]];
   }
 });
 </script>

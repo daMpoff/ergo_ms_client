@@ -179,11 +179,15 @@
                   </button>
                   <div v-if="isSelectorTypeDropdownOpen" class="selector-type-menu">
                     <div 
-                      v-for="type in selectorTypes" 
+                      v-for="type in selectorTypesWithAvailability" 
                       :key="type.value"
                       class="selector-type-option"
-                      :class="{ 'active': currentSelector.selectorType === type.value }"
-                      @click="selectSelectorType(type.value)"
+                      :class="{ 
+                        'active': currentSelector.selectorType === type.value,
+                        'disabled': !type.isAvailable
+                      }"
+                      @click="type.isAvailable ? selectSelectorType(type.value) : null"
+                      :title="!type.isAvailable ? type.disabledReason : ''"
                     >
                       <span class="selector-type-icon">
                         <List v-if="type.value === 'list'" size="16" />
@@ -192,6 +196,9 @@
                         <CheckSquare v-else-if="type.value === 'checkbox'" size="16" />
                       </span>
                       <span class="selector-type-text">{{ type.label }}</span>
+                      <span v-if="!type.isAvailable" class="disabled-indicator">
+                        <Info size="12" />
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -203,20 +210,29 @@
                 Операция
               </div>
               <div class="settings-control">
-                <select v-model="currentSelector.operation" class="form-select form-select-sm">
-                  <option value="">—</option>
-                  <option value="equals">Равно</option>
-                  <option value="contains">Содержит</option>
-                  <option value="starts_with">Начинается с</option>
-                  <option value="ends_with">Заканчивается на</option>
-                  <option value="greater_than">Больше</option>
-                  <option value="less_than">Меньше</option>
-                  <option value="between">Между</option>
-                </select>
+                <div class="operation-dropdown">
+                  <button class="operation-toggle" @click="toggleOperationDropdown" :class="{ 'open': isOperationDropdownOpen }">
+                    <span class="operation-text">
+                      {{ currentOperationLabel }}
+                    </span>
+                    <ChevronDown size="14" class="dropdown-arrow" />
+                  </button>
+                  <div v-if="isOperationDropdownOpen" class="operation-menu">
+                    <div 
+                      v-for="operation in availableOperations" 
+                      :key="operation.value"
+                      class="operation-option"
+                      :class="{ 'active': currentSelector.operation === operation.value }"
+                      @click="selectOperation(operation.value)"
+                    >
+                      <span class="operation-text">{{ operation.label }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div class="settings-row">
+            <div class="settings-row" v-if="currentSelector.selectorType === 'list'">
               <div class="settings-label">
                 <input type="checkbox" v-model="currentSelector.multipleSelection" />
                 Множественный выбор
@@ -226,17 +242,41 @@
             <div class="settings-row">
               <div class="settings-label">Значение по умолчанию</div>
               <div class="settings-control">
-                <div v-if="shouldShowDefaultValueSelector" class="default-value-selector-container">
+                <!-- Показываем DefaultValueSelector для списков -->
+                <div v-if="shouldShowDefaultValueSelector && currentSelector.selectorType === 'list'" class="default-value-selector-container">
                   <DefaultValueSelector
                     :dataset-id="Number(currentSelector.selectedDatasetId)"
                     :field-id="Number(currentSelector.selectedField)"
                     v-model="currentSelector.defaultValue"
-                    placeholder="Выберите значения по умолчанию"
+                    :multiple-selection="currentSelector.multipleSelection"
+                    :placeholder="currentSelector.required ? 'Выберите значения по умолчанию (обязательно)' : 'Выберите значения по умолчанию'"
                     @mounted="handleDefaultValueSelectorMounted"
+                    :class="{ 'is-invalid': currentSelector.required && (!currentSelector.defaultValue || currentSelector.defaultValue.length === 0) }"
                   />
+                  <div v-if="currentSelector.required && (!currentSelector.defaultValue || currentSelector.defaultValue.length === 0)" class="invalid-feedback">
+                    Это поле обязательно для заполнения
+                  </div>
                 </div>
-                <div v-else class="no-field-selected">
+                <!-- Показываем обычный инпут для поля ввода -->
+                <div v-else-if="currentSelector.selectorType === 'input'" class="default-input-container">
+                  <input 
+                    v-model="currentSelector.inputDefaultValue"
+                    type="text" 
+                    class="form-control input-sm"
+                    placeholder="Введите значение по умолчанию"
+                    :class="{ 'is-invalid': currentSelector.required && !currentSelector.inputDefaultValue }"
+                  />
+                  <div v-if="currentSelector.required && !currentSelector.inputDefaultValue" class="invalid-feedback">
+                    Это поле обязательно для заполнения
+                  </div>
+                </div>
+                <!-- Сообщение когда поле не выбрано -->
+                <div v-else-if="!shouldShowDefaultValueSelector" class="no-field-selected">
                   <span class="text-muted">Сначала выберите поле датасета</span>
+                </div>
+                <!-- Для других типов селекторов пока что показываем заглушку -->
+                <div v-else class="other-selector-type">
+                  <span class="text-muted">Настройка значений по умолчанию для данного типа селектора пока не поддерживается</span>
                 </div>
               </div>
             </div>
@@ -382,12 +422,13 @@
 
 <script setup>
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
-import { Star, GripVertical, Settings, Database, HelpCircle, ChevronDown, Link, CheckCircle, CircleAlert, List, Type, Calendar, CheckSquare } from 'lucide-vue-next';
+import { Star, GripVertical, Settings, Database, HelpCircle, ChevronDown, Link, CheckCircle, CircleAlert, List, Type, Calendar, CheckSquare, Info } from 'lucide-vue-next';
 import DatasetsTooltip from '../ChartComponents/DatasetsTooltip.vue';
 import TextEditor from './TextEditor.vue';
 import FieldTypeIcon from './FieldTypeIcon.vue';
 import DefaultValueSelector from './DefaultValueSelector.vue';
 import datasetService from '../../js/datasetService.js';
+import { getFieldTypeTooltip } from './js/fieldTypeIcons.js';
 
 const props = defineProps({
   data: {
@@ -487,6 +528,7 @@ const shouldShowDefaultValueSelector = computed(() => {
 const isDropdownOpen = ref(false);
 const isSelectorTypeDropdownOpen = ref(false);
 const isFieldDropdownOpen = ref(false);
+const isOperationDropdownOpen = ref(false);
 const isUrlValidating = ref(false);
 const urlValidationResult = ref(null);
 const showColorAccentTooltip = ref(false);
@@ -498,6 +540,76 @@ const selectorTypes = ref([
   { value: 'calendar', label: 'Календарь', icon: 'Calendar' },
   { value: 'checkbox', label: 'Чекбокс', icon: 'CheckSquare' }
 ]);
+
+const selectorTypesWithAvailability = computed(() => {
+  const fieldType = selectedFieldType.value;
+  
+  return selectorTypes.value.map(selectorType => {
+    let isAvailable = true;
+    let disabledReason = '';
+    
+    if (selectorType.value === 'calendar') {
+      isAvailable = fieldType === 'date&time';
+      if (!isAvailable) {
+        disabledReason = 'Доступно только для полей типа "Дата и время"';
+      }
+    }
+    
+    if (selectorType.value === 'checkbox') {
+      isAvailable = fieldType === 'bool';
+      if (!isAvailable) {
+        disabledReason = 'Доступно только для полей типа "Логический"';
+      }
+    }
+    
+    return {
+      ...selectorType,
+      isAvailable,
+      disabledReason
+    };
+  });
+});
+
+const availableSelectorTypes = computed(() => {
+  return selectorTypesWithAvailability.value.filter(type => type.isAvailable);
+});
+
+const allOperations = ref([
+  { value: 'equals', label: 'Равно', applicableTypes: ['string', 'integer', 'float', 'date', 'date&time', 'bool'] },
+  { value: 'in', label: 'Принадлежит множеству', applicableTypes: ['string'] },
+  { value: 'not_in', label: 'Не принадлежит множеству', applicableTypes: ['string'] },
+  { value: 'contains', label: 'Содержит', applicableTypes: ['string'] },
+  { value: 'starts_with', label: 'Начинается с', applicableTypes: ['string'] },
+  { value: 'ends_with', label: 'Заканчивается на', applicableTypes: ['string'] },
+  { value: 'greater_than', label: 'Больше', applicableTypes: ['integer', 'float', 'date', 'date&time'] },
+  { value: 'less_than', label: 'Меньше', applicableTypes: ['integer', 'float', 'date', 'date&time'] },
+  { value: 'between', label: 'Между', applicableTypes: ['integer', 'float', 'date', 'date&time'] },
+  { value: 'greater_than_or_equal', label: 'Больше или равно', applicableTypes: ['integer', 'float', 'date', 'date&time'] },
+  { value: 'less_than_or_equal', label: 'Меньше или равно', applicableTypes: ['integer', 'float', 'date', 'date&time'] },
+  { value: 'is_true', label: 'Истина', applicableTypes: ['bool'] },
+  { value: 'is_false', label: 'Ложь', applicableTypes: ['bool'] }
+]);
+
+const availableOperations = computed(() => {
+  const fieldType = selectedFieldType.value;
+  
+  if (!fieldType) {
+    return [];
+  }
+  
+  return allOperations.value.filter(operation => 
+    operation.applicableTypes.includes(fieldType)
+  );
+});
+
+const currentOperationLabel = computed(() => {
+  if (!currentSelector.value?.operation) {
+    return '—';
+  }
+  
+  const operation = allOperations.value.find(op => op.value === currentSelector.value.operation);
+  return operation ? operation.label : '—';
+});
 
 function createNewSelector() {
   return {
@@ -518,6 +630,7 @@ function createNewSelector() {
     operation: '',
     multipleSelection: false,
     defaultValue: [],
+    inputDefaultValue: '',
     required: false,
     isFavorite: false
   };
@@ -697,14 +810,34 @@ function toggleFieldDropdown() {
   isFieldDropdownOpen.value = !isFieldDropdownOpen.value;
 }
 
+function toggleOperationDropdown() {
+  isOperationDropdownOpen.value = !isOperationDropdownOpen.value;
+}
+
 function selectField(fieldId) {
   currentSelector.value.selectedField = fieldId;
   isFieldDropdownOpen.value = false;
 }
 
+function selectOperation(operationValue) {
+  currentSelector.value.operation = operationValue;
+  isOperationDropdownOpen.value = false;
+}
+
 function selectSelectorType(type) {
+  const selectorType = selectorTypesWithAvailability.value.find(t => t.value === type);
+  
+  if (!selectorType || !selectorType.isAvailable) {
+    console.warn(`Тип селектора "${type}" не доступен для поля типа "${selectedFieldType.value}"`);
+    return;
+  }
+  
   currentSelector.value.selectorType = type;
   isSelectorTypeDropdownOpen.value = false;
+  
+  if (type === 'input') {
+    currentSelector.value.multipleSelection = false;
+  }
 }
 
 function getSelectorTypeLabel(type) {
@@ -761,7 +894,7 @@ function validateUrl(url) {
 }
 
 function handleClickOutside(event) {
-  if (!isDropdownOpen.value && !isSelectorTypeDropdownOpen.value && !isFieldDropdownOpen.value) {
+  if (!isDropdownOpen.value && !isSelectorTypeDropdownOpen.value && !isFieldDropdownOpen.value && !isOperationDropdownOpen.value) {
     return;
   }
   
@@ -771,6 +904,8 @@ function handleClickOutside(event) {
   const selectorTypeMenu = event.target.closest('.selector-type-menu');
   const fieldSelectButton = event.target.closest('.field-select-button');
   const fieldDropdownMenu = event.target.closest('.field-dropdown-menu');
+  const operationToggle = event.target.closest('.operation-toggle');
+  const operationMenu = event.target.closest('.operation-menu');
    
   if (dropdownToggle || dropdownMenu) {
     return;
@@ -784,9 +919,14 @@ function handleClickOutside(event) {
     return;
   }
   
+  if (operationToggle || operationMenu) {
+    return;
+  }
+  
   isDropdownOpen.value = false;
   isSelectorTypeDropdownOpen.value = false;
   isFieldDropdownOpen.value = false;
+  isOperationDropdownOpen.value = false;
 }
 
 function handleKeyDown(event) {
@@ -799,6 +939,8 @@ function handleKeyDown(event) {
       isSelectorTypeDropdownOpen.value = false;
     } else if (isFieldDropdownOpen.value) {
       isFieldDropdownOpen.value = false;
+    } else if (isOperationDropdownOpen.value) {
+      isOperationDropdownOpen.value = false;
     }
   }
 }
@@ -848,6 +990,33 @@ watch(() => currentSelector.value, (newSelector) => {
     isUrlValidating.value = false;
   }
 }, { immediate: true });
+
+// Отслеживаем изменения типа поля и сбрасываем тип селектора если он стал недоступен
+watch(selectedFieldType, (newFieldType) => {
+  if (!newFieldType || !currentSelector.value) return;
+  
+  const currentSelectorType = currentSelector.value.selectorType;
+  const isCurrentTypeAvailable = availableSelectorTypes.value.some(type => type.value === currentSelectorType);
+  
+  // Если текущий тип селектора больше не доступен, сбрасываем на "Список"
+  if (!isCurrentTypeAvailable) {
+    currentSelector.value.selectorType = 'list';
+    currentSelector.value.multipleSelection = false;
+  }
+  
+  // Проверяем доступность текущей операции
+  const currentOperation = currentSelector.value.operation;
+  if (currentOperation) {
+    const isCurrentOperationAvailable = availableOperations.value.some(
+      op => op.value === currentOperation
+    );
+    
+    // Если текущая операция больше не доступна, сбрасываем её
+    if (!isCurrentOperationAvailable) {
+      currentSelector.value.operation = '';
+    }
+  }
+});
 
 function onCancel() {
   if (originalData.value) {
@@ -1911,6 +2080,79 @@ button.cancel:hover {
   }
 }
 
+.operation-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.operation-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 31px;
+  padding: 8px 12px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: var(--color-primary-text);
+  }
+  
+  &.open {
+    border-color: var(--color-primary-text);
+    box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb), 0.2);
+  }
+}
+
+.operation-text {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
+}
+
+.operation-toggle.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.operation-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 2px;
+}
+
+.operation-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background: var(--color-hover-background);
+  }
+  
+  &.active {
+    background: var(--color-primary-background);
+    color: white;
+  }
+}
+
 .selector-type-dropdown {
   position: relative;
   width: 100%;
@@ -1944,7 +2186,7 @@ button.cancel:hover {
 .selector-type-icon {
   display: flex;
   align-items: center;
-  color: var(--color-text-secondary);
+  color: var(--color-accent);
 }
 
 .selector-type-text {
@@ -1997,18 +2239,44 @@ button.cancel:hover {
   }
   
   .selector-type-icon {
-    color: var(--color-text-secondary);
+    color: var(--color-accent);
     transition: color 0.2s ease;
   }
   
   &:hover .selector-type-icon {
-    color: var(--color-text-primary);
+    color: var(--color-accent);
   }
   
   &.active .selector-type-icon {
     color: white;
   }
+  
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: var(--color-text-secondary);
+    
+    &:hover {
+      background: transparent;
+    }
+    
+    .selector-type-icon {
+      color: var(--color-text-secondary);
+    }
+    
+    &:hover .selector-type-icon {
+      color: var(--color-text-secondary);
+    }
+  }
 }
+
+.disabled-indicator {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+
 
 .help-icon-wrapper {
   position: relative;
@@ -2205,5 +2473,43 @@ button.cancel:hover {
 
 .default-value-selector-container {
   width: 100%;
+}
+
+.default-input-container {
+  width: 100%;
+}
+
+.default-input-container .form-control.input-sm {
+  height: 31px;
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+.is-invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.invalid-feedback {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #dc3545;
+}
+
+.other-selector-type {
+  display: flex;
+  align-items: center;
+  height: 31px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background-muted);
+  
+  .text-muted {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
 }
 </style>
