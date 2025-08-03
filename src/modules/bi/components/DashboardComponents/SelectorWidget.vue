@@ -11,111 +11,138 @@
         <span>{{ error }}</span>
       </div>
 
-      <div v-else-if="!currentSelector" class="selector-empty">
-        <Filter :size="48" />
-        <span>Селектор не выбран</span>
-      </div>
-
       <div v-else class="selector-render-container">
-        <div v-if="currentSelector.selectorType === 'list'" class="selector-list" :class="getSelectorClasses()">
-          <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
-            {{ getDisplayTitle() }}
-          </label>
-          <select class="selector-dropdown" v-model="selectedValue" @change="handleSelectionChange">
-            <option value="">{{ getDefaultValueText() || 'Выберите значение' }}</option>
-            <option v-for="option in selectorOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
-
-        <div v-else-if="currentSelector.selectorType === 'dropdown'" class="selector-dropdown-container"
-          :class="getSelectorClasses()">
-          <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
-            {{ getDisplayTitle() }}
-          </label>
-          <div class="custom-dropdown">
-            <button class="dropdown-button" @click="toggleDropdown">
-              <span>{{ selectedLabel || getDefaultValueText() || 'Выберите значение' }}</span>
-              <ChevronDown :size="16" class="dropdown-icon" />
-            </button>
-            <div v-if="isDropdownOpen" class="dropdown-menu">
-              <div v-for="option in selectorOptions" :key="option.value" class="dropdown-item"
-                :class="{ 'selected': selectedValue === option.value }" @click="selectOption(option)">
-                {{ option.label }}
+        <!-- ОТОБРАЖЕНИЕ ВСЕХ СЕЛЕКТОРОВ ПОСТРОЧНО -->
+        <div class="selectors-list-container">
+          <div v-for="(selector, index) in sortedSelectors" 
+               :key="selector.id" 
+               class="selector-row" 
+               :class="{ 'favorite': selector.isFavorite }">
+            
+            <!-- Рендер отдельного селектора -->
+            <div class="selector-list" :class="getSelectorLayoutClasses(selector)">
+              <label v-if="selector?.titlePosition !== 'hidden'" class="selector-label">
+                {{ selector?.title || 'Селектор' }}
+                <div v-if="selector?.showHint && selector?.hintText" 
+                     class="hint-icon-wrapper" 
+                     @mouseenter="showHint($event, selector)" 
+                     @mouseleave="hideHint"
+                     @click.stop>
+                  <HelpCircle :size="16" />
+                </div>
+              </label>
+              
+              <select v-if="!selector?.selectorType || selector?.selectorType === 'list'" 
+                      class="selector-dropdown" 
+                      :value="getSelectorValue(selector)" 
+                      @change="handleSelectionChange(selector, $event)"
+                      :class="{ 
+                        'with-internal-title': selector?.showInternalTitle && selector?.internalTitle,
+                        'with-color-accent': selector?.showColorAccent 
+                      }">
+                <option value="">{{ getPlaceholderText(selector) }}</option>
+                <option v-if="getSelectorOptions(selector).length === 0 && !selector?.selectedDatasetId" 
+                        value="" disabled>Настройте датасет и поле</option> -->
+                <option v-for="option in getSelectorOptions(selector)" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              
+              <!-- Дата -->
+              <input v-else-if="selector?.selectorType === 'date'" 
+                     type="date" 
+                     :value="getSelectorValue(selector)" 
+                     @change="handleSelectionChange(selector, $event)" 
+                     class="date-input"
+                     :class="{ 
+                       'with-internal-title': selector?.showInternalTitle && selector?.internalTitle,
+                       'with-color-accent': selector?.showColorAccent 
+                     }"
+                     :title="selector?.showInternalTitle && selector?.internalTitle ? selector.internalTitle : ''" />
+              
+              <!-- Диапазон -->
+              <div v-else-if="selector?.selectorType === 'range'" class="range-container">
+                <input type="range" 
+                       :value="getSelectorValue(selector)" 
+                       :min="selector?.rangeMin || 0" 
+                       :max="selector?.rangeMax || 100" 
+                       :step="selector?.rangeStep || 1"
+                       @input="handleSelectionChange(selector, $event)" 
+                       class="range-input" />
+                <span class="range-value">{{ getSelectorValue(selector) }}</span>
               </div>
+              
+              <!-- Радиокнопки -->
+              <div v-else-if="selector?.selectorType === 'radio'" class="radio-group">
+                <label v-for="option in getSelectorOptions(selector)" :key="option.value" class="radio-item">
+                  <input type="radio" 
+                         :value="option.value" 
+                         :checked="getSelectorValue(selector) === option.value"
+                         @change="handleSelectionChange(selector, $event)" />
+                  <span class="radio-label">{{ option.label }}</span>
+                </label>
+              </div>
+              
+              <!-- Чекбоксы -->
+              <div v-else-if="selector?.selectorType === 'checkbox'" class="checkbox-group">
+                <label v-for="option in getSelectorOptions(selector)" :key="option.value" class="checkbox-item">
+                  <input type="checkbox" 
+                         :value="option.value" 
+                         :checked="getSelectedValues(selector).includes(option.value)"
+                         @change="handleMultiSelectionChange(selector, $event)" />
+                  <span class="checkbox-label">{{ option.label }}</span>
+                </label>
+              </div>
+              
+              <!-- Поле ввода (input) -->
+              <input v-else-if="selector?.selectorType === 'input'" 
+                     type="text" 
+                     :value="getSelectorValue(selector)" 
+                     @input="handleInputChange(selector, $event)" 
+                     class="selector-input"
+                     :class="{ 
+                       'with-internal-title': selector?.showInternalTitle && selector?.internalTitle,
+                       'with-color-accent': selector?.showColorAccent 
+                     }"
+                     :placeholder="getPlaceholderText(selector)" />
             </div>
           </div>
         </div>
-
-        <div v-else-if="currentSelector.selectorType === 'radio'" class="selector-radio" :class="getSelectorClasses()">
-          <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
-            {{ getDisplayTitle() }}
-          </label>
-          <div class="radio-group">
-            <label v-for="option in selectorOptions" :key="option.value" class="radio-item">
-              <input type="radio" :value="option.value" v-model="selectedValue" @change="handleSelectionChange" />
-              <span class="radio-label">{{ option.label }}</span>
-            </label>
-          </div>
+        
+        <!-- Кнопки управления фильтрами - вынесены вниз -->
+        <div v-if="selectorGroupSettings?.applyButton || selectorGroupSettings?.clearButton" class="selector-actions">
+          <button v-if="selectorGroupSettings?.applyButton" 
+                  class="btn-apply" 
+                  @click="applyFilters">
+            Применить
+          </button>
+          <button v-if="selectorGroupSettings?.clearButton" 
+                  class="btn-clear" 
+                  @click="clearFilters">
+            Сбросить
+          </button>
         </div>
 
-        <div v-else-if="currentSelector.selectorType === 'checkbox'" class="selector-checkbox"
-          :class="getSelectorClasses()">
-          <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
-            {{ getDisplayTitle() }}
-          </label>
-          <div class="checkbox-group">
-            <label v-for="option in selectorOptions" :key="option.value" class="checkbox-item">
-              <input type="checkbox" :value="option.value" v-model="selectedValues"
-                @change="handleMultiSelectionChange" />
-              <span class="checkbox-label">{{ option.label }}</span>
-            </label>
-          </div>
-        </div>
-
-        <div v-else-if="currentSelector.selectorType === 'date'" class="selector-date" :class="getSelectorClasses()">
-          <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
-            {{ getDisplayTitle() }}
-          </label>
-          <input type="date" v-model="selectedValue" @change="handleSelectionChange" class="date-input" />
-        </div>
-
-        <div v-else-if="currentSelector.selectorType === 'range'" class="selector-range" :class="getSelectorClasses()">
-          <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
-            {{ getDisplayTitle() }}
-          </label>
-          <div class="range-container">
-            <input type="range" v-model="selectedValue" :min="rangeMin" :max="rangeMax" :step="rangeStep"
-              @input="handleSelectionChange" class="range-input" />
-            <span class="range-value">{{ selectedValue }}</span>
-          </div>
-        </div>
-
-        <div v-else class="selector-default" :class="getSelectorClasses()">
-          <label v-if="shouldShowTitle()" class="selector-label" :class="getTitleClasses()">
-            {{ getDisplayTitle() }}
-          </label>
-          <select class="selector-dropdown" v-model="selectedValue" @change="handleSelectionChange">
-            <option value="">{{ currentSelector.defaultValue || 'Выберите значение' }}</option>
-            <option v-for="option in selectorOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
-      </div>
-
-      <div v-else class="selector-empty">
-        <Filter :size="48" />
-        <span>Настройте селектор</span>
       </div>
     </div>
+
+    <!-- Тултип подсказки -->
+    <Teleport to="body">
+      <div v-if="hintVisible"
+           class="hint-tooltip" 
+           :style="hintTooltipStyle"
+           @mouseenter="cancelHideHint"
+           @mouseleave="hideHint">
+        <div v-html="hintContent" class="hint-content"></div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { Loader2, AlertCircle, Filter, ChevronDown } from 'lucide-vue-next';
+import { Loader2, AlertCircle, Filter, ChevronDown, HelpCircle } from 'lucide-vue-next';
+import datasetService from '../../js/datasetService.js';
 
 const props = defineProps({
   selectorsList: {
@@ -129,10 +156,18 @@ const props = defineProps({
   autoHeight: {
     type: Boolean,
     default: false
+  },
+  selectorGroupSettings: {
+    type: Object,
+    default: () => ({
+      applyButton: false,
+      clearButton: false,
+      autoHeight: false
+    })
   }
 });
 
-const emit = defineEmits(['selection-change', 'content-resized']);
+const emit = defineEmits(['selection-change', 'content-resized', 'apply-filters', 'clear-filters']);
 
 const isLoading = ref(false);
 const error = ref('');
@@ -140,26 +175,73 @@ const isDropdownOpen = ref(false);
 const selectedValue = ref('');
 const selectedValues = ref([]);
 const selectorWidgetRef = ref(null);
+const selectorValues = ref({});
+const selectorOptionsMap = ref({});
+const selectorLoadingStates = ref({});
 const calculatedHeight = ref(null);
 
+const hintVisible = ref(false);
+const hintContent = ref('');
+const hintTooltipStyle = ref({});
+let hideHintTimer = null;
+
 const currentSelector = computed(() => {
-  return props.selectorsList[props.activeSelectorIndex] || null;
+  const selector = props.selectorsList?.[props.activeSelectorIndex] || null;
+  
+  if (selector) {
+    try {
+      const reactiveSelector = JSON.parse(JSON.stringify(selector));
+      return reactiveSelector;
+    } catch (e) {
+      console.error('Failed to make reactive:', e);
+      return selector;
+    }
+  }
+  
+  return selector;
 });
 
 const effectiveAutoHeight = computed(() => {
-  return props.autoHeight || false;
+  return props.autoHeight || props.selectorGroupSettings?.autoHeight || false;
 });
 
-const selectorOptions = computed(() => {
-  return [
-    { value: 'option1', label: 'Опция 1' },
-    { value: 'option2', label: 'Опция 2' },
-    { value: 'option3', label: 'Опция 3' }
-  ];
+const sortedSelectors = computed(() => {
+  if (!props.selectorsList || props.selectorsList.length === 0) return [];
+  
+  const sorted = [...props.selectorsList].sort((a, b) => {
+    if (a.isFavorite && !b.isFavorite) return -1;
+    if (!a.isFavorite && b.isFavorite) return 1;
+    
+    return (a.id || 0) - (b.id || 0);
+  });
+  
+  sorted.forEach(selector => {
+    if (!selectorValues.value.hasOwnProperty(selector.id)) {
+      if (selector.selectorType === 'checkbox') {
+        selectorValues.value[selector.id] = Array.isArray(selector.defaultValue) ? selector.defaultValue : [];
+      } else if (selector.selectorType === 'input') {
+        selectorValues.value[selector.id] = '';
+      } else {
+        selectorValues.value[selector.id] = selector.defaultValue || '';
+      }
+    }
+    
+    if (!selectorOptionsMap.value.hasOwnProperty(selector.id) && 
+        selector.selectedDatasetId && 
+        selector.selectedField) {
+      loadSelectorOptions(selector);
+    }
+  });
+  
+  return sorted;
 });
+
+
 
 const selectedLabel = computed(() => {
-  const option = selectorOptions.value.find(opt => opt.value === selectedValue.value);
+  if (!currentSelector.value) return '';
+  const options = getSelectorOptions(currentSelector.value);
+  const option = options.find(opt => opt.value === selectedValue.value);
   return option ? option.label : '';
 });
 
@@ -180,10 +262,61 @@ function shouldShowTitle() {
 }
 
 function getDisplayTitle() {
-  if (currentSelector.value?.showInternalTitle && currentSelector.value?.internalTitle) {
-    return currentSelector.value.internalTitle;
-  }
   return currentSelector.value?.title || 'Селектор';
+}
+
+function getPlaceholderText(selector = null) {
+  const selectorData = selector || currentSelector.value;
+  if (selectorData?.showInternalTitle && selectorData?.internalTitle) {
+    return selectorData.internalTitle;
+  }
+  return getDefaultValueText(selectorData) || 'Выберите значение';
+}
+
+function getSelectorOptions(selector) {
+  if (!selector || !selector.id) return [];
+  return selectorOptionsMap.value[selector.id] || [];
+}
+
+async function loadSelectorOptions(selector) {
+  if (!selector || !selector.selectedDatasetId || !selector.selectedField) {
+    selectorOptionsMap.value[selector.id] = [];
+    return;
+  }
+  
+  selectorLoadingStates.value[selector.id] = true;
+  
+  try {
+    const response = await datasetService.getFieldValues(selector.selectedDatasetId, selector.selectedField);
+    const options = response.data ? response.data.map(value => ({
+      value: value,
+      label: value
+    })) : [];
+    
+    selectorOptionsMap.value[selector.id] = options;
+  } catch (error) {
+    console.error('Ошибка загрузки опций селектора:', error);
+    selectorOptionsMap.value[selector.id] = [];
+  } finally {
+    selectorLoadingStates.value[selector.id] = false;
+  }
+}
+
+function getSelectorValue(selector) {
+  return selectorValues.value[selector.id] || '';
+}
+
+function setSelectorValue(selector, value) {
+  selectorValues.value[selector.id] = value;
+}
+
+function getSelectedValues(selector) {
+  const value = selectorValues.value[selector.id];
+  return Array.isArray(value) ? value : [];
+}
+
+function setSelectedValues(selector, values) {
+  selectorValues.value[selector.id] = values;
 }
 
 function getTitleClasses() {
@@ -193,6 +326,23 @@ function getTitleClasses() {
   } else if (currentSelector.value?.titlePosition === 'top') {
     classes.push('title-top');
   }
+  return classes;
+}
+
+function getSelectorLayoutClasses(selector = null) {
+  const selectorData = selector || currentSelector.value;
+  const classes = [];
+  
+  if (selectorData?.titlePosition === 'left') {
+    classes.push('title-position-left');
+  } else if (selectorData?.titlePosition === 'top') {
+    classes.push('title-position-top');
+  }
+  
+  if (selectorData?.showColorAccent) {
+    classes.push('with-color-accent');
+  }
+  
   return classes;
 }
 
@@ -209,20 +359,52 @@ function getSelectorClasses() {
   return classes;
 }
 
-function getDefaultValueText() {
-  if (!currentSelector.value?.defaultValue) return '';
+function getDefaultValueText(selector = null) {
+  const selectorData = selector || currentSelector.value;
+  if (!selectorData?.defaultValue) return '';
 
-  // Handle both old string format and new array format
-  if (Array.isArray(currentSelector.value.defaultValue)) {
-    if (currentSelector.value.defaultValue.length === 0) return '';
-    if (currentSelector.value.defaultValue.length === 1) {
-      return currentSelector.value.defaultValue[0];
+  if (Array.isArray(selectorData.defaultValue)) {
+    if (selectorData.defaultValue.length === 0) return '';
+    if (selectorData.defaultValue.length === 1) {
+      return selectorData.defaultValue[0];
     }
-    return currentSelector.value.defaultValue.join(', ');
+    return selectorData.defaultValue.join(', ');
   }
 
-  // Fallback for old string format
-  return currentSelector.value.defaultValue || '';
+  return selectorData.defaultValue || '';
+}
+
+function showHint(event, selector = null) {
+  const selectorData = selector || currentSelector.value;
+  if (!selectorData?.hintText) return;
+  
+  const rect = event.target.getBoundingClientRect();
+  hintContent.value = selectorData.hintText;
+  hintTooltipStyle.value = {
+    position: 'fixed',
+    top: `${rect.bottom + 8}px`,
+    left: `${rect.left}px`,
+    zIndex: '10000'
+  };
+  hintVisible.value = true;
+  
+  if (hideHintTimer) {
+    clearTimeout(hideHintTimer);
+    hideHintTimer = null;
+  }
+}
+
+function hideHint() {
+  hideHintTimer = setTimeout(() => {
+    hintVisible.value = false;
+  }, 100);
+}
+
+function cancelHideHint() {
+  if (hideHintTimer) {
+    clearTimeout(hideHintTimer);
+    hideHintTimer = null;
+  }
 }
 
 function toggleDropdown() {
@@ -235,21 +417,111 @@ function selectOption(option) {
   handleSelectionChange();
 }
 
-function handleSelectionChange() {
-  emit('selection-change', {
-    selectorId: currentSelector.value?.id,
-    value: selectedValue.value,
-    type: 'single'
-  });
+function handleSelectionChange(selector = null, event = null) {
+  if (selector && event) {
+    const newValue = event.target.value;
+    setSelectorValue(selector, newValue);
+    
+    emit('selection-change', {
+      selectorId: selector.id,
+      value: newValue,
+      type: 'single'
+    });
+  } else {
+    emit('selection-change', {
+      selectorId: currentSelector.value?.id,
+      value: selectedValue.value,
+      type: 'single'
+    });
+  }
 }
 
-function handleMultiSelectionChange() {
+function handleMultiSelectionChange(selector, event) {
+  if (!selector || !event) {
+    emit('selection-change', {
+      selectorId: currentSelector.value?.id,
+      value: selectedValues.value,
+      type: 'multiple'
+    });
+    return;
+  }
+  
+  const newValue = event.target.value;
+  const isChecked = event.target.checked;
+  const currentValues = getSelectedValues(selector);
+  
+  let updatedValues;
+  if (isChecked) {
+    updatedValues = [...currentValues, newValue];
+  } else {
+    updatedValues = currentValues.filter(val => val !== newValue);
+  }
+  
+  setSelectedValues(selector, updatedValues);
+  
   emit('selection-change', {
-    selectorId: currentSelector.value?.id,
-    value: selectedValues.value,
+    selectorId: selector.id,
+    value: updatedValues,
     type: 'multiple'
   });
 }
+
+function handleInputChange(selector, event) {
+  const newValue = event.target.value;
+  setSelectorValue(selector, newValue);
+  
+  emit('selection-change', {
+    selectorId: selector.id,
+    value: newValue,
+    type: 'input'
+  });
+}
+
+function applyFilters() {
+  emit('apply-filters', {
+    selectorId: currentSelector.value?.id,
+    value: selectedValue.value
+  });
+}
+
+function clearFilters() {
+  selectedValue.value = '';
+  selectedValues.value = [];
+  emit('clear-filters', {
+    selectorId: currentSelector.value?.id
+  });
+}
+
+watch(() => props.selectorsList, (newList, oldList) => {
+  if (!newList) return;
+  
+  newList.forEach(selector => {
+    const oldSelector = oldList?.find(old => old.id === selector.id);
+    
+    if (!oldSelector || 
+        oldSelector.selectedDatasetId !== selector.selectedDatasetId ||
+        oldSelector.selectedField !== selector.selectedField) {
+      if (selector.selectedDatasetId && selector.selectedField) {
+        loadSelectorOptions(selector);
+      }
+    }
+    
+    if (oldSelector && oldSelector.selectorType !== selector.selectorType) {
+      if (selector.selectorType === 'checkbox') {
+        selectorValues.value[selector.id] = [];
+      } else {
+        selectorValues.value[selector.id] = '';
+      }
+    }
+    
+    if (selector.selectorType === 'input' && selectorValues.value[selector.id]) {
+      const currentValue = selectorValues.value[selector.id];
+      if (typeof currentValue === 'string' && /^[\d.]+$/.test(currentValue.trim())) {
+        selectorValues.value[selector.id] = '';
+      }
+    }
+  });
+}, { deep: true });
 
 function calculateWidgetHeight() {
   if (!effectiveAutoHeight.value || !selectorWidgetRef.value) return;
@@ -260,26 +532,24 @@ function calculateWidgetHeight() {
       element.style.height = 'auto';
 
       nextTick(() => {
-        const rect = element.getBoundingClientRect();
-        let newHeight = rect.height;
+        const selectorContent = element.querySelector('.selector-content');
+        if (selectorContent) {
+          const contentHeight = selectorContent.scrollHeight;
+          
+          const computedStyle = window.getComputedStyle(element);
+          const paddingTop = parseFloat(computedStyle.paddingTop);
+          const paddingBottom = parseFloat(computedStyle.paddingBottom);
+          const borderTop = parseFloat(computedStyle.borderTopWidth);
+          const borderBottom = parseFloat(computedStyle.borderBottomWidth);
+          
+          let newHeight = contentHeight + paddingTop + paddingBottom + borderTop + borderBottom;
+          
+          newHeight = Math.max(newHeight, 50);
 
-        const children = element.children;
-        let totalChildrenHeight = 0;
-
-        for (let child of children) {
-          const childRect = child.getBoundingClientRect();
-          totalChildrenHeight += childRect.height;
-
-          const computedStyle = window.getComputedStyle(child);
-          totalChildrenHeight += parseFloat(computedStyle.marginTop) + parseFloat(computedStyle.marginBottom);
-        }
-
-        newHeight = Math.max(newHeight, totalChildrenHeight);
-        newHeight = Math.max(newHeight, 100);
-
-        if (calculatedHeight.value !== newHeight) {
-          calculatedHeight.value = newHeight;
-          emit('content-resized', newHeight);
+          if (calculatedHeight.value !== newHeight) {
+            calculatedHeight.value = newHeight;
+            emit('content-resized', newHeight);
+          }
         }
       });
     }
@@ -308,6 +578,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+  if (hideHintTimer) {
+    clearTimeout(hideHintTimer);
+  }
 });
 
 watch(() => props.selectorsList, () => {
@@ -317,6 +590,22 @@ watch(() => props.selectorsList, () => {
     });
   }
 }, { deep: true });
+
+watch(() => currentSelector.value, () => {
+  if (effectiveAutoHeight.value) {
+    nextTick(() => {
+      calculateWidgetHeight();
+    });
+  }
+}, { deep: true });
+
+watch(() => props.selectorGroupSettings?.autoHeight, (newValue) => {
+  if (newValue) {
+    nextTick(() => {
+      calculateWidgetHeight();
+    });
+  }
+});
 
 watch(() => props.activeSelectorIndex, () => {
   if (effectiveAutoHeight.value) {
@@ -337,13 +626,28 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--color-background);
   border-radius: 8px;
-  padding: 16px;
+  padding: 3px;
   box-sizing: border-box;
 
   &.auto-height {
-    height: auto;
+    height: auto !important;
+    min-height: 50px;
+    
+    .selector-content {
+      height: auto !important;
+      min-height: auto;
+    }
+    
+    .selector-render-container {
+      height: auto !important;
+      min-height: auto;
+    }
+    
+    .selector-list {
+      height: auto !important;
+      min-height: auto;
+    }
   }
 }
 
@@ -404,6 +708,8 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 8px;
+  height: 100%;
+  width: 100%;
 }
 
 .selector-label {
@@ -411,6 +717,9 @@ defineExpose({
   font-weight: 500;
   color: var(--color-text-primary);
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 
   &.title-left {
     margin-bottom: 0;
@@ -422,6 +731,19 @@ defineExpose({
   }
 }
 
+.hint-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+  
+  &:hover {
+    color: var(--color-accent);
+  }
+}
+
 .selector-list,
 .selector-dropdown-container,
 .selector-radio,
@@ -429,8 +751,14 @@ defineExpose({
 .selector-date,
 .selector-range,
 .selector-default {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  width: 100%;
   &.title-position-left {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 8px;
 
@@ -448,11 +776,43 @@ defineExpose({
       flex: 1;
     }
   }
+  
+  &.title-position-top {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    
+    .selector-label {
+      margin-bottom: 4px;
+    }
+  }
 
   &.with-color-accent {
-    border: 2px solid var(--color-primary);
+    border: 2px solid var(--color-accent);
     border-radius: 6px;
     padding: 8px;
+    background: rgba(var(--color-accent-rgb), 0.05);
+    
+    .selector-dropdown,
+    .dropdown-button,
+    .date-input {
+      border-color: var(--color-accent);
+      background: rgba(var(--color-accent-rgb), 0.1);
+      
+      &:focus {
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb), 0.2);
+      }
+      
+      &.with-internal-title {
+        background: rgba(var(--color-accent-rgb), 0.15);
+        
+        &::placeholder {
+          color: var(--color-accent);
+          font-weight: 500;
+        }
+      }
+    }
   }
 }
 
@@ -468,6 +828,11 @@ defineExpose({
   &:focus {
     outline: none;
     border-color: var(--color-primary);
+  }
+  
+  &.with-color-accent {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.05);
   }
 }
 
@@ -620,4 +985,160 @@ defineExpose({
   min-width: 40px;
   text-align: center;
 }
+
+.hint-tooltip {
+  position: fixed;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: normal;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-border);
+  max-width: 250px;
+  min-width: 150px;
+  width: max-content;
+  word-wrap: break-word;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 20px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid var(--color-background);
+    filter: drop-shadow(0 -1px 0 var(--color-border));
+  }
+}
+
+.hint-content {
+  line-height: 1.4;
+}
+
+.selector-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: flex-start;
+  width: 100%;
+  
+  .btn-apply,
+  .btn-clear {
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+  
+  .btn-apply {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    
+    &:hover {
+      background: var(--color-primary-hover, var(--color-primary));
+      filter: brightness(1.1);
+    }
+    
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+  
+  .btn-clear {
+    background: var(--color-background);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+    
+    &:hover {
+      background: var(--color-hover-background);
+      border-color: var(--color-primary);
+      color: var(--color-text-primary);
+    }
+    
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+}
+
+.selectors-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+}
+
+.selector-row {
+  width: 100%;
+  
+  &.favorite {
+    order: -1;
+    
+    .selector-label {
+      font-weight: 600;
+      color: var(--color-primary);
+      
+      &::before {
+        content: '★ ';
+        color: var(--color-primary);
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+.selector-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.2);
+  }
+
+  &.with-color-accent {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.05);
+  }
+
+  &.with-internal-title {
+    font-style: italic;
+    
+    &:not(:focus) {
+      background: var(--color-background-muted);
+    }
+  }
+}
+
+.selector-dropdown.with-internal-title,
+.dropdown-button.with-internal-title,
+.date-input.with-internal-title {
+  font-style: italic;
+  
+  &:not(:focus) {
+    background: var(--color-background-muted);
+  }
+}
+
+
+
+
 </style>

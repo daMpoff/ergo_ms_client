@@ -1001,6 +1001,9 @@ function selectDataset(dataset) {
   currentSelector.value.sourceType = 'dataset';
   currentSelector.value.datasetUrl = '';
   currentSelector.value.selectedField = '';
+  
+  sourceInputValue.value = dataset.name;
+  
   urlValidationResult.value = null;
   isUrlValidating.value = false;
   isDropdownOpen.value = false;
@@ -1136,6 +1139,11 @@ function validateUrl(url) {
       if (result.isValid) {
         currentSelector.value.selectedDatasetId = result.datasetId;
         currentSelector.value.selectedDataset = result.datasetName;
+        
+        if (currentSelector.value.sourceType === 'url') {
+          sourceInputValue.value = currentSelector.value.datasetUrl;
+        }
+        
         loadAvailableFields();
       }
       

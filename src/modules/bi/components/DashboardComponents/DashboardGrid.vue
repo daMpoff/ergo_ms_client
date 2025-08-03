@@ -61,9 +61,12 @@
             <SelectorWidget 
               :selectors-list="item.selectorsList || []"
               :active-selector-index="item.activeSelectorIndex || 0"
-              :auto-height="item.autoHeight || false"
+              :auto-height="item.autoHeight || item.selectorGroupSettings?.autoHeight || false"
+              :selector-group-settings="item.selectorGroupSettings || {}"
               @selection-change="handleSelectorSelectionChange(item, $event)"
               @content-resized="handleSelectorResize(item, $event)"
+              @apply-filters="handleSelectorApplyFilters(item, $event)"
+              @clear-filters="handleSelectorClearFilters(item, $event)"
             />
           </div>
           <div v-else class="item-preview">
@@ -269,7 +272,7 @@ const getItemClass = (item) => {
     'item-selected': item.selected,
     'item-dragging': draggedItem.value && draggedItem.value.id === item.id,
     'item-hidden-drag': isDraggingExisting.value && draggedItem.value && draggedItem.value.id === item.id,
-    'item-auto-height': item.autoHeight
+    'item-auto-height': item.autoHeight || item.selectorGroupSettings?.autoHeight
   }
 }
 
@@ -279,7 +282,7 @@ const getItemStyle = (item) => {
     left: `${item.x || 0}px`,
     top: `${item.y || 0}px`,
     width: `${item.width || ELEMENT_SIZES[item.type]?.width || 200}px`,
-    height: item.autoHeight ? 'auto' : `${item.height || ELEMENT_SIZES[item.type]?.height || 150}px`
+    height: (item.autoHeight || item.selectorGroupSettings?.autoHeight) ? 'auto' : `${item.height || ELEMENT_SIZES[item.type]?.height || 150}px`
   };
 
   if (item.background) {
@@ -426,18 +429,28 @@ const updateActiveSelector = (item, newIndex) => {
 }
 
 const handleSelectorSelectionChange = (item, selectionData) => {
-  // Обработка изменения выбора в селекторе
   console.log('Selector selection changed:', selectionData);
-  // Здесь можно добавить логику для обновления других виджетов
 }
 
 const handleSelectorResize = (item, newHeight) => {
-  if (item.autoHeight) {
+  const isAutoHeight = item.autoHeight || item.selectorGroupSettings?.autoHeight;
+  
+  if (isAutoHeight) {
+    item.height = newHeight;
     autoHeightItems.value.set(item.id, newHeight);
+    
     nextTick(() => {
       recalculatePositions();
     });
   }
+}
+
+const handleSelectorApplyFilters = (item, event) => {
+  console.log('Apply filters for selector:', item.id);
+}
+
+const handleSelectorClearFilters = (item, event) => {
+  console.log('Clear filters for selector:', item.id);
 }
 
 const calculateDropPosition = (mouseX, mouseY, elementType) => {
@@ -1019,6 +1032,37 @@ const handleDrop = (event) => {
         newItem.activeChartIndex = 0
       }
       
+      if (itemType === 'Селектор') {
+        newItem.selectorsList = [
+          {
+            id: 1,
+            title: 'Селектор 1',
+            titlePosition: 'left',
+            showInternalTitle: true,
+            internalTitle: 'Выберите значение из списка',
+            showColorAccent: true,
+            showHint: false,
+            hintText: '',
+            sourceType: 'dataset',
+            selectedDataset: '',
+            selectedDatasetId: null,
+            selectedField: '',
+            selectorType: 'list',
+            operation: '',
+            multipleSelection: false,
+            defaultValue: [],
+            required: false,
+            isFavorite: true
+          }
+        ]
+        newItem.activeSelectorIndex = 0
+        newItem.selectorGroupSettings = {
+          applyButton: true,
+          clearButton: true,
+          autoHeight: false
+        }
+      }
+      
       localItems.value.push(newItem)
       emit('update:items', localItems.value)
     }
@@ -1545,6 +1589,11 @@ onUnmounted(() => {
   .item-content {
     height: auto !important;
     min-height: auto;
+  }
+  
+  .selector-widget-container {
+    height: auto !important;
+    overflow: visible;
   }
 }
 

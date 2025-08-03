@@ -78,6 +78,7 @@
         <div v-if="isSelectorSettingsVisible" class="page-window-overlay" @click="closeSelectorSettings">
           <div class="page-window selector-settings-window" @click.stop>
             <SelectorSettings 
+              :key="selectorSettingsData?.id || 'new'"
               :data="selectorSettingsData" 
               @close="closeSelectorSettings"
               @save="saveSelectorSettings" 
@@ -359,25 +360,14 @@ const saveSelectorSettings = (updatedSettings) => {
     
     const newItems = [...currentPageItems.value];
     newItems[itemIndex] = {
-      ...updatedSettings,
-      title: updatedSettings.title,
-      titlePosition: updatedSettings.titlePosition,
-      showInternalTitle: updatedSettings.showInternalTitle,
-      internalTitle: updatedSettings.internalTitle,
-      showColorAccent: updatedSettings.showColorAccent,
-      showHint: updatedSettings.showHint,
-      hintText: updatedSettings.hintText,
-      sourceType: updatedSettings.sourceType,
-      selectedDataset: updatedSettings.selectedDataset,
-      selectedDatasetId: updatedSettings.selectedDatasetId,
-      selectedField: updatedSettings.selectedField,
-      selectorType: updatedSettings.selectorType,
-      operation: updatedSettings.operation,
-      multipleSelection: updatedSettings.multipleSelection,
-      defaultValue: updatedSettings.defaultValue,
-      required: updatedSettings.required,
+      ...newItems[itemIndex],
       selectorsList: updatedSettings.selectorsList,
-      activeSelectorIndex: updatedSettings.activeSelectorIndex || 0
+      activeSelectorIndex: updatedSettings.activeSelectorIndex || 0,
+      selectorGroupSettings: updatedSettings.selectorGroupSettings || {
+        applyButton: false,
+        clearButton: false,
+        autoHeight: false
+      }
     };
     updateCurrentPageItems(newItems);
     
