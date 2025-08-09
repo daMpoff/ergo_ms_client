@@ -24,10 +24,15 @@
               <template v-else>
                 <Table class="icon" />
               </template>
-              <template v-else>
-                <Table class="icon" />
-              </template>
               <span class="dataset-name">{{ getValue(row, col.key) ?? '—' }}</span>
+              <!-- Предупреждение для подключений с отсутствующими или проблемными файлами -->
+              <TriangleAlert 
+                v-if="shouldShowFileWarning(row)" 
+                class="alert-icon" 
+                :size="16" 
+                @mouseenter="onIconHover($event, getFileWarningTooltip(row), 'error-tooltip')"
+                @mouseleave="hideTooltip"
+              />
             </template>
 
             <!-- Дата -->
@@ -67,7 +72,7 @@
     </table>
 
     <!-- Обычный тултип -->
-    <div v-if="showTooltip" class="tooltip-fixed" :style="tooltipStyle">{{ tooltipText }}</div>
+    <div v-if="showTooltip" class="tooltip-fixed" :class="tooltipClass" :style="tooltipStyle">{{ tooltipText }}</div>
 
     <!-- Меню "Еще" -->
     <div v-if="showMenu" class="menu-dropdown" :style="menuPosition" @mouseleave="closeMenu">
@@ -129,7 +134,7 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { Table, Star, MoreHorizontal, Trash2, CaseSensitive, Link, ChartPie, Database } from 'lucide-vue-next'
+import { Table, Star, MoreHorizontal, Trash2, CaseSensitive, Link, ChartPie, Database, TriangleAlert } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { apiClient } from '@/js/api/manager.js'
 import ClickHouseIcon from '@/assets/bi/icons/clickhouse.svg'
@@ -166,6 +171,9 @@ let fadeTimeout = null
 let fadeRaf = null
 
 const router = useRouter()
+
+// Состояние для хранения информации о файлах подключений
+const connectionFilesStatus = ref(new Map())
 
 function handleRowClick(row) {
   if (props.currentPage === 'datasets') {
@@ -237,6 +245,9 @@ function isFavorite(id) {
 onMounted(loadFavorites)
 watch(favorites, saveFavorites, { deep: true })
 
+// Загружаем статус файлов при изменении списка пользователей
+watch(() => props.users, loadAllConnectionFilesStatus, { immediate: true })
+
 function getValue(row, key) {
   return key.split('.').reduce((acc, part) => acc?.[part], row)
 }
@@ -244,12 +255,14 @@ function getValue(row, key) {
 // Tooltip
 const tooltipText = ref('')
 const tooltipStyle = ref({ top: '0px', left: '0px' })
+const tooltipClass = ref('')
 const showTooltip = ref(false)
 
 const emit = defineEmits(['delete-row'])
 
-function onIconHover(event, text) {
+function onIconHover(event, text, cssClass = '') {
   tooltipText.value = text
+  tooltipClass.value = cssClass
   showTooltip.value = true
   const rect = event.target.getBoundingClientRect()
   tooltipStyle.value = {
@@ -260,6 +273,7 @@ function onIconHover(event, text) {
 
 function hideTooltip() {
   showTooltip.value = false
+  tooltipClass.value = ''
 }
 
 function getIconComponent(row) {
@@ -459,6 +473,110 @@ async function copyLink(row) {
   }
   closeMenu()
 }
+
+// Функция для проверки необходимости показа предупреждения о файлах
+function shouldShowFileWarning(row) {
+  // Показываем предупреждение только для подключений
+  if (props.currentPage !== 'connections') return false
+  
+  const type = (row.connector_type_display || row.connector_type || '').toLowerCase().trim()
+  
+  // Проверяем, является ли это файловым подключением
+  const isFileConnection = type === 'file' || 
+                           type === 'files' || 
+                           type === 'файл' || 
+                           type === 'файлы' ||
+                           type.includes('file') || 
+                           type.includes('файл')
+  
+  if (!isFileConnection) return false
+  
+  // Проверяем статус файлов для данного подключения
+  const filesStatus = connectionFilesStatus.value.get(row.id)
+  
+  // Если статус еще не загружен, не показываем предупреждение
+  if (!filesStatus) return false
+  
+  // Показываем предупреждение если есть отсутствующие файлы или проблемные файлы
+  return filesStatus.hasMissingFiles || filesStatus.hasProblematicFiles
+}
+
+// Функция для получения текста тултипа для предупреждения о файлах
+function getFileWarningTooltip(row) {
+  const filesStatus = connectionFilesStatus.value.get(row.id)
+  
+  if (!filesStatus) return 'В подключении отсутствуют файлы'
+  
+  // Если есть проблемные файлы, показываем соответствующий текст
+  if (filesStatus.hasProblematicFiles) {
+    return 'Возникла проблема с одним из файлов в подключении'
+  }
+  
+  // Если есть только отсутствующие файлы
+  if (filesStatus.hasMissingFiles) {
+    return 'В подключении отсутствуют файлы'
+  }
+  
+  // Fallback
+  return 'В подключении отсутствуют файлы'
+}
+
+// Функция для загрузки статуса файлов подключения
+async function loadConnectionFilesStatus(connectionId) {
+  try {
+    const res = await apiClient.get(`bi_analysis/bi_datasets/connection/${connectionId}/files/`)
+    
+    if (res.success && res.data) {
+      const files = Array.isArray(res.data) ? res.data : []
+      
+      // Проверяем отсутствующие файлы (когда в подключении вообще нет файлов)
+      const hasMissingFiles = files.length === 0
+      
+      // Проверяем проблемные файлы (файлы с ошибками или отсутствующими данными)
+      const hasProblematicFiles = files.some(file => {
+        return file.missing === true || 
+               file.exists === false || 
+               file.file_not_found === true ||
+               file.status === 'missing' ||
+               file.status === 'not_found' ||
+               file.status === 'error' ||
+               !file.file_path ||
+               file.error
+      })
+      
+      connectionFilesStatus.value.set(connectionId, {
+        hasMissingFiles,
+        hasProblematicFiles,
+        filesCount: files.length
+      })
+    }
+  } catch (error) {
+    console.warn(`Не удалось загрузить статус файлов для подключения ${connectionId}:`, error)
+    // В случае ошибки не показываем предупреждение
+  }
+}
+
+// Функция для загрузки статуса файлов всех файловых подключений
+async function loadAllConnectionFilesStatus() {
+  if (props.currentPage !== 'connections') return
+  
+  const fileConnections = props.users.filter(row => {
+    const type = (row.connector_type_display || row.connector_type || '').toLowerCase().trim()
+    return type === 'file' || 
+           type === 'files' || 
+           type === 'файл' || 
+           type === 'файлы' ||
+           type.includes('file') || 
+           type.includes('файл')
+  })
+  
+  // Загружаем статус файлов для всех файловых подключений параллельно
+  const promises = fileConnections.map(connection => 
+    loadConnectionFilesStatus(connection.id)
+  )
+  
+  await Promise.allSettled(promises)
+}
 </script>
 
 <style scoped lang="scss">
@@ -529,8 +647,24 @@ async function copyLink(row) {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
+.tooltip-fixed.error-tooltip {
+  border: 1px solid var(--color-accent);
+}
+
 .dataset-name {
   vertical-align: middle;
+}
+
+.alert-icon {
+  color: var(--color-accent);
+  cursor: pointer;
+  margin-left: 8px;
+  vertical-align: middle;
+  transition: color 0.2s ease;
+}
+
+.alert-icon:hover {
+  color: #ff5252;
 }
 
 .no-data {

@@ -33,6 +33,7 @@ export function useTooltip() {
     tooltipStyle,
     showTooltip,
     tooltipClass,
+    tooltipTimeout,
     onIconHover,
     hideTooltipWithDelay
   }

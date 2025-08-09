@@ -16,7 +16,7 @@
                     <button class="btn btn-outline-danger" @click="triggerFileUpload">
                         <Upload class="icon_upload" />Загрузить файл
                     </button>
-                    <input type="file" ref="fileInput" accept=".csv,.xlsx,.txt" multiple @change="handleFileUpload"
+                    <input type="file" ref="fileInput" accept=".csv,.xlsx,.txt" multiple @change="handleFileUploadWithLoading"
                         style="display: none" />
                     <input type="file" ref="replaceInput" accept=".csv,.xlsx,.txt" style="display: none" @change="handleFileReplace" />
                 </div>
@@ -51,23 +51,82 @@
                     @mouseenter="onAlertHover"
                     @mouseleave="hideTooltipWithDelay"
                 />
+                <TriangleAlert 
+                    v-else-if="hasNoFiles" 
+                    class="alert-icon" 
+                    :size="20" 
+                    @mouseenter="onNoFilesHover"
+                    @mouseleave="hideTooltipWithDelay"
+                />
             </div>
             <div class="file_area_header_buttons">
-                <button type="button" class="btn btn-secondary">Создать датасет</button>
+                <div 
+                    class="button-wrapper"
+                    @mouseenter="isCreateDatasetDisabled ? onDisabledButtonHover($event) : null"
+                    @mouseleave="isCreateDatasetDisabled ? hideTooltipWithDelay() : null"
+                >
+                    <button 
+                        type="button" 
+                        class="btn btn-secondary" 
+                        :class="{ 'disabled-button': isCreateDatasetDisabled }"
+                        @click="handleCreateDatasetClick"
+                    >Создать датасет</button>
+                </div>
                 <button type="button" v-if="showSaveChangesButton" class="btn btn-success" @click="saveChanges">Сохранить изменения</button>
             </div>
         </header>
         <main class="file_area">
             <!-- Анимация загрузки при замене файла -->
-            <div v-if="isReplacing" class="replacing-overlay">
-                <div class="replacing-content">
+            <div v-if="isReplacing" class="loading-overlay">
+                <div class="loading-content">
                     <div class="spinner"></div>
                     <h3>Заменяем файл...</h3>
                     <p>Пожалуйста, подождите</p>
                 </div>
             </div>
             
-            <FilePreviewPanel v-if="selectedFile && !isReplacing" :file="selectedFile" />
+            <!-- Анимация загрузки при загрузке файла -->
+            <div v-else-if="isUploading" class="loading-overlay">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <h3>Загружаем файл...</h3>
+                    <p>Пожалуйста, подождите</p>
+                </div>
+            </div>
+            
+            <!-- Анимация загрузки содержимого файла -->
+            <div v-else-if="isLoadingContent" class="loading-overlay">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <h3>Загружаем содержимое файла...</h3>
+                    <p>Пожалуйста, подождите</p>
+                </div>
+            </div>
+            
+            <!-- Плейсхолдер для отсутствующих файлов -->
+            <div v-else-if="hasNoFiles" class="empty-placeholder">
+                <EmptyImage class="empty-image" />
+                <div class="empty-text">
+                    <h3>Отсутствуют файлы в подключении</h3>
+                    <p>Загрузите до 10 файлов в одно подключение</p>
+                </div>
+            </div>
+            
+            <!-- Плейсхолдер для ошибки загрузки файла - должен быть перед FilePreviewPanel -->
+            <div v-else-if="hasSelectedFileError" class="error-placeholder">
+                <div class="error-content">
+                    <h3>Упс... Произошла ошибка</h3>
+                    <p>Мы не смогли загрузить содержимое файла, код ошибки: {{ 
+                        fileError?.code || 
+                        selectedFile?.error?.code || 
+                        selectedFile?.status || 
+                        'неизвестен' 
+                    }}</p>
+                </div>
+            </div>
+            
+            <!-- Отображение выбранного файла только если нет ошибки -->
+            <FilePreviewPanel v-else-if="selectedFile && !hasSelectedFileError" :file="selectedFile" :isLoading="isLoadingContent" />
         </main>
     </div>
 
@@ -93,6 +152,7 @@ import { apiClient } from '@/js/api/manager'
 import FileItem from './components/FileItem.vue'
 import FilePreviewPanel from './components/FilePreviewPanel.vue'
 import XlsxSheetPicker from './components/FilePreview/XlsxSheetPicker.vue'
+import EmptyImage from './components/EmptyImage.vue'
 
 import { useRedirectIfFileConnection } from '@/modules/bi/components/js/useRedirectIfFileConnection'
 import { useFileUploader } from '@/modules/bi/components/js/useFileUploader'
@@ -108,19 +168,34 @@ const replaceInput = ref(null)
 const fileToReplace = ref(null)
 const selectedFile = ref(null)
 const sheetBeingEdited = ref(null)
+const fileError = ref(null)
 
 const isSheetPickerVisible = ref(false)
 const currentUploadFile = ref(null)
 const availableSheets = ref([])
-const uploadedFiles = ref([])           // загруженные из БД
-const tempUploadedFiles = ref([])       // временно загруженные
-const isReplacing = ref(false)          // состояние замены файла
+const uploadedFiles = ref([])
+const tempUploadedFiles = ref([])
+const isReplacing = ref(false)
+const isUploading = ref(false)
+const isLoadingContent = ref(false)
 
 const connectionId = ref(null)
 
 useRedirectIfFileConnection()
-const { tooltipText, tooltipStyle, showTooltip, tooltipClass, onIconHover, hideTooltipWithDelay } = useTooltip()
-const { removeTempFile, openSheetPicker, selectFile, loadUserFiles, getSheetNameFromFile } = useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible, connectionId)
+const { tooltipText, tooltipStyle, showTooltip, tooltipClass, onIconHover, hideTooltipWithDelay, tooltipTimeout } = useTooltip()
+const { removeTempFile, openSheetPicker, selectFile: originalSelectFile, loadUserFiles, getSheetNameFromFile } = useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible, connectionId)
+
+
+function selectFile(file) {
+  fileError.value = null
+  isLoadingContent.value = true
+  
+  // Имитируем небольшую задержку для показа анимации
+  setTimeout(() => {
+    originalSelectFile(file)
+    isLoadingContent.value = false
+  }, 500)
+}
 const { uploadFile, uploadFileRaw, finalizeUploads, handleSheetSelection, handleFileUpload } = useFileUploader(tempUploadedFiles, selectedFile, isSheetPickerVisible, currentUploadFile, availableSheets, loadUserFiles, connectionId)
 const { deleteFile, handleFileReplace, handleFileReplaceWithSheets, renameFile } = useFileActions(uploadedFiles, selectedFile, fileToReplace, loadUserFiles, connectionId, isSheetPickerVisible, currentUploadFile, availableSheets, isReplacing)
 
@@ -130,6 +205,15 @@ function goToNewConnection() {
 
 function triggerFileUpload() {
     fileInput.value?.click()
+}
+
+async function handleFileUploadWithLoading(event) {
+    isUploading.value = true
+    try {
+        await handleFileUpload(event)
+    } finally {
+        isUploading.value = false
+    }
 }
 
 function replaceFile(file) {
@@ -148,12 +232,38 @@ function onAlertHover(event) {
     onIconHover(event, "В подключении возникла проблема: отсутствует один или несколько файлов в базе данных", "error-tooltip")
 }
 
+function onNoFilesHover(event) {
+    onIconHover(event, "В подключении отсутствуют файлы", "error-tooltip")
+}
+
+function onDisabledButtonHover(event) {
+    if (tooltipTimeout.value) clearTimeout(tooltipTimeout.value)
+    tooltipText.value = "Подключение имеет ряд проблем, решите их, прежде чем создавать датасет"
+    tooltipClass.value = "error-tooltip button-tooltip"
+    showTooltip.value = true
+
+    const button = event.target.querySelector('button') || event.target
+    const rect = button.getBoundingClientRect()
+    tooltipStyle.value = {
+      top: `${rect.bottom + window.scrollY + 8}px`,
+      left: `${rect.left + rect.width / 2 + window.scrollX}px`,
+      transform: 'translateX(-50%)',
+      position: 'absolute'
+    }
+}
+
+function handleCreateDatasetClick(event) {
+    if (isCreateDatasetDisabled.value) {
+        event.preventDefault()
+        event.stopPropagation()
+        return false
+    }
+}
+
 function handleSheetSelectionOrReplace(sheets) {
-    // Если currentUploadFile имеет replaceFileId, значит это замена файла
     if (currentUploadFile.value?.replaceFileId) {
         handleFileReplaceWithSheets(sheets)
     } else {
-        // Иначе это обычная загрузка нового файла
         handleSheetSelection(sheets)
     }
 }
@@ -161,16 +271,26 @@ function handleSheetSelectionOrReplace(sheets) {
 async function loadConnectionFiles() {
   const currentConnectionId = route.params.pk
   if (!currentConnectionId) {
-    console.error('connectionId отсутствует в маршруте')
     return
   }
 
-  const res = await apiClient.get(`bi_analysis/bi_datasets/connection/${currentConnectionId}/files/`)
-  
-  if (res.success) {
-    uploadedFiles.value = res.data
-  } else {
-    console.error('Ошибка загрузки файлов подключения:', res.errors || res)
+  try {
+    const res = await apiClient.get(`bi_analysis/bi_datasets/connection/${currentConnectionId}/files/`)
+    
+    if (res.success) {
+      uploadedFiles.value = res.data
+      fileError.value = null
+    } else {
+      fileError.value = {
+        code: res.status || 500,
+        message: res.errors || 'Неизвестная ошибка'
+      }
+    }
+  } catch (error) {
+    fileError.value = {
+      code: error.response?.status || 500,
+      message: error.message || 'Ошибка сети'
+    }
   }
 }
 
@@ -178,10 +298,8 @@ const showSaveChangesButton = computed(() => {
     return selectedFile.value?.originalFile != null
 })
 
-// Проверяем есть ли отсутствующие файлы в подключении
 const hasMissingFiles = computed(() => {
   return uploadedFiles.value.some(file => {
-    // Проверяем различные возможные индикаторы отсутствия файла
     return file.missing === true || 
            file.exists === false || 
            file.file_not_found === true ||
@@ -190,6 +308,28 @@ const hasMissingFiles = computed(() => {
            !file.file_path ||
            file.error
   })
+})
+
+const hasNoFiles = computed(() => {
+  return uploadedFiles.value.length === 0 && tempUploadedFiles.value.length === 0
+})
+
+const hasSelectedFileError = computed(() => {
+  if (!selectedFile.value) return false
+  
+  return selectedFile.value.missing === true || 
+         selectedFile.value.exists === false || 
+         selectedFile.value.file_not_found === true ||
+         selectedFile.value.status === 'missing' ||
+         selectedFile.value.status === 'not_found' ||
+         selectedFile.value.status === 'error' ||
+         !selectedFile.value.file_path ||
+         selectedFile.value.error ||
+         fileError.value !== null
+})
+
+const isCreateDatasetDisabled = computed(() => {
+  return hasMissingFiles.value || hasNoFiles.value
 })
 
 async function saveChanges() {
@@ -203,7 +343,6 @@ async function saveChanges() {
     alert('Файлы успешно сохранены.')
     await loadUserFiles(connectionId.value)
   } catch (err) {
-    console.error('Ошибка при сохранении файлов:', err)
     alert('Не удалось сохранить файлы.')
   }
 }
@@ -221,20 +360,15 @@ async function loadConnectionInfo() {
 }
 
 watch(() => route.params.pk || route.params.connectionId, async (newPk) => {
-  console.log('ConnectionFiles: route params changed:', { pk: route.params.pk, connectionId: route.params.connectionId, newPk })
-  
   if (newPk) {
     connectionId.value = Number(newPk)
-    console.log('ConnectionFiles: loading data for connection ID:', connectionId.value)
 
     try {
       await loadConnectionInfo()
       await loadConnectionFiles()
     } catch (error) {
-      console.error('ConnectionFiles: error loading connection data:', error)
+      // Ошибка загрузки данных подключения
     }
-  } else {
-    console.warn('ConnectionFiles: no connection ID found in route params')
   }
 }, { immediate: true })
 </script>
@@ -269,6 +403,15 @@ watch(() => route.params.pk || route.params.connectionId, async (newPk) => {
 
 .tooltip.error-tooltip {
     border: 1px solid var(--color-accent);
+}
+
+.tooltip.button-tooltip {
+    padding: 8px 12px;
+    white-space: normal;
+    max-width: 250px;
+    word-wrap: break-word;
+    line-height: 1.3;
+    z-index: 1000;
 }
 
 html,
@@ -317,6 +460,10 @@ body {
     justify-content: flex-end;
     margin-left: auto;
     gap: 10px;
+}
+
+.button-wrapper {
+    display: inline-block;
 }
 
 .file_area {
@@ -460,6 +607,27 @@ body {
     background-color: var(--color-hover-background);
 }
 
+.disabled-button {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    background-color: transparent !important;
+    pointer-events: none !important;
+}
+
+.disabled-button:hover {
+    cursor: not-allowed !important;
+    background-color: transparent !important;
+}
+
+/* Дополнительные стили для более надежного отображения курсора */
+.file_area_header_buttons .disabled-button {
+    cursor: not-allowed !important;
+}
+
+.file_area_header_buttons .disabled-button:hover {
+    cursor: not-allowed !important;
+}
+
 .file_area_header_label{
     display: flex;
     align-items: center;
@@ -487,8 +655,8 @@ body {
     color: #ff5252;
 }
 
-/* Анимация загрузки при замене файла */
-.replacing-overlay {
+/* Общие стили анимации загрузки */
+.loading-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -501,7 +669,7 @@ body {
     backdrop-filter: blur(2px);
 }
 
-.replacing-content {
+.loading-content {
     text-align: center;
     padding: 2rem;
     background: var(--color-primary-background);
@@ -510,13 +678,13 @@ body {
     border: 1px solid var(--color-border);
 }
 
-.replacing-content h3 {
+.loading-content h3 {
     margin: 1rem 0 0.5rem 0;
     color: var(--color-primary-text);
     font-size: 1.2rem;
 }
 
-.replacing-content p {
+.loading-content p {
     margin: 0;
     color: var(--color-secondary-text);
     font-size: 0.9rem;
@@ -535,5 +703,72 @@ body {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Стили для плейсхолдера отсутствующих файлов */
+.empty-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 2rem;
+    margin-top: -1rem;
+}
+
+.empty-image {
+    width: 360px;
+    height: 360px;
+    opacity: 0.6;
+}
+
+.empty-text {
+    margin-top: -3rem;
+}
+
+.empty-text h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--color-primary-text);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.empty-text p {
+    margin: 0;
+    color: var(--color-secondary-text);
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+/* Стили для плейсхолдера ошибки */
+.error-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    z-index: 10;
+    background-color: var(--color-secondary-background);
+}
+
+.error-content {
+    max-width: 400px;
+}
+
+.error-content h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--color-primary-text);
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.error-content p {
+    margin: 0;
+    color: var(--color-secondary-text);
+    font-size: 1rem;
+    line-height: 1.4;
 }
 </style>
