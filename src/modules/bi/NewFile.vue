@@ -54,7 +54,14 @@
     <div v-show="showTooltip" :style="tooltipStyle" class="tooltip show">{{ tooltipText }}</div>
   </transition>
 
-  <XlsxSheetPicker :visible="isSheetPickerVisible" :filename="currentUploadFile?.name || ''" :sheets="availableSheets" :currentSheet="sheetBeingEdited" @confirm="handleSheetSelection" @cancel="isSheetPickerVisible = false" />
+  <XlsxSheetPicker 
+    :visible="isSheetPickerVisible" 
+    :filename="currentUploadFile?.name || ''" 
+    :sheets="availableSheets" 
+    :currentSheet="sheetBeingEdited" 
+    :singleSelect="!!currentUploadFile?.replaceFileId"
+    @confirm="handleSheetSelectionOrReplace" 
+    @cancel="isSheetPickerVisible = false" />
   <ConnectionNameDialog v-model:visible="showConnectionDialog" :connectorType="connectorType" :connectionConfig="connectionConfig" :connectionFiles="tempUploadedFiles" @saved="createConnection"/>
 </template>
 
@@ -100,9 +107,9 @@ function triggerFileUpload() {
 }
 
 const { tooltipText, tooltipStyle, showTooltip, onIconHover, hideTooltipWithDelay } = useTooltip()
-const { removeTempFile, openSheetPicker, selectFile, loadUserFiles, getSheetNameFromFile } = useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible)
+const { removeTempFile, openSheetPicker, selectFile, loadUserFiles, getSheetNameFromFile } = useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible, null)
 const { uploadFile, uploadFileRaw, finalizeUploads, handleSheetSelection, handleFileUpload } = useFileUploader(tempUploadedFiles, selectedFile, isSheetPickerVisible, currentUploadFile, availableSheets, loadUserFiles)
-const { deleteFile, handleFileReplace, renameFile } = useFileActions(uploadedFiles, selectedFile, fileToReplace, loadUserFiles)
+const { deleteFile, handleFileReplace, handleFileReplaceWithSheets, renameFile } = useFileActions(uploadedFiles, selectedFile, fileToReplace, loadUserFiles, null, isSheetPickerVisible, currentUploadFile, availableSheets)
 
 function replaceFile(file) {
   if (file.file_type === 'xlsx' && file.pendingSheets?.length) {
@@ -113,6 +120,16 @@ function replaceFile(file) {
   } else {
     fileToReplace.value = file
     replaceInput.value?.click()
+  }
+}
+
+function handleSheetSelectionOrReplace(sheets) {
+  // Если currentUploadFile имеет replaceFileId, значит это замена файла
+  if (currentUploadFile.value?.replaceFileId) {
+    handleFileReplaceWithSheets(sheets)
+  } else {
+    // Иначе это обычная загрузка нового файла
+    handleSheetSelection(sheets)
   }
 }
 

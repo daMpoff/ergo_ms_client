@@ -5,10 +5,12 @@ export function useTooltip() {
   const tooltipStyle = ref({})
   const showTooltip = ref(false)
   const tooltipTimeout = ref(null)
+  const tooltipClass = ref('')
 
-  function onIconHover(event, text) {
+  function onIconHover(event, text, customClass = '') {
     if (tooltipTimeout.value) clearTimeout(tooltipTimeout.value)
     tooltipText.value = text
+    tooltipClass.value = customClass
     showTooltip.value = true
 
     const rect = event.target.getBoundingClientRect()
@@ -23,13 +25,14 @@ export function useTooltip() {
   function hideTooltipWithDelay() {
     tooltipTimeout.value = setTimeout(() => {
       showTooltip.value = false
-    }, 200)
+    }, 100)
   }
 
   return {
     tooltipText,
     tooltipStyle,
     showTooltip,
+    tooltipClass,
     onIconHover,
     hideTooltipWithDelay
   }

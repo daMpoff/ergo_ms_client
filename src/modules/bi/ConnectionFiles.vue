@@ -41,28 +41,54 @@
         </aside>
 
         <header class="file_area_header">
-            <div class="file_area_header_label"><Waypoints /><h4>{{ connectionName || '...' }}</h4></div>
+            <div class="file_area_header_label">
+                <Waypoints />
+                <h4 :title="connectionName">{{ connectionName || '...' }}</h4>
+                <TriangleAlert 
+                    v-if="hasMissingFiles" 
+                    class="alert-icon" 
+                    :size="20" 
+                    @mouseenter="onAlertHover"
+                    @mouseleave="hideTooltipWithDelay"
+                />
+            </div>
             <div class="file_area_header_buttons">
                 <button type="button" class="btn btn-secondary">Создать датасет</button>
                 <button type="button" v-if="showSaveChangesButton" class="btn btn-success" @click="saveChanges">Сохранить изменения</button>
             </div>
         </header>
         <main class="file_area">
-            <FilePreviewPanel v-if="selectedFile" :file="selectedFile" />
+            <!-- Анимация загрузки при замене файла -->
+            <div v-if="isReplacing" class="replacing-overlay">
+                <div class="replacing-content">
+                    <div class="spinner"></div>
+                    <h3>Заменяем файл...</h3>
+                    <p>Пожалуйста, подождите</p>
+                </div>
+            </div>
+            
+            <FilePreviewPanel v-if="selectedFile && !isReplacing" :file="selectedFile" />
         </main>
     </div>
 
     <transition name="fade">
-        <div v-show="showTooltip" :style="tooltipStyle" class="tooltip show">{{ tooltipText }}</div>
+        <div v-show="showTooltip" :style="tooltipStyle" class="tooltip show" :class="tooltipClass">{{ tooltipText }}</div>
     </transition>
 
-    <XlsxSheetPicker :visible="isSheetPickerVisible" :filename="currentUploadFile?.name || ''" :sheets="availableSheets" :currentSheet="sheetBeingEdited" @confirm="handleSheetSelection" @cancel="isSheetPickerVisible = false" />
+    <XlsxSheetPicker 
+        :visible="isSheetPickerVisible" 
+        :filename="currentUploadFile?.name || ''" 
+        :sheets="availableSheets" 
+        :currentSheet="sheetBeingEdited" 
+        :singleSelect="!!currentUploadFile?.replaceFileId"
+        @confirm="handleSheetSelectionOrReplace" 
+        @cancel="isSheetPickerVisible = false" />
 </template>
 
 <script setup>
 import { watch, ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowLeft, Upload, Waypoints } from 'lucide-vue-next'
+import { ArrowLeft, Upload, Waypoints, TriangleAlert } from 'lucide-vue-next'
 import { apiClient } from '@/js/api/manager'
 import FileItem from './components/FileItem.vue'
 import FilePreviewPanel from './components/FilePreviewPanel.vue'
@@ -88,14 +114,15 @@ const currentUploadFile = ref(null)
 const availableSheets = ref([])
 const uploadedFiles = ref([])           // загруженные из БД
 const tempUploadedFiles = ref([])       // временно загруженные
+const isReplacing = ref(false)          // состояние замены файла
 
 const connectionId = ref(null)
 
 useRedirectIfFileConnection()
-const { tooltipText, tooltipStyle, showTooltip, onIconHover, hideTooltipWithDelay } = useTooltip()
+const { tooltipText, tooltipStyle, showTooltip, tooltipClass, onIconHover, hideTooltipWithDelay } = useTooltip()
 const { removeTempFile, openSheetPicker, selectFile, loadUserFiles, getSheetNameFromFile } = useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible, connectionId)
 const { uploadFile, uploadFileRaw, finalizeUploads, handleSheetSelection, handleFileUpload } = useFileUploader(tempUploadedFiles, selectedFile, isSheetPickerVisible, currentUploadFile, availableSheets, loadUserFiles, connectionId)
-const { deleteFile, handleFileReplace, renameFile } = useFileActions(uploadedFiles, selectedFile, fileToReplace, loadUserFiles, connectionId)
+const { deleteFile, handleFileReplace, handleFileReplaceWithSheets, renameFile } = useFileActions(uploadedFiles, selectedFile, fileToReplace, loadUserFiles, connectionId, isSheetPickerVisible, currentUploadFile, availableSheets, isReplacing)
 
 function goToNewConnection() {
     router.push('/bi/connections/new/')
@@ -117,14 +144,28 @@ function replaceFile(file) {
     }
 }
 
+function onAlertHover(event) {
+    onIconHover(event, "В подключении возникла проблема: отсутствует один или несколько файлов в базе данных", "error-tooltip")
+}
+
+function handleSheetSelectionOrReplace(sheets) {
+    // Если currentUploadFile имеет replaceFileId, значит это замена файла
+    if (currentUploadFile.value?.replaceFileId) {
+        handleFileReplaceWithSheets(sheets)
+    } else {
+        // Иначе это обычная загрузка нового файла
+        handleSheetSelection(sheets)
+    }
+}
+
 async function loadConnectionFiles() {
-  const connectionId = route.params.pk
-  if (!connectionId) {
+  const currentConnectionId = route.params.pk
+  if (!currentConnectionId) {
     console.error('connectionId отсутствует в маршруте')
     return
   }
 
-  const res = await apiClient.get(`bi_analysis/bi_datasets/connection/${connectionId}/files/`)
+  const res = await apiClient.get(`bi_analysis/bi_datasets/connection/${currentConnectionId}/files/`)
   
   if (res.success) {
     uploadedFiles.value = res.data
@@ -135,6 +176,20 @@ async function loadConnectionFiles() {
 
 const showSaveChangesButton = computed(() => {
     return selectedFile.value?.originalFile != null
+})
+
+// Проверяем есть ли отсутствующие файлы в подключении
+const hasMissingFiles = computed(() => {
+  return uploadedFiles.value.some(file => {
+    // Проверяем различные возможные индикаторы отсутствия файла
+    return file.missing === true || 
+           file.exists === false || 
+           file.file_not_found === true ||
+           file.status === 'missing' ||
+           file.status === 'not_found' ||
+           !file.file_path ||
+           file.error
+  })
 })
 
 async function saveChanges() {
@@ -156,21 +211,30 @@ async function saveChanges() {
 const connectionName = ref('')
 
 async function loadConnectionInfo() {
-  const connectionId = route.params.pk
-  if (!connectionId) return
+  const currentConnectionId = route.params.pk
+  if (!currentConnectionId) return
 
-  const res = await apiClient.get(`bi_analysis/bi_connections/${connectionId}/`)
+  const res = await apiClient.get(`bi_analysis/bi_connections/${currentConnectionId}/`)
   if (res.success && res.data?.name) {
     connectionName.value = res.data.name
   }
 }
 
 watch(() => route.params.pk || route.params.connectionId, async (newPk) => {
+  console.log('ConnectionFiles: route params changed:', { pk: route.params.pk, connectionId: route.params.connectionId, newPk })
+  
   if (newPk) {
     connectionId.value = Number(newPk)
+    console.log('ConnectionFiles: loading data for connection ID:', connectionId.value)
 
-    await loadConnectionInfo()
-    await loadConnectionFiles()
+    try {
+      await loadConnectionInfo()
+      await loadConnectionFiles()
+    } catch (error) {
+      console.error('ConnectionFiles: error loading connection data:', error)
+    }
+  } else {
+    console.warn('ConnectionFiles: no connection ID found in route params')
   }
 }, { immediate: true })
 </script>
@@ -195,12 +259,16 @@ watch(() => route.params.pk || route.params.connectionId, async (newPk) => {
     pointer-events: none;
     opacity: 0;
     transform: translateY(-5px) translateX(-50%);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity 0.05s ease, transform 0.05s ease;
 }
 
 .tooltip.show {
     opacity: 1;
     transform: translateY(0) translateX(-50%);
+}
+
+.tooltip.error-tooltip {
+    border: 1px solid var(--color-accent);
 }
 
 html,
@@ -214,7 +282,7 @@ body {
     border-radius: 12px;
     border: 1px solid var(--color-border);
     grid-template-columns: 260px 1fr;
-    grid-template-rows: 56px 1fr;
+    grid-template-rows: 61px 1fr;
     grid-template-areas:
         "sidebar header"
         "sidebar chat";
@@ -228,6 +296,7 @@ body {
     padding: 1rem;
     background-color: var(--color-primary-background);
     border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
 }
 
 .file_area_header {
@@ -255,6 +324,9 @@ body {
     background-color: var(--color-secondary-background);
     padding: 1rem;
     overflow-y: auto;
+    position: relative;
+    border-left: 1px solid var(--color-border);
+    border-bottom-right-radius: 12px;
 }
 
 .icon-button {
@@ -375,15 +447,93 @@ body {
     width: 10rem;
     height: 2rem;
     border-radius: 6px;
+    background-color: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--color-primary-text);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 0 0 0;
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-hover-background);
 }
 
 .file_area_header_label{
     display: flex;
     align-items: center;
     gap: 5px;
+}
+
+.file_area_header_label h4 {
+    padding: 0 0 5px 0;
+    margin: 0;
+    line-height: 1;
+    max-width: 24rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.alert-icon {
+    color: var(--color-accent);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.alert-icon:hover {
+    color: #ff5252;
+}
+
+/* Анимация загрузки при замене файла */
+.replacing-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.replacing-content {
+    text-align: center;
+    padding: 2rem;
+    background: var(--color-primary-background);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-border);
+}
+
+.replacing-content h3 {
+    margin: 1rem 0 0.5rem 0;
+    color: var(--color-primary-text);
+    font-size: 1.2rem;
+}
+
+.replacing-content p {
+    margin: 0;
+    color: var(--color-secondary-text);
+    font-size: 0.9rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top: 3px solid var(--color-accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>

@@ -2,12 +2,12 @@
     <div v-show="visible" class="modal-overlay">
       <div class="modal-window">
         <div class="modal-header">
-          <h4>Добавить листы</h4>
+          <h4>{{ singleSelect ? 'Выбрать лист для замены' : 'Добавить листы' }}</h4>
           <button class="close-btn" @click="cancel">×</button>
         </div>
   
         <div class="modal-body">
-          <div class="select-all">
+          <div v-if="!singleSelect" class="select-all">
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="select-all" @change="toggleAll" :disabled="!sheets?.length"/>
                 <label class="form-check-label" for="select-all">
@@ -17,7 +17,14 @@
           </div>
           <div class="sheet-list">
             <div class="form-check" v-for="sheet in safeSheets" :key="sheet">
-                <input class="form-check-input" type="checkbox" :id="'sheet-' + sheet" :value="sheet" v-model="selectedSheets" :checked="sheet === currentSheet"/>
+                <input 
+                    class="form-check-input" 
+                    :type="singleSelect ? 'radio' : 'checkbox'" 
+                    :name="singleSelect ? 'sheet-selection' : undefined"
+                    :id="'sheet-' + sheet" 
+                    :value="sheet" 
+                    :checked="isSheetSelected(sheet)"
+                    @change="handleSheetChange(sheet, $event)"/>
                 <label class="form-check-label" :for="'sheet-' + sheet">
                     {{ filename || 'Файл' }} – {{ sheet }}
                 </label>
@@ -28,7 +35,7 @@
   
         <div class="modal-footer">
           <button class="btn-cancel" @click="cancel">Отмена</button>
-          <button class="btn-confirm" :disabled="!selectedSheets.length" @click="confirm">Добавить</button>
+          <button class="btn-confirm" :disabled="singleSelect ? !selectedSheet : !selectedSheets.length" @click="confirm">{{ singleSelect ? 'Выбрать' : 'Добавить' }}</button>
         </div>
       </div>
     </div>
@@ -41,12 +48,14 @@
     visible: Boolean,
     filename: String,
     sheets: Array,
-    currentSheet: String
+    currentSheet: String,
+    singleSelect: Boolean
   })
   
   const emit = defineEmits(['confirm', 'cancel'])
   
   const selectedSheets = ref([])
+  const selectedSheet = ref('')
   const selectAll = ref(false)
   const safeSheets = computed(() => props.sheets || [])
   
@@ -58,9 +67,40 @@
     const allSelected = selectedSheets.value.length === safeSheets.value.length
     selectedSheets.value = allSelected ? [] : [...safeSheets.value]
   }
+
+  function isSheetSelected(sheet) {
+    if (props.singleSelect) {
+      return selectedSheet.value === sheet
+    } else {
+      return selectedSheets.value.includes(sheet)
+    }
+  }
+
+  function handleSheetChange(sheet, event) {
+    if (props.singleSelect) {
+      // В режиме единичного выбора просто устанавливаем выбранный лист
+      selectedSheet.value = event.target.checked ? sheet : ''
+    } else {
+      // В режиме множественного выбора добавляем/удаляем из массива
+      if (event.target.checked) {
+        if (!selectedSheets.value.includes(sheet)) {
+          selectedSheets.value.push(sheet)
+        }
+      } else {
+        const index = selectedSheets.value.indexOf(sheet)
+        if (index > -1) {
+          selectedSheets.value.splice(index, 1)
+        }
+      }
+    }
+  }
   
   function confirm() {
-    emit('confirm', selectedSheets.value)
+    if (props.singleSelect) {
+      emit('confirm', selectedSheet.value ? [selectedSheet.value] : [])
+    } else {
+      emit('confirm', selectedSheets.value)
+    }
   }
   
   function cancel() {
@@ -70,6 +110,8 @@
   watch(() => props.visible, (val) => {
     if (val) {
       selectedSheets.value = []
+      // В режиме единичного выбора предварительно выбираем текущий лист, если он есть
+      selectedSheet.value = props.singleSelect && props.currentSheet ? props.currentSheet : ''
       selectAll.value = false
     }
   })

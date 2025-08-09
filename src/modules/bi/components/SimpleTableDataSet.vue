@@ -181,7 +181,16 @@ function goToConnection(row) {
   if (!row || !row.id) return
 
   const type = (row.connector_type_display || row.connector_type || '').toLowerCase().trim()
-  const isFileConnection = type === 'file' || type === 'files' || type.includes('файл')
+  
+  // Более надежная проверка типа файлового подключения
+  const isFileConnection = type === 'file' || 
+                           type === 'files' || 
+                           type === 'файл' || 
+                           type === 'файлы' ||
+                           type.includes('file') || 
+                           type.includes('файл')
+
+  console.log('Connection type:', type, 'isFileConnection:', isFileConnection, 'row:', row)
 
   if (isFileConnection) {
     router.push(`/bi/connections/${row.id}/files/`)
@@ -267,7 +276,12 @@ function getIconComponent(row) {
   if (type.includes('clickhouse')) return { src: ClickHouseIcon, tooltip: 'ClickHouse' }
   if (type.includes('postgres')) return { src: PostgresIcon, tooltip: 'PostgreSQL' }
   if (type.includes('sql server') || type.includes('mssql')) return { src: MssqlIcon, tooltip: 'Microsoft SQL Server' }
-  if (type.includes('file') || type.includes('files') || type.includes('файл')) return { src: FileIcon, tooltip: 'Загруженные файлы' }
+  
+  // Более надежная проверка файлового подключения
+  if (type === 'file' || type === 'files' || type === 'файл' || type === 'файлы' ||
+      type.includes('file') || type.includes('файл')) {
+    return { src: FileIcon, tooltip: 'Загруженные файлы' }
+  }
 
   return null
 }
