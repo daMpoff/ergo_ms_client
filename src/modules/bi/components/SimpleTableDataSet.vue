@@ -53,7 +53,7 @@
 
             <!-- Действия -->
             <template v-else-if="col.key === 'actions'">
-              <div class="actions-cell" :class="{ visible: hoveredRow === row.id || isFavorite(row.id) }">
+              <div v-if="hasBeenOpened" class="actions-cell" :class="{ visible: hoveredRow === row.id || isFavorite(row.id) }">
                 <div class="actions-inner">
                   <button class="action-btn star" :class="{ active: isFavorite(row.id) }"
                     @click.stop="toggleFavorite(row.id)" title="Избранное">
@@ -143,7 +143,7 @@
 
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
-import { Star, MoreHorizontal, Trash2, CaseSensitive, Link, ChartPie, Database, TriangleAlert } from 'lucide-vue-next'
+import { Star, MoreHorizontal, Trash2, CaseSensitive, Link, ChartPie, Database, TriangleAlert, Table } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { apiClient } from '@/js/api/manager.js'
 import ClickHouseIcon from '@/assets/bi/icons/clickhouse.svg'
@@ -157,6 +157,9 @@ const props = defineProps({
   isDatasetSidebarOpen: Boolean,
   currentPage: String
 })
+
+// Флаг для отслеживания, был ли уже открыт сайдбар BI
+const hasBeenOpened = ref(false)
 
 const hoveredRow = ref(null)
 const favorites = ref(new Set())
@@ -183,7 +186,6 @@ const sortedUsers = computed(() => {
 const favoritesInCurrentList = computed(() => {
   if (!props.users) return 0
   const count = props.users.filter(user => isFavorite(user.id)).length
-  console.log(`[${props.currentPage}] Избранных в текущем списке: ${count}, всего элементов: ${props.users.length}`)
   return count
 })
 
@@ -231,8 +233,6 @@ function goToConnection(row) {
                            type.includes('file') || 
                            type.includes('файл')
 
-  console.log('Connection type:', type, 'isFileConnection:', isFileConnection, 'row:', row)
-
   if (isFileConnection) {
     router.push(`/bi/connections/${row.id}/files/`)
   } else {
@@ -258,13 +258,9 @@ function loadFavorites() {
   if (raw) {
     try {
       favorites.value = new Set(JSON.parse(raw))
-      console.log(`[${props.currentPage}] Загружено избранных из localStorage: ${favorites.value.size}`)
     } catch {
       favorites.value = new Set()
-      console.log(`[${props.currentPage}] Ошибка парсинга localStorage, очищено избранное`)
     }
-  } else {
-    console.log(`[${props.currentPage}] В localStorage нет избранных элементов`)
   }
 }
 
@@ -272,8 +268,6 @@ function saveFavorites() {
   const key = `favorite${props.currentPage.charAt(0).toUpperCase() + props.currentPage.slice(1)}`
   localStorage.setItem(key, JSON.stringify([...favorites.value]))
 }
-
-
 
 function toggleFavorite(id) {
   if (favorites.value.has(id)) {
@@ -290,6 +284,13 @@ function isFavorite(id) {
 
 onMounted(loadFavorites)
 watch(() => props.currentPage, loadFavorites, { immediate: true })
+
+// Отслеживаем первое открытие сайдбара BI
+watch(() => props.isDatasetSidebarOpen, (newValue) => {
+  if (newValue && !hasBeenOpened.value) {
+    hasBeenOpened.value = true
+  }
+}, { immediate: true })
 
 watch(() => props.users, loadAllConnectionFilesStatus, { immediate: true })
 
