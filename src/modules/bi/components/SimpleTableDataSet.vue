@@ -3,11 +3,19 @@
     <table class="custom-table">
       <thead class="transparent-header">
         <tr>
-          <th v-for="col in props.cols" :key="col.key">{{ col.label }}</th>
+          <th v-for="col in props.cols" :key="col.key">
+            {{ col.label }}
+            <span v-if="col.key === 'name'" class="items-count">
+              ({{ props.users.length }})
+              <span v-if="favoritesInCurrentList > 0" class="favorites-count">
+                • {{ favoritesInCurrentList }} в избранном
+              </span>
+            </span>
+          </th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in props.users" :key="row.id" class="table-row" @mouseenter="hoveredRow = row.id"
+        <tr v-for="row in sortedUsers" :key="row.id" class="table-row" :class="{ favorite: isFavorite(row.id) }" @mouseenter="hoveredRow = row.id"
           @mouseleave="hoveredRow = null" @click="handleRowClick(row)">
           <td v-for="col in props.cols" :key="col.key" :style="{ position: 'relative', overflow: 'hidden' }"
             :class="{ 'td-actions': col.key === 'actions' }">
@@ -51,7 +59,7 @@
                     @click.stop="toggleFavorite(row.id)" title="Избранное">
                     <Star class="icon-inline" />
                   </button>
-                  <button class="action-btn more" @click="onMoreClick($event, row.id)" title="Еще">
+                  <button class="action-btn more" :class="{ visible: hoveredRow === row.id }" @click="onMoreClick($event, row.id)" title="Еще">
                     <MoreHorizontal class="icon-inline" />
                   </button>
                 </div>
@@ -76,6 +84,7 @@
 
     <!-- Меню "Еще" -->
     <div v-if="showMenu" class="menu-dropdown" :style="menuPosition" @mouseleave="closeMenu">
+
       <div class="menu-item" @click="openRename(getRowById(menuRowId))">
         <CaseSensitive :size="18" :stroke-width="2" />Переименовать
       </div>
@@ -133,8 +142,8 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
-import { Table, Star, MoreHorizontal, Trash2, CaseSensitive, Link, ChartPie, Database, TriangleAlert } from 'lucide-vue-next'
+import { ref, watch, onMounted, computed } from 'vue'
+import { Star, MoreHorizontal, Trash2, CaseSensitive, Link, ChartPie, Database, TriangleAlert } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { apiClient } from '@/js/api/manager.js'
 import ClickHouseIcon from '@/assets/bi/icons/clickhouse.svg'
@@ -151,6 +160,32 @@ const props = defineProps({
 
 const hoveredRow = ref(null)
 const favorites = ref(new Set())
+
+const sortedUsers = computed(() => {
+  if (!props.users) return []
+  
+  return [...props.users].sort((a, b) => {
+    const aIsFavorite = isFavorite(a.id)
+    const bIsFavorite = isFavorite(b.id)
+    
+    if (aIsFavorite && !bIsFavorite) return -1
+    if (!aIsFavorite && bIsFavorite) return 1
+    
+    if (aIsFavorite === bIsFavorite) {
+      const aDate = new Date(a.created_at || 0)
+      const bDate = new Date(b.created_at || 0)
+      return bDate - aDate
+    }
+    return 0
+  })
+})
+
+const favoritesInCurrentList = computed(() => {
+  if (!props.users) return 0
+  const count = props.users.filter(user => isFavorite(user.id)).length
+  console.log(`[${props.currentPage}] Избранных в текущем списке: ${count}, всего элементов: ${props.users.length}`)
+  return count
+})
 
 const showDeleteDialog = ref(false)
 const rowToDelete = ref(null)
@@ -172,7 +207,6 @@ let fadeRaf = null
 
 const router = useRouter()
 
-// Состояние для хранения информации о файлах подключений
 const connectionFilesStatus = ref(new Map())
 
 function handleRowClick(row) {
@@ -190,7 +224,6 @@ function goToConnection(row) {
 
   const type = (row.connector_type_display || row.connector_type || '').toLowerCase().trim()
   
-  // Более надежная проверка типа файлового подключения
   const isFileConnection = type === 'file' || 
                            type === 'files' || 
                            type === 'файл' || 
@@ -217,25 +250,38 @@ function goToChart(row) {
   router.push(`/bi/chart/${row.id}/`)
 }
 
-// localStorage избранное
 function loadFavorites() {
-  const raw = localStorage.getItem('favoriteDatasets')
+  favorites.value.clear()
+  
+  const key = `favorite${props.currentPage.charAt(0).toUpperCase() + props.currentPage.slice(1)}`
+  const raw = localStorage.getItem(key)
   if (raw) {
     try {
       favorites.value = new Set(JSON.parse(raw))
+      console.log(`[${props.currentPage}] Загружено избранных из localStorage: ${favorites.value.size}`)
     } catch {
       favorites.value = new Set()
+      console.log(`[${props.currentPage}] Ошибка парсинга localStorage, очищено избранное`)
     }
+  } else {
+    console.log(`[${props.currentPage}] В localStorage нет избранных элементов`)
   }
 }
 
 function saveFavorites() {
-  localStorage.setItem('favoriteDatasets', JSON.stringify([...favorites.value]))
+  const key = `favorite${props.currentPage.charAt(0).toUpperCase() + props.currentPage.slice(1)}`
+  localStorage.setItem(key, JSON.stringify([...favorites.value]))
 }
 
+
+
 function toggleFavorite(id) {
-  if (favorites.value.has(id)) favorites.value.delete(id)
-  else favorites.value.add(id)
+  if (favorites.value.has(id)) {
+    favorites.value.delete(id)
+  } else {
+    favorites.value.add(id)
+  }
+  saveFavorites()
 }
 
 function isFavorite(id) {
@@ -243,16 +289,14 @@ function isFavorite(id) {
 }
 
 onMounted(loadFavorites)
-watch(favorites, saveFavorites, { deep: true })
+watch(() => props.currentPage, loadFavorites, { immediate: true })
 
-// Загружаем статус файлов при изменении списка пользователей
 watch(() => props.users, loadAllConnectionFilesStatus, { immediate: true })
 
 function getValue(row, key) {
   return key.split('.').reduce((acc, part) => acc?.[part], row)
 }
 
-// Tooltip
 const tooltipText = ref('')
 const tooltipStyle = ref({ top: '0px', left: '0px' })
 const tooltipClass = ref('')
@@ -286,12 +330,10 @@ function getIconComponent(row) {
     return { src: Database, tooltip: 'Датасет' }
   }
 
-  // Остальные типы
   if (type.includes('clickhouse')) return { src: ClickHouseIcon, tooltip: 'ClickHouse' }
   if (type.includes('postgres')) return { src: PostgresIcon, tooltip: 'PostgreSQL' }
   if (type.includes('sql server') || type.includes('mssql')) return { src: MssqlIcon, tooltip: 'Microsoft SQL Server' }
   
-  // Более надежная проверка файлового подключения
   if (type === 'file' || type === 'files' || type === 'файл' || type === 'файлы' ||
       type.includes('file') || type.includes('файл')) {
     return { src: FileIcon, tooltip: 'Загруженные файлы' }
@@ -474,14 +516,11 @@ async function copyLink(row) {
   closeMenu()
 }
 
-// Функция для проверки необходимости показа предупреждения о файлах
 function shouldShowFileWarning(row) {
-  // Показываем предупреждение только для подключений
   if (props.currentPage !== 'connections') return false
   
   const type = (row.connector_type_display || row.connector_type || '').toLowerCase().trim()
   
-  // Проверяем, является ли это файловым подключением
   const isFileConnection = type === 'file' || 
                            type === 'files' || 
                            type === 'файл' || 
@@ -491,37 +530,29 @@ function shouldShowFileWarning(row) {
   
   if (!isFileConnection) return false
   
-  // Проверяем статус файлов для данного подключения
   const filesStatus = connectionFilesStatus.value.get(row.id)
   
-  // Если статус еще не загружен, не показываем предупреждение
   if (!filesStatus) return false
   
-  // Показываем предупреждение если есть отсутствующие файлы или проблемные файлы
   return filesStatus.hasMissingFiles || filesStatus.hasProblematicFiles
 }
 
-// Функция для получения текста тултипа для предупреждения о файлах
 function getFileWarningTooltip(row) {
   const filesStatus = connectionFilesStatus.value.get(row.id)
   
   if (!filesStatus) return 'В подключении отсутствуют файлы'
   
-  // Если есть проблемные файлы, показываем соответствующий текст
   if (filesStatus.hasProblematicFiles) {
     return 'Возникла проблема с одним из файлов в подключении'
   }
   
-  // Если есть только отсутствующие файлы
   if (filesStatus.hasMissingFiles) {
     return 'В подключении отсутствуют файлы'
   }
   
-  // Fallback
   return 'В подключении отсутствуют файлы'
 }
 
-// Функция для загрузки статуса файлов подключения
 async function loadConnectionFilesStatus(connectionId) {
   try {
     const res = await apiClient.get(`bi_analysis/bi_datasets/connection/${connectionId}/files/`)
@@ -529,10 +560,8 @@ async function loadConnectionFilesStatus(connectionId) {
     if (res.success && res.data) {
       const files = Array.isArray(res.data) ? res.data : []
       
-      // Проверяем отсутствующие файлы (когда в подключении вообще нет файлов)
       const hasMissingFiles = files.length === 0
       
-      // Проверяем проблемные файлы (файлы с ошибками или отсутствующими данными)
       const hasProblematicFiles = files.some(file => {
         return file.missing === true || 
                file.exists === false || 
@@ -552,11 +581,9 @@ async function loadConnectionFilesStatus(connectionId) {
     }
   } catch (error) {
     console.warn(`Не удалось загрузить статус файлов для подключения ${connectionId}:`, error)
-    // В случае ошибки не показываем предупреждение
   }
 }
 
-// Функция для загрузки статуса файлов всех файловых подключений
 async function loadAllConnectionFilesStatus() {
   if (props.currentPage !== 'connections') return
   
@@ -570,13 +597,14 @@ async function loadAllConnectionFilesStatus() {
            type.includes('файл')
   })
   
-  // Загружаем статус файлов для всех файловых подключений параллельно
   const promises = fileConnections.map(connection => 
     loadConnectionFilesStatus(connection.id)
   )
   
   await Promise.allSettled(promises)
 }
+
+
 </script>
 
 <style scoped lang="scss">
@@ -588,11 +616,15 @@ async function loadAllConnectionFilesStatus() {
   color: var(--color-primary-text);
 }
 
+
+
 .custom-table {
   width: 100%;
   border-collapse: collapse;
   border-radius: 12px;
 }
+
+
 
 .transparent-header th {
   background-color: transparent;
@@ -607,9 +639,42 @@ async function loadAllConnectionFilesStatus() {
   white-space: nowrap;
 }
 
+.table-row {
+  transition: all 0.3s ease;
+}
+
 .table-row:hover {
   background-color: var(--color-hover-background);
   cursor: pointer;
+}
+
+.table-row.favorite {
+  background-color: rgba(250, 204, 21, 0.05);
+  border-left: 3px solid #facc15;
+}
+
+.table-row.favorite:hover {
+  background-color: rgba(250, 204, 21, 0.1);
+}
+
+.table-row.favorite + .table-row:not(.favorite) {
+  border-top: 2px solid rgba(250, 204, 21, 0.2);
+}
+
+/* Анимация для фильтрации */
+.table-row {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .td-actions {
@@ -689,6 +754,12 @@ async function loadAllConnectionFilesStatus() {
   transform: translateY(0);
 }
 
+/* Для избранных элементов кнопка звезды всегда видна */
+.actions-cell .action-btn.star.active {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 .actions-inner {
   display: flex;
   gap: 8px;
@@ -710,8 +781,39 @@ async function loadAllConnectionFilesStatus() {
   color: var(--color-primary-text);
 }
 
+.action-btn.star {
+  opacity: 1;
+  pointer-events: auto;
+  transition: all 0.2s ease;
+}
+
+.action-btn.star:hover {
+  transform: scale(1.1);
+}
+
 .action-btn.star.active {
   color: #facc15;
+  animation: starPop 0.3s ease;
+  /* Для избранных элементов звезда всегда видна */
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+@keyframes starPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.action-btn.more {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.action-btn.more.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .icon-inline {
@@ -750,6 +852,10 @@ async function loadAllConnectionFilesStatus() {
 .menu-item.danger {
   color: #f87171;
 }
+
+
+
+
 
 .fade-modal-enter-active,
 .fade-modal-leave-active {
