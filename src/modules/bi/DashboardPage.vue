@@ -44,9 +44,51 @@
             v-model="pages"
             @close="isPageWindowVisible = false"
         />
+
+        <div v-if="isHeaderSettingsVisible" class="page-window-overlay" @click="closeHeaderSettings">
+          <div class="page-window" @click.stop>
+            <HeaderSettings 
+              :data="headerSettingsData" 
+              @close="closeHeaderSettings"
+              @save="saveHeaderSettings" 
+            />
+          </div>
+        </div>
+
+        <div v-if="isTextSettingsVisible" class="page-window-overlay" @click="closeTextSettings">
+          <div class="page-window" @click.stop>
+            <TextSettings 
+              :data="textSettingsData" 
+              @close="closeTextSettings"
+              @save="saveTextSettings" 
+            />
+          </div>
+        </div>
+
+        <div v-if="isChartSettingsVisible" class="page-window-overlay" @click="closeChartSettings">
+          <div class="page-window chart-settings-window" @click.stop>
+            <ChartSettings 
+              :data="chartSettingsData" 
+              @close="closeChartSettings"
+              @save="saveChartSettings" 
+            />
+          </div>
+        </div>
+        
+        <div v-if="isSelectorSettingsVisible" class="page-window-overlay" @click="closeSelectorSettings">
+          <div class="page-window selector-settings-window" @click.stop>
+            <SelectorSettings 
+              :key="selectorSettingsData?.id || 'new'"
+              :data="selectorSettingsData" 
+              @close="closeSelectorSettings"
+              @save="saveSelectorSettings" 
+            />
+          </div>
+        </div>
         
         <div class="body-content">
             <DashboardGrid
+                ref="dashboardGridRef"
                 :items="currentPageItems"
                 :dragged-type="draggedType"
                 :pages-count="pages.length"
@@ -75,9 +117,21 @@ import { LayoutDashboard } from 'lucide-vue-next'
 import DashboardToolbar from './components/DashboardComponents/DashboardToolbar.vue'
 import PageWindow from './components/DashboardComponents/PageWindow.vue'
 import DashboardGrid from './components/DashboardComponents/DashboardGrid.vue'
+import HeaderSettings from './components/DashboardComponents/HeaderSettings.vue'
+import TextSettings from './components/DashboardComponents/TextSettings.vue'
+import ChartSettings from './components/DashboardComponents/ChartSettings.vue'
+import SelectorSettings from './components/DashboardComponents/SelectorSettings.vue'
 
 import { isDatasetSidebarOpen } from '@/modules/bi/js/useSidebarStore.js'
 import { isSidebarCollapsed, initializeSidebarTracking } from '@/modules/bi/js/useMainSidebarStore.js'
+
+const HEADER_WIDGET_HEIGHTS = {
+  'XS': 50,
+  'S': 55,
+  'M': 60,
+  'L': 65,
+  'XL': 70
+};
 
 const dashboardName = ref('Новый дашборд')
 const isSaveModalVisible = ref(false)
@@ -94,6 +148,16 @@ const dropdownWidth = ref(200)
 const route = useRoute()
 const router = useRouter()
 const draggedType = ref('')
+
+const isHeaderSettingsVisible = ref(false)
+const headerSettingsData = ref(null)
+const isTextSettingsVisible = ref(false)
+const textSettingsData = ref(null)
+const isChartSettingsVisible = ref(false)
+const chartSettingsData = ref(null)
+const isSelectorSettingsVisible = ref(false)
+const selectorSettingsData = ref(null)
+const dashboardGridRef = ref(null)
 
 const handleToolbarDragStart = (itemType) => {
             draggedType.value = itemType
@@ -146,10 +210,176 @@ const handleItemSelect = (item) => {
 }
 
 const handleItemEdit = (item) => {
+  if (item.type === 'Заголовок') {
+    headerSettingsData.value = { ...item }
+    isHeaderSettingsVisible.value = true
+  } else if (item.type === 'Текст') {
+    textSettingsData.value = { ...item }
+    isTextSettingsVisible.value = true
+  } else if (item.type === 'Чарт') {
+    chartSettingsData.value = { ...item }
+    isChartSettingsVisible.value = true
+  } else if (item.type === 'Селектор') {
+    selectorSettingsData.value = { ...item }
+    isSelectorSettingsVisible.value = true
+  }
 }
 
 const handleItemDelete = (item) => {
 }
+
+const saveHeaderSettings = (updatedSettings) => {
+  const itemIndex = currentPageItems.value.findIndex(item => item.id === updatedSettings.id);
+  if (itemIndex !== -1) {
+    const oldItem = currentPageItems.value[itemIndex];
+    const oldHeight = oldItem.height;
+    
+    if (updatedSettings.type === 'Заголовок') {
+      if (updatedSettings.autoHeight) {
+        updatedSettings.height = 'auto';
+      } else if (updatedSettings.size) {
+        updatedSettings.height = HEADER_WIDGET_HEIGHTS[updatedSettings.size] || 50;
+      }
+    }
+    
+    const newItems = [...currentPageItems.value];
+    newItems[itemIndex] = updatedSettings;
+    updateCurrentPageItems(newItems);
+    
+    const heightChanged = oldHeight !== updatedSettings.height;
+    if (heightChanged && dashboardGridRef.value) {
+      setTimeout(() => {
+        dashboardGridRef.value.triggerRecalculatePositions();
+      }, 50);
+    }
+  }
+  closeHeaderSettings();
+};
+
+function closeHeaderSettings() {
+  isHeaderSettingsVisible.value = false
+  headerSettingsData.value = null
+}
+
+function closeTextSettings() {
+  isTextSettingsVisible.value = false
+  textSettingsData.value = null
+}
+
+function closeChartSettings() {
+  isChartSettingsVisible.value = false
+  chartSettingsData.value = null
+}
+
+function closeSelectorSettings() {
+  isSelectorSettingsVisible.value = false
+  selectorSettingsData.value = null
+}
+
+const saveTextSettings = (updatedSettings) => {
+  const itemIndex = currentPageItems.value.findIndex(item => item.id === updatedSettings.id);
+  if (itemIndex !== -1) {
+    const oldItem = currentPageItems.value[itemIndex];
+    const oldHeight = oldItem.height;
+    
+    if (updatedSettings.type === 'Текст') {
+      if (updatedSettings.autoHeight) {
+        updatedSettings.height = 'auto';
+      } else {
+        updatedSettings.height = 150;
+      }
+    }
+    
+    const newItems = [...currentPageItems.value];
+    newItems[itemIndex] = updatedSettings;
+    updateCurrentPageItems(newItems);
+    
+    const heightChanged = oldHeight !== updatedSettings.height;
+    if (heightChanged && dashboardGridRef.value) {
+      setTimeout(() => {
+        dashboardGridRef.value.triggerRecalculatePositions();
+      }, 50);
+    }
+  }
+  closeTextSettings();
+};
+
+const saveChartSettings = (updatedSettings) => {
+  const itemIndex = currentPageItems.value.findIndex(item => item.id === updatedSettings.id);
+  if (itemIndex !== -1) {
+    const oldItem = currentPageItems.value[itemIndex];
+    const oldHeight = oldItem.height;
+    
+    if (updatedSettings.type === 'Чарт') {
+      if (updatedSettings.autoHeight) {
+        updatedSettings.height = 'auto';
+      } else {
+        updatedSettings.height = 300;
+      }
+    }
+    
+    const newItems = [...currentPageItems.value];
+    newItems[itemIndex] = {
+      ...updatedSettings,
+      title: updatedSettings.title,
+      selectedChart: updatedSettings.selectedChart,
+      description: updatedSettings.description,
+      showDescription: updatedSettings.showDescription,
+      hint: updatedSettings.hint,
+      hintText: updatedSettings.hintText,
+      autoHeight: updatedSettings.autoHeight,
+      filtering: updatedSettings.filtering,
+      chartsList: updatedSettings.chartsList,
+      activeChartIndex: updatedSettings.activeChartIndex || 0
+    };
+    updateCurrentPageItems(newItems);
+    
+    const heightChanged = oldHeight !== updatedSettings.height;
+    if (heightChanged && dashboardGridRef.value) {
+      setTimeout(() => {
+        dashboardGridRef.value.triggerRecalculatePositions();
+      }, 50);
+    }
+  }
+  closeChartSettings();
+};
+
+const saveSelectorSettings = (updatedSettings) => {
+  const itemIndex = currentPageItems.value.findIndex(item => item.id === updatedSettings.id);
+  if (itemIndex !== -1) {
+    const oldItem = currentPageItems.value[itemIndex];
+    const oldHeight = oldItem.height;
+    
+    if (updatedSettings.type === 'Селектор') {
+      if (updatedSettings.autoHeight) {
+        updatedSettings.height = 'auto';
+      } else {
+        updatedSettings.height = 50;
+      }
+    }
+    
+    const newItems = [...currentPageItems.value];
+    newItems[itemIndex] = {
+      ...newItems[itemIndex],
+      selectorsList: updatedSettings.selectorsList,
+      activeSelectorIndex: updatedSettings.activeSelectorIndex || 0,
+      selectorGroupSettings: updatedSettings.selectorGroupSettings || {
+        applyButton: false,
+        clearButton: false,
+        autoHeight: false
+      }
+    };
+    updateCurrentPageItems(newItems);
+    
+    const heightChanged = oldHeight !== updatedSettings.height;
+    if (heightChanged && dashboardGridRef.value) {
+      setTimeout(() => {
+        dashboardGridRef.value.triggerRecalculatePositions();
+      }, 50);
+    }
+  }
+  closeSelectorSettings();
+};
 
 const togglePageDropdown = () => {
     if (pages.value.length > 1) {
@@ -266,6 +496,25 @@ watch(() => pages.value.length, (newLength, oldLength) => {
             currentPageIndex.value = newLength - 1
         }
     }
+})
+
+watch(currentPageItems, (items, oldItems) => {
+  if (items.length > oldItems.length) {
+    const newItem = items[items.length - 1]
+    if (newItem.type === 'Заголовок') {
+      headerSettingsData.value = { ...newItem }
+      isHeaderSettingsVisible.value = true
+    } else if (newItem.type === 'Текст') {
+      textSettingsData.value = { ...newItem }
+      isTextSettingsVisible.value = true
+    } else if (newItem.type === 'Чарт') {
+      chartSettingsData.value = { ...newItem }
+      isChartSettingsVisible.value = true
+    } else if (newItem.type === 'Селектор') {
+      selectorSettingsData.value = { ...newItem }
+      isSelectorSettingsVisible.value = true
+    }
+  }
 })
 
 watch(currentPageIndex, (newIndex) => {
@@ -426,5 +675,50 @@ onUnmounted(() => {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.page-window-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.page-window {
+    background: var(--color-primary-background);
+    border-radius: 12px;
+    
+    &.chart-settings-window {
+        max-width: 90vw;
+        max-height: 90vh;
+        width: 960px;
+        height: 470px;
+    }
+    
+    &.selector-settings-window {
+        max-width: 90vw;
+        max-height: 90vh;
+        width: 870px;
+        height: 640px;
+    }
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    width: 600px;
+    min-height: 445px;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+.chart-settings-window {
+    width: 965px;
+    height: 550px;
+    min-height: 550px;
+    max-height: 550px;
 }
 </style>

@@ -2,12 +2,12 @@ import { ref } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { useRoute } from 'vue-router'
 
-export function useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible) {
+export function useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible, connectionIdRef) {
 
   const route = useRoute()
-  const connectionId = ref(null)
+  const connectionId = connectionIdRef || ref(null)
 
-  if (route.params.connectionId) {
+  if (!connectionIdRef && route.params.connectionId) {
     connectionId.value = Number(route.params.connectionId)
   }
 
@@ -54,8 +54,12 @@ export function useFileList(tempUploadedFiles, selectedFile, uploadedFiles, curr
       console.warn('[loadUserFiles] Нет connectionId, пропускаю загрузку файлов')
       return
     }
+
+    // Убеждаемся, что id является числом или строкой, а не объектом
+    const cleanId = typeof id === 'object' ? id.value || id : id
+    console.log('[loadUserFiles] Используем connectionId:', cleanId, 'тип:', typeof cleanId)
   
-    const res = await apiClient.getUploadedFiles(`bi_analysis/bi_datasets/connection/${id}/files/`)
+    const res = await apiClient.getUploadedFiles(`bi_analysis/bi_datasets/connection/${cleanId}/files/`)
     if (res.success) {
       uploadedFiles.value = res.data
     }

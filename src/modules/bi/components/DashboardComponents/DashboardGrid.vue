@@ -23,6 +23,7 @@
         class="grid-item"
         :class="getItemClass(item)"
         :style="getItemStyle(item)"
+        :data-item-id="item.id"
         @click="selectItem(item)"
         @dblclick="editItem(item)"
         @mousedown="handleMouseDown(item, $event)"
@@ -39,15 +40,41 @@
           </div>
         </div>
         <div class="item-content">
-          <div class="item-preview">
+          <div v-if="item.type === 'Заголовок'" class="header-widget-title" :style="getHeaderStyle(item)">
+            <span>{{ item.title || 'Заголовок' }}</span>
+            <div v-if="item.hint" class="hint-icon-wrapper" @mouseenter="showHint(item, $event)" @mouseleave="hideHint">
+              <CircleHelp :size="16" />
+            </div>
+          </div>
+          <div v-else-if="item.type === 'Текст'" class="text-widget-content" v-html="item.content || 'Текстовое содержимое'">
+          </div>
+          <div v-else-if="item.type === 'Чарт'" class="chart-widget-container">
+            <ChartWidget 
+              :charts-list="item.chartsList || []"
+              :active-chart-index="item.activeChartIndex || 0"
+              :auto-height="item.autoHeight || false"
+              @update:active-chart-index="updateActiveChart(item, $event)"
+              @content-resized="handleChartResize(item, $event)"
+            />
+          </div>
+          <div v-else-if="item.type === 'Селектор'" class="selector-widget-container">
+            <SelectorWidget 
+              :selectors-list="item.selectorsList || []"
+              :active-selector-index="item.activeSelectorIndex || 0"
+              :auto-height="item.autoHeight || item.selectorGroupSettings?.autoHeight || false"
+              :selector-group-settings="item.selectorGroupSettings || {}"
+              @selection-change="handleSelectorSelectionChange(item, $event)"
+              @content-resized="handleSelectorResize(item, $event)"
+              @apply-filters="handleSelectorApplyFilters(item, $event)"
+              @clear-filters="handleSelectorClearFilters(item, $event)"
+            />
+          </div>
+          <div v-else class="item-preview">
             {{ getItemPreview(item) }}
           </div>
         </div>
         
-        <div 
-          v-if="item.selected"
-          class="resize-indicators"
-        >
+        <div v-if="item.selected" class="resize-indicators">
           <div class="resize-indicator resize-left" @mousedown.stop="startResize(item, 'w', $event)"></div>
           <div class="resize-indicator resize-right" @mousedown.stop="startResize(item, 'e', $event)"></div>
           <div class="resize-indicator resize-bottom" @mousedown.stop="startResize(item, 's', $event)"></div>
@@ -56,19 +83,10 @@
     </div>
 
     <Teleport to="body">
-      <div 
-        v-if="showGrayPlaceholder && grayPlaceholderStyle" 
-        class="gray-placeholder"
-        :style="grayPlaceholderStyle"
-      >
-      </div>
+      <div v-if="showGrayPlaceholder && grayPlaceholderStyle" class="gray-placeholder" :style="grayPlaceholderStyle"></div>
     </Teleport>
     
-    <div 
-      v-if="showYellowPlaceholder && yellowPlaceholderStyle" 
-      class="yellow-placeholder"
-      :style="yellowPlaceholderStyle"
-    >
+    <div v-if="showYellowPlaceholder && yellowPlaceholderStyle" class="yellow-placeholder" :style="yellowPlaceholderStyle">
       <div class="placeholder-content">
         <span>Разместить здесь</span>
       </div>
@@ -99,13 +117,25 @@
         </div>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div v-if="hintVisible"
+           class="hint-tooltip" 
+           :style="hintTooltipStyle"
+           @mouseenter="cancelHideHint"
+           @mouseleave="hideHint">
+        <div v-html="hintContent" class="hint-content"></div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { Teleport } from 'vue'
-import { Settings2, X, LayoutDashboard } from 'lucide-vue-next'
+import { Settings2, X, LayoutDashboard, CircleHelp } from 'lucide-vue-next'
+import ChartWidget from './ChartWidget.vue'
+import SelectorWidget from './SelectorWidget.vue'
 
 const ELEMENT_SIZES = {
   'Чарт': { width: 560, height: 300 },
@@ -158,6 +188,13 @@ const resizeDirection = ref('')
 const draggedElementCursorOffset = ref({ x: 0, y: 0 })
 const draggedElementCursorPosition = ref({ x: 0, y: 0 })
 const isMouseDown = ref(false)
+const hintVisible = ref(false)
+const hintContent = ref('')
+const hintTooltipStyle = ref({})
+let hideHintTimer = null
+const resizeObserver = ref(null)
+const autoHeightItems = ref(new Map())
+const isRecalculatingPositions = ref(false)
 
 const grayPlaceholderStyle = computed(() => {
   if (!showGrayPlaceholder.value || !currentDraggedType.value) return null
@@ -234,7 +271,8 @@ const getItemClass = (item) => {
     [`item-${item.type.toLowerCase()}`]: true,
     'item-selected': item.selected,
     'item-dragging': draggedItem.value && draggedItem.value.id === item.id,
-    'item-hidden-drag': isDraggingExisting.value && draggedItem.value && draggedItem.value.id === item.id // добавляем класс для скрытия
+    'item-hidden-drag': isDraggingExisting.value && draggedItem.value && draggedItem.value.id === item.id,
+    'item-auto-height': item.autoHeight || item.selectorGroupSettings?.autoHeight
   }
 }
 
@@ -244,12 +282,16 @@ const getItemStyle = (item) => {
     left: `${item.x || 0}px`,
     top: `${item.y || 0}px`,
     width: `${item.width || ELEMENT_SIZES[item.type]?.width || 200}px`,
-    height: `${item.height || ELEMENT_SIZES[item.type]?.height || 150}px`
+    height: (item.autoHeight || item.selectorGroupSettings?.autoHeight) ? 'auto' : `${item.height || ELEMENT_SIZES[item.type]?.height || 150}px`
+  };
+
+  if (item.background) {
+    baseStyle.background = item.background;
   }
   
   if (draggedItem.value && draggedItem.value.id === item.id) {
-    baseStyle.zIndex = 1000
-    baseStyle.opacity = 0.8
+    baseStyle.zIndex = 1000;
+    baseStyle.opacity = 0.8;
   }
   
   const shiftStyle = shiftedItemsStyle.value[item.id]
@@ -285,8 +327,67 @@ const getItemPreview = (item) => {
   return preview
 }
 
+const showHint = (item, event) => {
+  if (hideHintTimer) {
+    clearTimeout(hideHintTimer);
+    hideHintTimer = null;
+  }
+  if (item.hintText) {
+    hintContent.value = item.hintText; 
+    const rect = event.target.getBoundingClientRect();
+    hintTooltipStyle.value = {
+      display: 'flex',
+      textAlign: 'center',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: '0',
+      top: `${rect.bottom + 5}px`,
+      left: `${rect.left}px`,
+    };
+    hintVisible.value = true;
+  }
+};
+
+const hideHint = () => {
+  hideHintTimer = setTimeout(() => {
+    hintVisible.value = false;
+  }, 200);
+};
+
+const cancelHideHint = () => {
+  if (hideHintTimer) {
+    clearTimeout(hideHintTimer);
+    hideHintTimer = null;
+  }
+};
+
+const getHeaderStyle = (item) => {
+  if (item.type !== 'Заголовок' || !item.size) {
+    return {};
+  }
+
+  const style = {};
+  switch (item.size) {
+    case 'XS':
+      style.fontSize = '16px';
+      break;
+    case 'S':
+      style.fontSize = '20px';
+      break;
+    case 'M':
+      style.fontSize = '24px';
+      break;
+    case 'L':
+      style.fontSize = '28px';
+      break;
+    case 'XL':
+      style.fontSize = '32px';
+      break;
+  }
+  return style;
+};
+
 const selectItem = (item) => {
-  // Не выбираем элемент, если происходит перетаскивание или кнопка мыши зажата
   if (draggedItem.value || isDraggingExisting.value || isMouseDown.value) return
   
   localItems.value.forEach(i => i.selected = false)
@@ -306,6 +407,50 @@ const deleteItem = (item) => {
     emit('update:items', localItems.value)
     emit('item-delete', item)
   }
+}
+
+const updateActiveChart = (item, newIndex) => {
+  item.activeChartIndex = newIndex
+  emit('update:items', localItems.value)
+}
+
+const handleChartResize = (item, newHeight) => {
+  if (item.autoHeight) {
+    autoHeightItems.value.set(item.id, newHeight);
+    nextTick(() => {
+      recalculatePositions();
+    });
+  }
+}
+
+const updateActiveSelector = (item, newIndex) => {
+  item.activeSelectorIndex = newIndex
+  emit('update:items', localItems.value)
+}
+
+const handleSelectorSelectionChange = (item, selectionData) => {
+  console.log('Selector selection changed:', selectionData);
+}
+
+const handleSelectorResize = (item, newHeight) => {
+  const isAutoHeight = item.autoHeight || item.selectorGroupSettings?.autoHeight;
+  
+  if (isAutoHeight) {
+    item.height = newHeight;
+    autoHeightItems.value.set(item.id, newHeight);
+    
+    nextTick(() => {
+      recalculatePositions();
+    });
+  }
+}
+
+const handleSelectorApplyFilters = (item, event) => {
+  console.log('Apply filters for selector:', item.id);
+}
+
+const handleSelectorClearFilters = (item, event) => {
+  console.log('Clear filters for selector:', item.id);
 }
 
 const calculateDropPosition = (mouseX, mouseY, elementType) => {
@@ -347,10 +492,13 @@ const calculateDropPosition = (mouseX, mouseY, elementType) => {
 const findNearestRow = (mouseY, elementHeight) => {
   if (localItems.value.length === 0) return 0
   
-  const occupiedAreas = localItems.value.map(item => ({
-    top: item.y || 0,
-    bottom: (item.y || 0) + (item.height || ELEMENT_SIZES[item.type]?.height || 150)
-  }))
+  const occupiedAreas = localItems.value.map(item => {
+    const actualSize = getActualItemSize(item)
+    return {
+      top: item.y || 0,
+      bottom: (item.y || 0) + actualSize.height
+    }
+  })
   
   const rows = []
   
@@ -390,13 +538,16 @@ const findNearestValidPositionInRow = (x, rowY, width, height, excludeItemId) =>
     .filter(item => {
       if (excludeItemId && item.id === excludeItemId) return false
       const itemY = item.y || 0
-      const itemHeight = item.height || ELEMENT_SIZES[item.type]?.height || 150
+      const actualSize = getActualItemSize(item)
       return Math.abs(itemY - rowY) < 10
     })
-    .map(item => ({
-      left: item.x || 0,
-      right: (item.x || 0) + (item.width || ELEMENT_SIZES[item.type]?.width || 200)
-    }))
+    .map(item => {
+      const actualSize = getActualItemSize(item)
+      return {
+        left: item.x || 0,
+        right: (item.x || 0) + actualSize.width
+      }
+    })
     .sort((a, b) => a.left - b.left)
   
   if (rowItems.length === 0) {
@@ -446,8 +597,9 @@ const calculatePotentialPlacement = (mouseX, mouseY, elementType) => {
   let minDistance = Infinity
   
   for (const item of localItems.value) {
-    const itemCenterX = (item.x || 0) + (item.width || ELEMENT_SIZES[item.type]?.width || 200) / 2
-    const itemCenterY = (item.y || 0) + (item.height || ELEMENT_SIZES[item.type]?.height || 150) / 2
+    const actualSize = getActualItemSize(item)
+    const itemCenterX = (item.x || 0) + actualSize.width / 2
+    const itemCenterY = (item.y || 0) + actualSize.height / 2
     
     const distance = Math.sqrt(
       Math.pow(relativeX - itemCenterX, 2) + Math.pow(relativeY - itemCenterY, 2)
@@ -463,8 +615,9 @@ const calculatePotentialPlacement = (mouseX, mouseY, elementType) => {
     return { x: 0, y: 0 }
   }
   
-  const nearestItemWidth = nearestItem.width || ELEMENT_SIZES[nearestItem.type]?.width || 200
-  const nearestItemHeight = nearestItem.height || ELEMENT_SIZES[nearestItem.type]?.height || 150
+  const nearestItemActualSize = getActualItemSize(nearestItem)
+  const nearestItemWidth = nearestItemActualSize.width
+  const nearestItemHeight = nearestItemActualSize.height
   const nearestItemX = nearestItem.x || 0
   const nearestItemY = nearestItem.y || 0
   
@@ -532,7 +685,8 @@ const calculateFinalPlacement = (elementType) => {
   
   localItems.value.forEach(item => {
     const itemY = item.y || 0
-    const itemHeight = item.height || ELEMENT_SIZES[item.type]?.height || 150
+    const actualSize = getActualItemSize(item)
+    const itemHeight = actualSize.height
     
     if (itemY >= placeholderY) {
       elementsToShift.push(item)
@@ -544,7 +698,8 @@ const calculateFinalPlacement = (elementType) => {
   
   elementsToShift.forEach(item => {
     const itemY = item.y || 0
-    const itemHeight = item.height || ELEMENT_SIZES[item.type]?.height || 150
+    const actualSize = getActualItemSize(item)
+    const itemHeight = actualSize.height
     
     if (itemY >= placeholderY) {
       item.y = itemY + elementSize.height + GRID_GAP
@@ -559,12 +714,15 @@ const calculateFinalPlacement = (elementType) => {
 const checkCollision = (x, y, width, height, excludeItemId) => {
   const occupiedAreas = localItems.value
     .filter(item => !excludeItemId || item.id !== excludeItemId)
-    .map(item => ({
-      left: item.x || 0,
-      top: item.y || 0,
-      right: (item.x || 0) + (item.width || ELEMENT_SIZES[item.type]?.width || 200),
-      bottom: (item.y || 0) + (item.height || ELEMENT_SIZES[item.type]?.height || 150)
-    }))
+    .map(item => {
+      const actualSize = getActualItemSize(item)
+      return {
+        left: item.x || 0,
+        top: item.y || 0,
+        right: (item.x || 0) + actualSize.width,
+        bottom: (item.y || 0) + actualSize.height
+      }
+    })
   
   const newArea = {
     left: x,
@@ -586,21 +744,17 @@ const handleMouseDown = (item, event) => {
   
   isMouseDown.value = true
   
-  // Сохраняем начальную позицию мыши
   const startX = event.clientX
   const startY = event.clientY
   
   const handleMouseMove = (moveEvent) => {
-    // Проверяем, что мышь действительно двигается (не менее 5 пикселей)
     const deltaX = Math.abs(moveEvent.clientX - startX)
     const deltaY = Math.abs(moveEvent.clientY - startY)
     
     if (deltaX > 5 || deltaY > 5) {
-      // Удаляем обработчик движения мыши
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       
-      // Начинаем перетаскивание
       startDrag(item, moveEvent)
     }
   }
@@ -648,8 +802,9 @@ const handleExistingItemDrag = (event) => {
   const rect = gridContainer.value.getBoundingClientRect()
   const mouseX = event.clientX - rect.left
   const mouseY = event.clientY - rect.top
-  const itemWidth = draggedItem.value.width || ELEMENT_SIZES[draggedItem.value.type]?.width || 200
-  const itemHeight = draggedItem.value.height || ELEMENT_SIZES[draggedItem.value.type]?.height || 150
+  const actualSize = getActualItemSize(draggedItem.value)
+  const itemWidth = actualSize.width
+  const itemHeight = actualSize.height
   const gridWidth = Math.min(gridContainer.value.clientWidth, MAX_PAGE_WIDTH)
   const snapX = Math.max(0, Math.min(gridWidth - itemWidth, mouseX - itemWidth / 2))
   let snapY = 0
@@ -658,8 +813,9 @@ const handleExistingItemDrag = (event) => {
     let minDistance = Infinity
     for (const item of localItems.value) {
       if (item.id === draggedItem.value.id) continue
-      const itemCenterX = (item.x || 0) + (item.width || ELEMENT_SIZES[item.type]?.width || 200) / 2
-      const itemCenterY = (item.y || 0) + (item.height || ELEMENT_SIZES[item.type]?.height || 150) / 2
+      const itemActualSize = getActualItemSize(item)
+      const itemCenterX = (item.x || 0) + itemActualSize.width / 2
+      const itemCenterY = (item.y || 0) + itemActualSize.height / 2
       const distance = Math.sqrt(
         Math.pow(mouseX - itemCenterX, 2) + Math.pow(mouseY - itemCenterY, 2)
       )
@@ -669,7 +825,8 @@ const handleExistingItemDrag = (event) => {
       }
     }
     if (nearestItem) {
-      const nearestItemHeight = nearestItem.height || ELEMENT_SIZES[nearestItem.type]?.height || 150
+      const nearestItemActualSize = getActualItemSize(nearestItem)
+      const nearestItemHeight = nearestItemActualSize.height
       const nearestItemY = nearestItem.y || 0
       const mouseIsAbove = mouseY < nearestItemY + nearestItemHeight / 2
       if (mouseIsAbove) {
@@ -702,7 +859,8 @@ const stopDrag = () => {
       let currentY = 0;
       for (let i = 0; i < sorted.length; i++) {
         sorted[i].y = currentY;
-        currentY += (sorted[i].height || ELEMENT_SIZES[sorted[i].type]?.height || 150) + GRID_GAP;
+        const actualSize = getActualItemSize(sorted[i]);
+        currentY += actualSize.height + GRID_GAP;
       }
       localItems.value = sorted;
     }
@@ -744,14 +902,12 @@ const handleResize = (event) => {
   let newX = resizingItem.value.x || 0
   let newY = resizingItem.value.y || 0
   
-  // Получаем максимальную ширину страницы
   const gridWidth = gridContainer.value ? 
     Math.min(gridContainer.value.clientWidth, MAX_PAGE_WIDTH) : 
     MAX_PAGE_WIDTH
   
   if (resizeDirection.value === 'e') {
     newWidth = Math.max(100, resizeStartSize.value.width + deltaX)
-    // Ограничиваем ширину до границы страницы
     if (newX + newWidth > gridWidth - GRID_PADDING * 2) {
       newWidth = gridWidth - GRID_PADDING * 2 - newX
     }
@@ -759,7 +915,6 @@ const handleResize = (event) => {
   if (resizeDirection.value === 'w') {
     newWidth = Math.max(100, resizeStartSize.value.width - deltaX)
     newX = (resizingItem.value.x || 0) + deltaX
-    // Ограничиваем позицию и ширину
     if (newX < GRID_PADDING) {
       newX = GRID_PADDING
       newWidth = resizeStartSize.value.width + (resizingItem.value.x || 0) - GRID_PADDING
@@ -857,6 +1012,57 @@ const handleDrop = (event) => {
         height: size.height
       }
       
+      if (itemType === 'Чарт') {
+        newItem.chartsList = [
+          {
+            id: 1,
+            title: 'Заголовок 1',
+            selectedChart: '',
+            selectedChartId: null,
+            chartType: 'select',
+            chartUrl: '',
+            description: '',
+            hintText: '',
+            showDescription: false,
+            hint: false,
+            autoHeight: false,
+            isFavorite: true
+          }
+        ]
+        newItem.activeChartIndex = 0
+      }
+      
+      if (itemType === 'Селектор') {
+        newItem.selectorsList = [
+          {
+            id: 1,
+            title: 'Селектор 1',
+            titlePosition: 'left',
+            showInternalTitle: true,
+            internalTitle: 'Выберите значение из списка',
+            showColorAccent: true,
+            showHint: false,
+            hintText: '',
+            sourceType: 'dataset',
+            selectedDataset: '',
+            selectedDatasetId: null,
+            selectedField: '',
+            selectorType: 'list',
+            operation: '',
+            multipleSelection: false,
+            defaultValue: [],
+            required: false,
+            isFavorite: true
+          }
+        ]
+        newItem.activeSelectorIndex = 0
+        newItem.selectorGroupSettings = {
+          applyButton: true,
+          clearButton: true,
+          autoHeight: false
+        }
+      }
+      
       localItems.value.push(newItem)
       emit('update:items', localItems.value)
     }
@@ -873,6 +1079,91 @@ const resetDragState = () => {
   
   grayPlaceholderPosition.value = { x: 0, y: 0 }
   yellowPlaceholderPosition.value = { x: 0, y: 0, width: 0, height: 0 }
+}
+
+const getActualItemSize = (item) => {
+  let actualHeight = item.height || ELEMENT_SIZES[item.type]?.height || 150;
+  
+  if (item.autoHeight && autoHeightItems.value.has(item.id)) {
+    const savedHeight = autoHeightItems.value.get(item.id);
+    actualHeight = savedHeight;
+  }
+  
+  return {
+    width: item.width || ELEMENT_SIZES[item.type]?.width || 200,
+    height: actualHeight
+  }
+}
+
+const recalculatePositions = () => {
+  if (isRecalculatingPositions.value || localItems.value.length === 0) {
+    return;
+  }
+  
+  isRecalculatingPositions.value = true
+  
+  nextTick(() => {
+    const sortedItems = [...localItems.value].sort((a, b) => (a.y || 0) - (b.y || 0))
+    
+    let currentY = 0
+    
+    for (let i = 0; i < sortedItems.length; i++) {
+      const item = sortedItems[i]
+      const actualSize = getActualItemSize(item)
+      
+      item.y = currentY
+      
+      currentY += actualSize.height + GRID_GAP
+    }
+    
+    emit('update:items', localItems.value)
+    isRecalculatingPositions.value = false
+  })
+}
+
+const handleItemResize = (entries) => {
+  let hasChanges = false
+  
+  for (const entry of entries) {
+    const itemId = entry.target.getAttribute('data-item-id')
+    const item = localItems.value.find(i => i.id === itemId)
+    
+    if (item && item.autoHeight) {
+      const newHeight = entry.contentRect.height
+      const storedHeight = autoHeightItems.value.get(itemId)
+      
+      if (storedHeight !== newHeight) {
+        autoHeightItems.value.set(itemId, newHeight)
+        hasChanges = true
+      }
+    }
+  }
+  
+  if (hasChanges) {
+    recalculatePositions()
+  }
+}
+
+const setupResizeObserver = (element, item) => {
+  if (item.autoHeight && resizeObserver.value) {
+    element.setAttribute('data-item-id', item.id)
+    resizeObserver.value.observe(element)
+    
+    nextTick(() => {
+      const rect = element.getBoundingClientRect()
+      autoHeightItems.value.set(item.id, rect.height)
+    })
+  }
+}
+
+const removeResizeObserver = (item) => {
+  if (resizeObserver.value) {
+    const element = document.querySelector(`[data-item-id="${item.id}"]`)
+    if (element) {
+      resizeObserver.value.unobserve(element)
+    }
+    autoHeightItems.value.delete(item.id)
+  }
 }
 
 const handleMouseMove = (event) => {
@@ -903,8 +1194,9 @@ const handleMouseMove = (event) => {
     const newY = event.clientY - rect.top - dragOffset.value.y
     
     const gridWidth = Math.min(gridContainer.value.clientWidth, MAX_PAGE_WIDTH)
-    const itemWidth = draggedItem.value.width || ELEMENT_SIZES[draggedItem.value.type]?.width || 200
-    const itemHeight = draggedItem.value.height || ELEMENT_SIZES[draggedItem.value.type]?.height || 150
+    const actualSize = getActualItemSize(draggedItem.value)
+    const itemWidth = actualSize.width
+    const itemHeight = actualSize.height
     
     const clampedX = Math.max(0, Math.min(gridWidth - itemWidth, newX))
     const clampedY = Math.max(0, newY)
@@ -934,8 +1226,9 @@ const handleMouseMove = (event) => {
       for (const item of localItems.value) {
         if (item.id === draggedItem.value.id) continue
         
-        const itemCenterX = (item.x || 0) + (item.width || ELEMENT_SIZES[item.type]?.width || 200) / 2
-        const itemCenterY = (item.y || 0) + (item.height || ELEMENT_SIZES[item.type]?.height || 150) / 2
+        const itemActualSize = getActualItemSize(item)
+        const itemCenterX = (item.x || 0) + itemActualSize.width / 2
+        const itemCenterY = (item.y || 0) + itemActualSize.height / 2
         
         const distance = Math.sqrt(
           Math.pow(mouseX - itemCenterX, 2) + Math.pow(mouseY - itemCenterY, 2)
@@ -948,7 +1241,8 @@ const handleMouseMove = (event) => {
       }
       
       if (nearestItem) {
-        const nearestItemHeight = nearestItem.height || ELEMENT_SIZES[nearestItem.type]?.height || 150
+        const nearestItemActualSize = getActualItemSize(nearestItem)
+        const nearestItemHeight = nearestItemActualSize.height
         const nearestItemY = nearestItem.y || 0
         
         const mouseIsAbove = mouseY < nearestItemY + nearestItemHeight / 2
@@ -990,6 +1284,37 @@ watch(() => props.items, (newItems) => {
   }
 }, { deep: true, immediate: true })
 
+watch(localItems, (newItems, oldItems) => {
+  if (!resizeObserver.value) return
+  
+  nextTick(() => {
+    oldItems.forEach(oldItem => {
+      const stillExists = newItems.find(newItem => newItem.id === oldItem.id)
+      if (!stillExists) {
+        removeResizeObserver(oldItem)
+      }
+    })
+    
+    newItems.forEach(newItem => {
+      if (newItem.height === 'auto') {
+        const element = document.querySelector(`[data-item-id="${newItem.id}"]`)
+        if (element && !autoHeightItems.value.has(newItem.id)) {
+          setupResizeObserver(element, newItem)
+        }
+      } else {
+        removeResizeObserver(newItem)
+      }
+    })
+    
+    const hasAutoHeightItems = newItems.some(item => item.height === 'auto')
+    if (hasAutoHeightItems) {
+      setTimeout(() => {
+        recalculatePositions()
+      }, 100)
+    }
+  })
+}, { deep: true })
+
 watch(() => props.draggedType, (newType) => {
   if (newType && ELEMENT_SIZES[newType] && !isDraggingExisting.value) {
     currentDraggedType.value = newType
@@ -1002,20 +1327,43 @@ watch(() => props.draggedType, (newType) => {
   }
 }, { immediate: true })
 
+const triggerRecalculatePositions = () => {
+  nextTick(() => {
+    recalculatePositions()
+  })
+}
+
+defineExpose({
+  triggerRecalculatePositions
+})
+
 onMounted(() => {
   localItems.value.forEach((item, index) => {
     if (item.x === undefined || item.y === undefined) {
       const size = ELEMENT_SIZES[item.type] || { width: 200, height: 150 }
       item.x = 0
       item.y = index * (size.height + GRID_GAP)
-      item.width = size.width
-      item.height = size.height
+      if (!item.width) item.width = size.width
+      if (!item.height) item.height = size.height
     }
   })
   
   if (localItems.value.length > 0) {
     emit('update:items', localItems.value)
   }
+
+  resizeObserver.value = new ResizeObserver(handleItemResize)
+  
+  nextTick(() => {
+    localItems.value.forEach(item => {
+      if (item.height === 'auto') {
+        const element = document.querySelector(`[data-item-id="${item.id}"]`)
+        if (element) {
+          setupResizeObserver(element, item)
+        }
+      }
+    })
+  })
 })
 
 onUnmounted(() => {
@@ -1023,6 +1371,12 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', stopDrag)
   document.removeEventListener('mousemove', handleResize)
   document.removeEventListener('mouseup', stopResize)
+  
+  if (resizeObserver.value) {
+    resizeObserver.value.disconnect()
+    resizeObserver.value = null
+  }
+  autoHeightItems.value.clear()
 })
 </script>
 
@@ -1095,7 +1449,7 @@ onUnmounted(() => {
     border-color: var(--color-primary);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     
-    .item-actions {
+    .item-actions, .item-header {
       opacity: 1;
     }
   }
@@ -1117,13 +1471,23 @@ onUnmounted(() => {
 }
 
 .item-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
   flex-shrink: 0;
-  min-height: 24px;
+  min-height: 20px;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  padding: 8px 12px;
+  background: rgba(45, 45, 61, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  border-radius: 8px 8px 0 0;
 }
 
 .item-type {
@@ -1138,12 +1502,131 @@ onUnmounted(() => {
   max-width: 60%;
 }
 
+.header-widget-title {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-align: left;
+  width: 100%;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.text-widget-content {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 8px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  
+  :deep(h1, h2, h3, h4, h5, h6) {
+    margin: 0.5em 0;
+    font-weight: 600;
+  }
+  
+  :deep(p) {
+    margin: 0.5em 0;
+  }
+  
+  :deep(ul, ol) {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+  }
+  
+  :deep(blockquote) {
+    margin: 1em 0;
+    padding: 0.5em 1em;
+    border-left: 4px solid var(--color-border);
+    background: var(--color-background);
+  }
+  
+  :deep(pre) {
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 1em;
+    overflow-x: auto;
+    font-family: monospace;
+  }
+  
+  :deep(code) {
+    background: var(--color-background);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: monospace;
+  }
+}
+
+.chart-widget-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.item-auto-height {
+  height: auto !important;
+  min-height: 50px;
+  
+  .text-widget-content {
+    height: auto !important;
+    overflow: visible;
+    display: block;
+  }
+  
+  .chart-widget-container {
+    height: auto !important;
+    overflow: visible;
+  }
+  
+  .item-content {
+    height: auto !important;
+    min-height: auto;
+  }
+  
+  .selector-widget-container {
+    height: auto !important;
+    overflow: visible;
+  }
+}
+
+.hint-icon-wrapper {
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+.hint-tooltip {
+  position: fixed;
+  background: var(--color-primary-background);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px;
+  white-space: normal;
+  z-index: 10000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-size: 13px;
+  max-width: 300px;
+  overflow-wrap: break-word;
+
+  :deep(p) {
+    margin-bottom: 0;
+  }
+}
+
 .item-actions {
   display: flex;
   gap: 5px;
   opacity: 0;
   transition: opacity 0.2s ease;
-  flex-shrink: 0;
+  z-index: 1;
 }
 
 .btn-edit,
@@ -1172,7 +1655,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 8px;
 }
 
 .item-preview {
@@ -1188,8 +1670,8 @@ onUnmounted(() => {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
   line-clamp: 3;
+  -webkit-box-orient: vertical;
   
   @media (max-width: 400px) {
     font-size: 12px;
@@ -1326,14 +1808,12 @@ onUnmounted(() => {
 .item-селектор {
   background: linear-gradient(135deg, var(--color-primary-background) 0%, rgba(54, 162, 235, 0.05) 100%);
   
-  .item-content {
-    padding: 4px;
-  }
-  
   .item-preview {
     font-size: 12px;
+    display: -webkit-box;
     -webkit-line-clamp: 1;
     line-clamp: 1;
+    -webkit-box-orient: vertical;
   }
 }
 
@@ -1350,8 +1830,10 @@ onUnmounted(() => {
   
   .item-preview {
     font-size: 13px;
+    display: -webkit-box;
     -webkit-line-clamp: 1;
     line-clamp: 1;
+    -webkit-box-orient: vertical;
   }
 }
 
@@ -1367,5 +1849,17 @@ onUnmounted(() => {
   flex-direction: column;
   overflow: hidden;
   z-index: 2000;
+}
+
+.hint-content {
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 </style> 

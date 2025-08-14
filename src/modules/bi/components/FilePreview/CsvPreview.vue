@@ -30,16 +30,12 @@
         </div>
       </div>
   
-      <div v-if="isLoading" class="spinner-wrapper">
-        <div class="spinner"></div>
-      </div>
-  
-      <div v-else-if="errorState" class="error-message">
+      <div v-if="errorState" class="error-message">
         <h2>Ошибка</h2>
         <p>{{ errorState }}</p>
       </div>
   
-      <table class="csv-table" v-else-if="columns.length">
+      <table class="csv-table" v-if="columns.length && !errorState">
         <thead>
           <tr>
             <th v-for="(col, index) in columns" :key="index">
@@ -76,7 +72,10 @@
   import { apiClient } from '@/js/api/manager'
   import { endpoints } from '@/js/api/endpoints'
   
-  const props = defineProps({ file: Object })
+  const props = defineProps({ 
+    file: Object,
+    isLoading: Boolean
+  })
   
   const encoding = ref('utf-8')
   const delimiter = ref(',')
@@ -84,7 +83,6 @@
   const searchQuery = ref('')
   const rawData = ref([])
   const fileUrl = ref(null)
-  const isLoading = ref(false)
   const errorState = ref(null)
   
   const typeLabels = {
@@ -180,7 +178,6 @@
   }
 
   async function previewCsvLocally(file) {
-  isLoading.value = true
   errorState.value = null
 
   try {
@@ -202,8 +199,6 @@
   } catch (err) {
     errorState.value = 'Ошибка чтения CSV: ' + err.message
     rawData.value = []
-  } finally {
-    isLoading.value = false
   }
 }
   
@@ -228,7 +223,6 @@ watch([encoding, delimiter], async () => {
   
   async function fetchFileMetaAndLoad(id) {
   try {
-    isLoading.value = true
     errorState.value = null
 
     const res = await apiClient.get(`${endpoints.bi.Upload}${id}/`, {
@@ -247,8 +241,6 @@ watch([encoding, delimiter], async () => {
   } catch (err) {
     errorState.value = err.message
     rawData.value = []
-  } finally {
-    isLoading.value = false
   }
 }
 </script>
@@ -262,30 +254,7 @@ watch([encoding, delimiter], async () => {
     color: var(--color-primary-text);
     font-size: 0.9rem;
   }
-  
-  .spinner-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
-    height: 200px;
-  }
-  
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 5px solid var(--color-border);
-    border-top: 5px solid #10b981;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  
+
   .error-message {
     text-align: center;
     padding: 2rem;
