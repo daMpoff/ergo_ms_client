@@ -5,6 +5,10 @@ export function useFileUploader(tempUploadedFiles, selectedFile, isSheetPickerVi
   const MAX_FILES = 10
   const MAX_SIZE_MB = 200
 
+  const getConnectionId = () => {
+    return connectionId && typeof connectionId === 'object' ? connectionId.value : connectionId
+  }
+
 async function uploadFile(file, sheet = null) {
   const formData = new FormData()
   formData.append('file', file)
@@ -16,26 +20,30 @@ async function uploadFile(file, sheet = null) {
     formData.append('sheet', sheet)
   }
 
-  const res = await apiClient.upload('bi_analysis/bi_datasets/upload/', formData)
+  try {
+    const res = await apiClient.upload('bi_analysis/bi_datasets/upload/', formData)
 
-  if (res.success) {
-    const temp = {
-      name,
-      temp_path: res.data.temp_path,
-      original_filename: res.data.original_filename,
-      file_type: res.data.file_type,
-      originalFile: file,
-      isReady: true,
-      sheet: sheet
+    if (res.success) {
+      const temp = {
+        name,
+        temp_path: res.data.temp_path,
+        original_filename: res.data.original_filename,
+        file_type: res.data.file_type,
+        originalFile: file,
+        isReady: true,
+        sheet: sheet
+      }
+      tempUploadedFiles.value.push(temp)
+      selectedFile.value = temp
     }
-    tempUploadedFiles.value.push(temp)
-    selectedFile.value = temp
+  } catch (error) {
+    console.error('[uploadFile] Исключение при загрузке:', error)
   }
 }
 
   async function uploadFileRaw(formData, newName, originalFile) {
   try {
-    const res = await apiClient.post('/bi_analysis/bi_datasets/upload/finalize/', formData)
+    const res = await apiClient.post('bi_analysis/bi_datasets/upload/finalize/', formData)
     return res
   } catch (err) {
     return { success: false, error: err }
@@ -73,7 +81,6 @@ async function handleSheetSelection(sheets) {
   if (!file || !sheets.length) return
 
   for (const sheet of sheets) {
-    // Вызываем uploadFile для каждого листа, чтобы получить temp_path и т.д.
     await uploadFile(file.originalFile, sheet)
   }
 
@@ -126,7 +133,11 @@ async function handleSheetSelection(sheets) {
     }
 
     event.target.value = ''
-    await loadUserFiles(connectionId)
+    
+    const currentConnectionId = getConnectionId()
+    if (currentConnectionId) {
+      await loadUserFiles(currentConnectionId)
+    }
   }
 
   return {

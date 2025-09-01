@@ -274,19 +274,26 @@ async function loadConnectionFiles() {
     return
   }
 
+  console.log('[loadConnectionFiles] Загружаю файлы для подключения:', currentConnectionId)
+
   try {
-    const res = await apiClient.get(`bi_analysis/bi_datasets/connection/${currentConnectionId}/files/`)
+    const res = await apiClient.getUploadedFiles(`bi_analysis/bi_datasets/connection/${currentConnectionId}/files/`)
+    console.log('[loadConnectionFiles] Ответ сервера:', res)
     
     if (res.success) {
       uploadedFiles.value = res.data
       fileError.value = null
+      console.log('[loadConnectionFiles] Загружено файлов:', res.data.length)
+      console.log('[loadConnectionFiles] Файлы:', res.data)
     } else {
+      console.error('[loadConnectionFiles] Ошибка получения файлов:', res.errors)
       fileError.value = {
         code: res.status || 500,
         message: res.errors || 'Неизвестная ошибка'
       }
     }
   } catch (error) {
+    console.error('[loadConnectionFiles] Исключение при загрузке файлов:', error)
     fileError.value = {
       code: error.response?.status || 500,
       message: error.message || 'Ошибка сети'

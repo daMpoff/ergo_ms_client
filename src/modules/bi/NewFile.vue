@@ -27,13 +27,13 @@
             :isActive="selectedFile === file" @select="selectFile" @tooltip-show="onIconHover"
             @tooltip-hide="hideTooltipWithDelay" @delete="() => removeTempFile(file)" @pick-sheets="openSheetPicker" />
         </div>
-        <!--<div v-if="uploadedFiles.length">
+        <div v-if="uploadedFiles.length">
           <div class="section-header">Загруженные ранее</div>
           <FileItem v-for="file in uploadedFiles" :key="file.id" :file="file" :isTemp="false"
             :isActive="selectedFile === file" @replace="replaceFile" @rename="renameFile" @delete="deleteFile"
             @select="selectFile" @tooltip-show="onIconHover" @tooltip-hide="hideTooltipWithDelay"
             @pick-sheets="openSheetPicker" />
-        </div>-->
+        </div>
       </div>
     </aside>
 
@@ -124,11 +124,9 @@ function replaceFile(file) {
 }
 
 function handleSheetSelectionOrReplace(sheets) {
-  // Если currentUploadFile имеет replaceFileId, значит это замена файла
   if (currentUploadFile.value?.replaceFileId) {
     handleFileReplaceWithSheets(sheets)
   } else {
-    // Иначе это обычная загрузка нового файла
     handleSheetSelection(sheets)
   }
 }
@@ -147,13 +145,17 @@ async function createConnection(data) {
       connector_type: data.connector_type,
       config: data.config
     }
-    const connRes = await apiClient.post('/bi_analysis/bi_connections/', payload)
+    const connRes = await apiClient.post('bi_analysis/bi_connections/', payload)
+    
     if (!connRes.success || !connRes.data?.id) {
       alert('Не удалось создать подключение')
       return
     }
+    
     const newConnectionId = connRes.data.id
-    await finalizeUploads(newConnectionId)
+    
+    const uploadResult = await finalizeUploads(newConnectionId)
+    
     alert('Подключение успешно создано и файлы загружены!')
     router.push(`/bi/connections/${newConnectionId}/files/`)
   } catch (err) {

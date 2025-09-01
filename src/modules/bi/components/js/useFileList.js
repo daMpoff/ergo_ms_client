@@ -11,8 +11,11 @@ export function useFileList(tempUploadedFiles, selectedFile, uploadedFiles, curr
     connectionId.value = Number(route.params.connectionId)
   }
 
+  if (connectionIdRef && connectionIdRef.value) {
+    connectionId.value = connectionIdRef.value
+  }
+
   function removeTempFile(file) {
-    console.log('[removeTempFile] попытка удалить:', file.name || file.temp_path)
 
     const index = tempUploadedFiles.value.findIndex(f => f.temp_path === file.temp_path)
     if (index !== -1) {
@@ -22,17 +25,10 @@ export function useFileList(tempUploadedFiles, selectedFile, uploadedFiles, curr
         selectedFile.value = null
       }
 
-      console.log('[removeTempFile] удалено и предпросмотр сброшен (если был)')
-    } else {
-      console.warn('[removeTempFile] файл не найден среди временных')
     }
   }
 
   function openSheetPicker(file) {
-    console.log('[openSheetPicker]', file)
-    console.log('pendingSheets:', file.pendingSheets)
-    console.log('processedSheets:', file.processedSheets)
-
     currentUploadFile.value = file
     availableSheets.value = file.pendingSheets
     sheetBeingEdited.value = getSheetNameFromFile(file.name)
@@ -51,17 +47,20 @@ export function useFileList(tempUploadedFiles, selectedFile, uploadedFiles, curr
     const id = connectionIdArg ?? connectionId.value
   
     if (!id) {
-      console.warn('[loadUserFiles] Нет connectionId, пропускаю загрузку файлов')
       return
     }
 
-    // Убеждаемся, что id является числом или строкой, а не объектом
     const cleanId = typeof id === 'object' ? id.value || id : id
-    console.log('[loadUserFiles] Используем connectionId:', cleanId, 'тип:', typeof cleanId)
   
-    const res = await apiClient.getUploadedFiles(`bi_analysis/bi_datasets/connection/${cleanId}/files/`)
-    if (res.success) {
-      uploadedFiles.value = res.data
+    try {
+      const res = await apiClient.getUploadedFiles(`bi_analysis/bi_datasets/connection/${cleanId}/files/`)
+      if (res.success) {
+        uploadedFiles.value = res.data
+      } else {
+        uploadedFiles.value = []
+      }
+    } catch (error) {
+      uploadedFiles.value = []
     }
   }
 
