@@ -517,41 +517,36 @@ async function copyLink(row) {
   closeMenu()
 }
 
-function shouldShowFileWarning(row) {
-  if (props.currentPage !== 'connections') return false
+// Функции для проверки проблем с подключениями
+function shouldShowFileWarning(connection) {
+  if (!connection) return false
   
-  const type = (row.connector_type_display || row.connector_type || '').toLowerCase().trim()
+  const type = (connection.connector_type_display || connection.connector_type || '').toLowerCase().trim()
   
-  const isFileConnection = type === 'file' || 
-                           type === 'files' || 
-                           type === 'файл' || 
-                           type === 'файлы' ||
-                           type.includes('file') || 
-                           type.includes('файл')
+  // Для файловых подключений проверяем статус файлов
+  if (type.includes('file') || type.includes('файл')) {
+    return connection.hasMissingFiles || connection.hasProblematicFiles
+  }
   
-  if (!isFileConnection) return false
-  
-  const filesStatus = connectionFilesStatus.value.get(row.id)
-  
-  if (!filesStatus) return false
-  
-  return filesStatus.hasMissingFiles || filesStatus.hasProblematicFiles
+  // Для других типов подключений можно добавить дополнительные проверки
+  return false
 }
 
-function getFileWarningTooltip(row) {
-  const filesStatus = connectionFilesStatus.value.get(row.id)
+function getFileWarningTooltip(connection) {
+  if (!connection) return ''
   
-  if (!filesStatus) return 'В подключении отсутствуют файлы'
+  const type = (connection.connector_type_display || connection.connector_type || '').toLowerCase().trim()
   
-  if (filesStatus.hasProblematicFiles) {
-    return 'Возникла проблема с одним из файлов в подключении'
+  if (type.includes('file') || type.includes('файл')) {
+    if (connection.hasProblematicFiles) {
+      return 'Возникла проблема с одним из файлов в подключении'
+    }
+    if (connection.hasMissingFiles) {
+      return 'В подключении отсутствуют файлы'
+    }
   }
   
-  if (filesStatus.hasMissingFiles) {
-    return 'В подключении отсутствуют файлы'
-  }
-  
-  return 'В подключении отсутствуют файлы'
+  return 'Проблема с подключением'
 }
 
 async function loadConnectionFilesStatus(connectionId) {

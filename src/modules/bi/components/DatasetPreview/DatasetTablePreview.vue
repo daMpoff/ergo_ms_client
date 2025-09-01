@@ -8,6 +8,8 @@
         <div class="input-label-right">не больше 1000</div>
       </div>
     </div>
+    
+    <!-- Таблица предпросмотра -->
     <div class="main-grid" style="position: relative;">
       <Vue3Datatable
         :columns="datatableColumns"
@@ -41,7 +43,7 @@ watch(() => props.limit, v => {
   if (localLimit.value !== v) localLimit.value = v
 })
 
-const emit = defineEmits(['update:limit'])
+const emit = defineEmits(['update:limit', 'switch-to-sources'])
 
 function clamp(val) {
   const n = Number(val) || 1
@@ -95,6 +97,10 @@ function toField(str) {
   padding: 5px;
   gap: 10px;
 }
+
+
+
+
 
 .main-title {
     display: flex;

@@ -75,70 +75,241 @@ const props = defineProps({
   linkedTableIds: { type: Array, default: () => [] },
   editRelation: Object,
   datasetId: [String, Number],
+  selectedConnection: Object,
 })
 
-const canApply = computed(() =>
-  relationLines.value.length > 0 &&
-  relationLines.value.every(line => line.left && line.right)
-)
-
-const isEditMode      = computed(() => !!props.editRelation)
-const selectedTableId = ref(isEditMode.value
-  ? Number(props.editRelation.rightTableId)
-  : null)
+const canApply = computed(() => {
+  // Проверяем, что выбрана таблица и она доступна
+  if (!selectedTableId.value) {
+    return false
+  }
   
-const linkedTable = computed(() =>
-  props.allTables.find(t => t.id === selectedTableId.value)
-)
+  const selectedTable = props.allTables.find(t => t.id === selectedTableId.value)
+  if (!selectedTable) {
+    return false
+  }
+  
+  // Проверяем, что выбранная таблица принадлежит текущему подключению
+  if (props.selectedConnection) {
+    let belongsToCurrentConnection = false
+    
+    if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+        props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+      belongsToCurrentConnection = selectedTable.file_id === props.selectedConnection.id
+    } else {
+      belongsToCurrentConnection = !selectedTable.connection_id || selectedTable.connection_id === props.selectedConnection.id
+    }
+    
+    if (!belongsToCurrentConnection) {
+      return false
+    }
+  }
+  
+  const hasLines = relationLines.value.length > 0
+  const allLinesComplete = relationLines.value.every(line => line.left && line.right)
+  
+  const result = hasLines && allLinesComplete
+  
+  return result
+})
+
+const isEditMode = computed(() => {
+  const hasEditRelation = !!props.editRelation
+  return hasEditRelation
+})
+const selectedTableId = ref(() => {
+  if (isEditMode.value && props.editRelation?.rightTableId) {
+    const tableId = Number(props.editRelation.rightTableId)
+    return tableId
+  }
+  
+  return null
+})
+  
+const linkedTable = computed(() => {
+  if (!selectedTableId.value) {
+    return null
+  }
+  
+  const table = props.allTables.find(t => t.id === selectedTableId.value)
+  if (!table) {
+    return null
+  }
+  
+  return table
+})
 
 const mainTableColumns = ref([])
 const linkedTableColumns = ref([])
 
-mainTableColumns.value = getTableColumns(props.mainTable)
+// Инициализируем колонки главной таблицы
+if (props.mainTable) {
+  mainTableColumns.value = getTableColumns(props.mainTable)
+} else {
+}
 
-const usedStagingIds = props.linkedTableIds || [];
-const usedFileIds = props.allTables
-  .filter(t => usedStagingIds.includes(t.id))
-  .map(t => t.file_id);
+// Делаем эти переменные реактивными computed свойствами
+const usedStagingIds = computed(() => {
+  const ids = props.linkedTableIds || []
+  return ids
+})
+
+const usedFileIds = computed(() => {
+  const fileIds = props.allTables
+    .filter(t => usedStagingIds.value.includes(t.id))
+    .map(t => t.file_id)
+  
+  return fileIds
+})
 
 const availableTables = computed(() => {
-  if (!props.mainTable) return [];
-  return props.allTables.filter(t => {
-    if (t.id === props.mainTable.id) return false;
-    if (t.isMain) return false;
-    if (t.file_id && t.file_id === props.mainTable.file_id) return false;
-    if (usedStagingIds.includes(t.id)) return false;
-    if (t.file_id && usedFileIds.includes(t.file_id)) return false;
-    if (t.file_upload_id == null && t.file_id == null) return false;
+  if (!props.mainTable || !props.selectedConnection) {
+    return [];
+  }
+  
+  const filteredTables = props.allTables.filter(t => {
+    // Строгая проверка принадлежности к текущему подключению
+    let belongsToCurrentConnection = false
+    
+    if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+        props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+      // Для файловых подключений проверяем file_id
+      belongsToCurrentConnection = t.file_id === props.selectedConnection.id
+    } else {
+      // Для базовых подключений проверяем connection_id
+      belongsToCurrentConnection = t.connection_id === props.selectedConnection.id
+    }
+    
+    if (!belongsToCurrentConnection) {
+      return false
+    }
+    
+    // Исключаем главную таблицу
+    if (t.id === props.mainTable.id) {
+      return false;
+    }
+    
+    // Исключаем таблицы, помеченные как главные
+    if (t.isMain) {
+      return false;
+    }
+    
+    // Исключаем таблицы из того же файла, что и главная таблица
+    if (t.file_id && t.file_id === props.mainTable.file_id) {
+      return false;
+    }
+    
+    // Исключаем уже использованные таблицы (кроме редактируемой)
+    if (isEditMode.value && props.editRelation?.rightTableId) {
+      // В режиме редактирования исключаем все использованные таблицы кроме текущей редактируемой
+      if (usedStagingIds.value.includes(t.id) && t.id !== props.editRelation.rightTableId) {
+        return false;
+      }
+    } else {
+      // В обычном режиме исключаем все использованные таблицы
+      if (usedStagingIds.value.includes(t.id)) {
+        return false;
+      }
+    }
+    
+    // Исключаем файлы, которые уже используются (кроме редактируемой)
+    if (t.file_id && usedFileIds.value.includes(t.file_id)) {
+      if (isEditMode.value && props.editRelation?.rightTableId && t.id === props.editRelation.rightTableId) {
+        // Разрешаем файл редактируемой таблицы
+      } else {
+        return false;
+      }
+    }
+    
+    // Исключаем таблицы без file_upload_id и file_id
+    if (t.file_upload_id == null && t.file_id == null) {
+      return false;
+    }
+    
     return true;
   });
+  
+  return filteredTables;
 });
 
 function getTableName(table) {
-  if (!table) return 'Неизвестно';
+  if (!table) {
+    return 'Неизвестно';
+  }
+  
   const file = table.file_upload || {};
   let name = table.display_name || table.table_name || table.name || 'Неизвестная таблица';
-  if (file.sheet_name) name += ` (${file.sheet_name})`;
-  if (file.original_filename) name += ` [${file.original_filename}]`;
-  if (!file.original_filename && table.file_upload_name) name = table.file_upload_name;
+  
+  if (file.sheet_name) {
+    name += ` (${file.sheet_name})`;
+  }
+  
+  if (file.original_filename) {
+    name += ` [${file.original_filename}]`;
+  }
+  
+  if (!file.original_filename && table.file_upload_name) {
+    name = table.file_upload_name;
+  }
+  
   return name;
 }
 
 function removeRelationLine(idx) {
-  relationLines.value.splice(idx, 1)
+  if (idx >= 0 && idx < relationLines.value.length) {
+    relationLines.value.splice(idx, 1)
+  }
 }
 function addRelationLine() {
+  // Проверяем, что выбрана доступная таблица
+  if (!selectedTableId.value) {
+    return
+  }
+  
+  const selectedTable = props.allTables.find(t => t.id === selectedTableId.value)
+  if (!selectedTable) {
+    return
+  }
+  
+  // Проверяем принадлежность к текущему подключению
+  if (props.selectedConnection) {
+    let belongsToCurrentConnection = false
+    
+    if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+        props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+      belongsToCurrentConnection = selectedTable.file_id === props.selectedConnection.id
+    } else {
+      belongsToCurrentConnection = !selectedTable.connection_id || selectedTable.connection_id === props.selectedConnection.id
+    }
+    
+    if (!belongsToCurrentConnection) {
+      return
+    }
+  }
+  
   relationLines.value.push({ left: null, right: null })
 }
 
 function getTableColumns(table) {
-  if (!table) return []
+  if (!table) {
+    return []
+  }
+  
+  // Если у таблицы нет columns_info, но есть file_id, ищем backup
   if (!table?.columns_info && table?.file_id) {
     const backup = props.allTables.find(f => f.id === -table.file_id)
-    if (backup?.columns_info) table.columns_info = backup.columns_info
+    if (backup?.columns_info) {
+      table.columns_info = backup.columns_info
+    }
   }
 
-  return table.columns_info?.columns || []
+  // Проверяем, что columns_info существует и содержит columns
+  if (!table?.columns_info?.columns) {
+    return []
+  }
+
+  const columns = table.columns_info.columns
+  return columns
 }
 
 async function handleAutoJoinAndApply() {
@@ -147,10 +318,34 @@ async function handleAutoJoinAndApply() {
 
   try {
     const linkedTable = props.allTables.find(t => t.id === selectedTableId.value)
-    if (!linkedTable) throw new Error('Таблица не выбрана')
-    if (!relationLines.value.length) throw new Error('Не выбрана пара полей для связи')
+    if (!linkedTable) {
+      throw new Error('Таблица не выбрана')
+    }
+    
+    // Дополнительная проверка, что выбранная таблица принадлежит текущему подключению
+    if (props.selectedConnection) {
+      let belongsToCurrentConnection = false
+      
+      if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+          props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+        belongsToCurrentConnection = linkedTable.file_id === props.selectedConnection.id
+      } else {
+        belongsToCurrentConnection = !linkedTable.connection_id || linkedTable.connection_id === props.selectedConnection.id
+      }
+      
+      if (!belongsToCurrentConnection) {
+        throw new Error('Выбранная таблица не принадлежит текущему подключению')
+      }
+    }
+    
+    if (!relationLines.value.length) {
+      throw new Error('Не выбрана пара полей для связи')
+    }
+    
     const mainLine = relationLines.value[0]
-    if (!mainLine.left || !mainLine.right) throw new Error('Выберите оба поля для связи')
+    if (!mainLine.left || !mainLine.right) {
+      throw new Error('Выберите оба поля для связи')
+    }
 
     const lines = relationLines.value.map(line => ({
       left: line.left,
@@ -165,41 +360,173 @@ async function handleAutoJoinAndApply() {
       joinType: joinType.value,
       lines
     });
+    
     emit('close');
   } catch (e) {
     joinError.value = e.message || 'Ошибка соединения';
-    console.error('catch error', e);
   } finally {
     isJoinLoading.value = false
   }
 }
 
 watch(selectedTableId, (newId, oldId) => {
-  const tbl = props.allTables.find(t => t.id === newId)
-  linkedTableColumns.value = getTableColumns(tbl)
-  if (!isEditMode.value) relationLines.value = []
+  if (newId) {
+    const tbl = props.allTables.find(t => t.id === newId)
+    if (!tbl) {
+      selectedTableId.value = null
+      return
+    }
+    
+    // Проверяем, что выбранная таблица принадлежит текущему подключению
+    if (props.selectedConnection) {
+      let belongsToCurrentConnection = false
+      
+      if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+          props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+        belongsToCurrentConnection = tbl.file_id === props.selectedConnection.id
+      } else {
+        belongsToCurrentConnection = !tbl.connection_id || tbl.connection_id === props.selectedConnection.id
+      }
+      
+      if (!belongsToCurrentConnection) {
+        selectedTableId.value = null
+        return
+      }
+    }
+    
+    linkedTableColumns.value = getTableColumns(tbl)
+    if (!isEditMode.value) relationLines.value = []
+  } else {
+    linkedTableColumns.value = []
+    if (!isEditMode.value) relationLines.value = []
+  }
 })
 
 watch(
   () => props.mainTable,
-  (tbl) => {
-    mainTableColumns.value = getTableColumns(tbl)
+  (tbl, oldTbl) => {
+    if (tbl) {
+      mainTableColumns.value = getTableColumns(tbl)
+      
+      // Проверяем, что выбранная таблица для связи совместима с новой главной таблицей
+      if (selectedTableId.value && oldTbl && tbl.id !== oldTbl.id) {
+        const selectedTable = props.allTables.find(t => t.id === selectedTableId.value)
+        if (selectedTable) {
+          // Проверяем, что выбранная таблица не является главной таблицей
+          if (selectedTable.id === tbl.id) {
+            selectedTableId.value = null
+            relationLines.value = []
+            joinType.value = 'inner'
+          }
+          // Проверяем, что таблицы не из одного файла
+          else if (selectedTable.file_id && selectedTable.file_id === tbl.file_id) {
+            selectedTableId.value = null
+            relationLines.value = []
+            joinType.value = 'inner'
+          }
+          // Проверяем принадлежность к текущему подключению
+          else if (props.selectedConnection) {
+            let belongsToCurrentConnection = false
+            
+            if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+                props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+              belongsToCurrentConnection = selectedTable.file_id === props.selectedConnection.id
+            } else {
+              belongsToCurrentConnection = !selectedTable.connection_id || selectedTable.connection_id === props.selectedConnection.id
+            }
+            
+            if (!belongsToCurrentConnection) {
+              selectedTableId.value = null
+              relationLines.value = []
+              joinType.value = 'inner'
+            }
+          }
+        }
+      }
+    } else {
+      mainTableColumns.value = []
+      // Если главная таблица удалена, сбрасываем выбранную таблицу связи
+      selectedTableId.value = null
+      relationLines.value = []
+      joinType.value = 'inner'
+    }
   },
   { immediate: true }
 )
 
-watch(linkedTable, (tbl) => {
-  linkedTableColumns.value = getTableColumns(tbl)
+watch(linkedTable, (tbl, oldTbl) => {
+  if (tbl) {
+    linkedTableColumns.value = getTableColumns(tbl)
+  } else {
+    linkedTableColumns.value = []
+  }
 }, { immediate: true })
 
 watch(
    () => props.editRelation,
-   (rel) => {
+   (rel, oldRel) => {
      if (!rel) {
       joinType.value      = 'inner'
       relationLines.value = []
+      selectedTableId.value = null
       return
      }
+     
+     // Проверяем, что редактируемая таблица доступна в текущем подключении
+     const rightTable = props.allTables.find(t => t.id === rel.rightTableId)
+     if (!rightTable) {
+       // Таблица не найдена в списке доступных таблиц
+       joinType.value = 'inner'
+       relationLines.value = []
+       selectedTableId.value = null
+       return
+     }
+     
+     // Проверяем принадлежность к текущему подключению
+     if (props.selectedConnection) {
+       let belongsToCurrentConnection = false
+       
+       if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+           props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+         belongsToCurrentConnection = rightTable.file_id === props.selectedConnection.id
+       } else {
+         belongsToCurrentConnection = !rightTable.connection_id || rightTable.connection_id === props.selectedConnection.id
+       }
+       
+       if (!belongsToCurrentConnection) {
+         // Таблица не принадлежит текущему подключению
+         joinType.value = 'inner'
+         relationLines.value = []
+         selectedTableId.value = null
+         return
+       }
+     }
+     
+     // Дополнительная проверка - таблица должна быть в списке доступных таблиц
+     const isAvailable = props.allTables.some(t => {
+       if (t.id !== rel.rightTableId) return false
+       
+       // Исключаем главную таблицу
+       if (props.mainTable && t.id === props.mainTable.id) return false
+       
+       // Исключаем таблицы из того же файла, что и главная таблица
+       if (props.mainTable && t.file_id && t.file_id === props.mainTable.file_id) return false
+       
+       // Исключаем таблицы без file_upload_id и file_id
+       if (t.file_upload_id == null && t.file_id == null) return false
+       
+       return true
+     })
+     
+     if (!isAvailable) {
+       // Таблица недоступна для связи
+       joinType.value = 'inner'
+       relationLines.value = []
+       selectedTableId.value = null
+       return
+     }
+     
+     // Все проверки пройдены, устанавливаем данные связи
      selectedTableId.value = Number(rel.rightTableId)
      joinType.value = (rel.joinType || 'INNER JOIN')
                      .split(' ')[0]
@@ -209,6 +536,102 @@ watch(
        : [{ left: rel.leftColumn, right: rel.rightColumn }]
    },
    { immediate: true }
+)
+
+// Добавляем watch для изменения подключения
+watch(
+  () => props.selectedConnection,
+  (newConnection, oldConnection) => {
+    if (newConnection && oldConnection && newConnection.id !== oldConnection.id) {
+      // Сбрасываем выбранную таблицу при смене подключения
+      selectedTableId.value = null
+      // Сбрасываем связи
+      relationLines.value = []
+      // Сбрасываем тип соединения на значение по умолчанию
+      joinType.value = 'inner'
+    } else if (newConnection && selectedTableId.value) {
+      // Проверяем, что текущая выбранная таблица принадлежит новому подключению
+      const selectedTable = props.allTables.find(t => t.id === selectedTableId.value)
+      if (selectedTable) {
+        let belongsToCurrentConnection = false
+        
+        if (newConnection.connector_type_display?.toLowerCase().includes('file') || 
+            newConnection.connector_type?.toLowerCase().includes('файл')) {
+          belongsToCurrentConnection = selectedTable.file_id === newConnection.id
+        } else {
+          belongsToCurrentConnection = !selectedTable.connection_id || selectedTable.connection_id === newConnection.id
+        }
+        
+        if (!belongsToCurrentConnection) {
+          // Таблица не принадлежит текущему подключению, сбрасываем
+          selectedTableId.value = null
+          relationLines.value = []
+          joinType.value = 'inner'
+        }
+      }
+    }
+  }
+)
+
+// Добавляем watch для изменения списка таблиц
+watch(
+  () => props.allTables,
+  (newTables, oldTables) => {
+    if (selectedTableId.value && newTables) {
+      // Проверяем, доступна ли выбранная таблица в новом списке
+      const selectedTable = newTables.find(t => t.id === selectedTableId.value)
+      
+      if (!selectedTable) {
+        // Таблица не найдена в списке
+        selectedTableId.value = null
+        relationLines.value = []
+        joinType.value = 'inner'
+        return
+      }
+      
+      // Проверяем принадлежность к текущему подключению
+      if (props.selectedConnection) {
+        let belongsToCurrentConnection = false
+        
+        if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+            props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+          belongsToCurrentConnection = selectedTable.file_id === props.selectedConnection.id
+        } else {
+          belongsToCurrentConnection = selectedTable.connection_id === props.selectedConnection.id
+        }
+        
+        if (!belongsToCurrentConnection) {
+          // Таблица не принадлежит текущему подключению
+          selectedTableId.value = null
+          relationLines.value = []
+          joinType.value = 'inner'
+          return
+        }
+      }
+      
+      // Проверяем доступность в списке availableTables
+      const isAvailable = availableTables.value.some(t => t.id === selectedTableId.value)
+      if (!isAvailable) {
+        selectedTableId.value = null
+        relationLines.value = []
+        joinType.value = 'inner'
+      }
+    }
+  },
+  { deep: true }
+)
+
+// Добавляем watch для изменения доступных таблиц
+watch(
+  availableTables,
+  (newAvailableTables) => {
+    // Если есть выбранная таблица, но её нет в списке доступных
+    if (selectedTableId.value && !newAvailableTables.some(t => t.id === selectedTableId.value)) {
+      selectedTableId.value = null
+      relationLines.value = []
+      joinType.value = 'inner'
+    }
+  }
 )
 </script>
 

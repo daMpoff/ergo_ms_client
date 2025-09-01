@@ -7,12 +7,23 @@ export function useDbTablesList() {
 
   async function loadDbTables(connectionId) {
     if (!connectionId) return
+    
+    console.log('[loadDbTables] Загружаем таблицы для подключения:', connectionId)
+    
     isDbLoading.value = true
-    const res = await apiClient.get(`bi_analysis/bi_connections/${connectionId}/tables/`)
-    if (res.success) {
-      dbTables.value = res.data
+    try {
+      const res = await apiClient.get(`bi_analysis/bi_connections/${connectionId}/tables/`)
+      if (res.success) {
+        console.log('[loadDbTables] Таблицы загружены успешно, количество:', res.data?.length || 0)
+        dbTables.value = res.data
+      } else {
+        console.error('[loadDbTables] Ошибка загрузки таблиц:', res)
+      }
+    } catch (error) {
+      console.error('[loadDbTables] Исключение при загрузке таблиц:', error)
+    } finally {
+      isDbLoading.value = false
     }
-    isDbLoading.value = false
   }
 
   return {

@@ -6,15 +6,23 @@
                 <button v-if="!selectedConnection" type="button" class="btn btn-primary button-card-connection" @click="openTooltip" ref="buttonRef">
                     <Cable :size="24" />Выбрать подключение
                 </button>
-                <div v-else class="selected-connection" @click="openTooltip" ref="buttonRef">
+                <div v-else class="selected-connection" :class="{ 'problematic-connection': isConnectionProblematic }" @click="openTooltip" ref="buttonRef">
                     <img v-if="getIconComponent(selectedConnection)" :src="getIconComponent(selectedConnection).src" class="icon" />
                     <span>{{ selectedConnection.name }}</span>
+                    <!-- Иконка предупреждения для проблемных подключений -->
+                    <TriangleAlert 
+                        v-if="isConnectionProblematic" 
+                        class="alert-icon" 
+                        :size="16" 
+                        @mouseenter="onIconHover($event, getConnectionProblemTooltip())"
+                        @mouseleave="hideTooltip"
+                    />
                 </div>
             </div>
         </div>
 
         <transition name="fade-slide" appear>
-            <div class="connection-tables" v-if="selectedConnection">
+            <div class="connection-tables" v-if="selectedConnection && !isConnectionProblematic">
                 <div class="main-connections">
                     <div>Главная таблица:</div>
                     <button v-if="!mainTable" type="button" class="btn btn-primary button-card-connection" @click="openTableTooltip" ref="buttonRef">
@@ -29,7 +37,7 @@
         </transition>
 
         <transition name="fade-slide" appear>
-            <div class="table-links" v-if="mainTable && relations">
+            <div class="table-links" v-if="mainTable && relations && !isConnectionProblematic">
                 <div class="main-connections">
                     <div>Связи:</div>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -53,15 +61,18 @@
 
         <div v-if="showTooltip || showTableTooltip" class="tooltip-panel" :style="{ left: tooltipPosition.x + 'px', top: tooltipPosition.y + 'px' }" ref="tooltipRef">
             <ConnectionsTooltip v-if="showTooltip" :selected-connection="props.selectedConnection" @select="handleSelect" />
-            <TableTooltip v-if="showTableTooltip" :connection-id="selectedConnection.id" :connection-type="selectedConnection.connector_type" :selected-table="mainTable" @select="handleTableSelect" @tablesLoaded="(tables) => $emit('tablesLoaded', tables)"/>
+            <TableTooltip v-if="showTableTooltip" :connection-id="selectedConnection.id" :connection-type="selectedConnection.connector_type" :selected-table="mainTable" @select="handleTableSelect" @tablesLoaded="handleTablesLoaded" @resetSelection="handleResetSelection"/>
         </div>
+
+        <!-- Тултип для проблемных подключений -->
+        <div v-if="showProblemTooltip" class="tooltip-fixed error-tooltip" :style="problemTooltipStyle">{{ problemTooltipText }}</div>
 
     </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
-import { Cable, Grid2x2Plus, Plus, Table, X } from 'lucide-vue-next'
+import { Cable, Grid2x2Plus, Plus, Table, X, TriangleAlert } from 'lucide-vue-next'
 import ClickHouseIcon from '@/assets/bi/icons/clickhouse.svg'
 import PostgresIcon from '@/assets/bi/icons/postgres.svg'
 import MssqlIcon from '@/assets/bi/icons/mssql.svg'
@@ -76,9 +87,12 @@ import JoinFullIcon from '@/modules/bi/components/icons/JoinFullIcon.vue'
 
 const showTooltip = ref(false)
 const showTableTooltip = ref(false)
+const showProblemTooltip = ref(false)
 
 const tooltipPosition = ref({ x: 0, y: 0 })
 const tableTooltipPosition = ref({ x: 0, y: 0 })
+const problemTooltipStyle = ref({})
+const problemTooltipText = ref('')
 
 const tooltipRef = ref(null)
 const buttonRef = ref(null)
@@ -92,7 +106,24 @@ const props = defineProps({
   },
   relations: { type: Array, default: () => [] }
 })
-const emit = defineEmits(['update:selectedConnection', 'update:mainTable', 'openTableLinkModal', 'tablesLoaded', 'editRelation', 'removeRelation'])
+const emit = defineEmits(['update:selectedConnection', 'update:mainTable', 'openTableLinkModal', 'tablesLoaded', 'editRelation', 'removeRelation', 'resetAllRelations'])
+
+// Примечание: основная логика сброса данных при смене подключения теперь находится в handleSelect
+
+// Проверка проблем с подключением
+const isConnectionProblematic = computed(() => {
+  if (!props.selectedConnection) return false
+  
+  const type = (props.selectedConnection.connector_type_display || props.selectedConnection.connector_type || '').toLowerCase().trim()
+  
+  // Для файловых подключений проверяем статус файлов
+  if (type.includes('file') || type.includes('файл')) {
+    return props.selectedConnection.hasMissingFiles || props.selectedConnection.hasProblematicFiles
+  }
+  
+  // Для других типов подключений можно добавить дополнительные проверки
+  return false
+})
 
 const usedTableIds = computed(() => {
   const set = new Set(props.relations.map(r => Number(r.rightTableId)))
@@ -103,9 +134,21 @@ const usedTableIds = computed(() => {
 const mainFileId = props.mainTable?.file_id ?? null
 
 const availableTablesForRelation = computed(() => {
-  if (!props.mainTable) return []
+  if (!props.mainTable || !props.selectedConnection) return []
 
   return props.allTables.filter(t => {
+    // Проверяем, что таблица принадлежит текущему подключению
+    let belongsToCurrentConnection = false
+    
+    if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+        props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+      belongsToCurrentConnection = t.file_id === props.selectedConnection.id
+    } else {
+      belongsToCurrentConnection = !t.connection_id || t.connection_id === props.selectedConnection.id
+    }
+    
+    if (!belongsToCurrentConnection) return false
+    
     const idNum = Number(t.id)
     if (idNum === props.mainTable.id) return false
     if (mainFileId !== null && idNum === -mainFileId) return false
@@ -117,33 +160,181 @@ const availableTablesForRelation = computed(() => {
 })
 
 function openTooltip(event) {
+    console.log('[DatasetCreating] openTooltip вызван')
     tooltipPosition.value = { x: event.clientX, y: event.clientY + 8 }
     showTooltip.value = true
 }
 
 function openTableTooltip(event) {
+    console.log('[DatasetCreating] openTableTooltip вызван')
+    
+    // Просто открываем тултип для выбора таблицы, без дополнительных проверок
+    // Проверки принадлежности таблицы к подключению уже выполнены в других местах
     showTableTooltip.value = true
     tableTooltipPosition.value = { x: event.clientX, y: event.clientY }
 }
 
 function closeTooltip() {
+    console.log('[DatasetCreating] closeTooltip вызван')
     showTooltip.value = false
     showTableTooltip.value = false
 }
+
 function handleSelect(connection) {
+    console.log('[DatasetCreating] handleSelect вызван с подключением:', connection?.id)
+    
+    // Если подключение изменилось, сбрасываем все связанные данные
+    if (props.selectedConnection && connection.id !== props.selectedConnection.id) {
+        console.log('[DatasetCreating] Подключение изменилось, сбрасываем главную таблицу и связи')
+        
+        // Сбрасываем главную таблицу всегда при смене подключения (в режиме черновика)
+        if (props.mainTable) {
+            console.log('[DatasetCreating] Сбрасываем главную таблицу при смене подключения')
+            emit('update:mainTable', null)
+        }
+        
+        // Сбрасываем все связи при смене подключения
+        if (props.relations && props.relations.length > 0) {
+            console.log('[DatasetCreating] Сбрасываем все связи при смене подключения')
+            // Эмитим специальное событие для массового сброса связей
+            emit('resetAllRelations')
+        }
+    }
+    
+    console.log('[DatasetCreating] Эмитим update:selectedConnection с подключением:', connection?.id)
     emit('update:selectedConnection', connection)
     showTooltip.value = false
 }
+
 async function handleTableSelect(table) {
+  console.log('[DatasetCreating] handleTableSelect вызван с таблицей:', table?.id)
+  
+  // Проверяем, что выбранная таблица принадлежит текущему подключению
+  if (props.selectedConnection && table) {
+    let belongsToCurrentConnection = false
+    
+    // Для файловых подключений проверяем file_id
+    if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+        props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+      belongsToCurrentConnection = table.file_id === props.selectedConnection.id
+    } else {
+      // Для других типов подключений проверяем connection_id
+      belongsToCurrentConnection = !table.connection_id || table.connection_id === props.selectedConnection.id
+    }
+    
+    if (!belongsToCurrentConnection) {
+      console.warn('[DatasetCreating] Попытка выбрать таблицу из другого подключения:', {
+        table: table.id,
+        tableConnection: table.connection_id || table.file_id,
+        currentConnection: props.selectedConnection.id,
+        tableType: table.connector_type || 'unknown',
+        connectionType: props.selectedConnection.connector_type || 'unknown'
+      })
+      return
+    }
+    
+    console.log('[DatasetCreating] Таблица принадлежит текущему подключению, проверяем существование в allTables')
+    
+    // Дополнительная проверка: убеждаемся, что таблица действительно существует в текущем подключении
+    // Используем более гибкую проверку, так как allTables может еще не обновиться
+    const tableExists = props.allTables.some(t => {
+      if (props.selectedConnection.connector_type_display?.toLowerCase().includes('file') || 
+          props.selectedConnection.connector_type?.toLowerCase().includes('файл')) {
+        return t.file_id === props.selectedConnection.id && t.id === table.id
+      } else {
+        return (!t.connection_id || t.connection_id === props.selectedConnection.id) && t.id === table.id
+      }
+    })
+    
+    // Если таблица не найдена в allTables, но она принадлежит текущему подключению,
+    // все равно позволяем её выбрать (возможно, allTables еще не обновился)
+    if (!tableExists) {
+      console.log('[DatasetCreating] Таблица не найдена в allTables, но принадлежит подключению, разрешаем выбор:', {
+        table: table.id,
+        connection: props.selectedConnection.id,
+        allTablesCount: props.allTables.length
+      })
+      
+      // Дополнительная проверка: убеждаемся, что таблица действительно загружена
+      // и принадлежит текущему подключению
+      if (table.connection_id && table.connection_id !== props.selectedConnection.id) {
+        console.warn('[DatasetCreating] Таблица имеет connection_id, который не совпадает с текущим подключением')
+        return
+      }
+      
+      if (table.file_id && table.file_id !== props.selectedConnection.id) {
+        console.warn('[DatasetCreating] Таблица имеет file_id, который не совпадает с текущим подключением')
+        return
+      }
+    } else {
+      console.log('[DatasetCreating] Таблица найдена в allTables, все проверки пройдены')
+    }
+  }
+  
+  console.log('[DatasetCreating] Эмитим update:mainTable с таблицей:', table?.id)
   emit('update:mainTable', table)
   showTableTooltip.value = false
 }
 
+function handleResetSelection() {
+  console.log('[DatasetCreating] handleResetSelection вызван, сбрасываем главную таблицу')
+  emit('update:mainTable', null)
+}
+
+function handleTablesLoaded(tables) {
+  console.log('[DatasetCreating] handleTablesLoaded вызван с таблицами:', tables?.length || 0)
+  emit('tablesLoaded', tables)
+}
+
+// Функции для тултипа проблемных подключений
+function onIconHover(event, text) {
+  console.log('[DatasetCreating] onIconHover вызван с текстом:', text)
+  problemTooltipText.value = text
+  showProblemTooltip.value = true
+  const rect = event.target.getBoundingClientRect()
+  problemTooltipStyle.value = {
+    position: 'fixed',
+    top: `${rect.top + window.scrollY - 32}px`,
+    left: `${rect.left + rect.width / 2 + window.scrollX}px`
+  }
+}
+
+function hideTooltip() {
+  console.log('[DatasetCreating] hideTooltip вызван')
+  showProblemTooltip.value = false
+}
+
+function getConnectionProblemTooltip() {
+  if (!props.selectedConnection) return ''
+  
+  const type = (props.selectedConnection.connector_type_display || props.selectedConnection.connector_type || '').toLowerCase().trim()
+  
+  let tooltipText = ''
+  
+  if (type.includes('file') || type.includes('файл')) {
+    if (props.selectedConnection.hasProblematicFiles) {
+      tooltipText = 'Возникла проблема с одним из файлов в подключении'
+    } else if (props.selectedConnection.hasMissingFiles) {
+      tooltipText = 'В подключении отсутствуют файлы'
+    }
+  }
+  
+  if (!tooltipText) {
+    tooltipText = 'Проблема с подключением'
+  }
+  
+  console.log('[DatasetCreating] getConnectionProblemTooltip возвращает:', tooltipText)
+  
+  return tooltipText
+}
+
 function getTableNameById(tableId) {
+  console.log('[DatasetCreating] getTableNameById вызван для ID:', tableId)
+  
   const arr = Array.isArray(props.allTables) ? props.allTables : (props.allTables?.value ?? []);
   const found = arr.find(t => String(t.id) === String(tableId));
-  return (
-    found?.display_name ||
+  
+  const tableName = found?.display_name ||
     found?.table_name ||
     found?.original_filename ||
     found?.name ||
@@ -151,27 +342,48 @@ function getTableNameById(tableId) {
     found?.sheet_name ||
     found?.id ||
     'Неизвестно'
-  );
+  
+  console.log('[DatasetCreating] getTableNameById возвращает:', tableName, 'для таблицы:', found?.id)
+  
+  return tableName
 }
 
 function getIconComponent(connection) {
     if (!connection) return null
+    
     const type = (connection.connector_type_display || connection.connector_type || '').toLowerCase().trim()
-    if (type.includes('clickhouse')) return { src: ClickHouseIcon }
-    if (type.includes('postgres')) return { src: PostgresIcon }
-    if (type.includes('sql server') || type.includes('mssql')) return { src: MssqlIcon }
-    if (type.includes('file') || type.includes('файл')) return { src: FileIcon }
-    return null
+    let icon = null
+    
+    if (type.includes('clickhouse')) {
+        icon = { src: ClickHouseIcon }
+    } else if (type.includes('postgres')) {
+        icon = { src: PostgresIcon }
+    } else if (type.includes('sql server') || type.includes('mssql')) {
+        icon = { src: MssqlIcon }
+    } else if (type.includes('file') || type.includes('файл')) {
+        icon = { src: FileIcon }
+    }
+    
+    console.log('[DatasetCreating] getIconComponent возвращает иконку для типа:', type, 'результат:', icon ? 'найдена' : 'не найдена')
+    
+    return icon
 }
 
 function getJoinIcon(type) {
-  switch ((type || '').toLowerCase()) {
-    case 'left':  return JoinLeftIcon;
-    case 'right': return JoinRightIcon;
-    case 'full':  return JoinFullIcon;
-    case 'inner': return JoinInnerIcon;
-    default:      return JoinInnerIcon;
+  const joinType = (type || '').toLowerCase()
+  let icon = JoinInnerIcon
+  
+  switch (joinType) {
+    case 'left':  icon = JoinLeftIcon; break
+    case 'right': icon = JoinRightIcon; break
+    case 'full':  icon = JoinFullIcon; break
+    case 'inner': icon = JoinInnerIcon; break
+    default:      icon = JoinInnerIcon; break
   }
+  
+  console.log('[DatasetCreating] getJoinIcon возвращает иконку для типа:', joinType, 'результат:', icon.name)
+  
+  return icon
 }
 
 function onClickOutside(event) {
@@ -181,18 +393,22 @@ function onClickOutside(event) {
         tooltipEl && !tooltipEl.contains(event.target) &&
         buttonEl && !buttonEl.contains(event.target)
     ) {
+        console.log('[DatasetCreating] Клик вне тултипа, закрываем')
         closeTooltip()
     }
 }
 
 function onEditRelation(rel, idx) {
+  console.log('[DatasetCreating] onEditRelation вызван для связи:', rel?.rightTableId, 'с индексом:', idx)
   emit('editRelation', rel, idx)
 }
 
 onMounted(() => {
+    console.log('[DatasetCreating] Компонент смонтирован, добавляем обработчик клика вне тултипа')
     document.addEventListener('mousedown', onClickOutside)
 })
 onBeforeUnmount(() => {
+    console.log('[DatasetCreating] Компонент размонтируется, удаляем обработчик клика вне тултипа')
     document.removeEventListener('mousedown', onClickOutside)
 })
 </script>
@@ -337,6 +553,7 @@ onBeforeUnmount(() => {
     padding: 0 18px;
     cursor: pointer;
     transition: border 0.15s;
+    position: relative;
 
     &:hover {
         background: var(--color-hover-background);
@@ -347,6 +564,18 @@ onBeforeUnmount(() => {
         font-size: 16px;
         color: var(--color-primary-text);
     }
+    
+    // Стили для проблемных подключений
+    &.problematic-connection {
+        border-color: var(--color-accent);
+    }
+}
+
+// Стили для иконки предупреждения
+.alert-icon {
+    color: var(--color-accent);
+    margin-left: auto;
+    cursor: help;
 }
 
 .fade-slide-enter-active,
@@ -390,5 +619,25 @@ onBeforeUnmount(() => {
   &:hover {
     color: var(--color-accent);
   }
+}
+
+// Стили для тултипа проблем
+.tooltip-fixed {
+    position: fixed;
+    background-color: var(--color-primary-background);
+    color: var(--color-primary-text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    font-size: 14px;
+    max-width: 300px;
+    white-space: nowrap;
+    pointer-events: none;
+    
+    &.error-tooltip {
+        background-color: #dc3545;
+        color: white;
+    }
 }
 </style>

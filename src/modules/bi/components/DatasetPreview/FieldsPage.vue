@@ -1,6 +1,23 @@
 <template>
   <div class="fields-page">
-    <table class="table table-hover">
+    <!-- Уведомление о проблемах с подключением -->
+    <div v-if="connectionStatus === 'error'" class="connection-error-banner">
+      <div class="error-icon">⚠️</div>
+      <div class="error-content">
+        <div class="error-title">Проблемы с подключением</div>
+        <div class="error-description">
+          В выбранном подключении обнаружены проблемы с файлами или подключением. 
+          Редактирование полей может быть ограничено.
+        </div>
+      </div>
+      <button class="error-action-btn" @click="$emit('switch-to-sources')">
+        Перейти к источникам
+      </button>
+    </div>
+
+    <!-- Основная таблица полей -->
+    <div class="table-container">
+      <table class="table table-hover">
       <thead>
         <tr>
           <th>#</th>
@@ -55,11 +72,12 @@
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref } from 'vue'
 
 import AggSelect from '@/modules/bi/components/DatasetPreview/AggregationSelect.vue'
 import datasetService from '@/modules/bi/js/datasetService'
@@ -80,9 +98,12 @@ const props = defineProps({
   cols: { type: Array, default: () => [] },
   rows: { type: Array, default: () => [] },
   datasetId: { type: [Number, String], default: null },
+  connectionStatus: { type: String, default: 'connected' }
 })
 
-const emit = defineEmits(['edit-field', 'add-field', 'update:fields', 'removeTable'])
+const emit = defineEmits(['edit-field', 'add-field', 'update:fields', 'removeTable', 'switch-to-sources'])
+
+
 
 function updateField(idx, key, value) {
   const newFields = props.fields.map((f, i) => i === idx ? { ...f, [key]: value } : f);
@@ -200,5 +221,61 @@ function getFieldSourceLabel(field) {
 .scale-leave-to {
   transform: scale(0.9);
   opacity: 0;
+}
+
+/* ========== Контейнер таблицы ========== */
+.table-container {
+  height: 100%;
+  min-height: 300px;
+}
+
+/* Стили для уведомления о проблемах с подключением */
+.connection-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+  border: 1px solid #feb2b2;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.error-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.error-content {
+  flex: 1;
+}
+
+.error-title {
+  font-weight: 600;
+  color: #c53030;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.error-description {
+  color: #742a2a;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.error-action-btn {
+  background: #c53030;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.error-action-btn:hover {
+  background: #9b2c2c;
 }
 </style>
