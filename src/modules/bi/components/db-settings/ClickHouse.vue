@@ -212,6 +212,32 @@ function showAutoDismissMessage(msg, isError = false) {
     opacity: 0;
     transform: translateY(10px);
     animation: fadeSlideIn 0.4s ease-out forwards;
+
+    // Адаптивные отступы для разных разрешений
+    @media (max-width: 1400px) {
+        margin-left: 15rem;
+        margin-right: 15rem;
+    }
+
+    @media (max-width: 1200px) {
+        margin-left: 10rem;
+        margin-right: 10rem;
+    }
+
+    @media (max-width: 992px) {
+        margin-left: 5rem;
+        margin-right: 5rem;
+    }
+
+    @media (max-width: 768px) {
+        margin-left: 2rem;
+        margin-right: 2rem;
+    }
+
+    @media (max-width: 576px) {
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
 }
 
 @keyframes fadeSlideIn {
@@ -258,10 +284,6 @@ input.form-control {
 
 .form-control-port {
     max-width: 7.5rem;
-}
-
-.form-control-wide {
-    max-width: 15rem;
 }
 
 .logo {
