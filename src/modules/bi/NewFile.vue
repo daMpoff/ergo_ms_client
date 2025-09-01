@@ -214,7 +214,9 @@ body {
   grid-area: sidebar;
   background-color: transparent;
   padding: 1rem;
+  border-right: 1px solid var(--color-border);
   border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
   background-color: var(--color-primary-background);
 }
 
@@ -242,6 +244,7 @@ body {
   grid-area: chat;
   background-color: var(--color-primary-background);
   padding: 1rem;
+  border-bottom-right-radius: 12px;
   overflow-y: auto;
 }
 
@@ -330,15 +333,6 @@ body {
   background-color: var(--color-border);
 }
 
-.btn-outline-danger {
-  width: 100%;
-  height: 2rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .section-header {
   margin-top: 10px;
   margin-bottom: 10px;
@@ -346,13 +340,13 @@ body {
 }
 
 .btn-primary {
-  width: 13rem;
-  height: 2rem;
+  padding: 0.2rem 0.75rem 0.2rem 0.75rem;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  font-size: 0.875rem;
 }
 
 .btn-outline-secondary {
@@ -363,5 +357,48 @@ body {
   align-items: center;
   justify-content: center;
   color: white;
+  font-size: 0.875rem;
+}
+
+.btn-outline-danger {
+  width: 100%;
+  height: 2rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 576px) {
+  .btn-primary,
+  .btn-outline-secondary,
+  .btn-outline-danger {
+    font-size: 0.75rem;
+  }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+  .btn-primary,
+  .btn-outline-secondary,
+  .btn-outline-danger {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .btn-primary,
+  .btn-outline-secondary,
+  .btn-outline-danger {
+    font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 1201px) {
+  .btn-primary,
+  .btn-outline-secondary,
+  .btn-outline-danger {
+    font-size: 0.9375rem;
+  }
 }
 </style>
