@@ -284,12 +284,17 @@ async function fetchChartIfEditing() {
             engine: data.engine,
             params: JSON.parse(JSON.stringify(data.params ?? {})),
         }
+    } catch (error) {
+        console.error('Ошибка в fetchChartIfEditing:', error)
     } finally {
         loading.value = false
     }
 }
 
-const selectedForModal = computed(() => selectedFields.value[currentSetting.value] || [])
+const selectedForModal = computed(() => {
+    const result = selectedFields.value[currentSetting.value] || []
+    return result
+})
 
 function toggleFullScreen() {
     isFullScreen.value = !isFullScreen.value
@@ -330,13 +335,17 @@ async function handleSelectDataset(ds) {
     selectedDataset.value = ds
     closeDatasetTooltip()
     if (ds?.id) {
-        // 1. Получаем список колонок (объекты с name/type)
-        const { data: columnsResp } = await chartService.getColumns(ds.id)
-        // 2. Кладём в indicators (именно сюда смотрит твой UI)
-        indicators.value = columnsResp.columns || []
-        // 3. Загружаем агрегированные строки
-        const { data } = await chartService.getDatasetRowsAgg(ds.id, selectedFields.value)
-        datasetRows.value = data
+        try {
+            // 1. Получаем список колонок (объекты с name/type)
+            const { data: columnsResp } = await chartService.getColumns(ds.id)
+            // 2. Кладём в indicators (именно сюда смотрит твой UI)
+            indicators.value = columnsResp.columns || []
+            // 3. Загружаем агрегированные строки
+            const { data } = await chartService.getDatasetRowsAgg(ds.id, selectedFields.value)
+            datasetRows.value = data
+        } catch (error) {
+            console.error('Ошибка при загрузке данных датасета:', error)
+        }
     }
 }
 
@@ -367,6 +376,7 @@ function handleFieldSelect(field) {
     if (!selectedFields.value[key].some(f => f.id === field.id)) {
         selectedFields.value[key].push(field)
     }
+    
     isFieldsModalVisible.value = false
 }
 
@@ -377,7 +387,9 @@ function removeField(field, type) {
 watch(
   () => selectedChartType.value,
   (newVal, oldVal) => {
-    if (oldVal && newVal !== oldVal) selectedFields.value = {}
+    if (oldVal && newVal !== oldVal) {
+      selectedFields.value = {}
+    }
   }
 )
 
@@ -385,10 +397,14 @@ watch(
   selectedFields,
   async v => {
     if (selectedDataset.value?.id) {
-      const { data } = await chartService.getDatasetRowsAgg(
-        selectedDataset.value.id, v
-      )
-      datasetRows.value = data
+      try {
+        const { data } = await chartService.getDatasetRowsAgg(
+          selectedDataset.value.id, v
+        )
+        datasetRows.value = data
+      } catch (error) {
+        console.error('Ошибка при получении агрегированных данных:', error)
+      }
     }
   },
   { deep: true }

@@ -22,7 +22,6 @@
 import { ref, computed } from 'vue'
 import { Type, Hash, Calendar, CheckCircle, Globe, MapPin } from 'lucide-vue-next'
 
-// !!! Типы данных берем только из props.fields !!!
 const props = defineProps({
   fields: { type: Array, default: () => [] },
   selected: { type: Array, default: () => [] },
@@ -30,6 +29,8 @@ const props = defineProps({
 })
 const emit = defineEmits(['select'])
 const search = ref('')
+
+
 
 const typeIcon = {
   string: Type,
@@ -44,11 +45,13 @@ const typeIcon = {
   geopolygon: Globe,
 }
 
-const availableFields = computed(() =>
-  (props.fields || [])
+const availableFields = computed(() => {
+  const filtered = (props.fields || [])
     .filter(f => !props.allowedTypes || props.allowedTypes.includes(f.type))
     .filter(f => f.name.toLowerCase().includes(search.value.trim().toLowerCase()))
-)
+  
+  return filtered
+})
 
 function isSelected(field) {
   return props.selected.some(f => f.name === field.name)
