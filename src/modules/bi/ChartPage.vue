@@ -687,4 +687,8 @@ onBeforeUnmount(() => {
 .field-icon {
     color: var(--color-accent);
 }
+
+.btn:hover {
+    background-color: var(--color-hover-background);
+}
 </style>

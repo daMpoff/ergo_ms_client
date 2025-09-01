@@ -56,6 +56,9 @@ const typeIcon = {
   flex-direction: column;
   text-align: center;
   gap: 10px;
+  padding: 12px;
+  font-size: 0.95rem;
+  line-height: 1.3;
 }
 
 .fields-list {
@@ -140,6 +143,67 @@ const typeIcon = {
 
   50% {
     opacity: 1
+  }
+}
+
+:deep(.info-box svg) {
+  display: block;
+}
+
+@media (max-width: 575.98px) {
+  .info-box {
+    padding: 10px;
+    gap: 8px;
+    font-size: 0.9rem;
+    line-height: 1.25;
+  }
+
+  :deep(.info-box svg) {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .info-box {
+    gap: 10px;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  :deep(.info-box svg) {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .info-box {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  :deep(.info-box svg) {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (min-width: 992px) {
+  .info-box {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  :deep(.info-box svg) {
+    width: 40px;
+    height: 40px;
   }
 }
 </style>
