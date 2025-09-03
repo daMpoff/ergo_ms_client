@@ -60,7 +60,7 @@
 
       <!-- Компонент вкладки -->
       <component 
-        v-else-if="activeTab === 'fields' && selectedTables.length" 
+        v-else-if="(activeTab === 'fields' || activeTab === 'params') && selectedTables.length" 
         :is="getTabComponent(activeTab)"
         :fields="fields" 
         :tables="selectedTables" 
@@ -140,7 +140,7 @@ function needsDataset(tab) {
 }
 
 function tabLabel(tab) {
-  return tab === 'fields' ? 'поля' : (tab === 'params' ? 'параметры' : '')
+  return tab === 'fields' ? 'поля' : (tab === 'params' ? 'параметры' : (tab === 'filters' ? 'фильтры' : (tab === 'analysis' ? 'анализ' : '')))
 }
 
 function getTabComponent(tab) {
