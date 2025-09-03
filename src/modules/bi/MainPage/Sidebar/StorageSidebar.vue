@@ -7,7 +7,9 @@ import DashboardListPage from '@/modules/bi/Dashboards/DashboardListPage.vue'
 
 const props = defineProps({
   isDatasetSidebarOpen: Boolean,
-  currentPage:          String
+  currentPage:          String,
+  isMenuCollapsed:      Boolean,
+  menuWidth:            Number
 })
 
 const emit = defineEmits(['close'])
@@ -22,6 +24,17 @@ const titleMap = {
 }
 
 const title = computed(() => titleMap[props.currentPage] || '')
+
+// Вычисляем позицию сайдбара в зависимости от состояния меню
+const sidebarPosition = computed(() => {
+  if (props.isMenuCollapsed) {
+    // Если меню свернуто, сайдбар должен быть за правой границей меню
+    return '84px' // Ширина свернутого меню
+  } else {
+    // Если меню развернуто, сайдбар должен быть привязан к правой границе меню
+    return `${props.menuWidth}px`
+  }
+})
 
 const handleClose = () => {
   isClosing.value = true
@@ -44,7 +57,7 @@ watch(() => props.isDatasetSidebarOpen, (newValue) => {
   <div
     class="offcanvas offcanvas-start"
     :class="{ show: isDatasetSidebarOpen && !isClosing, closing: isClosing }"
-    :style="{ visibility: isDatasetSidebarOpen ? 'visible' : 'hidden', width: '768px', left: '260px' }"
+    :style="{ visibility: isDatasetSidebarOpen ? 'visible' : 'hidden', width: '768px', left: sidebarPosition }"
     tabindex="-1"
   >
     <div class="offcanvas-header">
@@ -75,8 +88,8 @@ watch(() => props.isDatasetSidebarOpen, (newValue) => {
 .sidebar-overlay {
   position: fixed;
   top: 0;
-  left: 0;
-  width: 100vw;
+  left: v-bind(sidebarPosition);
+  width: calc(100vw - v-bind(sidebarPosition));
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 1040;
@@ -113,14 +126,13 @@ watch(() => props.isDatasetSidebarOpen, (newValue) => {
 .storage-sidebar {
   position: fixed;
   top: 0;
-  left: 260px;
   width: 768px;
   height: 100vh;
   background-color: var(--color-primary-background);
   z-index: 1050;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
   transform: translateX(-100%);
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out, left 0.3s ease-in-out;
 
   &.show {
     transform: translateX(0);
@@ -133,14 +145,13 @@ watch(() => props.isDatasetSidebarOpen, (newValue) => {
 .offcanvas {
   position: fixed;
   top: 0;
-  left: 260px;
   width: 768px;
   height: 100vh;
   background-color: var(--color-primary-background);
   z-index: 1050;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
   transform: translateX(-100%);
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out, left 0.3s ease-in-out;
 
   &.show {
     transform: translateX(0);
