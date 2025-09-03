@@ -175,6 +175,7 @@ class ApiClient {
     // Метод для скачивания файлов (бинарные данные)
     async downloadFile(endpoint, params = {}, needToken = true) {
         try {
+            console.log('Скачивание файла:', endpoint, params);
             const config = { 
                 params,
                 responseType: 'blob' // Важно для бинарных данных
@@ -182,6 +183,7 @@ class ApiClient {
             if (needToken) {
                 this._addAuthToken(config);
             }
+            console.log('Конфигурация запроса:', config);
             const response = await this.client.get(endpoint, config);
             
             // Для бинарных данных возвращаем специальный формат
@@ -192,6 +194,7 @@ class ApiClient {
                 status: response.status
             };
         } catch (error) {
+            console.error('Ошибка при скачивании файла:', error);
             const errorInfo = this.handleError(error);
             throw error;
         }
@@ -200,11 +203,15 @@ class ApiClient {
     // Вспомогательный метод для добавления токена авторизации в конфигурацию
     _addAuthToken(config) {
         const token = Cookies.get('token');
+        console.log('Токен из cookies:', token ? 'есть' : 'отсутствует');
         if (token) {
             if (!config.headers) {
                 config.headers = {};
             }
             config.headers.Authorization = `Bearer ${token}`;
+            console.log('Добавлен заголовок Authorization:', `Bearer ${token.substring(0, 20)}...`);
+        } else {
+            console.warn('Токен не найден в cookies');
         }
         return config;
     }
@@ -213,6 +220,25 @@ class ApiClient {
         Cookies.remove('token');
         Cookies.remove('refresh');
         Cookies.remove('userId');
+    }
+
+    // Проверяем, есть ли токен и не истек ли он
+    isTokenValid() {
+        const token = Cookies.get('token');
+        if (!token) {
+            console.log('Токен отсутствует');
+            return false;
+        }
+        
+        // Простая проверка - если токен есть, считаем его валидным
+        // В реальном приложении можно добавить проверку JWT payload
+        console.log('Токен найден, длина:', token.length);
+        return true;
+    }
+
+    // Получаем текущий токен
+    getCurrentToken() {
+        return Cookies.get('token');
     }
     // Обработчики ответов
     handleResponse(response) {

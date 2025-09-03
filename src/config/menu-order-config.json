@@ -15,7 +15,9 @@
 
     "AssetsAnalyse",
     
-    "ErgoCities"
+    "ErgoCities",
+    "PorosityAnalysis",
+    "VideoAnalysis"
   ],
   
   "separators": {

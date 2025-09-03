@@ -535,7 +535,6 @@ onBeforeUnmount(() => {
 }
 
 .button-card-connection {
-    height: 46px;
     display: flex;
     align-items: center;
     gap: 10px;

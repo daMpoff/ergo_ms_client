@@ -73,11 +73,33 @@ defineEmits(['showDatasetDialog', 'editDataset'])
 }
 
 .btn{
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-size: 13px;
   height: 28px;
   font-weight: 400;
   border-radius: 6px;
   padding: 12px;
+}
+
+/* Adaptive font sizes for different screen widths */
+@media (max-width: 575.98px) {
+  .btn {
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .btn {
+    font-size: 13px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .btn {
+    font-size: 14px;
+  }
 }
 
 .btn-success {

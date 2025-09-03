@@ -376,4 +376,13 @@ export const endpoints = {
             update: (pk) => `learning_analytics/data_formalization_submodule/import_stats/${pk}/`,
         },
     },
+    video_analysis: {
+        list: 'video_analysis/video-analysis/',
+        create: 'video_analysis/video-analysis/',
+        bulkCreate: 'video_analysis/video-analysis/bulk_create/',
+        detail: (id) => `video_analysis/video-analysis/${id}/`,
+        delete: (id) => `video_analysis/video-analysis/${id}/`,
+        download: (id) => `video_analysis/video-analysis/${id}/download_file/`,
+        statistics: 'video_analysis/video-analysis/statistics/'
+    },
 };
