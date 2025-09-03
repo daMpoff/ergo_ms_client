@@ -722,105 +722,105 @@
 
     "BI": {
       "path": "/bi",
-      "component": "@/modules/bi/HomePageBI.vue",
+      "component": "@/modules/bi/MainPage/HomePageBI.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "DashboardPage": {
       "path": "/bi/dashboard/new",
-      "component": "@/modules/bi/DashboardPage.vue",
+      "component": "@/modules/bi/Dashboards/DashboardPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "DashboardList": {
       "path": "/bi/dashboardlist",
-      "component": "@/modules/bi/DashboardListPage.vue",
+      "component": "@/modules/bi/Dashboards/DashboardListPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "DatasetList": {
       "path": "/bi/datasetlist",
-      "component": "@/modules/bi/DatasetListPage.vue",
+      "component": "@/modules/bi/Datasets/DatasetListPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "NewFile": {
       "path": "/bi/connections/new/file",
-      "component": "@/modules/bi/NewFile.vue",
+      "component": "@/modules/bi/Connections/Files/NewFile.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "ClickHouse": {
       "path": "/bi/connections/new/clickhouse",
-      "component": "@/modules/bi/components/db-settings/ClickHouse.vue",
+      "component": "@/modules/bi/Connections/components/db-settings/ClickHouse.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "MSSQL": {
       "path": "/bi/connections/new/mssql",
-      "component": "@/modules/bi/components/db-settings/MSSQL.vue",
+      "component": "@/modules/bi/Connections/components/db-settings/MSSQL.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "PostgreSQL": {
       "path": "/bi/connections/new/postgresql",
-      "component": "@/modules/bi/components/db-settings/PostgreSQL.vue",
+      "component": "@/modules/bi/Connections/components/db-settings/PostgreSQL.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "ConnectionDetail": {
       "path": "/bi/connections/:pk",
-      "component": "@/modules/bi/components/db-settings/ConnectionDetail.vue",
+      "component": "@/modules/bi/Connections/components/db-settings/ConnectionDetail.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "ConnectionFiles": {
       "path": "/bi/connections/:pk/files",
-      "component": "@/modules/bi/ConnectionFiles.vue",
+      "component": "@/modules/bi/Connections/Files/ConnectionFiles.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "NewConnection": {
       "path": "/bi/connections/new",
-      "component": "@/modules/bi/NewConnection.vue",
+      "component": "@/modules/bi/Connections/NewConnection.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "DatasetPage": {
       "path": "/bi/dataset/:id(\\d+)?",
-      "component": "@/modules/bi/DatasetPage.vue",
+      "component": "@/modules/bi/Datasets/DatasetPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "NewDataset": {
       "path": "/bi/dataset/new",
-      "component": "@/modules/bi/DatasetPage.vue",
+      "component": "@/modules/bi/Datasets/DatasetPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "NewChart": {
       "path": "/bi/chart/new",
-      "component": "@/modules/bi/ChartPage.vue",
+      "component": "@/modules/bi/Charts/ChartPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "ChartPage": {
       "path": "/bi/chart/:id",
-      "component": "@/modules/bi/ChartPage.vue",
+      "component": "@/modules/bi/Charts/ChartPage.vue",
       "meta": {
         "requiresAuth": true
       }
