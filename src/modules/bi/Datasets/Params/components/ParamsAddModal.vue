@@ -5,7 +5,15 @@
                 <div class="mb-3">
                     <div class="form-label-container">
                         <label class="form-label">Название</label>
-                        <HelpCircle class="lucide" :size="18" />
+                        <HelpTooltip :size="18">
+                            <div class="tooltip-title">Ограничения на имя параметра:</div>
+                            <ul class="tooltip-list">
+                                <li>Допускаются только латинские буквы (A–Z, a–z), цифры, знак тире "-" и нижнее подчёркивание "_".</li>
+                                <li>Длина имени не должна превышать 36 символов.</li>
+                                <li>Имя не должно начинаться с символа нижнего подчёркивания: <code>_name</code>.</li>
+                                <li>Зарезервированные имена, которые нельзя использовать: <code>tab</code>, <code>state</code>, <code>mode</code>, <code>focus</code>, <code>grid</code>, <code>tz</code>, <code>from</code>, <code>to</code>.</li>
+                            </ul>
+                        </HelpTooltip>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <input v-model="name" type="text" class="form-control" placeholder="" />
@@ -20,10 +28,18 @@
                 <div class="mb-3">
                     <label class="form-label">Значение по умолчанию</label>
                     <template v-if="type === 'boolean'">
-                        <select v-model="defaultValue" class="form-select">
-                            <option :value="true">Истина</option>
-                            <option :value="false">Ложь</option>
-                        </select>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-check-inline m-0">
+                                <input class="form-check-input" type="radio" name="defaultBool"
+                                       :value="true" v-model="defaultValue" id="defaultBoolTrue">
+                                <label class="form-check-label" for="defaultBoolTrue">True</label>
+                            </div>
+                            <div class="form-check form-check-inline m-0">
+                                <input class="form-check-input" type="radio" name="defaultBool"
+                                       :value="false" v-model="defaultValue" id="defaultBoolFalse">
+                                <label class="form-check-label" for="defaultBoolFalse">False</label>
+                            </div>
+                        </div>
                     </template>
                     <template v-else>
                         <input
@@ -45,10 +61,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ModalCenter from '@/components/ModalCenter.vue'
 import { HelpCircle } from 'lucide-vue-next'
 import DataTypeCombobox from '@/modules/bi/components/combobox_datetype.vue'
+import HelpTooltip from '@/modules/bi/components/help_tooltip.vue'
 
 const props = defineProps({
     modalId: { type: String, default: 'paramsAddModal' },
@@ -59,6 +76,7 @@ const emit = defineEmits(['submit'])
 const name = ref('')
 const type = ref('string')
 const defaultValue = ref('')
+
 
 const inputType = computed(() => {
     if (type.value === 'integer' || type.value === 'float') return 'number'
@@ -74,6 +92,14 @@ function onAdd() {
         default: defaultValue.value,
     })
 }
+
+watch(type, (newType) => {
+    if (newType === 'boolean') {
+        defaultValue.value = null
+    } else {
+        defaultValue.value = ''
+    }
+})
 </script>
 
 <style scoped lang="scss">
@@ -102,6 +128,7 @@ function onAdd() {
     align-items: center;
 }
 
+
 .select-icon{
     position: absolute;
     top: 50%;
@@ -115,6 +142,20 @@ function onAdd() {
 
 .lucide{
     vertical-align: middle;
+}
+
+.tooltip-title{
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.tooltip-list{
+    margin: 0;
+    padding-left: 18px;
+}
+
+.tooltip-list li{
+    margin: 4px 0;
 }
 </style>
 
