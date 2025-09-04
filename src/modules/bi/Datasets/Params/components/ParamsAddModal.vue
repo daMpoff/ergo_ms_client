@@ -1,5 +1,5 @@
 <template>
-    <ModalCenter :title="'Добавление параметра'" :modal-id="modalId">
+    <ModalCenter :title="modalTitle" :modal-id="props.modalId">
         <form @submit.prevent="onAdd">
             <div class="form-grid">
                 <div class="mb-3">
@@ -16,7 +16,7 @@
                         </HelpTooltip>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <input v-model="name" type="text" class="form-control" placeholder="" />
+                        <input v-model="name" type="text" class="form-control" :class="{ 'is-invalid': attemptedSubmit && isNameInvalid }" placeholder="" />
                     </div>
                 </div>
 
@@ -30,12 +30,12 @@
                     <template v-if="type === 'boolean'">
                         <div class="d-flex align-items-center gap-3">
                             <div class="form-check form-check-inline m-0">
-                                <input class="form-check-input" type="radio" name="defaultBool"
+                                <input class="form-check-input" :class="{ 'is-invalid': attemptedSubmit && isDefaultInvalid }" type="radio" name="defaultBool"
                                        :value="true" v-model="defaultValue" id="defaultBoolTrue">
                                 <label class="form-check-label" for="defaultBoolTrue">True</label>
                             </div>
                             <div class="form-check form-check-inline m-0">
-                                <input class="form-check-input" type="radio" name="defaultBool"
+                                <input class="form-check-input" :class="{ 'is-invalid': attemptedSubmit && isDefaultInvalid }" type="radio" name="defaultBool"
                                        :value="false" v-model="defaultValue" id="defaultBoolFalse">
                                 <label class="form-check-label" for="defaultBoolFalse">False</label>
                             </div>
@@ -45,8 +45,14 @@
                         <input
                             v-model="defaultValue"
                             :type="inputType"
+                            :step="inputStep"
+                            :inputmode="inputMode"
                             class="form-control"
+                            :class="{ 'is-invalid': attemptedSubmit && isDefaultInvalid }"
                             placeholder=""
+                            @keydown="handleNumberKeydown"
+                            @input="handleNumberInput"
+                            @paste="handleNumberPaste"
                         />
                     </template>
                 </div>
@@ -54,14 +60,14 @@
 
             <div class="d-flex justify-content-end gap-2 mt-4">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Отмена</button>
-                <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Добавить</button>
+                <button type="submit" class="btn btn-primary" :disabled="attemptedSubmit && !canSubmit">{{ submitButtonText }}</button>
             </div>
         </form>
     </ModalCenter>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, defineExpose } from 'vue'
 import ModalCenter from '@/components/ModalCenter.vue'
 import { HelpCircle } from 'lucide-vue-next'
 import DataTypeCombobox from '@/modules/bi/components/combobox_datetype.vue'
@@ -71,11 +77,14 @@ const props = defineProps({
     modalId: { type: String, default: 'paramsAddModal' },
 })
 
-const emit = defineEmits(['submit'])
+const emit = defineEmits(['submit', 'update'])
 
 const name = ref('')
 const type = ref('string')
 const defaultValue = ref('')
+const attemptedSubmit = ref(false)
+const isEditMode = ref(false)
+const editIndex = ref(null)
 
 
 const inputType = computed(() => {
@@ -85,12 +94,92 @@ const inputType = computed(() => {
     return 'text'
 })
 
+const inputStep = computed(() => {
+    if (type.value === 'float') return 'any'
+    if (type.value === 'integer') return '1'
+    return undefined
+})
+
+const inputMode = computed(() => {
+    if (type.value === 'float') return 'decimal'
+    if (type.value === 'integer') return 'numeric'
+    return undefined
+})
+
+const isNameInvalid = computed(() => String(name.value || '').trim() === '')
+
+const isDefaultInvalid = computed(() => {
+    const val = defaultValue.value
+    if (type.value === 'boolean') return val === null || val === ''
+    if (type.value === 'integer') {
+        if (val === '' || val === null) return true
+        return Number.isNaN(parseInt(val, 10))
+    }
+    if (type.value === 'float') {
+        if (val === '' || val === null) return true
+        return Number.isNaN(parseFloat(String(val).replace(',', '.')))
+    }
+    // string, date, datetime
+    return String(val || '').trim() === ''
+})
+
+const canSubmit = computed(() => !isNameInvalid.value && !isDefaultInvalid.value)
+
+const modalTitle = computed(() => isEditMode.value ? 'Редактирование параметра' : 'Добавление параметра')
+const submitButtonText = computed(() => isEditMode.value ? 'Сохранить' : 'Добавить')
+
+function resetForm() {
+    name.value = ''
+    type.value = 'string'
+    defaultValue.value = ''
+    attemptedSubmit.value = false
+    isEditMode.value = false
+    editIndex.value = null
+}
+
 function onAdd() {
-    emit('submit', {
-        name: name.value,
-        type: type.value,
-        default: defaultValue.value,
-    })
+    if (!canSubmit.value) {
+        attemptedSubmit.value = true
+        return
+    }
+    let emittedDefault = defaultValue.value
+    if (type.value === 'integer' && emittedDefault !== '' && emittedDefault !== null) {
+        emittedDefault = parseInt(emittedDefault, 10)
+    }
+    if (type.value === 'float' && emittedDefault !== '' && emittedDefault !== null) {
+        // поддержка ввода с запятой
+        emittedDefault = parseFloat(String(emittedDefault).replace(',', '.'))
+    }
+    if (isEditMode.value) {
+        emit('update', {
+            index: editIndex.value,
+            name: name.value,
+            type: type.value,
+            default: emittedDefault,
+        })
+    } else {
+        emit('submit', {
+            name: name.value,
+            type: type.value,
+            default: emittedDefault,
+        })
+    }
+    // Закрываем модалку программно после успешного добавления
+    try {
+        const anyWindow = window
+        if (modalEl && anyWindow && anyWindow.bootstrap && anyWindow.bootstrap.Modal) {
+            const instance = anyWindow.bootstrap.Modal.getOrCreateInstance(modalEl)
+            instance.hide()
+        } else if (modalEl) {
+            // Фоллбек: эмулируем нажатие на кнопку закрытия модалки
+            const closeBtn = modalEl.querySelector('[data-bs-dismiss="modal"]')
+            if (closeBtn && typeof closeBtn.click === 'function') {
+                closeBtn.click()
+            }
+        }
+    } catch (e) {
+        // игнорируем ошибки закрытия модалки
+    }
 }
 
 watch(type, (newType) => {
@@ -100,6 +189,174 @@ watch(type, (newType) => {
         defaultValue.value = ''
     }
 })
+
+let modalEl = null
+let backdropEl = null
+let escHandler = null
+let dismissClickHandler = null
+const onModalHidden = () => {
+    // На всякий случай сбрасываем и при закрытии модалки
+    resetForm()
+}
+
+onMounted(() => {
+    modalEl = document.getElementById(props.modalId)
+    if (modalEl) {
+        modalEl.addEventListener('hidden.bs.modal', onModalHidden)
+    }
+})
+
+onBeforeUnmount(() => {
+    if (modalEl) {
+        modalEl.removeEventListener('hidden.bs.modal', onModalHidden)
+    }
+    removeFallbackListeners()
+})
+
+function handleNumberKeydown(event) {
+    if (type.value !== 'integer') return
+    const blockedKeys = ['.', ',', 'e', 'E']
+    if (blockedKeys.includes(event.key)) {
+        event.preventDefault()
+    }
+}
+
+function handleNumberInput(event) {
+    if (type.value !== 'integer') return
+    const value = String(event.target.value)
+    // Оставляем только цифры и один ведущий минус (на всякий случай), но без точки/запятой
+    let sanitized = value.replace(/[^0-9-]/g, '')
+    // Убираем все минусы кроме ведущего
+    sanitized = sanitized.replace(/(?!^)-/g, '')
+    // Если осталось пусто или только '-', не преобразуем в число
+    defaultValue.value = sanitized
+}
+
+function handleNumberPaste(event) {
+    if (type.value !== 'integer') return
+    const paste = (event.clipboardData || window.clipboardData).getData('text')
+    if (/[.,]/.test(paste)) {
+        event.preventDefault()
+        // Вставляем только цифры и опционально ведущий минус
+        const sanitized = paste.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '')
+        const input = event.target
+        const start = input.selectionStart
+        const end = input.selectionEnd
+        const current = String(input.value)
+        input.value = current.slice(0, start) + sanitized + current.slice(end)
+        // Тригерим обновление v-model
+        defaultValue.value = input.value
+    }
+}
+
+function showModalFallback(){
+    if (!modalEl) return
+    if (!modalEl.classList.contains('show')) {
+        modalEl.style.display = 'block'
+        modalEl.removeAttribute('aria-hidden')
+        modalEl.setAttribute('aria-modal', 'true')
+        modalEl.classList.add('show')
+        document.body.classList.add('modal-open')
+        backdropEl = document.createElement('div')
+        backdropEl.className = 'modal-backdrop fade show'
+        document.body.appendChild(backdropEl)
+        addFallbackListeners()
+    }
+}
+
+function hideModalFallback(){
+    if (!modalEl) return
+    modalEl.style.display = 'none'
+    modalEl.setAttribute('aria-hidden', 'true')
+    modalEl.removeAttribute('aria-modal')
+    modalEl.classList.remove('show')
+    document.body.classList.remove('modal-open')
+    if (backdropEl && backdropEl.parentNode) {
+        backdropEl.parentNode.removeChild(backdropEl)
+    }
+    backdropEl = null
+    removeFallbackListeners()
+    onModalHidden()
+}
+
+function addFallbackListeners(){
+    if (!modalEl) return
+    escHandler = (e) => {
+        if (e.key === 'Escape') hideModal()
+    }
+    document.addEventListener('keydown', escHandler)
+    dismissClickHandler = (e) => {
+        const target = e.target
+        if (!target) return
+        const dismissEl = target.closest('[data-bs-dismiss="modal"]')
+        if (dismissEl && modalEl.contains(dismissEl)) {
+            e.preventDefault()
+            hideModal()
+        }
+    }
+    modalEl.addEventListener('click', dismissClickHandler)
+    if (backdropEl) {
+        backdropEl.addEventListener('click', hideModal)
+    }
+}
+
+function removeFallbackListeners(){
+    if (escHandler) {
+        document.removeEventListener('keydown', escHandler)
+        escHandler = null
+    }
+    if (dismissClickHandler && modalEl) {
+        modalEl.removeEventListener('click', dismissClickHandler)
+        dismissClickHandler = null
+    }
+    if (backdropEl) {
+        backdropEl.removeEventListener('click', hideModal)
+    }
+}
+
+function hideModal(){
+    try{
+        const anyWindow = window
+        if (modalEl && anyWindow && anyWindow.bootstrap && anyWindow.bootstrap.Modal) {
+            const instance = anyWindow.bootstrap.Modal.getOrCreateInstance(modalEl)
+            instance.hide()
+        } else {
+            hideModalFallback()
+        }
+    }catch(_){
+        hideModalFallback()
+    }
+}
+
+// Публичный метод для открытия модалки в режиме редактирования
+function open(payload){
+    // payload: { index, row }
+    if (!payload || !payload.row) return
+    const row = payload.row
+    isEditMode.value = true
+    editIndex.value = payload.index
+    name.value = row.name || ''
+    type.value = row.type || 'string'
+    if (type.value === 'boolean') {
+        defaultValue.value = typeof row.defaultValue === 'boolean' ? row.defaultValue : null
+    } else {
+        defaultValue.value = row.defaultValue ?? ''
+    }
+    attemptedSubmit.value = false
+    try {
+        const anyWindow = window
+        if (modalEl && anyWindow && anyWindow.bootstrap && anyWindow.bootstrap.Modal) {
+            const instance = anyWindow.bootstrap.Modal.getOrCreateInstance(modalEl)
+            instance.show()
+        } else if (modalEl) {
+            showModalFallback()
+        }
+    } catch (e) {
+        showModalFallback()
+    }
+}
+
+defineExpose({ open })
 </script>
 
 <style scoped lang="scss">

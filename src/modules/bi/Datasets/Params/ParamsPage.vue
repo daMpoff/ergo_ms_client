@@ -2,24 +2,142 @@
     <div class="main-content">
         <div class="main-content-header">
             <h6>Параметры</h6>
-            <span>Параметр — это переменная датасета или чарта, которая может заменять константные значения в вычисляемых полях. Параметр может быть числом, строкой, датой или логическим значением. Параметры датасета доступны во всех чартах, созданных на основе этого датасета. Значение по умолчанию для параметра может быть переопределено на уровне чарта.</span>
+            <span class="params-description text-muted">Параметр — это переменная датасета или чарта, которая может заменять константные значения в вычисляемых полях. Параметр может быть числом, строкой, датой или логическим значением. Параметры датасета доступны во всех чартах, созданных на основе этого датасета. Значение по умолчанию для параметра может быть переопределено на уровне чарта.</span>
         </div>
         <div class="main-content-body">
-
+            <BiGrid
+                :rows="rows"
+                :columns="columns"
+                :striped="true"
+                :hover="true"
+                @duplicate="onDuplicate"
+                @edit="onEdit"
+                @copyId="onCopyId"
+                @delete="onDelete"
+            />
         </div>
         <div class="main-content-footer">
             <button type="button" class="btn btn-add" data-bs-toggle="modal" data-bs-target="#paramsAddModal">Добавить</button>
         </div>
-        <ParamsAddModal modal-id="paramsAddModal" @submit="handleAdd" />
+        <ParamsAddModal ref="addEditModalRef" modal-id="paramsAddModal" @submit="handleAdd" @update="handleUpdate" />
     </div>
 </template>
 
 <script setup>
+    import { ref, watch, computed, onMounted } from 'vue'
+    import { useToast } from 'vue-toastification'
     import ParamsAddModal from './components/ParamsAddModal.vue'
+    import BiGrid from '@/modules/bi/components/bi_grid.vue'
+
+    const props = defineProps({
+        datasetId: { type: [String, Number], default: null }
+    })
+
+    const rows = ref([])
+    const addEditModalRef = ref(null)
+    const toast = useToast()
+
+    const storageKey = computed(() => `bi:dataset:params:${props.datasetId ?? 'new'}`)
+
+    function loadFromCache(){
+        try{
+            const raw = sessionStorage.getItem(storageKey.value)
+            if(raw){
+                const parsed = JSON.parse(raw)
+                if(Array.isArray(parsed)){
+                    rows.value = parsed
+                }
+            }
+        }catch(e){
+
+        }
+    }
+
+    function saveToCache(){
+        try{
+            sessionStorage.setItem(storageKey.value, JSON.stringify(rows.value))
+        }catch(e){
+
+        }
+    }
+
+    onMounted(() => {
+        try{
+            window.addEventListener('beforeunload', () => {
+                try{ sessionStorage.removeItem(storageKey.value) }catch(_){ }
+            })
+        }catch(_){  }
+        loadFromCache()
+    })
+
+    watch(rows, () => {
+        saveToCache()
+    }, { deep: true })
+
+    const columns = [
+        { key: 'name', label: 'Имя параметра', width: '26%' },
+        { key: 'type', label: 'Тип', width: '16%' },
+        { key: 'defaultValue', label: 'Значение по умолчанию', width: '23%' },
+        { key: 'sourceUsage', label: 'Использование в настройке источника', width: '35%' },
+    ]
 
     function handleAdd(payload){
-        // Здесь позже добавим сохранение параметра
-        console.log('Добавление параметра', payload)
+        rows.value.push({
+            name: payload.name,
+            type: payload.type,
+            defaultValue: payload.default,
+            sourceUsage: false,
+        })
+        toast.success('Параметр добавлен')
+    }
+
+    function handleUpdate(payload){
+        const { index, name, type, default: def } = payload
+        if (typeof index === 'number' && rows.value[index]) {
+            rows.value[index] = { ...rows.value[index], name, type, defaultValue: def }
+            toast.success('Параметр обновлён')
+        }
+    }
+
+    function onDuplicate({ row, index }){
+        const suffix = '-copy'
+        let base = row.name + suffix
+        let candidate = base
+        let counter = 1
+        const names = new Set(rows.value.map(r => r.name))
+        while (names.has(candidate)) {
+            candidate = base + '-' + counter
+            counter += 1
+        }
+        rows.value.splice(index + 1, 0, {
+            name: candidate,
+            type: row.type,
+            defaultValue: row.defaultValue,
+            sourceUsage: row.sourceUsage,
+        })
+        toast.info('Дубликат создан')
+    }
+
+    function onEdit({ row, index }){
+        if (addEditModalRef.value && typeof addEditModalRef.value.open === 'function') {
+            addEditModalRef.value.open({ row, index })
+        }
+    }
+
+    async function onCopyId({ row }){
+        try {
+            await navigator.clipboard.writeText(String(row.name || ''))
+            toast.success('ID скопирован в буфер обмена')
+        } catch (e) {
+            toast.error('Не удалось скопировать ID')
+        }
+    }
+
+    function onDelete({ index }){
+        if (typeof index === 'number') {
+            rows.value.splice(index, 1)
+            toast.success('Параметр удалён')
+        }
     }
 </script>
 
@@ -27,8 +145,8 @@
     .main-content{
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        padding: 0 10rem 0 10rem;
+        justify-content: flex-start;
+        padding: 0 5rem 0 5rem;
         height: 100%;
         gap: 15px;
     }
@@ -40,5 +158,12 @@
 
     .btn-add:hover{
         background-color: var(--color-hover-background);
+    }
+
+    .params-description{
+        display: block;
+        margin-top: 0.25rem;
+        font-size: clamp(0.75rem, 0.6rem + 0.7vw, 0.875rem);
+        line-height: 1.5;
     }
 </style>

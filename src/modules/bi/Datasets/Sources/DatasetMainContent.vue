@@ -58,20 +58,22 @@
         description="Пожалуйста, подождите, загружаем данные."
       />
 
-      <!-- Компонент вкладки -->
-      <component 
-        v-else-if="(activeTab === 'fields' || activeTab === 'params') && selectedTables.length" 
-        :is="getTabComponent(activeTab)"
-        :fields="fields" 
-        :tables="selectedTables" 
-        :cols="previewCols" 
-        :rows="previewRows"
-        :dataset-id="needsDataset(activeTab) && dataset ? dataset.id : null"
-        :connection-status="connectionStatus"
-        @remove-table="$emit('removeTable', $event)" 
-        @update:fields="$emit('update:fields', $event)"
-        @switch-to-sources="$emit('update:activeTab', 'sources')"
-      />
+      <!-- Компонент вкладки (кэшируем между переключениями) -->
+      <keep-alive v-else-if="(activeTab === 'fields' || activeTab === 'params') && selectedTables.length">
+        <component 
+          :is="getTabComponent(activeTab)"
+          :key="dataset && dataset.id ? dataset.id : 'new'"
+          :fields="fields" 
+          :tables="selectedTables" 
+          :cols="previewCols" 
+          :rows="previewRows"
+          :dataset-id="needsDataset(activeTab) && dataset ? dataset.id : null"
+          :connection-status="connectionStatus"
+          @remove-table="$emit('removeTable', $event)" 
+          @update:fields="$emit('update:fields', $event)"
+          @switch-to-sources="$emit('update:activeTab', 'sources')"
+        />
+      </keep-alive>
 
       <!-- Сообщение о необходимости выбора таблицы -->
       <div v-else-if="!hasConnectionIssues" class="text-muted p-4"
