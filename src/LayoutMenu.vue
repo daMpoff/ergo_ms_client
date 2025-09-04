@@ -21,18 +21,20 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { isDatasetSidebarOpen, currentSidebarPage } from '@/modules/bi/js/useSidebarStore'
+import { isDatasetSidebarOpen, currentSidebarPage } from '@/modules/bi/MainPage/Sidebar/components/js/useSidebarStore'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
 import MenuList from '@/components/menu/MenuList.vue'
 import TheHeader from '@/components/header/TheHeader.vue'
 
-import StorageSidebar from '@/modules/bi/components/StorageSidebar.vue'
+import StorageSidebar from '@/modules/bi/MainPage/Sidebar/StorageSidebar.vue'
 
 const userStore = useUserStore()
 const leftPadding = ref('280px')
 const isMenuVisible = ref(window.innerWidth >= 1200)
 const isMenuToggledManually = ref(false)
 const isOverlayVisible = ref(false)
+const isMenuCollapsed = ref(false)
+const menuWidth = ref(260)
 
 function updateMenuVisibility() {
   if (window.innerWidth >= 1200) {
@@ -59,6 +61,11 @@ function closeMenu() {
 
 function leftToggle(val) {
   leftPadding.value = val
+}
+
+function handleMenuStateChange(collapsed, width) {
+  isMenuCollapsed.value = collapsed
+  menuWidth.value = width
 }
 
 function openSidebarWithPage(pageName) {
@@ -96,6 +103,7 @@ onBeforeUnmount(() => {
       :is-visible="isMenuVisible"
       @open-sidebar="openSidebarFromMenu"
       @reset-page="() => currentSidebarPage = ''"
+      @menu-state-change="handleMenuStateChange"
     />
     <div class="layout-page" :style="{ paddingLeft: leftPadding }">
       <div class="py-4 container-xxl">
@@ -105,7 +113,13 @@ onBeforeUnmount(() => {
   </div>
 
   <div @click="closeMenu" class="layout-overlay" :class="{ active: isOverlayVisible }" />
-  <StorageSidebar :isDatasetSidebarOpen="isDatasetSidebarOpen" :currentPage="currentSidebarPage" @close="closeSidebar"/>
+  <StorageSidebar 
+    :isDatasetSidebarOpen="isDatasetSidebarOpen" 
+    :currentPage="currentSidebarPage" 
+    :isMenuCollapsed="isMenuCollapsed"
+    :menuWidth="menuWidth"
+    @close="closeSidebar"
+  />
 </template>
 
 <style scoped lang="scss">

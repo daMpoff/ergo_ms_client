@@ -34,7 +34,7 @@ watch(
 )
 
 
-const emit = defineEmits(['left-padding', 'open-datasets', 'open-sidebar', 'reset-page'])
+const emit = defineEmits(['left-padding', 'open-datasets', 'open-sidebar', 'reset-page', 'menu-state-change'])
 
 // Состояние меню
 const isCollapsed = ref(false)
@@ -102,6 +102,7 @@ const toggleMenu = () => {
   isCollapsed.value = !isCollapsed.value
   const padding = isCollapsed.value ? '120px' : `${menuWidth.value + 40}px`
   emit('left-padding', padding)
+  emit('menu-state-change', isCollapsed.value, menuWidth.value)
 }
 
 // Первоначальная установка ширины
@@ -113,6 +114,7 @@ const initializeMenuWidth = () => {
       if (!isCollapsed.value) {
         emit('left-padding', `${menuWidth.value + 40}px`)
       }
+      emit('menu-state-change', isCollapsed.value, menuWidth.value)
     }, 200)
   }
 }
@@ -127,6 +129,7 @@ const updateMenuWidth = () => {
         if (!isCollapsed.value) {
           emit('left-padding', `${newWidth + 40}px`)
         }
+        emit('menu-state-change', isCollapsed.value, menuWidth.value)
       }
     }, 100)
   }
