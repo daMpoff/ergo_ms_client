@@ -75,6 +75,7 @@ import HelpTooltip from '@/modules/bi/components/help_tooltip.vue'
 
 const props = defineProps({
     modalId: { type: String, default: 'paramsAddModal' },
+    existingNames: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['submit', 'update'])
@@ -85,6 +86,7 @@ const defaultValue = ref('')
 const attemptedSubmit = ref(false)
 const isEditMode = ref(false)
 const editIndex = ref(null)
+const originalName = ref('')
 
 
 const inputType = computed(() => {
@@ -106,7 +108,30 @@ const inputMode = computed(() => {
     return undefined
 })
 
-const isNameInvalid = computed(() => String(name.value || '').trim() === '')
+const reservedNames = new Set(['tab','state','mode','focus','grid','tz','from','to'])
+
+const isNameEmpty = computed(() => String(name.value || '').trim() === '')
+const isNameTooLong = computed(() => String(name.value || '').length > 36)
+const isNameStartsWithUnderscore = computed(() => String(name.value || '').startsWith('_'))
+const isNamePatternInvalid = computed(() => !/^[A-Za-z0-9_-]+$/.test(String(name.value || '')))
+const isNameReserved = computed(() => reservedNames.has(String(name.value || '').toLowerCase()))
+const isNameDuplicate = computed(() => {
+    const current = String(name.value || '')
+    if (!current) return false
+    const list = Array.isArray(props.existingNames) ? props.existingNames : []
+    const skip = String(originalName.value || '')
+    return list.some(n => String(n) === current && current !== skip)
+})
+
+const isNameInvalid = computed(() => {
+    if (isNameEmpty.value) return true
+    if (isNameTooLong.value) return true
+    if (isNameStartsWithUnderscore.value) return true
+    if (isNamePatternInvalid.value) return true
+    if (isNameReserved.value) return true
+    if (isNameDuplicate.value) return true
+    return false
+})
 
 const isDefaultInvalid = computed(() => {
     const val = defaultValue.value
@@ -119,7 +144,6 @@ const isDefaultInvalid = computed(() => {
         if (val === '' || val === null) return true
         return Number.isNaN(parseFloat(String(val).replace(',', '.')))
     }
-    // string, date, datetime
     return String(val || '').trim() === ''
 })
 
@@ -135,6 +159,7 @@ function resetForm() {
     attemptedSubmit.value = false
     isEditMode.value = false
     editIndex.value = null
+    originalName.value = ''
 }
 
 function onAdd() {
@@ -147,7 +172,6 @@ function onAdd() {
         emittedDefault = parseInt(emittedDefault, 10)
     }
     if (type.value === 'float' && emittedDefault !== '' && emittedDefault !== null) {
-        // поддержка ввода с запятой
         emittedDefault = parseFloat(String(emittedDefault).replace(',', '.'))
     }
     if (isEditMode.value) {
@@ -164,14 +188,12 @@ function onAdd() {
             default: emittedDefault,
         })
     }
-    // Закрываем модалку программно после успешного добавления
     try {
         const anyWindow = window
         if (modalEl && anyWindow && anyWindow.bootstrap && anyWindow.bootstrap.Modal) {
             const instance = anyWindow.bootstrap.Modal.getOrCreateInstance(modalEl)
             instance.hide()
         } else if (modalEl) {
-            // Фоллбек: эмулируем нажатие на кнопку закрытия модалки
             const closeBtn = modalEl.querySelector('[data-bs-dismiss="modal"]')
             if (closeBtn && typeof closeBtn.click === 'function') {
                 closeBtn.click()
@@ -195,7 +217,6 @@ let backdropEl = null
 let escHandler = null
 let dismissClickHandler = null
 const onModalHidden = () => {
-    // На всякий случай сбрасываем и при закрытии модалки
     resetForm()
 }
 
@@ -224,11 +245,8 @@ function handleNumberKeydown(event) {
 function handleNumberInput(event) {
     if (type.value !== 'integer') return
     const value = String(event.target.value)
-    // Оставляем только цифры и один ведущий минус (на всякий случай), но без точки/запятой
     let sanitized = value.replace(/[^0-9-]/g, '')
-    // Убираем все минусы кроме ведущего
     sanitized = sanitized.replace(/(?!^)-/g, '')
-    // Если осталось пусто или только '-', не преобразуем в число
     defaultValue.value = sanitized
 }
 
@@ -237,7 +255,6 @@ function handleNumberPaste(event) {
     const paste = (event.clipboardData || window.clipboardData).getData('text')
     if (/[.,]/.test(paste)) {
         event.preventDefault()
-        // Вставляем только цифры и опционально ведущий минус
         const sanitized = paste.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '')
         const input = event.target
         const start = input.selectionStart
@@ -328,14 +345,13 @@ function hideModal(){
     }
 }
 
-// Публичный метод для открытия модалки в режиме редактирования
 function open(payload){
-    // payload: { index, row }
     if (!payload || !payload.row) return
     const row = payload.row
     isEditMode.value = true
     editIndex.value = payload.index
     name.value = row.name || ''
+    originalName.value = row.name || ''
     type.value = row.type || 'string'
     if (type.value === 'boolean') {
         defaultValue.value = typeof row.defaultValue === 'boolean' ? row.defaultValue : null

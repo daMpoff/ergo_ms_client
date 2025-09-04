@@ -19,7 +19,7 @@
         <div class="main-content-footer">
             <button type="button" class="btn btn-add" data-bs-toggle="modal" data-bs-target="#paramsAddModal">Добавить</button>
         </div>
-        <ParamsAddModal ref="addEditModalRef" modal-id="paramsAddModal" @submit="handleAdd" @update="handleUpdate" />
+        <ParamsAddModal ref="addEditModalRef" modal-id="paramsAddModal" :existing-names="existingNames" @submit="handleAdd" @update="handleUpdate" />
     </div>
 </template>
 
@@ -81,7 +81,14 @@
         { key: 'sourceUsage', label: 'Использование в настройке источника', width: '35%' },
     ]
 
+    const existingNames = computed(() => rows.value.map(r => r.name))
+
     function handleAdd(payload){
+        const exists = rows.value.some(r => r.name === payload.name)
+        if (exists) {
+            toast.error('Имя параметра должно быть уникальным')
+            return
+        }
         rows.value.push({
             name: payload.name,
             type: payload.type,
@@ -94,6 +101,11 @@
     function handleUpdate(payload){
         const { index, name, type, default: def } = payload
         if (typeof index === 'number' && rows.value[index]) {
+            const exists = rows.value.some((r, i) => i !== index && r.name === name)
+            if (exists) {
+                toast.error('Имя параметра должно быть уникальным')
+                return
+            }
             rows.value[index] = { ...rows.value[index], name, type, defaultValue: def }
             toast.success('Параметр обновлён')
         }
