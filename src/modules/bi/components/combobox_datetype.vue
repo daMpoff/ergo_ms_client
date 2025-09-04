@@ -1,11 +1,7 @@
 <template>
     <div class="dropdown w-100" ref="triggerRef">
-        <button
-            class="btn btn-light w-100 d-flex align-items-center justify-content-between"
-            type="button"
-            @click="toggle"
-            :aria-expanded="open ? 'true' : 'false'"
-        >
+        <button class="btn btn-light w-100 d-flex align-items-center justify-content-between"
+            type="button" @click="toggle" :aria-expanded="open ? 'true' : 'false'">
             <span class="d-flex align-items-center gap-2">
                 <component :is="currentType.icon" class="lucide" :size="iconSize" :style="{ color: currentType.color }" />
                 <span>{{ currentType.label }}</span>
@@ -17,11 +13,7 @@
     </div>
 
     <teleport to="body">
-        <ul
-            v-if="open"
-            class="dropdown-menu show p-0 overflow-hidden"
-            :style="menuStyle"
-        >
+        <ul v-if="open" class="dropdown-menu show p-0 overflow-hidden" :style="menuStyle">
             <li v-for="t in resolvedTypes" :key="t.value">
                 <button class="dropdown-item d-flex align-items-center gap-2" @click="selectType(t)">
                     <component :is="t.icon" class="lucide" :size="iconSize" :style="{ color: t.color }" />
@@ -30,7 +22,6 @@
             </li>
         </ul>
     </teleport>
-    <!-- Список телепортируется в body и не влияет на разметку модального окна -->
 </template>
 
 <script setup>
@@ -39,13 +30,11 @@ import { Type as TypeIcon, Hash, Binary, Calendar, CalendarClock, CheckSquare } 
 
 const props = defineProps({
     modelValue: { type: String, default: 'string' },
-    // Список типов можно передать извне, чтобы централизовать управление цветами/иконками
     types: { type: Array, default: null },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
 
-// Дефолтный набор типов данных (можно переопределить через props.types)
 const defaultTypes = [
     { value: 'string', label: 'Строка', icon: TypeIcon, color: 'var(--color-primary-text)' },
     { value: 'integer', label: 'Целое число', icon: Hash, color: '#0d6efd' },
@@ -121,7 +110,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
     window.removeEventListener('scroll', updatePosition, true)
     window.removeEventListener('resize', updatePosition)
-    // resize listener for viewportWidth uses anonymous fn; safe to ignore cleanup here as component life is within app
     window.removeEventListener('click', onGlobalClick)
 })
 </script>
