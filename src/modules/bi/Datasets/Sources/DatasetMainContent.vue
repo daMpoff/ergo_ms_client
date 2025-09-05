@@ -68,6 +68,7 @@
           @remove-table="$emit('removeTable', $event)" 
           @update:fields="$emit('update:fields', $event)"
           @switch-to-sources="$emit('update:activeTab', 'sources')"
+          @changed="$emit('params-changed')"
         />
       </keep-alive>
 
@@ -128,7 +129,8 @@ const emit = defineEmits([
   'update:mainTable',
   'update:activeTab',
   'add-field',
-  'resetAllRelations'
+  'resetAllRelations',
+  'params-changed'
 ])
 
 function needsDataset(tab) {

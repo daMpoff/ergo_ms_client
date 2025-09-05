@@ -1,10 +1,33 @@
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import datasetService from '@/modules/bi/MainPage/Sidebar/components/js/datasetService'
 import connectionService from '@/modules/bi/MainPage/Sidebar/components/js/connectionService'
 
 export function useDatasetActions(state) {
   const router = useRouter()
+  
+  function getCachedParamsKey(id) {
+    const keyId = (id === null || id === undefined) ? 'new' : String(id)
+    return `bi:dataset:params:${keyId}`
+  }
+  
+  function readCachedParams(id) {
+    try {
+      const raw = sessionStorage.getItem(getCachedParamsKey(id))
+      if (!raw) return undefined
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed
+      return undefined
+    } catch (e) {
+      console.warn('[useDatasetActions] failed to read cached params', e)
+      return undefined
+    }
+  }
+  
+  function clearCachedParams(id) {
+    try { sessionStorage.removeItem(getCachedParamsKey(id)) } catch (e) {
+      console.warn('[useDatasetActions] failed to clear cached params', e)
+    }
+  }
   
   // Функции для работы с датасетом
   async function saveDataset(finalName) {
@@ -26,12 +49,26 @@ export function useDatasetActions(state) {
           connection: state.selectedConnection.value?.id || null,
           file_source: state.mainTable.value?.file_id || null,
           table_ref: state.mainTable.value?.table_ref || null,
-          fields: fieldsAgg.length ? fieldsAgg : undefined
+          fields: fieldsAgg.length ? fieldsAgg : undefined,
+          params: readCachedParams(null)
         }
         
         const res = await datasetService.createDataset(payload)
         if (!res?.data?.id) throw new Error('Ошибка при создании датасета')
         dsId = res.data.id
+        
+        // Переносим кэш параметров под новый id
+        const newKey = getCachedParamsKey(dsId)
+        const oldKey = getCachedParamsKey(null)
+        try {
+          const raw = sessionStorage.getItem(oldKey)
+          if (raw) {
+            sessionStorage.setItem(newKey, raw)
+            sessionStorage.removeItem(oldKey)
+          }
+        } catch (e) {
+          console.warn('[useDatasetActions] Не удалось перенести кэш параметров:', e)
+        }
         
         for (const rel of state.relations.value) {
           await datasetService.addRelation({
@@ -44,14 +81,18 @@ export function useDatasetActions(state) {
         
         const { data: updated } = await datasetService.getDataset(dsId)
         state.dataset.value = updated
+        // После успешного сохранения очищаем кэш параметров
+        clearCachedParams(dsId)
       } else {
-        const payload = { name: finalName }
+        const payload = { name: finalName, params: readCachedParams(dsId) }
         const putOk = await safeUpdateDataset(
           datasetService.updateDataset(dsId, payload)
         )
         if (!putOk) throw new Error('Ошибка при обновлении датасета')
         const { data: updated } = await datasetService.getDataset(dsId)
         state.dataset.value = updated
+        // После успешного сохранения очищаем кэш параметров
+        clearCachedParams(dsId)
       }
 
       router.replace({ name: 'DatasetPage', params: { id: dsId } })
@@ -108,6 +149,12 @@ export function useDatasetActions(state) {
         patch.fields = fieldsAgg
       }
 
+      // Подхватываем черновые параметры из sessionStorage
+      const paramsDraft = readCachedParams(dsId)
+      if (Array.isArray(paramsDraft) && paramsDraft.length) {
+        patch.params = paramsDraft
+      }
+
       if (Object.keys(patch).length) {
         await datasetService.updateDataset(dsId, patch)
       }
@@ -157,6 +204,10 @@ export function useDatasetActions(state) {
       state.origDatasetRef.value = JSON.parse(JSON.stringify(fresh))
       state.saveSuccess.value = true
       setTimeout(() => state.saveSuccess.value = false, 1000)
+
+      // Очищаем кэш параметров и дергаем тикер грязности, чтобы пересчитать isDirty
+      try { clearCachedParams(dsId) } catch { /* noop */ }
+      if (state.paramsDirtyTick) state.paramsDirtyTick.value++
     } finally {
       state.saving.value = false
     }
@@ -855,7 +906,7 @@ export function useDatasetActions(state) {
       }))
 
     if (renames.length && state.dataset.value && state.dataset.value.id) {
-      const { data, error } = await datasetService.renameColumns(state.dataset.value.id, renames)
+      const { error } = await datasetService.renameColumns(state.dataset.value.id, renames)
       if (error) return
 
       const fieldsResp = await datasetService.listFields({ dataset: state.dataset.value.id })

@@ -48,6 +48,7 @@
       @update:main-table="mainTable = $event"
       @update:active-tab="activeTab = $event"
       @resetAllRelations="handleResetAllRelations"
+      @params-changed="paramsDirtyTick++"
     />
 
     <!-- Футер с предпросмотром -->

@@ -1,12 +1,10 @@
-import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import datasetService from '@/modules/bi/MainPage/Sidebar/components/js/datasetService'
-import connectionService from '@/modules/bi/MainPage/Sidebar/components/js/connectionService'
+import { ref, computed} from 'vue'
+import { useRoute } from 'vue-router'
+
 
 export function useDatasetState() {
   const route = useRoute()
-  const router = useRouter()
-  
+
   // Основное состояние
   const dataset = ref({})
   const origDatasetRef = ref(null)
@@ -53,10 +51,27 @@ export function useDatasetState() {
     isNewPage.value && !!mainTable.value?.id
   )
   
+  // Тикер для реактивного пересчёта isDirty при изменении параметров
+  const paramsDirtyTick = ref(0)
+
   const isDirty = computed(() => {
+    // зависимости от тикера, чтобы триггерить пересчёт
+    void paramsDirtyTick.value
     if (!origDatasetRef.value) return false
     if (selectedConnection.value?.id !== origDatasetRef.value.connection) return true
     if (mainTable.value?.file_id !== origDatasetRef.value.file_source) return true
+    
+    // Проверяем черновые параметры в sessionStorage
+    try {
+      const storageKey = `bi:dataset:params:${datasetId.value ?? 'new'}`
+      const raw = sessionStorage.getItem(storageKey)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length) return true
+      }
+    } catch {
+      // безопасно игнорируем
+    }
     
     const origMain = (origDatasetRef.value.tables || []).find(t => t.order === 0)
     const cur = JSON.stringify(normalizeRelations(relations.value))
@@ -199,6 +214,7 @@ export function useDatasetState() {
     headerName,
     canCreateDataset,
     isDirty,
+    paramsDirtyTick,
     usedRightTableIds,
     computedLinkedTableIds,
     

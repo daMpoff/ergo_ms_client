@@ -53,12 +53,16 @@
         }
     }
 
+    const emit = defineEmits(['changed'])
+
     function saveToCache(){
         try{
             sessionStorage.setItem(storageKey.value, JSON.stringify(rows.value))
         }catch(err){
             console.warn('ParamsPage: failed to save to sessionStorage', err)
         }
+        // Сообщаем родителю о том, что параметры изменились
+        emit('changed')
     }
 
     onMounted(() => {
