@@ -1,202 +1,221 @@
 <template>
   <div class="protocols-page">
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-12">
-          <!-- Заголовок -->
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h2 class="h3 mb-2">Протоколы анализа импульсов</h2>
-              <p class="text-muted mb-0">Управление протоколами и создание анализов</p>
+    <!-- Заголовок страницы с современным дизайном -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="page-title-section">
+          <div class="page-icon">
+            <FileCheck :size="28" color="white" />
+          </div>
+          <div class="page-title">
+            <h1>Протоколы анализа импульсов</h1>
+            <p class="page-subtitle">Управление протоколами и создание анализов</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button 
+          class="btn btn-outline-primary"
+          @click="refreshProtocols"
+          :disabled="isLoading"
+        >
+          <RefreshCw class="me-2" size="16" :class="{ 'spinning': isLoading }" />
+          Обновить
+        </button>
+        <router-link to="/impuls-analysis/create" class="btn btn-primary">
+          <Plus class="me-2" size="16" />
+          Создать анализ
+        </router-link>
+      </div>
+    </div>
+    <!-- Информационная панель -->
+    <div class="info-panel">
+      <div class="info-content">
+        <div class="info-icon">
+          <Info size="24" />
+        </div>
+        <div class="info-text">
+          <h6 class="info-title">Информация о протоколах</h6>
+          <p class="info-description">
+            Протоколы становятся доступными для создания анализа после загрузки и обработки файлов 
+            "Расчет силы" и "План эксперимента". Протокол должен быть заполнен в обеих таблицах.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Статистика протоколов -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card stat-available">
+          <div class="stat-icon">
+            <FileCheck size="20" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ availableProtocols.length }}</div>
+            <div class="stat-label">Доступных протоколов</div>
+          </div>
+          <div class="stat-progress">
+            <div class="progress-bar" :style="{ width: '100%' }"></div>
+          </div>
+        </div>
+        
+        <div class="stat-card stat-completed">
+          <div class="stat-icon">
+            <CheckCircle size="20" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ completedAnalyses }}</div>
+            <div class="stat-label">Созданных анализов</div>
+          </div>
+          <div class="stat-progress">
+            <div class="progress-bar" :style="{ width: getPercentage(completedAnalyses) + '%' }"></div>
+          </div>
+        </div>
+        
+        <div class="stat-card stat-processing">
+          <div class="stat-icon">
+            <Loader2 size="20" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ processingAnalyses }}</div>
+            <div class="stat-label">В обработке</div>
+          </div>
+          <div class="stat-progress">
+            <div class="progress-bar" :style="{ width: getPercentage(processingAnalyses) + '%' }"></div>
+          </div>
+        </div>
+        
+        <div class="stat-card stat-pending">
+          <div class="stat-icon">
+            <Clock size="20" />
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ pendingAnalyses }}</div>
+            <div class="stat-label">Ожидают</div>
+          </div>
+          <div class="stat-progress">
+            <div class="progress-bar" :style="{ width: getPercentage(pendingAnalyses) + '%' }"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Список протоколов -->
+    <div class="protocols-section">
+      <div class="section-header">
+        <h3 class="section-title">Доступные протоколы</h3>
+        <p class="section-subtitle">Выберите протокол для создания анализа</p>
+      </div>
+      
+      <div v-if="isLoading" class="loading-state">
+        <div class="loading-content">
+          <Loader2 class="spinning loading-icon" size="48" />
+          <h5 class="loading-title">Загрузка протоколов...</h5>
+          <p class="loading-text">Пожалуйста, подождите</p>
+        </div>
+      </div>
+      
+      <div v-else-if="availableProtocols.length === 0" class="empty-state">
+        <div class="empty-content">
+          <FileX class="empty-icon" size="64" />
+          <h4 class="empty-title">Нет доступных протоколов</h4>
+          <p class="empty-text">Загрузите файлы для создания протоколов</p>
+          <router-link to="/impuls-analysis/create" class="btn btn-primary btn-empty">
+            <Plus class="me-2" size="16" />
+            Создать анализ
+          </router-link>
+        </div>
+      </div>
+      
+      <div v-else class="protocols-grid">
+        <div 
+          v-for="protocol in availableProtocols" 
+          :key="protocol.protocol_number"
+          class="protocol-card"
+        >
+          <div class="protocol-header">
+            <div class="protocol-number">
+              <span class="protocol-badge">Протокол</span>
+              <span class="protocol-id">{{ protocol.protocol_number }}</span>
             </div>
-            <div class="d-flex gap-2">
-              <button 
-                class="btn btn-outline-primary"
-                @click="refreshProtocols"
-                :disabled="isLoading"
-              >
-                <RefreshCw class="me-2" size="16" :class="{ 'spinning': isLoading }" />
-                Обновить
-              </button>
-              <router-link to="/impuls-analysis/create" class="btn btn-primary">
-                <Plus class="me-2" size="16" />
-                Создать анализ
-              </router-link>
+            <div class="protocol-status">
+              <span class="status-badge status-ready">
+                <CheckCircle class="me-1" size="12" />
+                Готов
+              </span>
             </div>
           </div>
           
-          <!-- Информационная панель -->
-          <div class="alert alert-info mb-4">
-            <div class="d-flex align-items-center">
-              <Info class="me-3" size="20" />
-              <div>
-                <strong>Информация о протоколах:</strong>
-                <p class="mb-0 mt-1">
-                  Протоколы становятся доступными для создания анализа после загрузки и обработки файлов 
-                  "Расчет силы" и "План эксперимента". Протокол должен быть заполнен в обеих таблицах.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Статистика протоколов -->
-          <div class="row mb-4">
-            <div class="col-md-3">
-              <div class="stat-card stat-total">
-                <div class="stat-icon">
-                  <FileCheck size="24" />
+          <div class="protocol-content">
+            <div class="data-section">
+              <h6 class="data-title">
+                <Zap class="me-2" size="16" />
+                Данные расчета силы
+              </h6>
+              <div class="data-grid">
+                <div class="data-item">
+                  <span class="data-label">Pст:</span>
+                  <span class="data-value">{{ protocol.force_data.pct_static || '—' }}%</span>
                 </div>
-                <div class="stat-content">
-                  <div class="stat-number">{{ availableProtocols.length }}</div>
-                  <div class="stat-label">Доступных протоколов</div>
+                <div class="data-item">
+                  <span class="data-label">Энергия:</span>
+                  <span class="data-value">{{ protocol.force_data.energy_j || '—' }} Дж</span>
+                </div>
+                <div class="data-item">
+                  <span class="data-label">Скорость:</span>
+                  <span class="data-value">{{ protocol.force_data.velocity_ms || '—' }} м/с</span>
+                </div>
+                <div class="data-item">
+                  <span class="data-label">Сила:</span>
+                  <span class="data-value">{{ protocol.force_data.force_n || '—' }} Н</span>
                 </div>
               </div>
             </div>
-            <div class="col-md-3">
-              <div class="stat-card stat-completed">
-                <div class="stat-icon">
-                  <CheckCircle size="24" />
+            
+            <div class="data-section">
+              <h6 class="data-title">
+                <Target class="me-2" size="16" />
+                Данные плана эксперимента
+              </h6>
+              <div class="data-grid">
+                <div class="data-item">
+                  <span class="data-label">Pст:</span>
+                  <span class="data-value">{{ protocol.plan_data.p_static || '—' }}%</span>
                 </div>
-                <div class="stat-content">
-                  <div class="stat-number">{{ completedAnalyses }}</div>
-                  <div class="stat-label">Созданных анализов</div>
+                <div class="data-item">
+                  <span class="data-label">L1/L2:</span>
+                  <span class="data-value">{{ protocol.plan_data.l1_l2_ratio || '—' }}</span>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="stat-card stat-processing">
-                <div class="stat-icon">
-                  <Loader2 size="24" />
+                <div class="data-item">
+                  <span class="data-label">L1:</span>
+                  <span class="data-value">{{ protocol.plan_data.l1_m || '—' }} м</span>
                 </div>
-                <div class="stat-content">
-                  <div class="stat-number">{{ processingAnalyses }}</div>
-                  <div class="stat-label">В обработке</div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="stat-card stat-pending">
-                <div class="stat-icon">
-                  <Clock size="24" />
-                </div>
-                <div class="stat-content">
-                  <div class="stat-number">{{ pendingAnalyses }}</div>
-                  <div class="stat-label">Ожидают</div>
+                <div class="data-item">
+                  <span class="data-label">m1:</span>
+                  <span class="data-value">{{ protocol.plan_data.m1_kg || '—' }} кг</span>
                 </div>
               </div>
             </div>
           </div>
           
-          <!-- Список протоколов -->
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0">Доступные протоколы</h5>
-            </div>
-            <div class="card-body p-0">
-              <div v-if="isLoading" class="text-center py-5">
-                <Loader2 class="spinning text-primary" size="32" />
-                <p class="mt-3 text-muted">Загрузка протоколов...</p>
-              </div>
-              
-              <div v-else-if="availableProtocols.length === 0" class="text-center py-5">
-                <FileX class="text-muted mb-3" size="48" />
-                <h5 class="text-muted">Нет доступных протоколов</h5>
-                <p class="text-muted">Загрузите файлы для создания протоколов</p>
-                <router-link to="/impuls-analysis/create" class="btn btn-primary">
-                  <Plus class="me-2" size="16" />
-                  Создать анализ
-                </router-link>
-              </div>
-              
-              <div v-else>
-                <div class="table-responsive">
-                  <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                      <tr>
-                        <th>Номер протокола</th>
-                        <th>Данные расчета силы</th>
-                        <th>Данные плана эксперимента</th>
-                        <th>Статус</th>
-                        <th>Действия</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="protocol in availableProtocols" :key="protocol.protocol_number">
-                        <td>
-                          <div class="fw-bold text-primary">
-                            {{ protocol.protocol_number }}
-                          </div>
-                        </td>
-                        <td>
-                          <div class="protocol-data">
-                            <div class="data-item">
-                              <span class="label">Pст:</span>
-                              <span class="value">{{ protocol.force_data.pct_static || '—' }}%</span>
-                            </div>
-                            <div class="data-item">
-                              <span class="label">Энергия:</span>
-                              <span class="value">{{ protocol.force_data.energy_j || '—' }} Дж</span>
-                            </div>
-                            <div class="data-item">
-                              <span class="label">Скорость:</span>
-                              <span class="value">{{ protocol.force_data.velocity_ms || '—' }} м/с</span>
-                            </div>
-                            <div class="data-item">
-                              <span class="label">Сила:</span>
-                              <span class="value">{{ protocol.force_data.force_n || '—' }} Н</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="protocol-data">
-                            <div class="data-item">
-                              <span class="label">Pст:</span>
-                              <span class="value">{{ protocol.plan_data.p_static || '—' }}%</span>
-                            </div>
-                            <div class="data-item">
-                              <span class="label">L1/L2:</span>
-                              <span class="value">{{ protocol.plan_data.l1_l2_ratio || '—' }}</span>
-                            </div>
-                            <div class="data-item">
-                              <span class="label">L1:</span>
-                              <span class="value">{{ protocol.plan_data.l1_m || '—' }} м</span>
-                            </div>
-                            <div class="data-item">
-                              <span class="label">m1:</span>
-                              <span class="value">{{ protocol.plan_data.m1_kg || '—' }} кг</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="badge bg-success">
-                            <CheckCircle class="me-1" size="12" />
-                            Готов
-                          </span>
-                        </td>
-                        <td>
-                          <div class="btn-group btn-group-sm">
-                            <button 
-                              class="btn btn-outline-primary"
-                              @click="createAnalysisFromProtocol(protocol)"
-                              title="Создать анализ"
-                            >
-                              <Plus size="14" />
-                            </button>
-                            <button 
-                              class="btn btn-outline-info"
-                              @click="viewProtocolDetails(protocol)"
-                              title="Подробности"
-                            >
-                              <Eye size="14" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+          <div class="protocol-actions">
+            <button 
+              class="btn btn-primary btn-action"
+              @click="createAnalysisFromProtocol(protocol)"
+              title="Создать анализ"
+            >
+              <Plus class="me-2" size="16" />
+              Создать анализ
+            </button>
+            <button 
+              class="btn btn-outline-secondary btn-action"
+              @click="viewProtocolDetails(protocol)"
+              title="Подробности"
+            >
+              <Eye class="me-2" size="16" />
+              Подробности
+            </button>
           </div>
         </div>
       </div>
@@ -210,21 +229,29 @@
       aria-labelledby="createAnalysisModalLabel" 
       aria-hidden="true"
     >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="createAnalysisModalLabel">
-              Создать анализ из протокола {{ selectedProtocol?.protocol_number }}
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+          <div class="modal-header modern-header">
+            <div class="modal-title-section">
+              <div class="modal-icon">
+                <Plus size="24" />
+              </div>
+              <div class="modal-title-content">
+                <h5 class="modal-title" id="createAnalysisModalLabel">
+                  Создать анализ из протокола {{ selectedProtocol?.protocol_number }}
+                </h5>
+                <p class="modal-subtitle">Заполните данные для создания нового анализа</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close modern-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body modern-body">
             <form @submit.prevent="submitCreateAnalysis">
-              <div class="mb-3">
-                <label for="analysisTitle" class="form-label">Название анализа</label>
+              <div class="form-group">
+                <label for="analysisTitle" class="form-label modern-label">Название анализа</label>
                 <input
                   type="text"
-                  class="form-control"
+                  class="form-control modern-input"
                   id="analysisTitle"
                   v-model="newAnalysis.title"
                   required
@@ -232,10 +259,10 @@
                 />
               </div>
               
-              <div class="mb-3">
-                <label for="analysisDescription" class="form-label">Описание</label>
+              <div class="form-group">
+                <label for="analysisDescription" class="form-label modern-label">Описание</label>
                 <textarea
-                  class="form-control"
+                  class="form-control modern-input"
                   id="analysisDescription"
                   v-model="newAnalysis.description"
                   rows="3"
@@ -243,10 +270,10 @@
                 ></textarea>
               </div>
               
-              <div class="mb-3">
-                <label for="analysisType" class="form-label">Тип анализа</label>
+              <div class="form-group">
+                <label for="analysisType" class="form-label modern-label">Тип анализа</label>
                 <select
-                  class="form-select"
+                  class="form-select modern-input"
                   id="analysisType"
                   v-model="newAnalysis.analysis_type"
                   required
@@ -258,11 +285,13 @@
               </div>
             </form>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <div class="modal-footer modern-footer">
+            <button type="button" class="btn btn-outline-secondary modern-btn" data-bs-dismiss="modal">
+              Отмена
+            </button>
             <button 
               type="button" 
-              class="btn btn-primary"
+              class="btn btn-primary modern-btn"
               @click="submitCreateAnalysis"
               :disabled="isCreating"
             >
@@ -282,101 +311,124 @@
       aria-labelledby="protocolDetailsModalLabel" 
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="protocolDetailsModalLabel">
-              Детали протокола {{ selectedProtocol?.protocol_number }}
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modern-modal">
+          <div class="modal-header modern-header">
+            <div class="modal-title-section">
+              <div class="modal-icon">
+                <Eye size="24" />
+              </div>
+              <div class="modal-title-content">
+                <h5 class="modal-title" id="protocolDetailsModalLabel">
+                  Детали протокола {{ selectedProtocol?.protocol_number }}
+                </h5>
+                <p class="modal-subtitle">Подробная информация о протоколе</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close modern-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
-            <div v-if="selectedProtocol" class="row">
-              <div class="col-md-6">
-                <h6 class="text-primary">Данные расчета силы</h6>
-                <div class="protocol-details">
-                  <div class="detail-item">
-                    <span class="label">Pст:</span>
-                    <span class="value">{{ selectedProtocol.force_data.pct_static || '—' }}%</span>
+          <div class="modal-body modern-body">
+            <div v-if="selectedProtocol" class="protocol-details-content">
+              <div class="details-grid">
+                <div class="details-section">
+                  <div class="section-header">
+                    <div class="section-icon">
+                      <Zap size="20" />
+                    </div>
+                    <h6 class="section-title">Данные расчета силы</h6>
                   </div>
-                  <div class="detail-item">
-                    <span class="label">Энергия удара:</span>
-                    <span class="value">{{ selectedProtocol.force_data.energy_j || '—' }} Дж</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">Скорость удара:</span>
-                    <span class="value">{{ selectedProtocol.force_data.velocity_ms || '—' }} м/с</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">Сила удара:</span>
-                    <span class="value">{{ selectedProtocol.force_data.force_n || '—' }} Н</span>
+                  <div class="details-list">
+                    <div class="detail-item">
+                      <span class="detail-label">Pст:</span>
+                      <span class="detail-value">{{ selectedProtocol.force_data.pct_static || '—' }}%</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Энергия удара:</span>
+                      <span class="detail-value">{{ selectedProtocol.force_data.energy_j || '—' }} Дж</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Скорость удара:</span>
+                      <span class="detail-value">{{ selectedProtocol.force_data.velocity_ms || '—' }} м/с</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Сила удара:</span>
+                      <span class="detail-value">{{ selectedProtocol.force_data.force_n || '—' }} Н</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="col-md-6">
-                <h6 class="text-primary">Данные плана эксперимента</h6>
-                <div class="protocol-details">
-                  <div class="detail-item">
-                    <span class="label">Pст:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.p_static || '—' }}%</span>
+                
+                <div class="details-section">
+                  <div class="section-header">
+                    <div class="section-icon">
+                      <Target size="20" />
+                    </div>
+                    <h6 class="section-title">Данные плана эксперимента</h6>
                   </div>
-                  <div class="detail-item">
-                    <span class="label">Pст значение:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.p_static_value || '—' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">L1/L2:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.l1_l2_ratio || '—' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">L1:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.l1_m || '—' }} м</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">d1:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.d1_m || '—' }} м</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">m1:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.m1_kg || '—' }} кг</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">L2:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.l2_m || '—' }} м</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">d2:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.d2_m || '—' }} м</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">Т:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.t_s || '—' }} с</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">А:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.a_j || '—' }} Дж</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">V:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.v_ms || '—' }} м/с</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">С1,2:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.c12_kg_s || '—' }} кг/с</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">Р:</span>
-                    <span class="value">{{ selectedProtocol.plan_data.p_n || '—' }} Н</span>
+                  <div class="details-list">
+                    <div class="detail-item">
+                      <span class="detail-label">Pст:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.p_static || '—' }}%</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Pст значение:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.p_static_value || '—' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">L1/L2:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.l1_l2_ratio || '—' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">L1:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.l1_m || '—' }} м</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">d1:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.d1_m || '—' }} м</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">m1:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.m1_kg || '—' }} кг</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">L2:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.l2_m || '—' }} м</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">d2:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.d2_m || '—' }} м</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Т:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.t_s || '—' }} с</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">А:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.a_j || '—' }} Дж</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">V:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.v_ms || '—' }} м/с</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">С1,2:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.c12_kg_s || '—' }} кг/с</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Р:</span>
+                      <span class="detail-value">{{ selectedProtocol.plan_data.p_n || '—' }} Н</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+          <div class="modal-footer modern-footer">
+            <button type="button" class="btn btn-outline-secondary modern-btn" data-bs-dismiss="modal">
+              Закрыть
+            </button>
             <button 
               type="button" 
-              class="btn btn-primary"
+              class="btn btn-primary modern-btn"
               @click="createAnalysisFromProtocol(selectedProtocol)"
             >
               <Plus class="me-2" size="16" />
@@ -394,7 +446,7 @@ import { impulsAnalysisAPI } from './js/impuls-analysis.js'
 import { useToast } from 'vue-toastification'
 import { 
   RefreshCw, Plus, FileCheck, CheckCircle, Loader2, Clock, 
-  FileX, Eye, Info 
+  FileX, Eye, Info, Zap, Target 
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -409,7 +461,9 @@ export default {
     Clock,
     FileX,
     Eye,
-    Info
+    Info,
+    Zap,
+    Target
   },
   name: 'ProtocolsPage',
   data() {
@@ -451,6 +505,12 @@ export default {
     ])
   },
   methods: {
+    getPercentage(value) {
+      const total = this.completedAnalyses + this.processingAnalyses + this.pendingAnalyses
+      if (!total || total === 0) return 0
+      return Math.round((value / total) * 100)
+    },
+    
     async loadAvailableProtocols() {
       this.isLoading = true
       try {
@@ -554,167 +614,426 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .protocols-page {
-  padding: 20px 0;
+  padding: 2rem;
+  min-height: 100vh;
+  background: var(--bs-gray-100);
 }
 
+// Заголовок страницы
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  
+  .header-content {
+    flex: 1;
+  }
+  
+  .page-title-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    
+    .page-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    }
+    
+    .page-title {
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--bs-heading-color);
+        margin: 0 0 0.5rem 0;
+      }
+      
+      .page-subtitle {
+        color: var(--bs-secondary-color);
+        margin: 0;
+        font-size: 1rem;
+      }
+    }
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    
+    .btn {
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+}
+
+// Информационная панель
+.info-panel {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #17a2b8;
+  
+  .info-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    
+    .info-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #17a2b8, #138496);
+      color: white;
+      flex-shrink: 0;
+    }
+    
+    .info-text {
+      flex: 1;
+      
+      .info-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--bs-heading-color);
+        margin: 0 0 0.5rem 0;
+      }
+      
+      .info-description {
+        color: var(--bs-secondary-color);
+        margin: 0;
+        line-height: 1.6;
+      }
+    }
+  }
+}
+
+// Секция статистики
+.stats-section {
+  margin-bottom: 2rem;
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+// Карточки статистики
 .stat-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 15px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  border-left: 4px solid transparent;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--card-color);
+  }
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.stat-total {
-  border-left-color: #6c757d;
-}
-
-.stat-pending {
-  border-left-color: #ffc107;
-}
-
-.stat-processing {
-  border-left-color: #17a2b8;
+// Цвета карточек статистики
+.stat-available {
+  --card-color: #6c757d;
 }
 
 .stat-completed {
-  border-left-color: #28a745;
+  --card-color: #28a745;
 }
 
+.stat-processing {
+  --card-color: #17a2b8;
+}
+
+.stat-pending {
+  --card-color: #ffc107;
+}
+
+// Иконки статистики
 .stat-icon {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  margin-bottom: 1rem;
+  background: var(--card-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.stat-total .stat-icon {
-  background: linear-gradient(135deg, #6c757d, #495057);
-}
-
-.stat-pending .stat-icon {
-  background: linear-gradient(135deg, #ffc107, #e0a800);
-}
-
-.stat-processing .stat-icon {
-  background: linear-gradient(135deg, #17a2b8, #138496);
-}
-
-.stat-completed .stat-icon {
-  background: linear-gradient(135deg, #28a745, #1e7e34);
-}
-
+// Контент статистики
 .stat-content {
-  flex: 1;
+  margin-bottom: 1rem;
 }
 
 .stat-number {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   line-height: 1;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--bs-heading-color);
 }
 
 .stat-label {
   font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.card {
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
+// Прогресс-бар
+.stat-progress {
+  height: 4px;
+  background: var(--bs-gray-200);
+  border-radius: 2px;
+  overflow: hidden;
+  
+  .progress-bar {
+    height: 100%;
+    background: var(--card-color);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
 }
 
-.table {
-  margin-bottom: 0;
+// Секция протоколов
+.protocols-section {
+  .section-header {
+    margin-bottom: 2rem;
+    
+    .section-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--bs-heading-color);
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .section-subtitle {
+      color: var(--bs-secondary-color);
+      margin: 0;
+      font-size: 1rem;
+    }
+  }
 }
 
-.table th {
-  border-top: none;
-  font-weight: 600;
-  color: #495057;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+// Состояния загрузки и пустого списка
+.loading-state,
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  
+  .loading-content,
+  .empty-content {
+    text-align: center;
+    
+    .loading-icon,
+    .empty-icon {
+      color: var(--bs-gray-400);
+      margin-bottom: 1.5rem;
+    }
+    
+    .loading-title,
+    .empty-title {
+      color: var(--bs-heading-color);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    
+    .loading-text,
+    .empty-text {
+      color: var(--bs-secondary-color);
+      margin-bottom: 1.5rem;
+    }
+    
+    .btn-empty {
+      border-radius: 10px;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+    }
+  }
 }
 
-.table td {
-  vertical-align: middle;
-  border-top: 1px solid #f1f3f4;
-}
-
-.protocol-data {
+// Сетка протоколов
+.protocols-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.25rem;
-  font-size: 0.875rem;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 2rem;
 }
 
-.data-item {
+// Карточки протоколов
+.protocol-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Заголовок протокола
+.protocol-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1.5rem;
+  background: var(--bs-light);
+  border-bottom: 1px solid var(--bs-border-color);
+  
+  .protocol-number {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    .protocol-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--bs-secondary-color);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .protocol-id {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--bs-primary);
+    }
+  }
+  
+  .protocol-status {
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      
+      &.status-ready {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.2);
+      }
+    }
+  }
 }
 
-.data-item .label {
-  color: #6c757d;
-  font-weight: 500;
+// Контент протокола
+.protocol-content {
+  padding: 1.5rem;
+  
+  .data-section {
+    margin-bottom: 1.5rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .data-title {
+      display: flex;
+      align-items: center;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--bs-heading-color);
+      margin-bottom: 1rem;
+    }
+    
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      
+      .data-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: var(--bs-gray-100);
+        border-radius: 8px;
+        
+        .data-label {
+          font-size: 0.875rem;
+          color: var(--bs-secondary-color);
+          font-weight: 500;
+        }
+        
+        .data-value {
+          font-weight: 600;
+          color: var(--bs-heading-color);
+        }
+      }
+    }
+  }
 }
 
-.data-item .value {
-  color: #495057;
-  font-weight: 600;
-}
-
-.protocol-details {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.detail-item {
+// Действия протокола
+.protocol-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 6px;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--bs-light);
+  border-top: 1px solid var(--bs-border-color);
+  
+  .btn-action {
+    flex: 1;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
 }
 
-.detail-item .label {
-  color: #6c757d;
-  font-weight: 500;
-  font-size: 0.875rem;
-}
-
-.detail-item .value {
-  color: #495057;
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.btn-group-sm .btn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-}
-
+// Анимации
 .spinning {
   animation: spin 1s linear infinite;
 }
@@ -724,54 +1043,321 @@ export default {
   to { transform: rotate(360deg); }
 }
 
-.alert {
-  border: none;
-  border-radius: 12px;
-}
-
-.alert-info {
-  background-color: #e3f2fd;
-  color: #0d47a1;
-}
-
-.form-control, .form-select {
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-  transition: border-color 0.2s ease;
-}
-
-.form-control:focus, .form-select:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.btn {
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
-}
-
+// Адаптивность
 @media (max-width: 768px) {
+  .protocols-page {
+    padding: 1rem;
+  }
+  
+  .page-header {
+    padding: 1.5rem;
+    
+    .header-content {
+      flex: 1;
+    }
+    
+    .page-title-section {
+      flex-direction: column;
+      gap: 1rem;
+      
+      .page-title h1 {
+        font-size: 1.5rem;
+      }
+    }
+    
+    .header-actions {
+      flex-direction: column;
+      gap: 0.75rem;
+      
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .protocols-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .protocol-content {
+    .data-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .protocol-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+    
+    .page-title-section {
+      .page-title h1 {
+        font-size: 1.5rem;
+      }
+    }
+  }
+  
   .stat-card {
     padding: 1rem;
   }
   
   .stat-number {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
   
   .stat-icon {
     width: 40px;
     height: 40px;
   }
+}
+
+// Стили модальных окон
+.modern-modal {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modern-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 2rem;
   
-  .protocol-data {
-    grid-template-columns: 1fr;
+  .modal-title-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    
+    .modal-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      color: white;
+    }
+    
+    .modal-title-content {
+      flex: 1;
+      
+      .modal-title {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      
+      .modal-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0;
+        font-size: 0.875rem;
+      }
+    }
+  }
+  
+  .modern-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    opacity: 1;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+    
+    &::before {
+      content: '×';
+      font-size: 1.5rem;
+      font-weight: 300;
+    }
+  }
+}
+
+.modern-body {
+  padding: 2rem;
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .modern-label {
+      display: block;
+      font-weight: 600;
+      color: var(--bs-heading-color);
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .modern-input {
+      border: 2px solid var(--bs-gray-200);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      
+      &:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+      }
+      
+      &::placeholder {
+        color: var(--bs-gray-400);
+      }
+    }
+  }
+}
+
+.modern-footer {
+  background: var(--bs-light);
+  border: none;
+  padding: 1.5rem 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  
+  .modern-btn {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+// Детали протокола в модальном окне
+.protocol-details-content {
+  .details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .details-section {
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--bs-gray-200);
+      
+      .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+      
+      .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--bs-heading-color);
+        margin: 0;
+      }
+    }
+    
+    .details-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      
+      .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--bs-gray-100);
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background: var(--bs-gray-200);
+          transform: translateX(4px);
+        }
+        
+        .detail-label {
+          font-size: 0.875rem;
+          color: var(--bs-secondary-color);
+          font-weight: 500;
+        }
+        
+        .detail-value {
+          font-weight: 600;
+          color: var(--bs-heading-color);
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+}
+
+// Адаптивность модальных окон
+@media (max-width: 768px) {
+  .modern-header {
+    padding: 1.5rem;
+    
+    .modal-title-section {
+      flex-direction: column;
+      text-align: center;
+      gap: 0.75rem;
+    }
+  }
+  
+  .modern-body {
+    padding: 1.5rem;
+  }
+  
+  .modern-footer {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    
+    .modern-btn {
+      width: 100%;
+    }
+  }
+  
+  .protocol-details-content {
+    .details-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
   }
 }
 </style>
