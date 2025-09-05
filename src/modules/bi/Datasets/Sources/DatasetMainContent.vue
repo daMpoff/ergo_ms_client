@@ -16,7 +16,6 @@
        />
      </div>
     <div v-else style="height: 100%;">
-      <!-- Плейсхолдер для проблем с подключением -->
       <Placeholders 
         v-if="hasConnectionIssues"
         type="connection-error"
@@ -33,7 +32,6 @@
         @action="handlePlaceholderAction"
       />
 
-      <!-- Плейсхолдер для пустого состояния -->
       <Placeholders 
         v-else-if="activeTab === 'fields' && (!fields || fields.length === 0)"
         type="empty"
@@ -50,7 +48,6 @@
         @action="handlePlaceholderAction"
       />
 
-      <!-- Плейсхолдер для загрузки -->
       <Placeholders 
         v-else-if="isLoading"
         type="loading"
@@ -58,11 +55,10 @@
         description="Пожалуйста, подождите, загружаем данные."
       />
 
-      <!-- Компонент вкладки (кэшируем между переключениями) -->
-      <keep-alive v-else-if="(activeTab === 'fields' || activeTab === 'params') && selectedTables.length">
+      <keep-alive v-else-if="(activeTab === 'fields' || activeTab === 'params') && selectedTables.length && tabComponent">
         <component 
-          :is="getTabComponent(activeTab)"
-          :key="dataset && dataset.id ? dataset.id : 'new'"
+          :is="tabComponent"
+          :key="`${dataset && dataset.id ? dataset.id : 'new'}-${activeTab}`"
           :fields="fields" 
           :tables="selectedTables" 
           :cols="previewCols" 
@@ -75,13 +71,11 @@
         />
       </keep-alive>
 
-      <!-- Сообщение о необходимости выбора таблицы -->
       <div v-else-if="!hasConnectionIssues" class="text-muted p-4"
         style="display: flex; justify-content: center; align-items: center; height: 100%; width: 100%; text-align: center;">
         Сначала выберите таблицу из подключения и создайте датасет,<br>чтобы редактировать {{ tabLabel(activeTab) }}.
       </div>
       
-      <!-- Сообщение о проблемах с подключением -->
       <div v-else class="connection-error-message p-4"
         style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; width: 100%; text-align: center; gap: 16px;">
         <div class="error-icon">⚠️</div>
@@ -150,23 +144,21 @@ function getTabComponent(tab) {
   return cmp
 }
 
-// Вычисляемое свойство для определения проблем с подключением
+const tabComponent = computed(() => getTabComponent((props.activeTab || '').toLowerCase()))
+
 const hasConnectionIssues = computed(() => {
   return props.connectionStatus === 'error' || 
          (props.selectedConnection && (props.selectedConnection.hasMissingFiles || props.selectedConnection.hasProblematicFiles))
 })
 
-// Функция для переключения на вкладку источников
 function switchToSources() {
   emit('update:activeTab', 'sources')
 }
 
-// Функция для добавления первого поля
 function addFirstField() {
   emit('add-field')
 }
 
-// Обработчик действий плейсхолдера
 function handlePlaceholderAction(action) {
   switch (action) {
     case 'switch-to-sources':
@@ -208,7 +200,6 @@ function handlePlaceholderAction(action) {
   padding: 1rem;
 }
 
-/* Стили для сообщения об ошибке подключения */
 .connection-error-message .error-icon {
   font-size: 48px;
   opacity: 0.6;

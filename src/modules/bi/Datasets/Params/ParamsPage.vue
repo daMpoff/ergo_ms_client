@@ -48,25 +48,27 @@
                     rows.value = parsed
                 }
             }
-        }catch(e){
-
+        }catch(err){
+            console.warn('ParamsPage: failed to load from sessionStorage', err)
         }
     }
 
     function saveToCache(){
         try{
             sessionStorage.setItem(storageKey.value, JSON.stringify(rows.value))
-        }catch(e){
-
+        }catch(err){
+            console.warn('ParamsPage: failed to save to sessionStorage', err)
         }
     }
 
     onMounted(() => {
         try{
             window.addEventListener('beforeunload', () => {
-                try{ sessionStorage.removeItem(storageKey.value) }catch(_){ }
+                if (!props.datasetId) {
+                    try{ sessionStorage.removeItem(storageKey.value) }catch(err){ console.warn('ParamsPage: failed to remove cache on unload', err) }
+                }
             })
-        }catch(_){  }
+        }catch(err){ console.warn('ParamsPage: failed to bind beforeunload', err) }
         loadFromCache()
     })
 
@@ -140,8 +142,9 @@
         try {
             await navigator.clipboard.writeText(String(row.name || ''))
             toast.success('ID скопирован в буфер обмена')
-        } catch (e) {
+        } catch (err) {
             toast.error('Не удалось скопировать ID')
+            console.warn('ParamsPage: clipboard write failed', err)
         }
     }
 
