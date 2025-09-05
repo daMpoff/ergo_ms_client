@@ -8,7 +8,7 @@
             <Zap :size="28" color="white" />
           </div>
           <div class="page-title">
-            <h1>Анализ импульсов</h1>
+            <h1>Мои анализы</h1>
             <p class="page-subtitle">Управление и мониторинг анализов импульсных нагрузок</p>
           </div>
         </div>
@@ -235,32 +235,19 @@
     </div>
                 
     <!-- Пагинация -->
-    <nav v-if="pagination.total > pagination.page_size" class="mt-5">
-      <ul class="pagination pagination-modern justify-content-center">
-        <li class="page-item" :class="{ disabled: !pagination.has_previous }">
-          <button class="page-link" @click="loadPage(pagination.previous_page)" :disabled="!pagination.has_previous">
-            <ChevronLeft :size="16" />
-          </button>
-        </li>
-        
-        <li class="page-item" 
-            v-for="page in visiblePages" 
-            :key="page"
-            :class="{ active: page === pagination.current_page }">
-          <button class="page-link" @click="loadPage(page)">{{ page }}</button>
-        </li>
-        
-        <li class="page-item" :class="{ disabled: !pagination.has_next }">
-          <button class="page-link" @click="loadPage(pagination.next_page)" :disabled="!pagination.has_next">
-            <ChevronRight :size="16" />
-          </button>
-        </li>
-      </ul>
-      
-      <div class="pagination-info text-center mt-3">
-        <span class="text-muted">Показано {{ pagination.start_index }}-{{ pagination.end_index }} из {{ pagination.total }}</span>
-      </div>
-    </nav>
+    <PaginationComponent
+      v-if="analyses.length > 0"
+      :current-page="pagination.current_page"
+      :total-pages="Math.ceil(pagination.total / pagination.page_size)"
+      :total-items="pagination.total"
+      :page-size="pagination.page_size"
+      :has-next="pagination.has_next"
+      :has-previous="pagination.has_previous"
+      :next-page="pagination.next_page"
+      :previous-page="pagination.previous_page"
+      @page-change="loadPage"
+      @page-size-change="onPageSizeChange"
+    />
   </div>
 </template>
 
@@ -268,6 +255,7 @@
 import { impulsAnalysisAPI } from './js/impuls-analysis.js'
 import AnalysisStats from './components/AnalysisStats.vue'
 import AnalysisStatus from './components/AnalysisStatus.vue'
+import PaginationComponent from './components/PaginationComponent.vue'
 import { useToast } from 'vue-toastification'
 import { 
   RefreshCw, Plus, X, FileX, Eye, Trash2, Loader2, Zap, 
@@ -282,6 +270,7 @@ export default {
   components: {
     AnalysisStats,
     AnalysisStatus,
+    PaginationComponent,
     RefreshCw,
     Plus,
     X,
@@ -440,6 +429,12 @@ export default {
     
     loadPage(page) {
       this.pagination.current_page = page
+      this.loadAnalyses()
+    },
+    
+    onPageSizeChange(newPageSize) {
+      this.pagination.page_size = newPageSize
+      this.pagination.current_page = 1 // Сбрасываем на первую страницу
       this.loadAnalyses()
     },
     

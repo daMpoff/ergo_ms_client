@@ -8,7 +8,7 @@
             <Zap :size="28" color="white" />
           </div>
           <div class="page-title">
-            <h1>Анализ импульсов</h1>
+            <h1>Создание анализа</h1>
             <p class="page-subtitle">Загрузка файлов и создание анализов импульсных нагрузок</p>
           </div>
         </div>
@@ -40,48 +40,56 @@
             <form @submit.prevent="uploadFiles">
               <div class="form-section">
                 <label class="form-label">Файлы для импорта данных</label>
-                <div class="file-inputs">
-                  <div class="file-input-group">
-                    <label for="forceFile" class="file-label">
+                
+                <!-- Drag and Drop зоны для разных типов файлов -->
+                <div class="file-drop-zones">
+                  <div class="drop-zone-section">
+                    <h6 class="drop-zone-title">
                       <FileText :size="16" />
-                      <span>Расчет силы (Excel)</span>
-                    </label>
-                    <input
-                      type="file"
-                      class="form-control"
-                      id="forceFile"
-                      @change="handleForceFileUpload"
-                      accept=".xlsx,.xls"
-                      ref="forceFileInput"
+                      Расчет силы (Excel)
+                    </h6>
+                    <FileDropZone
+                      ref="forceDropZone"
+                      :file-types="['Excel файлы (.xlsx, .xls)']"
+                      :accepted-types="'.xlsx,.xls'"
+                      :multiple="true"
+                      :max-files="5"
+                      :is-uploading="isUploading"
+                      @files-selected="handleForceFilesSelected"
+                      @files-removed="handleForceFilesRemoved"
                     />
                   </div>
-                  <div class="file-input-group">
-                    <label for="planFile" class="file-label">
+                  
+                  <div class="drop-zone-section">
+                    <h6 class="drop-zone-title">
                       <FileText :size="16" />
-                      <span>План эксперимента (Excel)</span>
-                    </label>
-                    <input
-                      type="file"
-                      class="form-control"
-                      id="planFile"
-                      @change="handlePlanFileUpload"
-                      accept=".xlsx,.xls"
-                      ref="planFileInput"
+                      План эксперимента (Excel)
+                    </h6>
+                    <FileDropZone
+                      ref="planDropZone"
+                      :file-types="['Excel файлы (.xlsx, .xls)']"
+                      :accepted-types="'.xlsx,.xls'"
+                      :multiple="true"
+                      :max-files="5"
+                      :is-uploading="isUploading"
+                      @files-selected="handlePlanFilesSelected"
+                      @files-removed="handlePlanFilesRemoved"
                     />
                   </div>
                 </div>
+                
                 <div class="form-help">
-                  Загрузите Excel файлы для импорта данных в систему. После загрузки данные станут доступны для создания анализов.
+                  Перетащите Excel файлы в соответствующие зоны или нажмите для выбора. Можно загружать несколько файлов каждого типа.
                 </div>
               </div>
               
               <button 
                 type="submit" 
                 class="btn btn-primary btn-upload" 
-                :disabled="isUploading || (!selectedForceFile && !selectedPlanFile)"
+                :disabled="isUploading || (forceFiles.length === 0 && planFiles.length === 0)"
               >
                 <Upload :size="16" />
-                <span>{{ isUploading ? 'Загрузка...' : 'Загрузить файлы' }}</span>
+                <span>{{ isUploading ? 'Загрузка...' : `Загрузить файлы (${forceFiles.length + planFiles.length})` }}</span>
               </button>
             </form>
           </div>
@@ -191,6 +199,7 @@
 <script>
 import { impulsAnalysisAPI } from './js/impuls-analysis.js'
 import AnalysisStats from './components/AnalysisStats.vue'
+import FileDropZone from './components/FileDropZone.vue'
 import { useToast } from 'vue-toastification'
 import { FileText, FileCheck, FileX, Plus, Upload, Zap } from 'lucide-vue-next'
 
@@ -199,6 +208,7 @@ const toast = useToast()
 export default {
   components: {
     AnalysisStats,
+    FileDropZone,
     FileText,
     FileCheck,
     FileX,
@@ -214,8 +224,8 @@ export default {
         description: '',
         analysis_type: 'standard'
       },
-      selectedForceFile: null,
-      selectedPlanFile: null,
+      forceFiles: [],
+      planFiles: [],
       isUploading: false,
       isCreatingFromProtocol: false,
       stats: {
@@ -242,30 +252,39 @@ export default {
     ])
   },
   methods: {
-    handleForceFileUpload(event) {
-      const file = event.target.files[0]
-      if (file) {
-        this.selectedForceFile = file
-      }
+    handleForceFilesSelected(files) {
+      this.forceFiles.push(...files)
     },
     
-    handlePlanFileUpload(event) {
-      const file = event.target.files[0]
-      if (file) {
-        this.selectedPlanFile = file
-      }
+    handleForceFilesRemoved(files) {
+      // Файлы уже удалены из компонента, обновляем локальный массив
+      this.forceFiles = this.$refs.forceDropZone.getFiles()
+    },
+    
+    handlePlanFilesSelected(files) {
+      this.planFiles.push(...files)
+    },
+    
+    handlePlanFilesRemoved(files) {
+      // Файлы уже удалены из компонента, обновляем локальный массив
+      this.planFiles = this.$refs.planDropZone.getFiles()
     },
     
     async uploadFiles() {
+      if (this.forceFiles.length === 0 && this.planFiles.length === 0) {
+        toast.error('Выберите файлы для загрузки')
+        return
+      }
+      
       this.isUploading = true
       try {
-        const response = await impulsAnalysisAPI.uploadFiles(
-          this.selectedForceFile, 
-          this.selectedPlanFile
+        const response = await impulsAnalysisAPI.uploadMultipleFiles(
+          this.forceFiles, 
+          this.planFiles
         )
         
         if (response && response.success) {
-          toast.success('Файлы загружены и импорт запущен!')
+          toast.success(`Загружено ${this.forceFiles.length + this.planFiles.length} файлов! Импорт запущен.`)
           this.resetForm()
           // Обновляем список доступных протоколов
           await this.loadAvailableProtocols()
@@ -328,13 +347,13 @@ export default {
     },
     
     resetForm() {
-      this.selectedForceFile = null
-      this.selectedPlanFile = null
-      if (this.$refs.forceFileInput) {
-        this.$refs.forceFileInput.value = ''
+      this.forceFiles = []
+      this.planFiles = []
+      if (this.$refs.forceDropZone) {
+        this.$refs.forceDropZone.clearFiles()
       }
-      if (this.$refs.planFileInput) {
-        this.$refs.planFileInput.value = ''
+      if (this.$refs.planDropZone) {
+        this.$refs.planDropZone.clearFiles()
       }
     },
     
@@ -362,7 +381,20 @@ export default {
       try {
         const response = await impulsAnalysisAPI.getAvailableProtocols()
         if (response && response.success) {
-          this.availableProtocols = response.data.protocols || []
+          // Сортируем протоколы по номеру (сначала как числа, потом как строки)
+          const protocols = response.data.protocols || []
+          this.availableProtocols = protocols.sort((a, b) => {
+            const aNum = parseInt(a.protocol_number)
+            const bNum = parseInt(b.protocol_number)
+            
+            // Если оба номера - числа, сортируем как числа
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum
+            }
+            
+            // Иначе сортируем как строки
+            return a.protocol_number.localeCompare(b.protocol_number)
+          })
         }
       } catch (error) {
         console.error('Error loading available protocols:', error)
@@ -525,21 +557,22 @@ export default {
   }
 }
 
-// Ввод файлов
-.file-inputs {
+// Drag and Drop зоны
+.file-drop-zones {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
-.file-input-group {
-  .file-label {
+.drop-zone-section {
+  .drop-zone-title {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--bs-heading-color);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
   }
 }
 
@@ -678,8 +711,14 @@ export default {
 }
 
 @media (max-width: 576px) {
-  .file-inputs {
-    gap: 0.75rem;
+  .file-drop-zones {
+    gap: 1rem;
+  }
+  
+  .drop-zone-section {
+    .drop-zone-title {
+      font-size: 0.875rem;
+    }
   }
   
   .btn-upload,

@@ -53,7 +53,7 @@
             <FileCheck size="20" />
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ availableProtocols.length }}</div>
+            <div class="stat-number">{{ pagination.totalItems }}</div>
             <div class="stat-label">Доступных протоколов</div>
           </div>
           <div class="stat-progress">
@@ -106,6 +106,28 @@
       <div class="section-header">
         <h3 class="section-title">Доступные протоколы</h3>
         <p class="section-subtitle">Выберите протокол для создания анализа</p>
+        
+        <!-- Сортировка -->
+        <SortComponent
+          v-if="pagination.totalItems > 0"
+          :current-sort="sort"
+          @sort-change="onSortChange"
+        />
+        
+        <!-- Пагинация -->
+        <PaginationComponent
+          v-if="pagination.totalItems > 0"
+          :current-page="pagination.currentPage"
+          :total-pages="pagination.totalPages"
+          :total-items="pagination.totalItems"
+          :page-size="pagination.pageSize"
+          :has-next="pagination.hasNext"
+          :has-previous="pagination.hasPrevious"
+          :next-page="pagination.nextPage"
+          :previous-page="pagination.previousPage"
+          @page-change="onPageChange"
+          @page-size-change="onPageSizeChange"
+        />
       </div>
       
       <div v-if="isLoading" class="loading-state">
@@ -443,6 +465,8 @@
 
 <script>
 import { impulsAnalysisAPI } from './js/impuls-analysis.js'
+import PaginationComponent from './components/PaginationComponent.vue'
+import SortComponent from './components/SortComponent.vue'
 import { useToast } from 'vue-toastification'
 import { 
   RefreshCw, Plus, FileCheck, CheckCircle, Loader2, Clock, 
@@ -453,6 +477,8 @@ const toast = useToast()
 
 export default {
   components: {
+    PaginationComponent,
+    SortComponent,
     RefreshCw,
     Plus,
     FileCheck,
@@ -484,6 +510,22 @@ export default {
         completed: 0,
         failed: 0,
         cancelled: 0
+      },
+      // Пагинация
+      pagination: {
+        currentPage: 1,
+        pageSize: 10,
+        totalPages: 0,
+        totalItems: 0,
+        hasNext: false,
+        hasPrevious: false,
+        nextPage: null,
+        previousPage: null
+      },
+      // Сортировка
+      sort: {
+        field: 'protocol_number',
+        direction: 'asc'
       }
     }
   },
@@ -514,9 +556,28 @@ export default {
     async loadAvailableProtocols() {
       this.isLoading = true
       try {
-        const response = await impulsAnalysisAPI.getAvailableProtocols()
+        const params = {
+          page: this.pagination.currentPage,
+          page_size: this.pagination.pageSize,
+          sort_field: this.sort.field,
+          sort_direction: this.sort.direction
+        }
+        
+        const response = await impulsAnalysisAPI.getAvailableProtocols(params)
         if (response && response.success) {
           this.availableProtocols = response.data.protocols || []
+          
+          // Обновляем информацию о пагинации
+          this.pagination = {
+            currentPage: response.data.page || 1,
+            pageSize: response.data.page_size || 10,
+            totalPages: response.data.total_pages || 0,
+            totalItems: response.data.count || 0,
+            hasNext: response.data.has_next || false,
+            hasPrevious: response.data.has_previous || false,
+            nextPage: response.data.next_page || null,
+            previousPage: response.data.previous_page || null
+          }
         }
       } catch (error) {
         console.error('Error loading available protocols:', error)
@@ -609,6 +670,25 @@ export default {
           modal.show()
         }
       })
+    },
+    
+    // Методы пагинации
+    onPageChange(page) {
+      this.pagination.currentPage = page
+      this.loadAvailableProtocols()
+    },
+    
+    onPageSizeChange(newPageSize) {
+      this.pagination.pageSize = newPageSize
+      this.pagination.currentPage = 1 // Сбрасываем на первую страницу
+      this.loadAvailableProtocols()
+    },
+    
+    // Методы сортировки
+    onSortChange(newSort) {
+      this.sort = { ...newSort }
+      this.pagination.currentPage = 1 // Сбрасываем на первую страницу при изменении сортировки
+      this.loadAvailableProtocols()
     }
   }
 }
@@ -848,7 +928,7 @@ export default {
     
     .section-subtitle {
       color: var(--bs-secondary-color);
-      margin: 0;
+      margin: 0 0 1.5rem 0;
       font-size: 1rem;
     }
   }

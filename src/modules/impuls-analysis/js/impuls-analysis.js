@@ -85,6 +85,37 @@ class ImpulsAnalysisAPI {
   }
 
   /**
+   * Загрузить множественные файлы для импорта данных
+   */
+  async uploadMultipleFiles(forceFiles, planFiles) {
+    try {
+      console.log('Uploading multiple files for data import', { forceFiles: forceFiles.length, planFiles: planFiles.length })
+      const formData = new FormData()
+      
+      // Добавляем файлы расчета силы
+      forceFiles.forEach((file, index) => {
+        formData.append(`force_calculation_files`, file)
+      })
+      
+      // Добавляем файлы плана эксперимента
+      planFiles.forEach((file, index) => {
+        formData.append(`experiment_plan_files`, file)
+      })
+      
+      const response = await apiClient.post(`${this.baseEndpoint}upload_multiple_files/`, formData)
+      console.log('Multiple files upload response:', response)
+      return response
+    } catch (error) {
+      console.error('Error uploading multiple files:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при загрузке файлов',
+        data: null
+      }
+    }
+  }
+
+  /**
    * Получить протоколы анализа
    */
   async getProtocols(analysisId) {
@@ -140,8 +171,8 @@ class ImpulsAnalysisAPI {
   /**
    * Получить доступные протоколы
    */
-  async getAvailableProtocols() {
-    return await apiClient.get(`${this.baseEndpoint}available_protocols/`)
+  async getAvailableProtocols(params = {}) {
+    return await apiClient.get(`${this.baseEndpoint}available_protocols/`, params)
   }
 
   /**
