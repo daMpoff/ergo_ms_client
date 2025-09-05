@@ -15,8 +15,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in sortedUsers" :key="row.id" class="table-row" :class="{ favorite: isFavorite(row.id) }" @mouseenter="hoveredRow = row.id"
-          @mouseleave="hoveredRow = null" @click="handleRowClick(row)">
+        <tr v-for="row in sortedUsers" :key="row.id" class="table-row" :class="{ favorite: isFavorite(row.id), 'force-hover': hoveredRow === row.id || (showMenu && menuRowId === row.id) }" @mouseenter="onRowMouseEnter(row.id)"
+          @mouseleave="onRowMouseLeave(row.id)" @click="handleRowClick(row)">
           <td v-for="col in props.cols" :key="col.key" :style="{ position: 'relative', overflow: 'hidden' }"
             :class="{ 'td-actions': col.key === 'actions' }">
             <!-- Название -->
@@ -53,13 +53,13 @@
 
             <!-- Действия -->
             <template v-else-if="col.key === 'actions'">
-              <div v-if="hasBeenOpened" class="actions-cell" :class="{ visible: hoveredRow === row.id || isFavorite(row.id) }">
+              <div v-if="hasBeenOpened" class="actions-cell" :class="{ visible: hoveredRow === row.id || isFavorite(row.id) || (showMenu && menuRowId === row.id) }">
                 <div class="actions-inner">
                   <button class="action-btn star" :class="{ active: isFavorite(row.id) }"
                     @click.stop="toggleFavorite(row.id)" title="Избранное">
                     <Star class="icon-inline" />
                   </button>
-                  <button class="action-btn more" :class="{ visible: hoveredRow === row.id }" @click="onMoreClick($event, row.id)" title="Еще">
+                  <button class="action-btn more" :class="{ visible: hoveredRow === row.id || (showMenu && menuRowId === row.id), 'force-hover': showMenu && menuRowId === row.id }" @click="onMoreClick($event, row.id)" title="Еще">
                     <MoreHorizontal class="icon-inline" />
                   </button>
                 </div>
@@ -80,23 +80,27 @@
     </table>
 
     <!-- Обычный тултип -->
-    <div v-if="showTooltip" class="tooltip-fixed" :class="tooltipClass" :style="tooltipStyle">{{ tooltipText }}</div>
+    <teleport to="body">
+      <div v-if="showTooltip" class="tooltip-fixed" :class="tooltipClass" :style="tooltipStyle">{{ tooltipText }}</div>
+    </teleport>
 
     <!-- Меню "Еще" -->
-    <div v-if="showMenu" class="menu-dropdown" :style="menuPosition" @mouseleave="closeMenu">
+    <teleport to="body">
+      <div v-if="showMenu" class="menu-dropdown" :style="menuPosition" @mouseleave="closeMenu">
 
-      <div class="menu-item" @click="openRename(getRowById(menuRowId))">
-        <CaseSensitive :size="18" :stroke-width="2" />Переименовать
+        <div class="menu-item" @click="openRename(getRowById(menuRowId))">
+          <CaseSensitive :size="18" :stroke-width="2" />Переименовать
+        </div>
+        <hr>
+        <div class="menu-item" @click="copyLink(getRowById(menuRowId))">
+          <Link :size="18" :stroke-width="2" />Копировать ссылку
+        </div>
+        <hr>
+        <div class="menu-item danger" @click="askDelete(getRowById(menuRowId))">
+          <Trash2 :size="18" :stroke-width="2" />Удалить
+        </div>
       </div>
-      <hr>
-      <div class="menu-item" @click="copyLink(getRowById(menuRowId))">
-        <Link :size="18" :stroke-width="2" />Копировать ссылку
-      </div>
-      <hr>
-      <div class="menu-item danger" @click="askDelete(getRowById(menuRowId))">
-        <Trash2 :size="18" :stroke-width="2" />Удалить
-      </div>
-    </div>
+    </teleport>
 
   </div>
   <!-- Модальное окно удаления -->
@@ -310,6 +314,15 @@ const showTooltip = ref(false)
 
 const emit = defineEmits(['delete-row'])
 
+function onRowMouseEnter(rowId) {
+  hoveredRow.value = rowId
+}
+
+function onRowMouseLeave(rowId) {
+  if (showMenu.value && menuRowId.value === rowId) return
+  hoveredRow.value = null
+}
+
 function onIconHover(event, text, cssClass = '') {
   tooltipText.value = text
   tooltipClass.value = cssClass
@@ -367,6 +380,7 @@ function onMoreClick(event, rowId) {
     top: `${rect.bottom + window.scrollY + 6}px`,
     left: `${rect.left + window.scrollX}px`
   }
+  hoveredRow.value = rowId
 }
 
 function closeMenu() {
@@ -517,7 +531,7 @@ async function copyLink(row) {
     }
     fadeRaf = requestAnimationFrame(fade)
   } catch (err) {
-    alert('Не удалось скопировать ссылку')
+    alert('Не удалось скопировать ссылку: ' + err)
   }
   closeMenu()
 }
@@ -729,6 +743,11 @@ defineExpose({
   cursor: pointer;
 }
 
+.table-row.force-hover {
+  background-color: var(--color-hover-background);
+  cursor: pointer;
+}
+
 .table-row.favorite {
   background-color: rgba(250, 204, 21, 0.05);
   border-left: 3px solid #facc15;
@@ -858,6 +877,11 @@ defineExpose({
 }
 
 .action-btn:hover {
+  background-color: var(--color-background);
+  color: var(--color-primary-text);
+}
+
+.action-btn.more.force-hover {
   background-color: var(--color-background);
   color: var(--color-primary-text);
 }
