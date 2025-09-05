@@ -47,6 +47,7 @@ import {
   ClipboardList,
   LayoutGrid,
   Microscope,
+  Zap,
 } from 'lucide-vue-next'
 
 /**
@@ -91,6 +92,7 @@ export const iconMapping = {
   ClipboardList,
   LayoutGrid,
   Microscope,
+  Zap,
 }
 
 /**

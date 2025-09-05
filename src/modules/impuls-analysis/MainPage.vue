@@ -1,0 +1,691 @@
+<template>
+  <div class="impuls-analysis-main">
+    <!-- Заголовок страницы с современным дизайном -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="page-title-section">
+          <div class="page-icon">
+            <Zap :size="28" color="white" />
+          </div>
+          <div class="page-title">
+            <h1>Анализ импульсов</h1>
+            <p class="page-subtitle">Загрузка файлов и создание анализов импульсных нагрузок</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <AnalysisStats :stats="stats" :show-details="false" />
+      </div>
+    </div>
+          
+    <!-- Формы -->
+    <div class="row g-4">
+      <!-- Загрузка файлов для импорта данных -->
+      <div class="col-lg-6">
+        <div class="action-card upload-card">
+          <div class="card-header">
+            <div class="card-icon">
+              <Upload :size="24" />
+            </div>
+            <div class="card-title">
+              <h3>Загрузить файлы</h3>
+              <p>Импорт данных для анализа</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <form @submit.prevent="uploadFiles">
+              <div class="form-section">
+                <label class="form-label">Файлы для импорта данных</label>
+                <div class="file-inputs">
+                  <div class="file-input-group">
+                    <label for="forceFile" class="file-label">
+                      <FileText :size="16" />
+                      <span>Расчет силы (Excel)</span>
+                    </label>
+                    <input
+                      type="file"
+                      class="form-control"
+                      id="forceFile"
+                      @change="handleForceFileUpload"
+                      accept=".xlsx,.xls"
+                      ref="forceFileInput"
+                    />
+                  </div>
+                  <div class="file-input-group">
+                    <label for="planFile" class="file-label">
+                      <FileText :size="16" />
+                      <span>План эксперимента (Excel)</span>
+                    </label>
+                    <input
+                      type="file"
+                      class="form-control"
+                      id="planFile"
+                      @change="handlePlanFileUpload"
+                      accept=".xlsx,.xls"
+                      ref="planFileInput"
+                    />
+                  </div>
+                </div>
+                <div class="form-help">
+                  Загрузите Excel файлы для импорта данных в систему. После загрузки данные станут доступны для создания анализов.
+                </div>
+              </div>
+              
+              <button 
+                type="submit" 
+                class="btn btn-primary btn-upload" 
+                :disabled="isUploading || (!selectedForceFile && !selectedPlanFile)"
+              >
+                <Upload :size="16" />
+                <span>{{ isUploading ? 'Загрузка...' : 'Загрузить файлы' }}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+            
+      <!-- Создание анализа из протокола -->
+      <div class="col-lg-6">
+        <div class="action-card create-card">
+          <div class="card-header">
+            <div class="card-icon">
+              <FileCheck :size="24" />
+            </div>
+            <div class="card-title">
+              <h3>Создать анализ</h3>
+              <p>Из доступных протоколов</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div v-if="availableProtocols.length === 0" class="empty-protocols">
+              <FileX :size="48" class="empty-icon" />
+              <h4>Нет доступных протоколов</h4>
+              <p>Протоколы становятся доступными после загрузки файлов "Расчет силы" и "План эксперимента"</p>
+            </div>
+            
+            <div v-else>
+              <div class="form-section">
+                <label for="protocolSelect" class="form-label">Выберите протокол</label>
+                <select
+                  class="form-select"
+                  id="protocolSelect"
+                  v-model="selectedProtocol"
+                  @change="onProtocolSelect"
+                >
+                  <option value="">Выберите протокол...</option>
+                  <option 
+                    v-for="protocol in availableProtocols" 
+                    :key="protocol.protocol_number"
+                    :value="protocol.protocol_number"
+                  >
+                    Протокол {{ protocol.protocol_number }}
+                  </option>
+                </select>
+              </div>
+              
+              <div v-if="selectedProtocolData" class="protocol-data">
+                <h6>Данные протокола:</h6>
+                <div class="data-grid">
+                  <div class="data-item">
+                    <span class="data-label">Pст:</span>
+                    <span class="data-value">{{ selectedProtocolData.force_data.pct_static }}%</span>
+                  </div>
+                  <div class="data-item">
+                    <span class="data-label">Энергия:</span>
+                    <span class="data-value">{{ selectedProtocolData.force_data.energy_j }} Дж</span>
+                  </div>
+                  <div class="data-item">
+                    <span class="data-label">Скорость:</span>
+                    <span class="data-value">{{ selectedProtocolData.force_data.velocity_ms }} м/с</span>
+                  </div>
+                  <div class="data-item">
+                    <span class="data-label">Сила:</span>
+                    <span class="data-value">{{ selectedProtocolData.force_data.force_n }} Н</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-section">
+                <label for="protocolTitle" class="form-label">Название анализа</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="protocolTitle"
+                  v-model="protocolAnalysis.title"
+                  :placeholder="`Анализ протокола ${selectedProtocol || ''}`"
+                />
+              </div>
+              
+              <div class="form-section">
+                <label for="protocolDescription" class="form-label">Описание</label>
+                <textarea
+                  class="form-control"
+                  id="protocolDescription"
+                  v-model="protocolAnalysis.description"
+                  rows="2"
+                  placeholder="Описание анализа из протокола"
+                ></textarea>
+              </div>
+              
+              <button
+                type="button"
+                class="btn btn-success btn-create"
+                @click="createAnalysisFromProtocol"
+                :disabled="!selectedProtocol || isCreatingFromProtocol"
+              >
+                <FileCheck :size="16" />
+                <span>{{ isCreatingFromProtocol ? 'Создание...' : 'Создать анализ' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { impulsAnalysisAPI } from './js/impuls-analysis.js'
+import AnalysisStats from './components/AnalysisStats.vue'
+import { useToast } from 'vue-toastification'
+import { FileText, FileCheck, FileX, Plus, Upload, Zap } from 'lucide-vue-next'
+
+const toast = useToast()
+
+export default {
+  components: {
+    AnalysisStats,
+    FileText,
+    FileCheck,
+    FileX,
+    Plus,
+    Upload,
+    Zap
+  },
+  name: 'ImpulsAnalysisMainPage',
+  data() {
+    return {
+      newAnalysis: {
+        title: '',
+        description: '',
+        analysis_type: 'standard'
+      },
+      selectedForceFile: null,
+      selectedPlanFile: null,
+      isUploading: false,
+      isCreatingFromProtocol: false,
+      stats: {
+        total: 0,
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0,
+        cancelled: 0
+      },
+      availableProtocols: [],
+      selectedProtocol: '',
+      selectedProtocolData: null,
+      protocolAnalysis: {
+        title: '',
+        description: ''
+      }
+    }
+  },
+  async mounted() {
+    await Promise.all([
+      this.loadStats(),
+      this.loadAvailableProtocols()
+    ])
+  },
+  methods: {
+    handleForceFileUpload(event) {
+      const file = event.target.files[0]
+      if (file) {
+        this.selectedForceFile = file
+      }
+    },
+    
+    handlePlanFileUpload(event) {
+      const file = event.target.files[0]
+      if (file) {
+        this.selectedPlanFile = file
+      }
+    },
+    
+    async uploadFiles() {
+      this.isUploading = true
+      try {
+        const response = await impulsAnalysisAPI.uploadFiles(
+          this.selectedForceFile, 
+          this.selectedPlanFile
+        )
+        
+        if (response && response.success) {
+          toast.success('Файлы загружены и импорт запущен!')
+          this.resetForm()
+          // Обновляем список доступных протоколов
+          await this.loadAvailableProtocols()
+        } else {
+          toast.error(response?.message || 'Ошибка при загрузке файлов')
+        }
+      } catch (error) {
+        let errorMessage = 'Ошибка при загрузке файлов'
+        if (error && typeof error === 'object') {
+          errorMessage = error.response?.data?.message || error.message || errorMessage
+        }
+        toast.error(errorMessage)
+      } finally {
+        this.isUploading = false
+      }
+    },
+    
+    async createAnalysisFromProtocol() {
+      if (!this.selectedProtocol) {
+        toast.error('Выберите протокол')
+        return
+      }
+      
+      this.isCreatingFromProtocol = true
+      try {
+        const response = await impulsAnalysisAPI.createFromProtocol(
+          this.selectedProtocol,
+          this.protocolAnalysis.title || `Анализ протокола ${this.selectedProtocol}`,
+          this.protocolAnalysis.description,
+          'standard'
+        )
+        
+        if (response && response.success) {
+          toast.success('Анализ создан из протокола успешно!')
+          this.resetProtocolForm()
+          this.$router.push(`/impuls-analysis/analysis/${response.data.id}`)
+        } else {
+          toast.error(response?.message || 'Ошибка при создании анализа из протокола')
+        }
+      } catch (error) {
+        let errorMessage = 'Ошибка при создании анализа из протокола'
+        if (error && typeof error === 'object') {
+          errorMessage = error.response?.data?.message || error.message || errorMessage
+        }
+        toast.error(errorMessage)
+      } finally {
+        this.isCreatingFromProtocol = false
+      }
+    },
+    
+    onProtocolSelect() {
+      if (this.selectedProtocol) {
+        this.selectedProtocolData = this.availableProtocols.find(
+          p => p.protocol_number === this.selectedProtocol
+        )
+        this.protocolAnalysis.title = `Анализ протокола ${this.selectedProtocol}`
+      } else {
+        this.selectedProtocolData = null
+      }
+    },
+    
+    resetForm() {
+      this.selectedForceFile = null
+      this.selectedPlanFile = null
+      if (this.$refs.forceFileInput) {
+        this.$refs.forceFileInput.value = ''
+      }
+      if (this.$refs.planFileInput) {
+        this.$refs.planFileInput.value = ''
+      }
+    },
+    
+    resetProtocolForm() {
+      this.selectedProtocol = ''
+      this.selectedProtocolData = null
+      this.protocolAnalysis = {
+        title: '',
+        description: ''
+      }
+    },
+    
+    async loadStats() {
+      try {
+        const response = await impulsAnalysisAPI.getStatistics()
+        if (response && response.success) {
+          this.stats = response.data
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error)
+      }
+    },
+    
+    async loadAvailableProtocols() {
+      try {
+        const response = await impulsAnalysisAPI.getAvailableProtocols()
+        if (response && response.success) {
+          this.availableProtocols = response.data.protocols || []
+        }
+      } catch (error) {
+        console.error('Error loading available protocols:', error)
+      }
+    }
+  }
+}
+</script>
+
+<style scoped lang="scss">
+.impuls-analysis-main {
+  padding: 2rem;
+  min-height: 100vh;
+  background: var(--bs-gray-100);
+}
+
+// Заголовок страницы
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  
+  .header-content {
+    flex: 1;
+  }
+}
+
+// Секция заголовка страницы
+.page-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  
+  .page-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  }
+  
+  .page-title {
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--bs-heading-color);
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .page-subtitle {
+      color: var(--bs-secondary-color);
+      margin: 0;
+      font-size: 1rem;
+    }
+  }
+}
+
+// Карточки действий
+.action-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  height: 100%;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--bs-light);
+    border-bottom: 1px solid var(--bs-border-color);
+    
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    
+    .card-title {
+      flex: 1;
+      
+      h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--bs-heading-color);
+        margin: 0 0 0.25rem 0;
+      }
+      
+      p {
+        color: var(--bs-secondary-color);
+        margin: 0;
+        font-size: 0.875rem;
+      }
+    }
+  }
+  
+  .card-body {
+    padding: 1.5rem;
+  }
+}
+
+.upload-card {
+  .card-icon {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  }
+}
+
+.create-card {
+  .card-icon {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+  }
+}
+
+// Формы
+.form-section {
+  margin-bottom: 1.5rem;
+  
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--bs-heading-color);
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-control,
+  .form-select {
+    border-radius: 8px;
+    border: 1px solid var(--bs-border-color);
+    transition: border-color 0.2s ease;
+    
+    &:focus {
+      border-color: var(--bs-primary);
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+  }
+  
+  .form-help {
+    font-size: 0.875rem;
+    color: var(--bs-secondary-color);
+    margin-top: 0.5rem;
+  }
+}
+
+// Ввод файлов
+.file-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.file-input-group {
+  .file-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: var(--bs-heading-color);
+    margin-bottom: 0.5rem;
+  }
+}
+
+// Данные протокола
+.protocol-data {
+  background: var(--bs-gray-100);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  
+  h6 {
+    font-weight: 600;
+    color: var(--bs-heading-color);
+    margin-bottom: 0.75rem;
+  }
+  
+  .data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      .data-label {
+        font-size: 0.875rem;
+        color: var(--bs-secondary-color);
+      }
+      
+      .data-value {
+        font-weight: 600;
+        color: var(--bs-heading-color);
+      }
+    }
+  }
+}
+
+// Пустое состояние протоколов
+.empty-protocols {
+  text-align: center;
+  padding: 2rem 1rem;
+  
+  .empty-icon {
+    color: var(--bs-gray-400);
+    margin-bottom: 1rem;
+  }
+  
+  h4 {
+    color: var(--bs-heading-color);
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    color: var(--bs-secondary-color);
+    margin: 0;
+  }
+}
+
+// Кнопки
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.btn-upload {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+  color: white;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  width: 100%;
+  
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+  }
+}
+
+.btn-create {
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+  border: none;
+  color: white;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  width: 100%;
+  
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+  }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .impuls-analysis-main {
+    padding: 1rem;
+  }
+  
+  .page-title-section {
+    .page-title h1 {
+      font-size: 1.5rem;
+    }
+  }
+  
+  .action-card {
+    .card-header {
+      flex-direction: column;
+      text-align: center;
+      gap: 0.75rem;
+    }
+  }
+  
+  .protocol-data {
+    .data-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .file-inputs {
+    gap: 0.75rem;
+  }
+  
+  .btn-upload,
+  .btn-create {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+</style>

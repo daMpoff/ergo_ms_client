@@ -384,6 +384,25 @@
           "name": "Перевод видео"
         }
       ]
+    },
+    {
+      "icon": "Zap",
+      "routeName": "ImpulsAnalysis",
+      "title": "Анализ импульсов",
+      "list": [
+        {
+          "routeName": "ImpulsAnalysisMain",
+          "name": "Создание анализа"
+        },
+        {
+          "routeName": "ImpulsAnalysisList",
+          "name": "Мои анализы"
+        },
+        {
+          "routeName": "ImpulsAnalysisProtocols",
+          "name": "Протоколы"
+        }
+      ]
     }
   ]
 } 
