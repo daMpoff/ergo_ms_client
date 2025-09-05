@@ -6,10 +6,10 @@
         <button class="close-btn" @click="cancel">×</button>
       </div>
 
-      <input v-model="localName" class="form-control my-3" placeholder="Введите название" @keyup.enter="submit" />
+      <input v-model="localName" class="form-control my-3" placeholder="Введите название" />
       <div class="modal-footer">
         <button class="btn btn-secondary" @click="cancel">Отмена</button>
-        <button class="btn btn-primary" @click="submit" :disabled="!localName">
+        <button class="btn btn-primary" @click="submit" :disabled="!localName || loading">
           Сохранить
         </button>
       </div>
@@ -38,6 +38,7 @@ const emit = defineEmits(['update:visible', 'saved'])
 
 const localName = ref(props.modelValue || '')
 const error = ref('')
+const loading = ref(false)
 
 watch(() => props.modelValue, (newVal) => {
   localName.value = newVal || ''
@@ -55,9 +56,10 @@ function extractErrorMessage(err) {
 }
 
 async function submit() {
-  if (!localName.value) return
+  if (!localName.value || loading.value) return
 
   error.value = ''
+  loading.value = true
 
   try {
     const isFileConnection = props.connectorType === undefined
@@ -70,17 +72,19 @@ async function submit() {
 
     // Создаем подключение через API
     const response = await apiClient.post(endpoints.bi.ConnectionsList, payload)
-    
-    if (response.success) {
-      emit('saved', response.data)
+    const data = response?.data
+    if (data && data.id) {
+      emit('saved', data)
       emit('update:visible', false)
     } else {
-      error.value = response.message || 'Не удалось сохранить подключение'
+      error.value = 'Не удалось сохранить подключение'
     }
 
   } catch (err) {
     console.error('Ошибка при сохранении подключения:', err.response?.data || err)
     error.value = extractErrorMessage(err)
+  } finally {
+    loading.value = false
   }
 }
 

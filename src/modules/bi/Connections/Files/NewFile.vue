@@ -66,10 +66,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Upload } from 'lucide-vue-next'
-import { apiClient } from '@/js/api/manager'
 import FileItem from './FileItem.vue'
 import FilePreviewPanel from './FilePreviewPanel.vue'
 import XlsxSheetPicker from './FilePreview/XlsxSheetPicker.vue'
@@ -108,7 +107,7 @@ function triggerFileUpload() {
 
 const { tooltipText, tooltipStyle, showTooltip, onIconHover, hideTooltipWithDelay } = useTooltip()
 const { removeTempFile, openSheetPicker, selectFile, loadUserFiles, getSheetNameFromFile } = useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible, null)
-const { uploadFile, uploadFileRaw, finalizeUploads, handleSheetSelection, handleFileUpload } = useFileUploader(tempUploadedFiles, selectedFile, isSheetPickerVisible, currentUploadFile, availableSheets, loadUserFiles)
+const { finalizeUploads, handleSheetSelection, handleFileUpload } = useFileUploader(tempUploadedFiles, selectedFile, isSheetPickerVisible, currentUploadFile, availableSheets, loadUserFiles)
 const { deleteFile, handleFileReplace, handleFileReplaceWithSheets, renameFile } = useFileActions(uploadedFiles, selectedFile, fileToReplace, loadUserFiles, null, isSheetPickerVisible, currentUploadFile, availableSheets)
 
 function replaceFile(file) {
@@ -140,26 +139,18 @@ function openConnectionDialog() {
 async function createConnection(data) {
   showConnectionDialog.value = false
   try {
-    const payload = {
-      name: data.name,
-      connector_type: data.connector_type,
-      config: data.config
-    }
-    const connRes = await apiClient.post('bi_analysis/bi_connections/', payload)
-    
-    if (!connRes.success || !connRes.data?.id) {
+    const newConnectionId = data?.id
+    if (!newConnectionId) {
       alert('Не удалось создать подключение')
       return
     }
-    
-    const newConnectionId = connRes.data.id
-    
-    const uploadResult = await finalizeUploads(newConnectionId)
-    
+
+    await finalizeUploads(newConnectionId)
+
     alert('Подключение успешно создано и файлы загружены!')
     router.push(`/bi/connections/${newConnectionId}/files/`)
   } catch (err) {
-    alert('Произошла ошибка при создании подключения')
+    alert('Произошла ошибка при создании подключения: ' + err)
   }
 }
 </script>
