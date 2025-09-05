@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import DatasetListPage from '@/modules/bi/Datasets/DatasetListPage.vue'
 import ConnectionListPage from '@/modules/bi/Connections/ConnectionListPage.vue'
 import ChartListPage from '@/modules/bi/Charts/ChartListPage.vue'
@@ -16,6 +17,20 @@ const emit = defineEmits(['close'])
 
 const isClosing = ref(false)
 
+const route = useRoute()
+
+const shouldAutoCloseOnRoute = (path) => {
+  if (!path) return false
+  const patterns = [
+    /^\/bi\/connections\/\d+(?:\/files\/)?/,
+    /^\/bi\/connection\/\d+(?:\/files\/)?/,
+    /^\/bi\/datasets?\/\d+\/?/,
+    /^\/bi\/charts?\/\d+\/?/,
+    /^\/bi\/dashboards?\/\d+\/?/
+  ]
+  return patterns.some((re) => re.test(path))
+}
+
 const titleMap = {
   datasets: 'Датасеты',
   connections: 'Подключения',
@@ -25,13 +40,10 @@ const titleMap = {
 
 const title = computed(() => titleMap[props.currentPage] || '')
 
-// Вычисляем позицию сайдбара в зависимости от состояния меню
 const sidebarPosition = computed(() => {
   if (props.isMenuCollapsed) {
-    // Если меню свернуто, сайдбар должен быть за правой границей меню
-    return '84px' // Ширина свернутого меню
+    return '84px'
   } else {
-    // Если меню развернуто, сайдбар должен быть привязан к правой границе меню
     return `${props.menuWidth}px`
   }
 })
@@ -41,12 +53,18 @@ const handleClose = () => {
   setTimeout(() => {
     emit('close')
     isClosing.value = false
-  }, 300) // Длительность анимации
+  }, 300)
 }
 
 watch(() => props.isDatasetSidebarOpen, (newValue) => {
   if (!newValue) {
     isClosing.value = false
+  }
+})
+
+watch(() => route.fullPath, (newPath) => {
+  if (props.isDatasetSidebarOpen && shouldAutoCloseOnRoute(newPath)) {
+    handleClose()
   }
 })
 </script>
@@ -62,11 +80,7 @@ watch(() => props.isDatasetSidebarOpen, (newValue) => {
   >
     <div class="offcanvas-header">
       <h5 class="offcanvas-title">
-        {{ currentPage === 'datasets' ? 'Датасеты'
-            : currentPage === 'connections' ? 'Подключения'
-            : currentPage === 'charts' ? 'Чарты'
-            : currentPage === 'dashboards' ? 'Дашборды'
-            : '' }}
+        {{ title }}
       </h5>
       <button type="button" class="btn-close" @click="handleClose" aria-label="Закрыть" />
     </div>
