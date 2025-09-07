@@ -18,23 +18,81 @@
         </nav>
         
         <div class="analysis-title-section">
-          <div class="analysis-icon" :class="getAnalysisIconClass(analysis.status)">
-            <component :is="getStatusIcon(analysis.status)" :size="24" color="white" />
+          <div class="analysis-icon-container">
+            <div class="analysis-icon" :class="getAnalysisIconClass(analysis.status)">
+              <component :is="getStatusIcon(analysis.status)" :size="24" color="white" />
+            </div>
+            <!-- Кнопка редактирования под иконкой -->
+            <button 
+              v-if="!isEditing"
+              @click="startEditing" 
+              class="btn btn-edit-under-icon"
+              title="Редактировать название и описание"
+            >
+              <Edit3 :size="14" />
+            </button>
           </div>
           <div class="analysis-title">
-            <h1>{{ analysis.title || 'Анализ видео' }}</h1>
-            <div class="analysis-meta-badges">
-              <span class="badge status-badge" :class="statusClass(analysis.status)">
-                {{ analysis.status_display }}
-              </span>
-              <span class="badge time-badge bg-light text-dark" v-if="analysis.duration_formatted">
-                <Clock :size="14" />
-                {{ analysis.duration_formatted }}
-              </span>
+            <!-- Режим редактирования -->
+            <div v-if="isEditing" class="editing-form">
+              <div class="form-group">
+                <label for="edit-title" class="form-label">Название</label>
+                <input
+                  id="edit-title"
+                  v-model="editingData.title"
+                  type="text"
+                  class="form-control"
+                  placeholder="Введите название анализа"
+                  maxlength="255"
+                />
+              </div>
+              <div class="form-group">
+                <label for="edit-description" class="form-label">Описание</label>
+                <textarea
+                  id="edit-description"
+                  v-model="editingData.description"
+                  class="form-control"
+                  rows="3"
+                  placeholder="Введите описание анализа (необязательно)"
+                ></textarea>
+              </div>
+              <div class="editing-actions">
+                <button 
+                  @click="saveChanges" 
+                  class="btn btn-success btn-sm"
+                  :disabled="isUpdating"
+                >
+                  <Save :size="16" />
+                  <span v-if="isUpdating">Сохранение...</span>
+                  <span v-else>Сохранить</span>
+                </button>
+                <button 
+                  @click="cancelEditing" 
+                  class="btn btn-secondary btn-sm"
+                  :disabled="isUpdating"
+                >
+                  <X :size="16" />
+                  <span>Отмена</span>
+                </button>
+              </div>
             </div>
-            <p class="analysis-description" v-if="analysis.description">
-              {{ analysis.description }}
-            </p>
+            
+            <!-- Обычный режим просмотра -->
+            <div v-else>
+              <h1>{{ analysis.title || 'Анализ видео' }}</h1>
+              <div class="analysis-meta-badges">
+                <span class="badge status-badge" :class="statusClass(analysis.status)">
+                  {{ analysis.status_display }}
+                </span>
+                <span class="badge time-badge bg-light text-dark" v-if="analysis.duration_formatted">
+                  <Clock :size="14" />
+                  {{ analysis.duration_formatted }}
+                </span>
+              </div>
+              <p class="analysis-description" v-if="analysis.description">
+                {{ analysis.description }}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -68,8 +126,14 @@
             </div>
             <div class="card-body">
               <div class="video-grid">
-                <div class="video-wrapper" v-if="analysis.original_video">
-                  <div class="video-title">Исходное видео</div>
+                <div class="video-wrapper" v-if="analysis.original_video" :class="{ 'video-playing': isOriginalVideoPlaying }">
+                  <div class="video-title">
+                    <span>Исходное видео</span>
+                    <span v-if="isOriginalVideoPlaying" class="playing-indicator">
+                      <Play :size="14" />
+                      Воспроизводится
+                    </span>
+                  </div>
                   <template v-if="isMp4(analysis.original_video)">
                     <video
                       ref="originalVideoRef"
@@ -78,6 +142,10 @@
                       :src="originalVideoBlobUrl || getMediaUrl(analysis.original_video)"
                       controls
                       preload="auto"
+                      playsinline
+                      webkit-playsinline
+                      @play="onOriginalVideoPlay"
+                      @pause="onOriginalVideoPause"
                     ></video>
                   </template>
                   <template v-else>
@@ -96,16 +164,43 @@
                     </a>
                   </template>
                 </div>
-                <div class="video-wrapper" v-if="analysis.output_video">
-                  <div class="video-title">Обработанное видео</div>
-                  <video
-                    ref="outputVideoRef"
-                    :key="getMediaUrl(analysis.output_video)"
-                    class="video-player"
-                    :src="getMediaUrl(analysis.output_video)"
-                    controls
-                    preload="auto"
-                  ></video>
+                <div class="video-wrapper" v-if="analysis.output_video" :class="{ 'video-playing': isOutputVideoPlaying }">
+                  <div class="video-title">
+                    <span>Обработанное видео</span>
+                    <span v-if="isOutputVideoPlaying" class="playing-indicator">
+                      <Play :size="14" />
+                      Воспроизводится
+                    </span>
+                  </div>
+                  <template v-if="isMp4(analysis.output_video)">
+                    <video
+                      ref="outputVideoRef"
+                      :key="outputVideoBlobUrl || getMediaUrl(analysis.output_video)"
+                      class="video-player"
+                      :src="outputVideoBlobUrl || getMediaUrl(analysis.output_video)"
+                      controls
+                      preload="auto"
+                      playsinline
+                      webkit-playsinline
+                      @play="onOutputVideoPlay"
+                      @pause="onOutputVideoPause"
+                    ></video>
+                  </template>
+                  <template v-else>
+                    <div class="unsupported-note">
+                      <AlertTriangle :size="16" />
+                      <span>Формат обработанного видео не поддерживается браузером для онлайн-просмотра. Вы можете скачать файл по ссылке ниже.</span>
+                    </div>
+                    <a
+                      class="btn btn-primary mt-2"
+                      :href="getMediaUrl(analysis.output_video)"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <Download :size="16" />
+                      <span>Скачать обработанное видео</span>
+                    </a>
+                  </template>
                 </div>
                 <div class="video-placeholder" v-else>
                   <div class="placeholder-content">
@@ -159,6 +254,78 @@
                     <div class="meta-content">
                       <span class="meta-label">Сегментов субтитров</span>
                       <span class="meta-value">{{ analysis.segments_count || 0 }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Настройки субтитров -->
+                <div v-if="analysis.subtitle_lines_count || analysis.subtitle_font_size || analysis.subtitle_font_color" class="subtitle-settings-display mt-3">
+                  <h6 class="mb-3">
+                    <Settings :size="20" class="me-2" />
+                    Настройки субтитров
+                  </h6>
+                  
+                  <div class="settings-grid">
+                    <div class="setting-item" v-if="analysis.subtitle_lines_count">
+                      <div class="setting-icon">
+                        <AlignLeft :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Строк одновременно</span>
+                        <span class="setting-value">±{{ analysis.subtitle_lines_count }} {{ getLinesText(analysis.subtitle_lines_count) }}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="setting-item" v-if="analysis.subtitle_font_size">
+                      <div class="setting-icon">
+                        <Type :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Размер шрифта</span>
+                        <span class="setting-value">{{ analysis.subtitle_font_size }}px</span>
+                      </div>
+                    </div>
+                    
+                    <div class="setting-item" v-if="analysis.subtitle_font_color">
+                      <div class="setting-icon">
+                        <Palette :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Цвет шрифта</span>
+                        <div class="color-display">
+                          <div 
+                            class="color-preview" 
+                            :style="{ backgroundColor: analysis.subtitle_font_color }"
+                          ></div>
+                          <span class="color-value">{{ analysis.subtitle_font_color }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="setting-item" v-if="analysis.subtitle_background_color && !analysis.subtitle_background_transparent">
+                      <div class="setting-icon">
+                        <Square :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Цвет фона</span>
+                        <div class="color-display">
+                          <div 
+                            class="color-preview" 
+                            :style="{ backgroundColor: analysis.subtitle_background_color }"
+                          ></div>
+                          <span class="color-value">{{ analysis.subtitle_background_color }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="setting-item" v-if="analysis.subtitle_background_transparent">
+                      <div class="setting-icon">
+                        <Eye :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Фон</span>
+                        <span class="setting-value transparent-badge">Прозрачный</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -320,7 +487,7 @@ import { apiClient } from '@/js/api/manager.js'
 import { 
   Video, ArrowLeft, Trash2, Clock, CheckCircle, AlertTriangle, 
   Info, Calendar, Play, FileText, Download, Volume2, Hourglass, 
-  Loader
+  Loader, Settings, AlignLeft, Type, Palette, Square, Eye, Edit3, Save, X
 } from 'lucide-vue-next'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
@@ -332,13 +499,22 @@ const analysis = ref(null)
 const originalVideoRef = ref(null)
 const outputVideoRef = ref(null)
 const originalVideoBlobUrl = ref('')
+const outputVideoBlobUrl = ref('')
 const loading = ref(true)
+const isOriginalVideoPlaying = ref(false)
+const isOutputVideoPlaying = ref(false)
 const downloading = ref({
   video: false,
   subtitles: false,
   audio: false
 })
 const showDeleteModal = ref(false)
+const isEditing = ref(false)
+const editingData = ref({
+  title: '',
+  description: ''
+})
+const isUpdating = ref(false)
 let timer = null
 
 function statusClass(status) {
@@ -470,13 +646,22 @@ function getAnalysisIconClass(status) {
   return classes[status] || 'icon-secondary'
 }
 
+function getLinesText(count) {
+  if (count === 1) return 'строка'
+  if (count >= 2 && count <= 4) return 'строки'
+  return 'строк'
+}
+
 async function load() {
   try {
     loading.value = true
     const result = await videoAnalysisAPI.get(route.params.id)
     analysis.value = result.data
-    // После получения анализа пробуем заранее скачать исходное видео как blob
-    await prefetchOriginalVideo()
+    // После получения анализа пробуем заранее скачать видео как blob
+    await Promise.all([
+      prefetchOriginalVideo(),
+      prefetchOutputVideo()
+    ])
   } catch {
     toast.error('Ошибка загрузки анализа')
     router.push('/video-analysis/analyses')
@@ -505,6 +690,49 @@ function cancelDelete() {
   showDeleteModal.value = false
 }
 
+function startEditing() {
+  isEditing.value = true
+  editingData.value = {
+    title: analysis.value.title || '',
+    description: analysis.value.description || ''
+  }
+}
+
+function cancelEditing() {
+  isEditing.value = false
+  editingData.value = {
+    title: '',
+    description: ''
+  }
+}
+
+async function saveChanges() {
+  if (!editingData.value.title.trim()) {
+    toast.error('Название не может быть пустым')
+    return
+  }
+
+  try {
+    isUpdating.value = true
+    const result = await videoAnalysisAPI.update(analysis.value.id, {
+      title: editingData.value.title.trim(),
+      description: editingData.value.description.trim()
+    })
+    
+    // Обновляем локальные данные
+    analysis.value.title = editingData.value.title.trim()
+    analysis.value.description = editingData.value.description.trim()
+    
+    isEditing.value = false
+    toast.success('Анализ успешно обновлен')
+  } catch (error) {
+    console.error('Ошибка обновления анализа:', error)
+    toast.error('Ошибка при обновлении анализа')
+  } finally {
+    isUpdating.value = false
+  }
+}
+
 onMounted(async () => {
   // Проверяем токен перед загрузкой
   const token = Cookies.get('token')
@@ -524,6 +752,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
   revokeOriginalBlob()
+  revokeOutputBlob()
 })
 
 // Обновляем медиатеги при смене источника, чтобы гарантировать preload
@@ -538,12 +767,20 @@ watch(() => analysis.value?.output_video, () => {
   if (outputVideoRef.value) {
     try { outputVideoRef.value.load() } catch (e) { console.debug('outputVideoRef load error', e) }
   }
+  prefetchOutputVideo()
 })
 
 function revokeOriginalBlob() {
   if (originalVideoBlobUrl.value) {
     try { URL.revokeObjectURL(originalVideoBlobUrl.value) } catch (e) { console.debug('revokeObjectURL error', e) }
     originalVideoBlobUrl.value = ''
+  }
+}
+
+function revokeOutputBlob() {
+  if (outputVideoBlobUrl.value) {
+    try { URL.revokeObjectURL(outputVideoBlobUrl.value) } catch (e) { console.debug('revokeObjectURL error', e) }
+    outputVideoBlobUrl.value = ''
   }
 }
 
@@ -564,6 +801,54 @@ async function prefetchOriginalVideo() {
   } catch (e) {
     console.debug('prefetchOriginalVideo error', e)
   }
+}
+
+async function prefetchOutputVideo() {
+  try {
+    revokeOutputBlob()
+    const src = analysis.value?.output_video ? getMediaUrl(analysis.value.output_video) : ''
+    if (!src) return
+    // Скачиваем целиком как Blob и подставляем blob-URL
+    const res = await fetch(src, { cache: 'reload' })
+    if (!res.ok) return
+    const blob = await res.blob()
+    outputVideoBlobUrl.value = URL.createObjectURL(blob)
+    if (outputVideoRef.value) {
+      outputVideoRef.value.src = outputVideoBlobUrl.value
+      try { outputVideoRef.value.load() } catch (e) { console.debug('outputVideoRef load after blob error', e) }
+    }
+  } catch (e) {
+    console.debug('prefetchOutputVideo error', e)
+  }
+}
+
+// Функции для синхронизации воспроизведения видео
+function onOriginalVideoPlay() {
+  // Останавливаем обработанное видео, если оно воспроизводится
+  if (outputVideoRef.value && !outputVideoRef.value.paused) {
+    console.debug('Останавливаем обработанное видео при воспроизведении исходного')
+    outputVideoRef.value.pause()
+    isOutputVideoPlaying.value = false
+  }
+  isOriginalVideoPlaying.value = true
+}
+
+function onOutputVideoPlay() {
+  // Останавливаем исходное видео, если оно воспроизводится
+  if (originalVideoRef.value && !originalVideoRef.value.paused) {
+    console.debug('Останавливаем исходное видео при воспроизведении обработанного')
+    originalVideoRef.value.pause()
+    isOriginalVideoPlaying.value = false
+  }
+  isOutputVideoPlaying.value = true
+}
+
+function onOriginalVideoPause() {
+  isOriginalVideoPlaying.value = false
+}
+
+function onOutputVideoPause() {
+  isOutputVideoPlaying.value = false
 }
 </script>
 
@@ -635,6 +920,14 @@ async function prefetchOriginalVideo() {
   align-items: flex-start;
   gap: 1rem;
   
+  .analysis-icon-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+  
   .analysis-icon {
     width: 56px;
     height: 56px;
@@ -669,6 +962,38 @@ async function prefetchOriginalVideo() {
     }
   }
   
+  .btn-edit-under-icon {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    color: white;
+    padding: 0.375rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+    
+    &:hover {
+      background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+      color: white;
+    }
+    
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+    }
+    
+    svg {
+      align-self: center;
+    }
+  }
+  
   .analysis-title {
     flex: 1;
     
@@ -678,6 +1003,7 @@ async function prefetchOriginalVideo() {
       color: var(--bs-heading-color);
       margin: 0 0 0.5rem 0;
     }
+    
     
     .analysis-meta-badges {
       display: flex;
@@ -704,6 +1030,103 @@ async function prefetchOriginalVideo() {
       margin: 0;
       font-size: 1rem;
       line-height: 1.5;
+    }
+    
+    // Форма редактирования
+    .editing-form {
+      background: var(--bs-gray-50);
+      border: 1px solid var(--bs-border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      
+      .form-group {
+        margin-bottom: 1rem;
+        
+        &:last-of-type {
+          margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+          font-weight: 600;
+          color: var(--bs-heading-color);
+          margin-bottom: 0.5rem;
+          display: block;
+          font-size: 0.875rem;
+        }
+        
+        .form-control {
+          border: 1px solid var(--bs-border-color);
+          border-radius: 8px;
+          padding: 0.75rem;
+          font-size: 0.875rem;
+          transition: all 0.2s ease;
+          
+          &:focus {
+            border-color: var(--bs-primary);
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            outline: none;
+          }
+          
+          &::placeholder {
+            color: var(--bs-secondary-color);
+          }
+        }
+        
+        textarea.form-control {
+          resize: vertical;
+          min-height: 80px;
+        }
+      }
+      
+      .editing-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        
+        .btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          font-weight: 600;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+          
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+          
+          svg {
+            align-self: center;
+          }
+        }
+        
+        .btn-success {
+          background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+          border: none;
+          color: white;
+          
+          &:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+          }
+        }
+        
+        .btn-secondary {
+          background: var(--bs-gray-100);
+          border: 1px solid var(--bs-border-color);
+          color: var(--bs-secondary-color);
+          
+          &:hover:not(:disabled) {
+            background: var(--bs-gray-200);
+            border-color: var(--bs-gray-300);
+            transform: translateY(-1px);
+          }
+        }
+      }
     }
   }
 }
@@ -881,9 +1304,13 @@ async function prefetchOriginalVideo() {
 // Карточка загрузок
 .downloads-card {
   .download-actions {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
+    
+    @media (max-width: 992px) {
+      grid-template-columns: 1fr;
+    }
   }
   
   .download-btn {
@@ -899,6 +1326,7 @@ async function prefetchOriginalVideo() {
     border: none;
     cursor: pointer;
     width: 100%;
+    text-align: left;
     
     &:hover:not(:disabled) {
       background: var(--bs-primary);
@@ -959,6 +1387,18 @@ async function prefetchOriginalVideo() {
       transform: rotate(360deg);
     }
   }
+  
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
 }
 
 // Проигрыватель видео
@@ -975,15 +1415,60 @@ async function prefetchOriginalVideo() {
     background: var(--bs-gray-100);
     border-radius: 10px;
     padding: 1rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    
+    &.video-playing {
+      background: rgba(13, 110, 253, 0.1);
+      border-color: var(--bs-primary);
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
     .video-title {
       font-weight: 600;
       margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      .playing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: var(--bs-primary);
+        font-size: 0.875rem;
+        font-weight: 500;
+        background: rgba(13, 110, 253, 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        
+        svg {
+          animation: pulse 2s infinite;
+        }
+      }
     }
     .video-player {
       width: 100%;
       height: auto;
       border-radius: 8px;
       background: black;
+      max-height: 400px;
+      object-fit: contain;
+      
+      // Улучшаем работу с перелистыванием
+      &::-webkit-media-controls-timeline {
+        cursor: pointer;
+      }
+      
+      &::-webkit-media-controls-current-time-display,
+      &::-webkit-media-controls-time-remaining-display {
+        font-size: 12px;
+      }
+      
+      // Для лучшей работы на мобильных устройствах
+      @media (max-width: 768px) {
+        max-height: 300px;
+      }
     }
     .unsupported-note {
       display: flex;
@@ -1023,6 +1508,120 @@ async function prefetchOriginalVideo() {
       word-break: break-word;
       font-size: 0.875rem;
       color: var(--bs-danger);
+    }
+  }
+}
+
+// Отображение настроек субтитров
+.subtitle-settings-display {
+  background: var(--bs-gray-50);
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--bs-border-color);
+  
+  h6 {
+    display: flex;
+    align-items: center;
+    color: var(--bs-heading-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+  
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .setting-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid var(--bs-border-color);
+    transition: all 0.2s ease;
+    
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
+    }
+    
+    .setting-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      flex-shrink: 0;
+    }
+    
+    .setting-content {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      
+      .setting-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--bs-secondary-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+      }
+      
+      .setting-value {
+        font-weight: 600;
+        color: var(--bs-heading-color);
+        font-size: 0.875rem;
+        
+        &.transparent-badge {
+          background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+          color: white;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+      }
+    }
+    
+    .color-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      
+      .color-preview {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 2px solid var(--bs-border-color);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+      }
+      
+      .color-value {
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--bs-heading-color);
+        background: var(--bs-gray-100);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        border: 1px solid var(--bs-border-color);
+      }
     }
   }
 }
@@ -1250,6 +1849,35 @@ async function prefetchOriginalVideo() {
     .analysis-title h1 {
       font-size: 1.5rem;
     }
+    
+    .analysis-icon-container {
+      gap: 0.5rem;
+    }
+    
+    .btn-edit-under-icon {
+      width: 28px;
+      height: 28px;
+      padding: 0.25rem;
+      box-shadow: 0 2px 4px rgba(0, 123, 255, 0.4);
+      
+      &:hover {
+        box-shadow: 0 3px 8px rgba(0, 123, 255, 0.5);
+      }
+    }
+    
+    .editing-form {
+      padding: 1rem;
+      
+      .editing-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+        
+        .btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
   }
   
   .info-grid {
@@ -1261,6 +1889,8 @@ async function prefetchOriginalVideo() {
   }
   
   .download-actions {
+    grid-template-columns: 1fr !important;
+    
     .download-btn {
       .download-info {
         .download-title {
@@ -1288,7 +1918,7 @@ async function prefetchOriginalVideo() {
   
   .download-btn {
     flex-direction: column;
-    text-align: center;
+    text-align: left;
     
     .download-icon {
       margin-bottom: 0.5rem;

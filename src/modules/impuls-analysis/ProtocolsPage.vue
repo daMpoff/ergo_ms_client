@@ -14,20 +14,6 @@
         </div>
       </div>
       
-      <div class="header-actions">
-        <button 
-          class="btn btn-outline-primary"
-          @click="refreshProtocols"
-          :disabled="isLoading"
-        >
-          <RefreshCw class="me-2" size="16" :class="{ 'spinning': isLoading }" />
-          Обновить
-        </button>
-        <router-link to="/impuls-analysis/create" class="btn btn-primary">
-          <Plus class="me-2" size="16" />
-          Создать анализ
-        </router-link>
-      </div>
     </div>
     <!-- Информационная панель -->
     <div class="info-panel">
@@ -113,21 +99,6 @@
           :current-sort="sort"
           @sort-change="onSortChange"
         />
-        
-        <!-- Пагинация -->
-        <PaginationComponent
-          v-if="pagination.totalItems > 0"
-          :current-page="pagination.currentPage"
-          :total-pages="pagination.totalPages"
-          :total-items="pagination.totalItems"
-          :page-size="pagination.pageSize"
-          :has-next="pagination.hasNext"
-          :has-previous="pagination.hasPrevious"
-          :next-page="pagination.nextPage"
-          :previous-page="pagination.previousPage"
-          @page-change="onPageChange"
-          @page-size-change="onPageSizeChange"
-        />
       </div>
       
       <div v-if="isLoading" class="loading-state">
@@ -166,6 +137,15 @@
                 <CheckCircle class="me-1" size="12" />
                 Готов
               </span>
+              <!-- Индикатор существующего анализа -->
+              <span 
+                v-if="protocol.analysis_info && protocol.analysis_info.has_analysis" 
+                class="status-badge status-analysis-exists"
+                :title="`Анализ уже создан (${protocol.analysis_info.analyses_count} шт.)`"
+              >
+                <FileCheck class="me-1" size="12" />
+                Анализ создан
+              </span>
             </div>
           </div>
           
@@ -178,19 +158,19 @@
               <div class="data-grid">
                 <div class="data-item">
                   <span class="data-label">Pст:</span>
-                  <span class="data-value">{{ protocol.force_data.pct_static || '—' }}%</span>
+                  <span class="data-value">{{ formatNumber(protocol.force_data.pct_static) }}%</span>
                 </div>
                 <div class="data-item">
                   <span class="data-label">Энергия:</span>
-                  <span class="data-value">{{ protocol.force_data.energy_j || '—' }} Дж</span>
+                  <span class="data-value">{{ formatNumber(protocol.force_data.energy_j) }} Дж</span>
                 </div>
                 <div class="data-item">
                   <span class="data-label">Скорость:</span>
-                  <span class="data-value">{{ protocol.force_data.velocity_ms || '—' }} м/с</span>
+                  <span class="data-value">{{ formatNumber(protocol.force_data.velocity_ms) }} м/с</span>
                 </div>
                 <div class="data-item">
                   <span class="data-label">Сила:</span>
-                  <span class="data-value">{{ protocol.force_data.force_n || '—' }} Н</span>
+                  <span class="data-value">{{ formatNumber(protocol.force_data.force_n) }} Н</span>
                 </div>
               </div>
             </div>
@@ -203,19 +183,49 @@
               <div class="data-grid">
                 <div class="data-item">
                   <span class="data-label">Pст:</span>
-                  <span class="data-value">{{ protocol.plan_data.p_static || '—' }}%</span>
+                  <span class="data-value">{{ formatNumber(protocol.plan_data.p_static) }}%</span>
                 </div>
                 <div class="data-item">
                   <span class="data-label">L1/L2:</span>
-                  <span class="data-value">{{ protocol.plan_data.l1_l2_ratio || '—' }}</span>
+                  <span class="data-value">{{ formatNumber(protocol.plan_data.l1_l2_ratio) }}</span>
                 </div>
                 <div class="data-item">
                   <span class="data-label">L1:</span>
-                  <span class="data-value">{{ protocol.plan_data.l1_m || '—' }} м</span>
+                  <span class="data-value">{{ formatNumber(protocol.plan_data.l1_m) }} м</span>
                 </div>
                 <div class="data-item">
                   <span class="data-label">m1:</span>
-                  <span class="data-value">{{ protocol.plan_data.m1_kg || '—' }} кг</span>
+                  <span class="data-value">{{ formatNumber(protocol.plan_data.m1_kg) }} кг</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Информация о существующем анализе -->
+            <div v-if="protocol.analysis_info && protocol.analysis_info.has_analysis" class="analysis-info-section">
+              <h6 class="data-title">
+                <BarChart3 class="me-2" size="16" />
+                Информация об анализе
+              </h6>
+              <div class="analysis-info-content">
+                <div class="analysis-info-item">
+                  <span class="analysis-info-label">Количество анализов:</span>
+                  <span class="analysis-info-value">{{ protocol.analysis_info.analyses_count }}</span>
+                </div>
+                <div v-if="protocol.analysis_info.latest_analysis" class="analysis-info-item">
+                  <span class="analysis-info-label">Крайний анализ:</span>
+                  <span class="analysis-info-value">{{ protocol.analysis_info.latest_analysis.title }}</span>
+                </div>
+                <div v-if="protocol.analysis_info.latest_analysis" class="analysis-info-item">
+                  <span class="analysis-info-label">Статус:</span>
+                  <span class="analysis-info-value">
+                    <span class="analysis-status-badge" :class="getAnalysisStatusClass(protocol.analysis_info.latest_analysis.status)">
+                      {{ getAnalysisStatusLabel(protocol.analysis_info.latest_analysis.status) }}
+                    </span>
+                  </span>
+                </div>
+                <div v-if="protocol.analysis_info.latest_analysis" class="analysis-info-item">
+                  <span class="analysis-info-label">Создан:</span>
+                  <span class="analysis-info-value">{{ formatDate(protocol.analysis_info.latest_analysis.created_at) }}</span>
                 </div>
               </div>
             </div>
@@ -227,19 +237,35 @@
               @click="createAnalysisFromProtocol(protocol)"
               title="Создать анализ"
             >
-              <Plus class="me-2" size="16" />
+              <Plus size="16" />
               Создать анализ
             </button>
             <button 
-              class="btn btn-outline-secondary btn-action"
+              class="btn btn-primary btn-action btn-details"
               @click="viewProtocolDetails(protocol)"
               title="Подробности"
             >
-              <Eye class="me-2" size="16" />
+              <Eye size="16" />
               Подробности
             </button>
           </div>
         </div>
+      </div>
+      
+      <!-- Пагинация -->
+      <div class="pagination-wrapper" v-if="pagination.totalItems > 0">
+        <PaginationComponent
+          :current-page="pagination.currentPage"
+          :total-pages="pagination.totalPages"
+          :total-items="pagination.totalItems"
+          :page-size="pagination.pageSize"
+          :has-next="pagination.hasNext"
+          :has-previous="pagination.hasPrevious"
+          :next-page="pagination.nextPage"
+          :previous-page="pagination.previousPage"
+          @page-change="onPageChange"
+          @page-size-change="onPageSizeChange"
+        />
       </div>
     </div>
     
@@ -265,7 +291,9 @@
                 <p class="modal-subtitle">Заполните данные для создания нового анализа</p>
               </div>
             </div>
-            <button type="button" class="btn-close modern-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close modern-close" data-bs-dismiss="modal" aria-label="Close">
+              <X size="20" />
+            </button>
           </div>
           <div class="modal-body modern-body">
             <form @submit.prevent="submitCreateAnalysis">
@@ -292,32 +320,16 @@
                 ></textarea>
               </div>
               
-              <div class="form-group">
-                <label for="analysisType" class="form-label modern-label">Тип анализа</label>
-                <select
-                  class="form-select modern-input"
-                  id="analysisType"
-                  v-model="newAnalysis.analysis_type"
-                  required
-                >
-                  <option value="standard">Стандартный анализ</option>
-                  <option value="advanced">Расширенный анализ</option>
-                  <option value="custom">Пользовательский анализ</option>
-                </select>
-              </div>
             </form>
           </div>
           <div class="modal-footer modern-footer">
-            <button type="button" class="btn btn-outline-secondary modern-btn" data-bs-dismiss="modal">
-              Отмена
-            </button>
             <button 
               type="button" 
-              class="btn btn-primary modern-btn"
+              class="btn btn-primary modern-btn create-analysis-btn"
               @click="submitCreateAnalysis"
               :disabled="isCreating"
             >
-              <Plus class="me-2" size="16" />
+              <Plus size="16" />
               {{ isCreating ? 'Создание...' : 'Создать анализ' }}
             </button>
           </div>
@@ -347,7 +359,9 @@
                 <p class="modal-subtitle">Подробная информация о протоколе</p>
               </div>
             </div>
-            <button type="button" class="btn-close modern-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close modern-close" data-bs-dismiss="modal" aria-label="Close">
+              <X size="20" />
+            </button>
           </div>
           <div class="modal-body modern-body">
             <div v-if="selectedProtocol" class="protocol-details-content">
@@ -362,19 +376,19 @@
                   <div class="details-list">
                     <div class="detail-item">
                       <span class="detail-label">Pст:</span>
-                      <span class="detail-value">{{ selectedProtocol.force_data.pct_static || '—' }}%</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.force_data.pct_static) }}%</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">Энергия удара:</span>
-                      <span class="detail-value">{{ selectedProtocol.force_data.energy_j || '—' }} Дж</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.force_data.energy_j) }} Дж</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">Скорость удара:</span>
-                      <span class="detail-value">{{ selectedProtocol.force_data.velocity_ms || '—' }} м/с</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.force_data.velocity_ms) }} м/с</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">Сила удара:</span>
-                      <span class="detail-value">{{ selectedProtocol.force_data.force_n || '—' }} Н</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.force_data.force_n) }} Н</span>
                     </div>
                   </div>
                 </div>
@@ -389,73 +403,60 @@
                   <div class="details-list">
                     <div class="detail-item">
                       <span class="detail-label">Pст:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.p_static || '—' }}%</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.p_static) }}%</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">Pст значение:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.p_static_value || '—' }}</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.p_static_value) }}</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">L1/L2:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.l1_l2_ratio || '—' }}</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.l1_l2_ratio) }}</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">L1:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.l1_m || '—' }} м</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.l1_m) }} м</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">d1:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.d1_m || '—' }} м</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.d1_m) }} м</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">m1:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.m1_kg || '—' }} кг</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.m1_kg) }} кг</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">L2:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.l2_m || '—' }} м</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.l2_m) }} м</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">d2:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.d2_m || '—' }} м</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.d2_m) }} м</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">Т:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.t_s || '—' }} с</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.t_s) }} с</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">А:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.a_j || '—' }} Дж</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.a_j) }} Дж</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">V:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.v_ms || '—' }} м/с</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.v_ms) }} м/с</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">С1,2:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.c12_kg_s || '—' }} кг/с</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.c12_kg_s) }} кг/с</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">Р:</span>
-                      <span class="detail-value">{{ selectedProtocol.plan_data.p_n || '—' }} Н</span>
+                      <span class="detail-value">{{ formatNumber(selectedProtocol.plan_data.p_n) }} Н</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div class="modal-footer modern-footer">
-            <button type="button" class="btn btn-outline-secondary modern-btn" data-bs-dismiss="modal">
-              Закрыть
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-primary modern-btn"
-              @click="createAnalysisFromProtocol(selectedProtocol)"
-            >
-              <Plus class="me-2" size="16" />
-              Создать анализ
-            </button>
           </div>
         </div>
       </div>
@@ -468,9 +469,10 @@ import { impulsAnalysisAPI } from './js/impuls-analysis.js'
 import PaginationComponent from './components/PaginationComponent.vue'
 import SortComponent from './components/SortComponent.vue'
 import { useToast } from 'vue-toastification'
+import { Modal } from 'bootstrap'
 import { 
   RefreshCw, Plus, FileCheck, CheckCircle, Loader2, Clock, 
-  FileX, Eye, Info, Zap, Target 
+  FileX, Eye, Info, Zap, Target, X, BarChart3 
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -489,7 +491,9 @@ export default {
     Eye,
     Info,
     Zap,
-    Target
+    Target,
+    X,
+    BarChart3
   },
   name: 'ProtocolsPage',
   data() {
@@ -499,8 +503,7 @@ export default {
       selectedProtocol: null,
       newAnalysis: {
         title: '',
-        description: '',
-        analysis_type: 'standard'
+        description: ''
       },
       isCreating: false,
       stats: {
@@ -514,7 +517,7 @@ export default {
       // Пагинация
       pagination: {
         currentPage: 1,
-        pageSize: 10,
+        pageSize: 5,
         totalPages: 0,
         totalItems: 0,
         hasNext: false,
@@ -553,6 +556,51 @@ export default {
       return Math.round((value / total) * 100)
     },
     
+    // Умное форматирование чисел - показывает только значимые цифры после запятой
+    formatNumber(value) {
+      if (value === null || value === undefined || value === '') {
+        return '—'
+      }
+      
+      const num = parseFloat(value)
+      if (isNaN(num)) {
+        return '—'
+      }
+      
+      // Если число целое, возвращаем как есть
+      if (Number.isInteger(num)) {
+        return num.toString()
+      }
+      
+      // Для дробных чисел находим количество значимых цифр после запятой
+      const str = num.toString()
+      const decimalIndex = str.indexOf('.')
+      
+      if (decimalIndex === -1) {
+        return str
+      }
+      
+      const decimalPart = str.substring(decimalIndex + 1)
+      
+      // Если после запятой только нули, возвращаем целое число
+      if (decimalPart.match(/^0+$/)) {
+        return Math.floor(num).toString()
+      }
+      
+      // Находим первую ненулевую цифру после запятой
+      const firstNonZeroIndex = decimalPart.search(/[1-9]/)
+      
+      if (firstNonZeroIndex === -1) {
+        return Math.floor(num).toString()
+      }
+      
+      // Показываем максимум 2 значащие цифры после запятой
+      const significantDigits = Math.min(2, decimalPart.length - firstNonZeroIndex)
+      const precision = firstNonZeroIndex + significantDigits
+      
+      return num.toFixed(precision)
+    },
+    
     async loadAvailableProtocols() {
       this.isLoading = true
       try {
@@ -570,7 +618,7 @@ export default {
           // Обновляем информацию о пагинации
           this.pagination = {
             currentPage: response.data.page || 1,
-            pageSize: response.data.page_size || 10,
+            pageSize: response.data.page_size || 5,
             totalPages: response.data.total_pages || 0,
             totalItems: response.data.count || 0,
             hasNext: response.data.has_next || false,
@@ -609,13 +657,12 @@ export default {
       this.selectedProtocol = protocol
       this.newAnalysis.title = `Анализ протокола ${protocol.protocol_number}`
       this.newAnalysis.description = ''
-      this.newAnalysis.analysis_type = 'standard'
       
       // Показываем модальное окно
       this.$nextTick(() => {
         const modalElement = document.getElementById('createAnalysisModal')
-        if (modalElement && window.bootstrap) {
-          const modal = new window.bootstrap.Modal(modalElement)
+        if (modalElement) {
+          const modal = new Modal(modalElement)
           modal.show()
         }
       })
@@ -629,8 +676,7 @@ export default {
         const response = await impulsAnalysisAPI.createFromProtocol(
           this.selectedProtocol.protocol_number,
           this.newAnalysis.title,
-          this.newAnalysis.description,
-          this.newAnalysis.analysis_type
+          this.newAnalysis.description
         )
         
         if (response && response.success) {
@@ -638,8 +684,8 @@ export default {
           
           // Закрываем модальное окно
           const modalElement = document.getElementById('createAnalysisModal')
-          if (modalElement && window.bootstrap) {
-            const modal = window.bootstrap.Modal.getInstance(modalElement)
+          if (modalElement) {
+            const modal = Modal.getInstance(modalElement)
             if (modal) modal.hide()
           }
           
@@ -665,8 +711,8 @@ export default {
       // Показываем модальное окно
       this.$nextTick(() => {
         const modalElement = document.getElementById('protocolDetailsModal')
-        if (modalElement && window.bootstrap) {
-          const modal = new window.bootstrap.Modal(modalElement)
+        if (modalElement) {
+          const modal = new Modal(modalElement)
           modal.show()
         }
       })
@@ -689,6 +735,41 @@ export default {
       this.sort = { ...newSort }
       this.pagination.currentPage = 1 // Сбрасываем на первую страницу при изменении сортировки
       this.loadAvailableProtocols()
+    },
+    
+    // Методы для работы со статусами анализов
+    getAnalysisStatusLabel(status) {
+      const labels = {
+        'pending': 'Ожидает',
+        'processing': 'Обрабатывается',
+        'completed': 'Завершен',
+        'failed': 'Ошибка',
+        'cancelled': 'Отменен'
+      }
+      return labels[status] || status
+    },
+    
+    getAnalysisStatusClass(status) {
+      const classes = {
+        'pending': 'status-pending',
+        'processing': 'status-processing',
+        'completed': 'status-completed',
+        'failed': 'status-failed',
+        'cancelled': 'status-cancelled'
+      }
+      return classes[status] || 'status-pending'
+    },
+    
+    formatDate(dateString) {
+      if (!dateString) return '—'
+      const date = new Date(dateString)
+      return date.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     }
   }
 }
@@ -748,21 +829,6 @@ export default {
     }
   }
   
-  .header-actions {
-    display: flex;
-    gap: 1rem;
-    
-    .btn {
-      border-radius: 8px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      
-      &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
-      }
-    }
-  }
 }
 
 // Информационная панель
@@ -932,6 +998,20 @@ export default {
       font-size: 1rem;
     }
   }
+  
+  .pagination-wrapper {
+    margin-top: 2rem;
+    width: 100%;
+    
+    // Адаптивность для мобильных устройств
+    @media (max-width: 768px) {
+      margin-top: 1.5rem;
+    }
+    
+    @media (max-width: 576px) {
+      margin-top: 1rem;
+    }
+  }
 }
 
 // Состояния загрузки и пустого списка
@@ -1006,7 +1086,7 @@ export default {
   .protocol-number {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     
     .protocol-badge {
       font-size: 0.75rem;
@@ -1017,8 +1097,8 @@ export default {
     }
     
     .protocol-id {
-      font-size: 1.5rem;
-      font-weight: 700;
+      font-size: 1.125rem;
+      font-weight: 600;
       color: var(--bs-primary);
     }
   }
@@ -1038,6 +1118,13 @@ export default {
         background: rgba(40, 167, 69, 0.1);
         color: #28a745;
         border: 1px solid rgba(40, 167, 69, 0.2);
+      }
+      
+      &.status-analysis-exists {
+        background: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+        border: 1px solid rgba(13, 110, 253, 0.2);
+        margin-left: 0.5rem;
       }
     }
   }
@@ -1089,6 +1176,83 @@ export default {
       }
     }
   }
+  
+  // Секция информации об анализе
+  .analysis-info-section {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(13, 110, 253, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(13, 110, 253, 0.1);
+    
+    .analysis-info-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      
+      .analysis-info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid rgba(13, 110, 253, 0.1);
+        
+        .analysis-info-label {
+          font-size: 0.875rem;
+          color: var(--bs-secondary-color);
+          font-weight: 500;
+        }
+        
+        .analysis-info-value {
+          font-weight: 600;
+          color: var(--bs-heading-color);
+          font-size: 0.875rem;
+          
+          .analysis-status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            
+            &.status-pending {
+              background: rgba(108, 117, 125, 0.1);
+              color: #6c757d;
+              border: 1px solid rgba(108, 117, 125, 0.2);
+            }
+            
+            &.status-processing {
+              background: rgba(23, 162, 184, 0.1);
+              color: #17a2b8;
+              border: 1px solid rgba(23, 162, 184, 0.2);
+            }
+            
+            &.status-completed {
+              background: rgba(40, 167, 69, 0.1);
+              color: #28a745;
+              border: 1px solid rgba(40, 167, 69, 0.2);
+            }
+            
+            &.status-failed {
+              background: rgba(220, 53, 69, 0.1);
+              color: #dc3545;
+              border: 1px solid rgba(220, 53, 69, 0.2);
+            }
+            
+            &.status-cancelled {
+              background: rgba(255, 193, 7, 0.1);
+              color: #ffc107;
+              border: 1px solid rgba(255, 193, 7, 0.2);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 // Действия протокола
@@ -1105,10 +1269,41 @@ export default {
     font-weight: 600;
     padding: 0.75rem 1rem;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    // Специальные стили для кнопки "Подробности"
+    &.btn-details {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      border: none;
+      color: white;
+      
+      &:hover {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        color: white;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+      }
+      
+      &:focus {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        color: white;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+    }
+    
+    // Исправляем центрирование иконок
+    svg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
   }
 }
@@ -1251,27 +1446,37 @@ export default {
   }
   
   .modern-close {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: none !important;
     border-radius: 8px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    opacity: 1;
+    width: 36px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    opacity: 1 !important;
     transition: all 0.2s ease;
+    padding: 0 !important;
+    margin: 0 !important;
     
     &:hover {
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.3) !important;
       transform: scale(1.1);
     }
     
-    &::before {
-      content: '×';
-      font-size: 1.5rem;
-      font-weight: 300;
+    // Стили для SVG иконки
+    svg {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      flex-shrink: 0 !important;
+    }
+    
+    // Убираем стандартные стили Bootstrap
+    &::before,
+    &::after {
+      display: none !important;
     }
   }
 }
@@ -1310,7 +1515,8 @@ export default {
       }
       
       &::placeholder {
-        color: var(--bs-gray-400);
+        color: var(--bs-gray-600);
+        opacity: 1;
       }
     }
   }
@@ -1322,17 +1528,31 @@ export default {
   padding: 1.5rem 2rem;
   display: flex;
   gap: 1rem;
-  justify-content: flex-end;
+  justify-content: center;
   
   .modern-btn {
     border-radius: 10px;
     font-weight: 600;
     padding: 0.75rem 1.5rem;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    // Специальные стили для кнопки создания анализа
+    &.create-analysis-btn {
+      svg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
     }
   }
 }

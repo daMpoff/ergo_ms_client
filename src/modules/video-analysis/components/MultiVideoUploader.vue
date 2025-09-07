@@ -94,6 +94,96 @@
         </div>
       </div>
       
+      <!-- Настройки субтитров -->
+      <div class="subtitle-settings mt-3">
+        <h6 class="mb-3">
+          <Settings :size="20" class="me-2" />
+          Настройки субтитров
+        </h6>
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Количество строк одновременно</label>
+            <select v-model="subtitleSettings.linesCount" class="form-select">
+              <option :value="1">±1 строка</option>
+              <option :value="2">±2 строки</option>
+              <option :value="3">±3 строки</option>
+            </select>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Размер шрифта</label>
+            <input 
+              v-model.number="subtitleSettings.fontSize" 
+              type="range" 
+              class="form-range" 
+              min="12" 
+              max="72" 
+              step="2"
+            />
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">12px</small>
+              <small class="fw-bold">{{ subtitleSettings.fontSize }}px</small>
+              <small class="text-muted">72px</small>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Цвет шрифта</label>
+            <div class="input-group">
+              <input 
+                v-model="subtitleSettings.fontColor" 
+                type="color" 
+                class="form-control form-control-color" 
+                title="Выберите цвет шрифта"
+              />
+              <input 
+                v-model="subtitleSettings.fontColor" 
+                type="text" 
+                class="form-control" 
+                placeholder="#FFFFFF"
+                maxlength="7"
+              />
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Цвет фона</label>
+            <div class="input-group">
+              <input 
+                v-model="subtitleSettings.backgroundColor" 
+                type="color" 
+                class="form-control form-control-color" 
+                title="Выберите цвет фона"
+                :disabled="subtitleSettings.backgroundTransparent"
+              />
+              <input 
+                v-model="subtitleSettings.backgroundColor" 
+                type="text" 
+                class="form-control" 
+                placeholder="#000000"
+                maxlength="7"
+                :disabled="subtitleSettings.backgroundTransparent"
+              />
+            </div>
+          </div>
+          
+          <div class="col-12">
+            <div class="form-check">
+              <input 
+                v-model="subtitleSettings.backgroundTransparent" 
+                class="form-check-input" 
+                type="checkbox" 
+                id="transparentBackground"
+              />
+              <label class="form-check-label" for="transparentBackground">
+                Прозрачный фон
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <!-- Кнопки управления -->
       <div class="upload-controls mt-3">
         <button
@@ -209,7 +299,7 @@
 import { ref, reactive } from 'vue'
 import { useToast } from 'vue-toastification'
 import { 
-  Upload, CloudUpload, FileVideo, Play, X, Trash2, BarChart3 
+  Upload, CloudUpload, FileVideo, Play, X, Trash2, BarChart3, Settings 
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -242,6 +332,15 @@ const isUploading = ref(false)
 const uploadProgress = ref([])
 const showDeleteModal = ref(false)
 const fileToDelete = ref(null)
+
+// Настройки субтитров
+const subtitleSettings = ref({
+  linesCount: 1,
+  fontSize: 24,
+  fontColor: '#FFFFFF',
+  backgroundColor: '#000000',
+  backgroundTransparent: false
+})
 
 let dragCounter = 0
 
@@ -383,7 +482,20 @@ async function uploadFiles() {
       const trimmedTitle = title.trim()
       return trimmedTitle || selectedFiles.value[index].name
     })
-    const result = await videoAnalysisAPI.bulkCreate(selectedFiles.value, titles)
+    
+    // Подготавливаем настройки субтитров
+    const subtitleOptions = {
+      subtitle_lines_count: subtitleSettings.value.linesCount,
+      subtitle_font_size: subtitleSettings.value.fontSize,
+      subtitle_font_color: subtitleSettings.value.fontColor,
+      subtitle_background_color: subtitleSettings.value.backgroundColor,
+      subtitle_background_transparent: subtitleSettings.value.backgroundTransparent
+    }
+    
+    console.log('Настройки субтитров:', subtitleOptions)
+    console.log('Текущие настройки:', subtitleSettings.value)
+    
+    const result = await videoAnalysisAPI.bulkCreate(selectedFiles.value, titles, subtitleOptions)
     
     // Обновляем прогресс
     uploadProgress.value.forEach(progress => {
@@ -527,6 +639,111 @@ defineExpose({
       color: #495057;
       font-weight: 600;
       margin-bottom: 1rem;
+    }
+  }
+  
+  .subtitle-settings {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    
+    h6 {
+      display: flex;
+      align-items: center;
+      color: #495057;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 0.5rem;
+    }
+    
+    .form-select, .form-control {
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      transition: all 0.2s ease;
+      
+      &:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+    }
+    
+    .form-range {
+      height: 6px;
+      background: #dee2e6;
+      border-radius: 3px;
+      
+      &::-webkit-slider-thumb {
+        background: #007bff;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background: #0056b3;
+          transform: scale(1.1);
+        }
+      }
+      
+      &::-moz-range-thumb {
+        background: #007bff;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background: #0056b3;
+          transform: scale(1.1);
+        }
+      }
+    }
+    
+    .form-control-color {
+      width: 50px;
+      height: 38px;
+      padding: 0;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      cursor: pointer;
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+    
+    .form-check {
+      .form-check-input {
+        border-radius: 4px;
+        border: 2px solid #dee2e6;
+        transition: all 0.2s ease;
+        
+        &:checked {
+          background-color: #007bff;
+          border-color: #007bff;
+        }
+        
+        &:focus {
+          box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+      }
+      
+      .form-check-label {
+        font-weight: 500;
+        color: #495057;
+        cursor: pointer;
+      }
     }
   }
   

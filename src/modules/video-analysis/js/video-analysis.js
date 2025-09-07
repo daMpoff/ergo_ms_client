@@ -14,14 +14,32 @@ class VideoAnalysisAPI {
     return apiClient.get(this.base.statistics)
   }
 
-  async create(file, title = '') {
+  async create(file, title = '', subtitleOptions = {}) {
     const form = new FormData()
     form.append('video', file)
     if (title) form.append('title', title)
+    
+    // Добавляем настройки субтитров
+    if (subtitleOptions.subtitle_lines_count !== undefined) {
+      form.append('subtitle_lines_count', subtitleOptions.subtitle_lines_count)
+    }
+    if (subtitleOptions.subtitle_font_size !== undefined) {
+      form.append('subtitle_font_size', subtitleOptions.subtitle_font_size)
+    }
+    if (subtitleOptions.subtitle_font_color) {
+      form.append('subtitle_font_color', subtitleOptions.subtitle_font_color)
+    }
+    if (subtitleOptions.subtitle_background_color) {
+      form.append('subtitle_background_color', subtitleOptions.subtitle_background_color)
+    }
+    if (subtitleOptions.subtitle_background_transparent !== undefined) {
+      form.append('subtitle_background_transparent', subtitleOptions.subtitle_background_transparent)
+    }
+    
     return apiClient.post(this.base.create, form)
   }
 
-  async bulkCreate(files, titles = []) {
+  async bulkCreate(files, titles = [], subtitleOptions = {}) {
     const form = new FormData()
     files.forEach(file => {
       form.append('videos', file)
@@ -29,6 +47,31 @@ class VideoAnalysisAPI {
     titles.forEach(title => {
       form.append('titles', title)
     })
+    
+    // Добавляем настройки субтитров
+    console.log('Добавляем настройки в FormData:', subtitleOptions)
+    
+    if (subtitleOptions.subtitle_lines_count !== undefined) {
+      form.append('subtitle_lines_count', subtitleOptions.subtitle_lines_count)
+      console.log('Добавлено subtitle_lines_count:', subtitleOptions.subtitle_lines_count)
+    }
+    if (subtitleOptions.subtitle_font_size !== undefined) {
+      form.append('subtitle_font_size', subtitleOptions.subtitle_font_size)
+      console.log('Добавлено subtitle_font_size:', subtitleOptions.subtitle_font_size)
+    }
+    if (subtitleOptions.subtitle_font_color) {
+      form.append('subtitle_font_color', subtitleOptions.subtitle_font_color)
+      console.log('Добавлено subtitle_font_color:', subtitleOptions.subtitle_font_color)
+    }
+    if (subtitleOptions.subtitle_background_color) {
+      form.append('subtitle_background_color', subtitleOptions.subtitle_background_color)
+      console.log('Добавлено subtitle_background_color:', subtitleOptions.subtitle_background_color)
+    }
+    if (subtitleOptions.subtitle_background_transparent !== undefined) {
+      form.append('subtitle_background_transparent', subtitleOptions.subtitle_background_transparent)
+      console.log('Добавлено subtitle_background_transparent:', subtitleOptions.subtitle_background_transparent)
+    }
+    
     return apiClient.post(this.base.bulkCreate, form)
   }
 
@@ -38,6 +81,10 @@ class VideoAnalysisAPI {
 
   async remove(id) {
     return apiClient.delete(this.base.delete(id))
+  }
+
+  async update(id, data) {
+    return apiClient.patch(this.base.detail(id), data)
   }
 
   // Метод для скачивания файлов через API клиент с токеном

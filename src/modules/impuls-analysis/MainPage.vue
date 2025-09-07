@@ -221,8 +221,7 @@ export default {
     return {
       newAnalysis: {
         title: '',
-        description: '',
-        analysis_type: 'standard'
+        description: ''
       },
       forceFiles: [],
       planFiles: [],
@@ -379,7 +378,9 @@ export default {
     
     async loadAvailableProtocols() {
       try {
-        const response = await impulsAnalysisAPI.getAvailableProtocols()
+        const response = await impulsAnalysisAPI.getAvailableProtocols({
+          page_size: 1000  // Запрашиваем все протоколы
+        })
         if (response && response.success) {
           // Сортируем протоколы по номеру (сначала как числа, потом как строки)
           const protocols = response.data.protocols || []

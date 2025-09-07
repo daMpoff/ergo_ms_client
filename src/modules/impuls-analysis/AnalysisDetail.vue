@@ -27,10 +27,6 @@
               <span class="badge status-badge" :class="statusClass(analysis.status)">
                 {{ getStatusLabel(analysis.status) }}
               </span>
-              <span class="badge type-badge bg-light text-dark" v-if="analysis.analysis_type_display">
-                <Zap :size="14" />
-                {{ analysis.analysis_type_display }}
-              </span>
             </div>
             <p class="analysis-description" v-if="analysis.description">
               {{ analysis.description }}
@@ -41,7 +37,7 @@
       
       <div class="header-actions">
         <button 
-          class="btn btn-outline-primary"
+          class="btn btn-refresh"
           @click="refreshAnalysis"
           :disabled="isLoading"
         >
@@ -319,8 +315,12 @@ export default {
     
     async downloadResults() {
       try {
-        // Здесь можно реализовать скачивание всех результатов
-        toast.info('Функция скачивания результатов будет реализована')
+        const response = await impulsAnalysisAPI.downloadResults(this.analysis.id)
+        if (response && response.success) {
+          toast.success('Результаты анализа скачаны')
+        } else {
+          toast.error(response?.message || 'Ошибка при скачивании результатов')
+        }
       } catch (error) {
         toast.error('Ошибка при скачивании результатов')
       }
@@ -328,7 +328,6 @@ export default {
     
     async downloadAllProtocols() {
       try {
-        const protocolIds = this.analysis.protocols.map(p => p.id)
         const response = await impulsAnalysisAPI.bulkDownloadProtocols([this.analysis.id])
         if (response && response.success) {
           toast.success('Протоколы скачаны')
@@ -565,7 +564,7 @@ export default {
     }
   }
   
-  .btn-delete-analysis {
+  .btn-refresh {
     background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     border: none;
     color: white;
@@ -574,15 +573,54 @@ export default {
     padding: 0.875rem 1.5rem;
     transition: all 0.2s ease;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
       color: white;
     }
 
-    &:active {
+    &:active:not(:disabled) {
       transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    svg { flex-shrink: 0; margin: 0; align-self: center; }
+
+    span {
+      white-space: nowrap;
+    }
+  }
+
+  .btn-delete-analysis {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.875rem 1.5rem;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+      color: white;
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
     }
 
     svg { flex-shrink: 0; margin: 0; align-self: center; }
@@ -676,6 +714,7 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    max-width: 500px;
   }
   
   .download-btn {
@@ -691,6 +730,7 @@ export default {
     border: none;
     cursor: pointer;
     width: 100%;
+    text-align: left;
     
     &:hover:not(:disabled) {
       background: var(--bs-primary);
@@ -707,15 +747,16 @@ export default {
     }
     
     .download-icon { 
-      width: 48px; 
-      height: 48px; 
-      border-radius: 10px; 
+      width: 40px; 
+      height: 40px; 
+      border-radius: 8px; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
       background: white; 
       color: var(--bs-primary); 
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+      flex-shrink: 0;
       svg { align-self: center; } 
     }
     
@@ -723,15 +764,18 @@ export default {
       display: flex;
       flex-direction: column;
       flex: 1;
+      text-align: left;
       
       .download-title {
         font-weight: 600;
         margin-bottom: 0.25rem;
+        text-align: left;
       }
       
       .download-subtitle {
         font-size: 0.875rem;
         color: var(--bs-secondary-color);
+        text-align: left;
       }
     }
     

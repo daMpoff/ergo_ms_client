@@ -14,20 +14,6 @@
         </div>
       </div>
       
-      <div class="header-actions">
-        <button 
-          class="btn btn-outline-primary"
-          @click="refreshAnalyses"
-          :disabled="isLoading"
-        >
-          <RefreshCw :size="16" :class="{ 'spinning': isLoading }" />
-          <span>Обновить</span>
-        </button>
-        <router-link to="/impuls-analysis/create" class="btn btn-primary create-btn">
-          <Plus :size="16" />
-          <span>Создать анализ</span>
-        </router-link>
-      </div>
     </div>
           
     <!-- Фильтры и поиск -->
@@ -56,15 +42,6 @@
               <option value="completed">Завершен</option>
               <option value="failed">Ошибка</option>
               <option value="cancelled">Отменен</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">Тип анализа</label>
-            <select v-model="filters.analysis_type" class="form-select" @change="applyFilters">
-              <option value="">Все типы</option>
-              <option value="standard">Стандартный</option>
-              <option value="advanced">Расширенный</option>
-              <option value="custom">Пользовательский</option>
             </select>
           </div>
           <div class="col-md-3">
@@ -145,11 +122,7 @@
       <div class="text-center">
         <Zap :size="64" class="empty-icon mb-4" />
         <h4 class="text-muted mb-3">Анализы не найдены</h4>
-        <p class="text-muted mb-4">Попробуйте изменить фильтры или создайте первый анализ</p>
-        <router-link to="/impuls-analysis/create" class="btn btn-primary btn-lg">
-          <Plus :size="20" />
-          <span>Создать первый анализ</span>
-        </router-link>
+        <p class="text-muted mb-4">Попробуйте изменить фильтры поиска</p>
       </div>
     </div>
 
@@ -176,13 +149,6 @@
         <div class="analysis-body">
           <!-- Информация об анализе -->
           <div class="analysis-info">
-            <div class="info-item">
-              <Zap :size="16" class="info-icon" />
-              <div class="info-content">
-                <span class="info-label">Тип анализа</span>
-                <span class="info-value">{{ analysis.analysis_type_display || 'Стандартный' }}</span>
-              </div>
-            </div>
             
             <div class="info-item" v-if="analysis.protocol_number">
               <FileText :size="16" class="info-icon" />
@@ -258,7 +224,7 @@ import AnalysisStatus from './components/AnalysisStatus.vue'
 import PaginationComponent from './components/PaginationComponent.vue'
 import { useToast } from 'vue-toastification'
 import { 
-  RefreshCw, Plus, X, FileX, Eye, Trash2, Loader2, Zap, 
+  X, FileX, Eye, Trash2, Loader2, Zap, 
   Search, RotateCcw, BarChart3, Clock, Hourglass, CheckCircle, 
   AlertTriangle, FileText, Calendar, Download, ChevronLeft, 
   ChevronRight
@@ -271,8 +237,6 @@ export default {
     AnalysisStats,
     AnalysisStatus,
     PaginationComponent,
-    RefreshCw,
-    Plus,
     X,
     FileX,
     Eye,
@@ -299,7 +263,6 @@ export default {
       isLoading: false,
       filters: {
         status: '',
-        analysis_type: '',
         search: ''
       },
       ordering: '-created_at',
@@ -396,12 +359,6 @@ export default {
       }
     },
     
-    async refreshAnalyses() {
-      await Promise.all([
-        this.loadAnalyses(),
-        this.loadStats()
-      ])
-    },
     
     applyFilters() {
       this.pagination.current_page = 1
@@ -420,7 +377,6 @@ export default {
     clearFilters() {
       this.filters = {
         status: '',
-        analysis_type: '',
         search: ''
       }
       this.ordering = '-created_at'
@@ -464,7 +420,10 @@ export default {
         const response = await impulsAnalysisAPI.restartAnalysis(analysisId)
         if (response && response.success) {
           toast.success('Анализ перезапущен')
-          await this.refreshAnalyses()
+          await Promise.all([
+            this.loadAnalyses(),
+            this.loadStats()
+          ])
         } else {
           toast.error(response?.message || 'Ошибка при перезапуске анализа')
         }
@@ -482,7 +441,10 @@ export default {
         const response = await impulsAnalysisAPI.deleteAnalysis(analysisId)
         if (response && response.success) {
           toast.success('Анализ удален')
-          await this.refreshAnalyses()
+          await Promise.all([
+            this.loadAnalyses(),
+            this.loadStats()
+          ])
         } else {
           toast.error(response?.message || 'Ошибка при удалении анализа')
         }
@@ -595,35 +557,6 @@ export default {
     flex: 1;
   }
   
-  .header-actions {
-    display: flex;
-    gap: 0.75rem;
-    margin-left: 2rem;
-    
-    .create-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.875rem 1.5rem;
-      font-weight: 600;
-      border-radius: 10px;
-      transition: all 0.2s ease;
-      
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(13, 110, 253, 0.3);
-      }
-      
-      svg {
-        flex-shrink: 0;
-        margin: 0;
-      }
-      
-      span {
-        white-space: nowrap;
-      }
-    }
-  }
 }
 
 // Секция заголовка страницы
@@ -936,6 +869,10 @@ export default {
       font-weight: 600;
       border-radius: 6px;
       transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem;
       
       &:hover {
         background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
@@ -1152,12 +1089,6 @@ export default {
   .page-header {
     flex-direction: column;
     gap: 1rem;
-    
-    .header-actions {
-      margin-left: 0;
-      width: 100%;
-      justify-content: flex-end;
-    }
   }
   
   .page-title-section {

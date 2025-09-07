@@ -66,6 +66,7 @@
           <div class="col-md-2">
             <label class="form-label">На странице</label>
             <select v-model.number="pageSize" class="form-select" @change="load">
+              <option :value="5">5</option>
               <option :value="10">10</option>
               <option :value="20">20</option>
               <option :value="50">50</option>
@@ -257,28 +258,58 @@
     <!-- Пагинация -->
     <nav v-if="total > pageSize" class="mt-5">
       <ul class="pagination pagination-modern justify-content-center">
+        <!-- Кнопка "Первая страница" -->
         <li class="page-item" :class="{ disabled: page === 1 }">
-          <button class="page-link" @click="goPrev" :disabled="page === 1">
+          <button class="page-link" @click="goToFirstPage" :disabled="page === 1" title="Первая страница">
+            <ChevronsLeft :size="16" />
+          </button>
+        </li>
+        
+        <!-- Кнопка "Предыдущая страница" -->
+        <li class="page-item" :class="{ disabled: page === 1 }">
+          <button class="page-link" @click="goPrev" :disabled="page === 1" title="Предыдущая страница">
             <ChevronLeft :size="16" />
           </button>
         </li>
         
+        <!-- Номера страниц -->
         <li class="page-item" 
             v-for="pageNum in getPageNumbers()" 
             :key="pageNum"
-            :class="{ active: pageNum === page }">
-          <button class="page-link" @click="goToPage(pageNum)">{{ pageNum }}</button>
+            :class="{ 
+              active: pageNum === page,
+              disabled: pageNum === '...'
+            }">
+          <button 
+            v-if="pageNum !== '...'"
+            class="page-link" 
+            @click="goToPage(pageNum)"
+          >
+            {{ pageNum }}
+          </button>
+          <span v-else class="page-link page-ellipsis">...</span>
         </li>
         
+        <!-- Кнопка "Следующая страница" -->
         <li class="page-item" :class="{ disabled: page === totalPages }">
-          <button class="page-link" @click="goNext" :disabled="page === totalPages">
+          <button class="page-link" @click="goNext" :disabled="page === totalPages" title="Следующая страница">
             <ChevronRight :size="16" />
+          </button>
+        </li>
+        
+        <!-- Кнопка "Последняя страница" -->
+        <li class="page-item" :class="{ disabled: page === totalPages }">
+          <button class="page-link" @click="goToLastPage" :disabled="page === totalPages" title="Последняя страница">
+            <ChevronsRight :size="16" />
           </button>
         </li>
       </ul>
       
       <div class="pagination-info text-center mt-3">
-        <span class="text-muted">Показано {{ startIndex + 1 }}–{{ endIndex }} из {{ total }}</span>
+        <span class="text-muted">
+          Показано {{ startIndex + 1 }}–{{ endIndex }} из {{ total }} 
+          (страница {{ page }} из {{ totalPages }})
+        </span>
       </div>
     </nav>
     
@@ -353,7 +384,7 @@ import {
   Play, Upload, Search, RotateCcw, BarChart3, 
   Clock, Hourglass, CheckCircle, AlertTriangle, Video, 
   FileText, Calendar, Eye, Trash2, Volume2, ChevronLeft, 
-  ChevronRight, Loader
+  ChevronRight, ChevronsLeft, ChevronsRight, Loader
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -369,7 +400,7 @@ const search = ref('')
 const statusFilter = ref('')
 const ordering = ref('-created_at')
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(5)
 const total = ref(0)
 const loading = ref(false)
 const downloading = ref({})
@@ -559,13 +590,61 @@ function goToPage(pageNum) {
   }
 }
 
+function goToFirstPage() {
+  if (page.value > 1) {
+    page.value = 1
+    load()
+  }
+}
+
+function goToLastPage() {
+  if (page.value < totalPages.value) {
+    page.value = totalPages.value
+    load()
+  }
+}
+
 function getPageNumbers() {
   const pages = []
   const current = page.value
   const total = totalPages.value
   
-  for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
-    pages.push(i)
+  // Если страниц мало, показываем все
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      pages.push(i)
+    }
+    return pages
+  }
+  
+  // Если страниц много, показываем умную пагинацию
+  if (current <= 4) {
+    // В начале: 1, 2, 3, 4, 5, ..., последняя
+    for (let i = 1; i <= 5; i++) {
+      pages.push(i)
+    }
+    if (total > 5) {
+      pages.push('...')
+      pages.push(total)
+    }
+  } else if (current >= total - 3) {
+    // В конце: 1, ..., предпоследние 5 страниц
+    pages.push(1)
+    if (total > 5) {
+      pages.push('...')
+    }
+    for (let i = total - 4; i <= total; i++) {
+      pages.push(i)
+    }
+  } else {
+    // В середине: 1, ..., текущая-1, текущая, текущая+1, ..., последняя
+    pages.push(1)
+    pages.push('...')
+    for (let i = current - 1; i <= current + 1; i++) {
+      pages.push(i)
+    }
+    pages.push('...')
+    pages.push(total)
   }
   
   return pages
@@ -1049,6 +1128,12 @@ watch([statusFilter, ordering, pageSize], () => {
       font-weight: 600;
       border-radius: 6px;
       transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 0.75rem;
+      min-width: 36px;
+      min-height: 36px;
       
       &:hover {
         background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
@@ -1058,6 +1143,10 @@ watch([statusFilter, ordering, pageSize], () => {
       
       &:active {
         transform: translateY(0);
+      }
+      
+      svg {
+        align-self: center;
       }
     }
   }
@@ -1283,6 +1372,19 @@ watch([statusFilter, ordering, pageSize], () => {
       transform: none;
       background: var(--bs-gray-200);
       color: var(--bs-secondary-color);
+    }
+  }
+  
+  .page-ellipsis {
+    background: transparent !important;
+    color: var(--bs-secondary-color) !important;
+    cursor: default !important;
+    pointer-events: none;
+    
+    &:hover {
+      transform: none !important;
+      background: transparent !important;
+      color: var(--bs-secondary-color) !important;
     }
   }
 }

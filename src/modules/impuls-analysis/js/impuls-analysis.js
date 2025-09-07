@@ -178,13 +178,12 @@ class ImpulsAnalysisAPI {
   /**
    * Создать анализ из протокола
    */
-  async createFromProtocol(protocolNumber, title, description, analysisType = 'standard') {
+  async createFromProtocol(protocolNumber, title, description) {
     try {
       const response = await apiClient.post(`${this.baseEndpoint}create_from_protocol/`, {
         protocol_number: protocolNumber,
         title: title,
-        description: description,
-        analysis_type: analysisType
+        description: description
       })
       return response
     } catch (error) {
@@ -226,6 +225,25 @@ class ImpulsAnalysisAPI {
    */
   getProtocolDownloadUrl(analysisId, protocolId) {
     return `${apiClient.baseUrl}${apiClient.apiPath}${this.baseEndpoint}${analysisId}/download_protocol/?protocol_id=${protocolId}`
+  }
+
+  /**
+   * Скачать результаты анализа
+   */
+  async downloadResults(analysisId) {
+    try {
+      const response = await apiClient.downloadFile(
+        `${this.baseEndpoint}${analysisId}/download_results/`
+      )
+      return response
+    } catch (error) {
+      console.error('Error downloading results:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании результатов',
+        data: null
+      }
+    }
   }
 
   /**

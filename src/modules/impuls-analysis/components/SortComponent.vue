@@ -49,7 +49,7 @@
       
       <div class="sort-actions">
         <button
-          class="btn btn-outline-danger sort-reset"
+          class="sort-reset"
           @click="resetSort"
           title="Сбросить сортировку"
         >
@@ -208,20 +208,29 @@ export default {
       align-items: center;
       justify-content: center;
       transition: all 0.2s ease;
+      background: white;
+      border: 2px solid #e9ecef;
+      color: #6c757d;
       
       &:hover {
         transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-color: #adb5bd;
+        color: #495057;
+        background: #f8f9fa;
       }
       
       &.active {
-        background: var(--bs-primary);
-        border-color: var(--bs-primary);
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border-color: #007bff;
         color: white;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
         
         &:hover {
-          background: var(--bs-primary);
-          border-color: var(--bs-primary);
+          background: linear-gradient(135deg, #0056b3, #004085);
+          border-color: #0056b3;
+          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+          transform: translateY(-2px);
         }
       }
     }
@@ -234,16 +243,34 @@ export default {
   .sort-reset {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    border-radius: 6px;
-    padding: 0.375rem 0.75rem;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s ease;
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
     
     &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background: linear-gradient(135deg, #c82333, #bd2130);
+      box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+      transform: translateY(-2px);
+      color: white;
+    }
+    
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 10px rgba(220, 53, 69, 0.3);
+    }
+    
+    &:focus {
+      background: linear-gradient(135deg, #c82333, #bd2130);
+      color: white;
+      box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
     }
   }
 }
