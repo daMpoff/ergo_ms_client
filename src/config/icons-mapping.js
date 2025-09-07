@@ -48,6 +48,9 @@ import {
   LayoutGrid,
   Microscope,
   Zap,
+  Database,
+  Plug,
+  LayoutDashboard,
 } from 'lucide-vue-next'
 
 /**
@@ -93,6 +96,9 @@ export const iconMapping = {
   LayoutGrid,
   Microscope,
   Zap,
+  Database,
+  Plug,
+  LayoutDashboard,
 }
 
 /**
