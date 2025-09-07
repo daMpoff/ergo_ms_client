@@ -81,8 +81,12 @@ export function useDatasetActions(state) {
         
         const { data: updated } = await datasetService.getDataset(dsId)
         state.dataset.value = updated
-        // После успешного сохранения очищаем кэш параметров
-        clearCachedParams(dsId)
+        // Синхронизируем кэш параметров с БД, чтобы черновик соответствовал сохранённому состоянию
+        try {
+          const key = getCachedParamsKey(dsId)
+          const paramsFromDb = Array.isArray(updated.params) ? updated.params : []
+          sessionStorage.setItem(key, JSON.stringify(paramsFromDb))
+        } catch (e) { console.warn('[useDatasetActions] failed to sync params cache after create', e) }
       } else {
         const payload = { name: finalName, params: readCachedParams(dsId) }
         const putOk = await safeUpdateDataset(
@@ -91,8 +95,12 @@ export function useDatasetActions(state) {
         if (!putOk) throw new Error('Ошибка при обновлении датасета')
         const { data: updated } = await datasetService.getDataset(dsId)
         state.dataset.value = updated
-        // После успешного сохранения очищаем кэш параметров
-        clearCachedParams(dsId)
+        // Синхронизируем кэш параметров с БД
+        try {
+          const key = getCachedParamsKey(dsId)
+          const paramsFromDb = Array.isArray(updated.params) ? updated.params : []
+          sessionStorage.setItem(key, JSON.stringify(paramsFromDb))
+        } catch (e) { console.warn('[useDatasetActions] failed to sync params cache after update', e) }
       }
 
       router.replace({ name: 'DatasetPage', params: { id: dsId } })
@@ -151,7 +159,8 @@ export function useDatasetActions(state) {
 
       // Подхватываем черновые параметры из sessionStorage
       const paramsDraft = readCachedParams(dsId)
-      if (Array.isArray(paramsDraft) && paramsDraft.length) {
+      // Всегда передаём массив параметров, даже пустой (позволяет удалять все параметры)
+      if (Array.isArray(paramsDraft)) {
         patch.params = paramsDraft
       }
 
@@ -205,9 +214,14 @@ export function useDatasetActions(state) {
       state.saveSuccess.value = true
       setTimeout(() => state.saveSuccess.value = false, 1000)
 
-      // Очищаем кэш параметров и дергаем тикер грязности, чтобы пересчитать isDirty
-      try { clearCachedParams(dsId) } catch { /* noop */ }
+      // Дёргаем тикер грязности, чтобы пересчитать isDirty
       if (state.paramsDirtyTick) state.paramsDirtyTick.value++
+      // Синхронизируем кэш параметров с БД, чтобы черновик соответствовал сохранённому состоянию
+      try {
+        const key = getCachedParamsKey(dsId)
+        const paramsFromDb = Array.isArray(fresh.params) ? fresh.params : []
+        sessionStorage.setItem(key, JSON.stringify(paramsFromDb))
+      } catch (e) { console.warn('[useDatasetActions] failed to sync params cache after edit', e) }
     } finally {
       state.saving.value = false
     }
@@ -257,6 +271,15 @@ export function useDatasetActions(state) {
     const { data } = await datasetService.getDataset(id)
     state.dataset.value = data
     state.origDatasetRef.value = JSON.parse(JSON.stringify(data))
+    // Синхронизируем кэш параметров из БД при загрузке датасета,
+    // чтобы после перезагрузки страницы параметры были доступны как черновик
+    try {
+      const key = getCachedParamsKey(id)
+      const paramsFromDb = Array.isArray(data.params) ? data.params : []
+      sessionStorage.setItem(key, JSON.stringify(paramsFromDb))
+    } catch (e) {
+      console.warn('[useDatasetActions] failed to sync params cache on loadDataset', e)
+    }
     
     const validTables = data.tables.map(mapTable).filter(Boolean)
     state.selectedTables.value = validTables

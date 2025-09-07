@@ -138,6 +138,7 @@ const {
   headerName,
   canCreateDataset,
   isDirty,
+  paramsDirtyTick,
   usedRightTableIds,
   computedLinkedTableIds
 } = state

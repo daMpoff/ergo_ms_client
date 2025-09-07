@@ -45,7 +45,15 @@
             if(raw){
                 const parsed = JSON.parse(raw)
                 if(Array.isArray(parsed)){
-                    rows.value = parsed
+                    // Нормализуем ключи из snake_case (как приходит из БД)
+                    // к camelCase, которые использует грид
+                    rows.value = parsed.map(p => ({
+                        name: p.name ?? '',
+                        type: p.type ?? '',
+                        // поддерживаем несколько вариантов ключей
+                        defaultValue: (p.defaultValue ?? p.default ?? p.default_value) ?? '',
+                        sourceUsage: (p.sourceUsage ?? p.source_usage) ?? false,
+                    }))
                 }
             }
         }catch(err){
@@ -68,9 +76,9 @@
     onMounted(() => {
         try{
             window.addEventListener('beforeunload', () => {
-                if (!props.datasetId) {
-                    try{ sessionStorage.removeItem(storageKey.value) }catch(err){ console.warn('ParamsPage: failed to remove cache on unload', err) }
-                }
+                // При обновлении/закрытии страницы очищаем черновик параметров из sessionStorage
+                // (данные из БД будут заново загружены и синхронизированы при открытии страницы)
+                try{ sessionStorage.removeItem(storageKey.value) }catch(err){ console.warn('ParamsPage: failed to remove cache on unload', err) }
             })
         }catch(err){ console.warn('ParamsPage: failed to bind beforeunload', err) }
         loadFromCache()

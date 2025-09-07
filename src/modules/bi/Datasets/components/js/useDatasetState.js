@@ -61,13 +61,26 @@ export function useDatasetState() {
     if (selectedConnection.value?.id !== origDatasetRef.value.connection) return true
     if (mainTable.value?.file_id !== origDatasetRef.value.file_source) return true
     
-    // Проверяем черновые параметры в sessionStorage
+    // Проверяем черновые параметры в sessionStorage и сравниваем с параметрами в БД
     try {
       const storageKey = `bi:dataset:params:${datasetId.value ?? 'new'}`
       const raw = sessionStorage.getItem(storageKey)
       if (raw) {
-        const parsed = JSON.parse(raw)
-        if (Array.isArray(parsed) && parsed.length) return true
+        const draft = JSON.parse(raw)
+        if (Array.isArray(draft)) {
+          const origParams = Array.isArray(origDatasetRef.value.params) ? origDatasetRef.value.params : []
+          const norm = (arr = []) => arr
+            .map(p => ({
+              name: String(p.name ?? ''),
+              type: String(p.type ?? ''),
+              defaultValue: p.defaultValue ?? p.default ?? '',
+              sourceUsage: Boolean(p.sourceUsage)
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name))
+          const curStr = JSON.stringify(norm(draft))
+          const origStr = JSON.stringify(norm(origParams))
+          if (curStr !== origStr) return true
+        }
       }
     } catch {
       // безопасно игнорируем
