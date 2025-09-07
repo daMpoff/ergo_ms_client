@@ -121,14 +121,22 @@ function onSourceClick(field) {
 }
 
 function getFieldSourceLabel(field) {
-  const tbl = props.tables.find(
-    t => String(t.id) === String(field.source_table)
-  )
-  if (tbl) return `${tbl.display_name || tbl.name || tbl.table}.${field.name}`;
-  if (field.source && field.source.table) {
-    return `${field.source.table}.${field.source.column || field.name}`;
+  // source_table может быть либо id, либо объектом таблицы
+  const isObjectTable = field && field.source_table && typeof field.source_table === 'object'
+  const tbl = isObjectTable
+    ? field.source_table
+    : props.tables.find(t => String(t.id) === String(field.source_table))
+
+  const tableLabel = tbl
+    ? (tbl.display_name || tbl.name || tbl.table || tbl.file_upload_name || '')
+    : (field.source && field.source.table ? field.source.table : '')
+
+  const columnLabel = (field.source && field.source.column) ? field.source.column : field.name
+
+  if (tableLabel) {
+    return `${columnLabel}.${tableLabel}`
   }
-  return field.name;
+  return columnLabel
 }
 </script>
 
