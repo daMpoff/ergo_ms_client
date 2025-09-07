@@ -12,13 +12,13 @@
 export async function validateDatasetUrlWithAccess(url, apiClient, silentMode = true) {
   try {
     // Проверяем формат URL
-    const urlPattern = /^https?:\/\/[^\/]+\/bi\/dataset\/(\d+)\/?$/;
+    const urlPattern = /^https?:\/\/[^\/]+\/bi\/datasets\/(\d+)\/?$/;
     const match = url.match(urlPattern);
     
     if (!match) {
       return {
         isValid: false,
-        error: 'Неверный формат URL. Ожидается: http://host/bi/dataset/ID/',
+        error: 'Неверный формат URL. Ожидается: http://host/bi/datasets/ID/',
         datasetId: null
       };
     }
@@ -104,7 +104,7 @@ export async function validateDatasetUrlWithAccess(url, apiClient, silentMode = 
  * @returns {number|null} ID датасета или null если URL неверный
  */
 export function extractDatasetIdFromUrl(url) {
-  const urlPattern = /\/bi\/dataset\/(\d+)\/?$/;
+  const urlPattern = /\/bi\/datasets\/(\d+)\/?$/;
   const match = url.match(urlPattern);
   return match ? parseInt(match[1]) : null;
 }
@@ -116,5 +116,5 @@ export function extractDatasetIdFromUrl(url) {
  * @returns {string} Полный URL датасета
  */
 export function buildDatasetUrl(datasetId, baseUrl = window.location.origin) {
-  return `${baseUrl}/bi/dataset/${datasetId}/`;
+  return `${baseUrl}/bi/datasets/${datasetId}/`;
 }

@@ -728,23 +728,47 @@
       }
     },
     "DashboardPage": {
-      "path": "/bi/dashboard/new",
+      "path": "/bi/dashboard/new/",
       "component": "@/modules/bi/Dashboards/DashboardPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
-    "DashboardList": {
-      "path": "/bi/dashboardlist",
-      "component": "@/modules/bi/Dashboards/DashboardListPage.vue",
+    "Datasets": {
+      "path": "/bi/datasets/",
+      "component": "@/modules/bi/Datasets/Datasets.vue",
+      "meta": {
+        "title": "Датасеты",
+        "requiresAuth": true
+      }
+    },
+    "DatasetPage": {
+      "path": "/bi/datasets/:id(\\d+)?",
+      "component": "@/modules/bi/Datasets/DatasetPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
-    "DatasetList": {
-      "path": "/bi/datasetlist",
-      "component": "@/modules/bi/Datasets/DatasetListPage.vue",
+    "NewDataset": {
+      "path": "/bi/datasets/new",
+      "component": "@/modules/bi/Datasets/DatasetPage.vue",
       "meta": {
+        "requiresAuth": true
+      }
+    },
+    "Connections": {
+      "path": "/bi/connections/",
+      "component": "@/modules/bi/Connections/Connections.vue",
+      "meta": {
+        "title": "Подключения",
+        "requiresAuth": true
+      }
+    },
+    "Charts": {
+      "path": "/bi/charts/",
+      "component": "@/modules/bi/Charts/Charts.vue",
+      "meta": {
+        "title": "Чарты",
         "requiresAuth": true
       }
     },
@@ -793,20 +817,6 @@
     "NewConnection": {
       "path": "/bi/connections/new",
       "component": "@/modules/bi/Connections/NewConnection.vue",
-      "meta": {
-        "requiresAuth": true
-      }
-    },
-    "DatasetPage": {
-      "path": "/bi/dataset/:id(\\d+)?",
-      "component": "@/modules/bi/Datasets/DatasetPage.vue",
-      "meta": {
-        "requiresAuth": true
-      }
-    },
-    "NewDataset": {
-      "path": "/bi/dataset/new",
-      "component": "@/modules/bi/Datasets/DatasetPage.vue",
       "meta": {
         "requiresAuth": true
       }

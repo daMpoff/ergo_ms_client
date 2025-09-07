@@ -3,10 +3,19 @@ import { Plug, Database, BarChart3, LayoutDashboard } from 'lucide-vue-next'
 import { isDatasetSidebarOpen, currentSidebarPage } from '@/modules/bi/MainPage/Sidebar/components/js/useSidebarStore'
 import CardSidebarBody from '@/modules/bi/MainPage/components/CardSidebarBody.vue'
 import BILogo from '@/modules/bi/MainPage/components/BILogo.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const openSidebar = (page) => {
   currentSidebarPage.value   = page
   isDatasetSidebarOpen.value = true
+}
+
+const handleCardClick = (route) => {
+  if (route) {
+    router.push(route)
+  }
 }
 </script>
 
@@ -38,7 +47,10 @@ const openSidebar = (page) => {
           title="Подключения"
           targetPage="connections"
           description="Добавляйте внешние источники данных, выполняйте синхронизацию и объединяйте данные из разных систем."
+          :clickable="true"
+          clickRoute="/bi/connections"
           @open="() => openSidebar('connections')"
+          @cardClick="handleCardClick"
         />
       </div>
       <div class="card-section">
@@ -48,7 +60,10 @@ const openSidebar = (page) => {
           title="Датасеты"
           targetPage="datasets"
           description="Создавайте и управляйте моделями данных с вычисляемыми полями, фильтрами и структурой для анализа."
+          :clickable="true"
+          clickRoute="/bi/datasets"
           @open="() => openSidebar('datasets')"
+          @cardClick="handleCardClick"
         />
       </div>
       <div class="card-section">
@@ -58,7 +73,10 @@ const openSidebar = (page) => {
           title="Чарты"
           targetPage="charts"
           description="Создавайте графики, таблицы и визуальные представления данных для эффективного анализа и принятия решений."
+          :clickable="true"
+          clickRoute="/bi/charts"
           @open="() => openSidebar('charts')"
+          @cardClick="handleCardClick"
         />
       </div>
       <div class="card-section">
@@ -101,6 +119,16 @@ const openSidebar = (page) => {
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.card-section:hover {
+  z-index: 10;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 @media (max-width: 1400px) {

@@ -12,8 +12,13 @@ const props = defineProps({
     type: Object,
     required: true,
     validator: (config) => {
-      return config.type && config.endpoint && config.createRoute && config.createButtonText
+      return config.type && config.endpoint
     }
+  },
+  // Опциональный пропс для скрытия кнопки создания
+  hideCreateButton: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -33,6 +38,11 @@ const router = useRouter()
 
 // Функция для перехода к созданию нового элемента
 function goToCreate() {
+  if (!props.config.createRoute) {
+    console.error('createRoute не определен в конфигурации')
+    return
+  }
+  
   if (typeof props.config.createRoute === 'string') {
     router.push(props.config.createRoute)
   } else if (typeof props.config.createRoute === 'object' && props.config.createRoute.name) {
@@ -142,6 +152,7 @@ onMounted(fetchItems)
           <option value="za">Я-А</option>
         </select>
         <button 
+          v-if="!hideCreateButton && config.createRoute && config.createButtonText"
           type="button" 
           class="btn btn-primary" 
           :style="{ width: config.createButtonWidth || '11rem' }" 

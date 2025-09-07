@@ -5,18 +5,31 @@ const props = defineProps({
   icolor: { type: String, required: true },
   title: { type: String, required: true },
   description: { type: String, required: true },
-  targetPage: { type: String, required: true }
+  targetPage: { type: String, required: true },
+  clickable: { type: Boolean, default: false },
+  clickRoute: { type: String, default: null }
 })
 
-const emit = defineEmits(['open'])
+const emit = defineEmits(['open', 'cardClick'])
 
-const triggerSidebar = () => {
+const triggerSidebar = (event) => {
+  event.stopPropagation()
   emit('open', props.targetPage)
+}
+
+const handleCardClick = () => {
+  if (props.clickable) {
+    emit('cardClick', props.clickRoute)
+  }
 }
 </script>
 
 <template>
-  <div class="card-body">
+  <div 
+    class="card-body" 
+    :class="{ 'clickable': clickable }"
+    @click="handleCardClick"
+  >
     <div class="card-icon">
       <component class="mb-3 card-icon-accent" :style="{ color: icolor }" :is="icon" :size="35" />
     </div>
@@ -40,7 +53,18 @@ const triggerSidebar = () => {
   text-align: center;
   padding: 12pt;
   box-sizing: border-box;
+  transition: all 0.3s ease;
+  cursor: default;
 }
+
+.card-body.clickable {
+  cursor: pointer;
+}
+
+.card-body.clickable:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
 .card-icon{
   display: flex;
   justify-content: center;
