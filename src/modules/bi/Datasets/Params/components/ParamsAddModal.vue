@@ -206,7 +206,10 @@ function onAdd() {
 
 watch(type, (newType) => {
     if (newType === 'boolean') {
-        defaultValue.value = null
+        // Не затираем уже установленное булево значение при редактировании
+        if (typeof defaultValue.value !== 'boolean') {
+            defaultValue.value = null
+        }
     } else {
         defaultValue.value = ''
     }

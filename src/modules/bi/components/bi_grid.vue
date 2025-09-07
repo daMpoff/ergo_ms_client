@@ -11,7 +11,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(row, idx) in normalizedRows" :key="row.name || idx" :class="{ 'row-active': openMenuForIndex === idx }">
+                <tr v-for="(row, idx) in normalizedRows" :key="row.name || idx" :class="{ 'row-active': openMenuForIndex === idx }" @click="emitAction('edit', row, idx)">
                     <td v-for="col in resolvedColumns" :key="col.key" :class="cellAlignClass(col)">
                         <slot v-if="col.slot" :name="col.slot" :row="row" :column="col" :value="cellValue(row, col)">
                         </slot>
@@ -250,6 +250,7 @@ onBeforeUnmount(()=> {
 .table-hover > tbody > tr:hover {
     color: var(--bs-table-hover-color);
     background-color: var(--bs-table-hover-bg);
+    cursor: pointer;
 }
 
 .table-hover > tbody > tr.row-active {
