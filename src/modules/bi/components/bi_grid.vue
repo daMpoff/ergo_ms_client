@@ -209,12 +209,17 @@ onBeforeUnmount(()=> {
 
 .bi-grid-table {
     color: var(--color-primary-text);
-    background-color: var(--color-primary-background);
+    background-color: transparent;
     border: none !important;
+    /* Прозрачные фоны Bootstrap-таблицы */
+    --bs-table-bg: transparent;
+    --bs-table-accent-bg: transparent;
+    --bs-table-striped-bg: transparent;
+    --bs-table-striped-color: inherit;
 }
 
 .bi-grid-table thead {
-    background-color: var(--color-secondary-background) !important;
+    background-color: transparent !important;
 }
 
 .bi-grid-table :is(th, td) {
@@ -227,7 +232,7 @@ onBeforeUnmount(()=> {
 }
 
 .bi-grid-table tbody tr:last-child td {
-    border-bottom-width: 0 !important;
+    border-bottom-width: 1px !important;
 }
 
 .bi-grid-table :is(th, td):first-child {
@@ -239,15 +244,22 @@ onBeforeUnmount(()=> {
 }
 
 .bi-grid-table tbody tr {
-    background-color: var(--color-primary-background);
+    background-color: transparent;
 }
 
-.bi-grid-table tbody tr:hover {
-    background-color: var(--color-hover-background) !important;
+.table-hover > tbody > tr:hover {
+    color: var(--bs-table-hover-color);
+    background-color: var(--bs-table-hover-bg);
 }
 
-.bi-grid-table tbody tr.row-active {
-    background-color: var(--color-hover-background) !important;
+.table-hover > tbody > tr.row-active {
+    background-color: var(--bs-table-hover-bg);
+}
+
+/* Снятие фоновых полос у .table-striped, если включено */
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    color: inherit;
+    background-color: transparent !important;
 }
 .bi-grid-table tbody tr.row-active .row-action-btn {
     opacity: 1;
