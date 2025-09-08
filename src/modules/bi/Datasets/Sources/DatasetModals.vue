@@ -102,7 +102,7 @@ const computedLinkedTableIds = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3;
+  z-index: 100000;
 }
 
 .modal-window {
@@ -110,7 +110,8 @@ const computedLinkedTableIds = computed(() => {
   border-radius: 12px;
   padding: 1.5rem;
   position: relative;
-  transform: translateX(140px);
+  transform: none;
+  z-index: 100001;
 }
 
 .modal-header {

@@ -36,7 +36,16 @@ const props = defineProps({
 const emit = defineEmits(['close', 'create'])
 
 const local = ref({ ...props.field })
-const activeTab = ref('formula')
+
+function isTableSource(field) {
+  if (!field) return false
+  // Если поле имеет source_table (id или объект) или в source указан table — считаем источником таблицу
+  const hasSourceTable = !!field.source_table
+  const hasSourceWithTable = !!(field.source && field.source.table)
+  return hasSourceTable || hasSourceWithTable
+}
+
+const activeTab = ref(isTableSource(props.field) ? 'field' : 'formula')
 const expression = ref('')
 const search = ref('')
 
@@ -96,6 +105,11 @@ watch(activeTab, tab => {
   if (tab === 'field') showHelp.value = false
   else showHelp.value = true
 })
+
+watch(() => props.field, (newField) => {
+  if (!newField) return
+  activeTab.value = isTableSource(newField) ? 'field' : 'formula'
+}, { deep: true })
 
 function insertField(name) {
   expression.value += name
