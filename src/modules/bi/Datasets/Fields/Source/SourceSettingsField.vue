@@ -4,10 +4,10 @@
             <div class="table-row">
                 <div class="table-row-label">Источник</div>
                 <div class="dropdown-wrapper select-2">
-                    <button type="button" class="dropdown-toggle form-select form-select-sm table-row-select w-100" @click="isTableOpen = !isTableOpen">
+                    <button type="button" class="dropdown-toggle form-select form-select-sm table-row-select w-100" @click="onToggleMenu('table', $event)">
                         {{ selectedTableLabel }}
                     </button>
-                    <div v-if="isTableOpen" class="dropdown-menu show">
+                    <div v-if="isTableOpen" class="dropdown-menu show floating" :style="dropdownStyle">
                         <div class="dropdown-search p-2">
                             <input 
                                 type="text" 
@@ -39,11 +39,11 @@
                         type="button" 
                         class="dropdown-toggle form-select form-select-sm table-row-select w-100" 
                         :disabled="!selectedTable"
-                        @click="isColumnOpen = !isColumnOpen"
+                        @click="onToggleMenu('column', $event)"
                     >
                         {{ selectedColumnLabel }}
                     </button>
-                    <div v-if="isColumnOpen" class="dropdown-menu show">
+                    <div v-if="isColumnOpen" class="dropdown-menu show floating" :style="dropdownStyle">
                         <div class="dropdown-search p-2">
                             <input 
                                 type="text" 
@@ -70,12 +70,36 @@
             </div>
             <div class="table-row">
                 <div class="table-row-label">Тип поля</div>
-                <select class="table-row-select select-2 form-select form-select-sm" id="smallSelect">
-                    <option selected>Откройте это меню выбора</option>
-                    <option value="1">Один</option>
-                    <option value="2">Два</option>
-                    <option value="3">Три</option>
-                </select>
+                <div class="dropdown-wrapper select-2">
+                    <button 
+                        type="button" 
+                        class="dropdown-toggle form-select form-select-sm table-row-select w-100"
+                        @click="onToggleMenu('type', $event)"
+                    >
+                        <span v-if="selectedType">
+                            <FieldTypeIcon :fieldType="selectedType" :size="16" />
+                            <span class="ms-2">{{ selectedTypeLabel }}</span>
+                        </span>
+                        <span v-else>
+                            Выберите тип
+                        </span>
+                    </button>
+                    <div v-if="isTypeOpen" class="dropdown-menu show floating" :style="dropdownStyle">
+                        <ul class="dropdown-list">
+                            <li 
+                                v-for="opt in typeOptionsAvailable" 
+                                :key="opt.value"
+                                class="dropdown-item"
+                                :class="{ active: isSelectedType(opt.value) }"
+                                @click="selectType(opt.value)"
+                            >
+                                <FieldTypeIcon :fieldType="opt.value" :size="16" />
+                                <span class="ms-2">{{ opt.label }}</span>
+                            </li>
+                            <li v-if="typeOptionsAvailable.length === 0" class="dropdown-empty">Нет вариантов</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
             <div class="table-row">
                 <div class="table-row-label">Агрегация</div>
@@ -93,6 +117,8 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { fetchTableColumns } from './js/tableColumnsService'
+import { getTypeOptionsForField } from '@/modules/bi/Datasets/Fields/Source/js/DatasetPreviewFieldOptions.js'
+import FieldTypeIcon from '@/modules/bi/Dashboards/components/FieldTypeIcon.vue'
 
 const props = defineProps({
     tables: { type: Array, default: () => [] },
@@ -109,6 +135,45 @@ const isColumnOpen = ref(false)
 const columnFilter = ref('')
 const columns = ref([])
 const selectedColumn = ref('')
+const isTypeOpen = ref(false)
+const selectedType = ref('')
+const menuPosition = ref({ top: 0, left: 0, width: 0 })
+
+function computeMenuPosition(evt) {
+    const target = evt?.currentTarget || evt?.target
+    if (!target || typeof target.getBoundingClientRect !== 'function') return
+    const rect = target.getBoundingClientRect()
+    // Для position: fixed используем координаты относительно окна
+    menuPosition.value = {
+        top: Math.round(rect.bottom + 6),
+        left: Math.round(rect.left),
+        width: Math.round(rect.width)
+    }
+}
+
+function onToggleMenu(kind, evt) {
+    // Открываем только одно меню одновременно
+    const nextState = {
+        table: false,
+        column: false,
+        type: false
+    }
+    computeMenuPosition(evt)
+    if (kind === 'table') nextState.table = !isTableOpen.value
+    if (kind === 'column') nextState.column = !isColumnOpen.value
+    if (kind === 'type') nextState.type = !isTypeOpen.value
+    isTableOpen.value = nextState.table
+    isColumnOpen.value = nextState.column
+    isTypeOpen.value = nextState.type
+}
+
+const dropdownStyle = computed(() => ({
+    position: 'fixed',
+    top: `${menuPosition.value.top}px`,
+    left: `${menuPosition.value.left}px`,
+    width: `${menuPosition.value.width}px`,
+    maxWidth: 'calc(100vw - 24px)'
+}))
 
 const connectionName = computed(() => props.selectedConnection?.name || 'Подключение')
 
@@ -167,6 +232,7 @@ function onClickOutside(e) {
     if (!root) {
         isTableOpen.value = false
         isColumnOpen.value = false
+        isTypeOpen.value = false
     }
 }
 
@@ -184,6 +250,7 @@ function resolveSelectedFromField() {
     const srcTbl = props.field.source_table
     const src = props.field.source
     const initialColumn = src && src.column ? String(src.column) : ''
+    const initialType = props.field.type ? String(props.field.type) : ''
 
     let found = null
     if (srcTbl && typeof srcTbl === 'object' && srcTbl.id) {
@@ -207,12 +274,36 @@ function resolveSelectedFromField() {
             selectedColumn.value = initialColumn
         }
     }
+
+    if (initialType) {
+        selectedType.value = initialType
+    }
 }
 
 // Следим за приходом таблиц и полем
 import { watch } from 'vue'
 watch(() => props.tables, () => resolveSelectedFromField(), { deep: true })
 watch(() => props.field, () => resolveSelectedFromField(), { deep: true, immediate: true })
+
+// Список доступных типов данных на основе значений поля (если есть)
+const typeOptionsAvailable = computed(() => {
+    const fieldLike = props.field || {}
+    return getTypeOptionsForField(fieldLike)
+})
+
+const selectedTypeLabel = computed(() => {
+    const found = typeOptionsAvailable.value.find(o => o.value === selectedType.value)
+    return found ? found.label : 'Тип не выбран'
+})
+
+function selectType(val) {
+    selectedType.value = val
+    isTypeOpen.value = false
+}
+
+function isSelectedType(val) {
+    return selectedType.value === val
+}
 </script>
 
 <style scoped lang="scss">
