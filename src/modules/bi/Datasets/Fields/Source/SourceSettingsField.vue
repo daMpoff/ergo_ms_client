@@ -76,7 +76,7 @@
                         class="dropdown-toggle form-select form-select-sm table-row-select w-100"
                         @click="onToggleMenu('type', $event)"
                     >
-                        <span v-if="selectedType">
+                        <span v-if="selectedType" style="display: flex; align-items: center;">
                             <FieldTypeIcon :fieldType="selectedType" :size="16" />
                             <span class="ms-2">{{ selectedTypeLabel }}</span>
                         </span>
@@ -103,12 +103,22 @@
             </div>
             <div class="table-row">
                 <div class="table-row-label">Агрегация</div>
-                <select class="table-row-select select-2 form-select form-select-sm" id="smallSelect">
-                    <option selected>Откройте это меню выбора</option>
-                    <option value="1">Один</option>
-                    <option value="2">Два</option>
-                    <option value="3">Три</option>
-                </select>
+                <div class="dropdown-wrapper select-2 has-caret">
+                    <select 
+                        class="table-row-select form-select form-select-sm w-100"
+                        v-model="selectedAggregation"
+                        :disabled="!selectedType"
+                    >
+                        <option value="">Нет</option>
+                        <option 
+                            v-for="opt in aggregationOptions" 
+                            :key="opt.value" 
+                            :value="opt.value"
+                        >
+                            {{ opt.label }}
+                        </option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
@@ -117,7 +127,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { fetchTableColumns } from './js/tableColumnsService'
-import { getTypeOptionsForField } from '@/modules/bi/Datasets/Fields/Source/js/DatasetPreviewFieldOptions.js'
+import { getTypeOptionsForField, getAggregationOptions } from '@/modules/bi/Datasets/Fields/Source/js/DatasetPreviewFieldOptions.js'
 import FieldTypeIcon from '@/modules/bi/Dashboards/components/FieldTypeIcon.vue'
 
 const props = defineProps({
@@ -137,6 +147,7 @@ const columns = ref([])
 const selectedColumn = ref('')
 const isTypeOpen = ref(false)
 const selectedType = ref('')
+const selectedAggregation = ref('')
 const menuPosition = ref({ top: 0, left: 0, width: 0 })
 
 function computeMenuPosition(evt) {
@@ -251,6 +262,7 @@ function resolveSelectedFromField() {
     const src = props.field.source
     const initialColumn = src && src.column ? String(src.column) : ''
     const initialType = props.field.type ? String(props.field.type) : ''
+    const initialAggregation = props.field.aggregation ? String(props.field.aggregation) : ''
 
     let found = null
     if (srcTbl && typeof srcTbl === 'object' && srcTbl.id) {
@@ -278,6 +290,9 @@ function resolveSelectedFromField() {
     if (initialType) {
         selectedType.value = initialType
     }
+
+    // Установим агрегацию из поля (при несоответствии типу она сбросится watcher'ом)
+    selectedAggregation.value = initialAggregation
 }
 
 // Следим за приходом таблиц и полем
@@ -304,6 +319,19 @@ function selectType(val) {
 function isSelectedType(val) {
     return selectedType.value === val
 }
+
+// Сбрасываем агрегацию, если для нового типа текущая недоступна
+watch([selectedType], () => {
+    const values = new Set((aggregationOptions || []).value ? aggregationOptions.value.map(o => o.value) : [])
+    if (!values.has(selectedAggregation.value)) {
+        selectedAggregation.value = ''
+    }
+})
+
+// Опции агрегаций зависят от выбранного типа
+const aggregationOptions = computed(() => {
+    return getAggregationOptions(selectedType.value) || []
+})
 </script>
 
 <style scoped lang="scss">
@@ -381,6 +409,23 @@ function isSelectedType(val) {
   border-left: .35em solid transparent;
 }
 
+/* Стрелочка для обычного select внутри обертки */
+.has-caret {
+  position: relative;
+}
+
+.has-caret::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  border-top: .35em solid currentColor;
+  border-right: .35em solid transparent;
+  border-left: .35em solid transparent;
+}
+
 .dropdown-menu {
   position: absolute;
   top: calc(100% + 6px);
@@ -402,6 +447,8 @@ function isSelectedType(val) {
 }
 
 .dropdown-item {
+  display: flex;
+  align-items: center;
   padding: 6px 8px;
   border-radius: 6px;
   cursor: pointer;
