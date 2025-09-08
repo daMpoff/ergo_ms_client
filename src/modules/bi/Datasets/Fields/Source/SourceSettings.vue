@@ -10,7 +10,14 @@
     </div>
     <div class="settings-body">
       <SourceSettingsFormula v-if="activeTab === 'formula'" v-model:expression="expression" :fields="fieldsList" />
-      <SourceSettingsField v-else v-model:search="search" @insert-field="insertField" />
+      <SourceSettingsField 
+        v-else 
+        v-model:search="search" 
+        :tables="tables"
+        :selected-connection="selectedConnection"
+        :field="field"
+        @insert-field="insertField" 
+      />
       <div class="modal-actions d-flex justify-content-end gap-2 mt-3" :class="{ 'no-footer': !showHelp || activeTab === 'field' }">
         <button class="btn btn-sm btn-outline-light cancel-btn" @click="$emit('close')">Отменить</button>
         <button class="btn btn-sm btn-primary" @click="apply">Создать</button>
@@ -31,12 +38,23 @@ import SourceSettingsHelp from './SourceSettingsHelp.vue'
 const props = defineProps({
   field: Object,
   cols: { type: Array, default: () => [] },
-  rows: { type: Array, default: () => [] }
+  rows: { type: Array, default: () => [] },
+  tables: { type: Array, default: () => [] },
+  selectedConnection: { type: Object, default: null }
 })
 const emit = defineEmits(['close', 'create'])
 
 const local = ref({ ...props.field })
-const activeTab = ref('formula')
+
+function isTableSource(field) {
+  if (!field) return false
+  // Если поле имеет source_table (id или объект) или в source указан table — считаем источником таблицу
+  const hasSourceTable = !!field.source_table
+  const hasSourceWithTable = !!(field.source && field.source.table)
+  return hasSourceTable || hasSourceWithTable
+}
+
+const activeTab = ref(isTableSource(props.field) ? 'field' : 'formula')
 const expression = ref('')
 const search = ref('')
 
@@ -96,6 +114,11 @@ watch(activeTab, tab => {
   if (tab === 'field') showHelp.value = false
   else showHelp.value = true
 })
+
+watch(() => props.field, (newField) => {
+  if (!newField) return
+  activeTab.value = isTableSource(newField) ? 'field' : 'formula'
+}, { deep: true })
 
 function insertField(name) {
   expression.value += name

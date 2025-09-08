@@ -65,6 +65,7 @@
           :rows="previewRows"
           :dataset-id="needsDataset(activeTab) && dataset ? dataset.id : null"
           :connection-status="connectionStatus"
+          @edit-field="$emit('edit-field', $event)"
           @remove-table="$emit('removeTable', $event)" 
           @update:fields="$emit('update:fields', $event)"
           @switch-to-sources="$emit('update:activeTab', 'sources')"
@@ -130,7 +131,8 @@ const emit = defineEmits([
   'update:activeTab',
   'add-field',
   'resetAllRelations',
-  'params-changed'
+  'params-changed',
+  'edit-field'
 ])
 
 function needsDataset(tab) {

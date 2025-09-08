@@ -43,6 +43,7 @@
       @open-table-link-modal="openTableLinkModal"
       @tables-loaded="handleTablesLoaded"
       @remove-table="handleRemoveTable"
+      @edit-field="onEditField"
       @update:fields="fields = $event"
       @update:selected-connection="selectedConnection = $event"
       @update:main-table="mainTable = $event"
@@ -170,6 +171,11 @@ const {
 } = actions
 
 // Функции для обработки событий
+
+function onEditField(field) {
+  selectedField.value = field
+  showModal.value = true
+}
 
 // Вспомогательная функция для проверки принадлежности таблицы к подключению
 function tableBelongsToConnection(table, connection) {
