@@ -184,6 +184,62 @@
         </div>
       </div>
       
+      <!-- Настройки озвучки -->
+      <div class="tts-settings mt-3">
+        <h6 class="mb-3">
+          <Volume2 :size="20" class="me-2" />
+          Настройки озвучки
+        </h6>
+        
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input 
+                v-model="ttsSettings.enabled" 
+                class="form-check-input" 
+                type="checkbox" 
+                id="ttsEnabled"
+              />
+              <label class="form-check-label" for="ttsEnabled">
+                Включить озвучку
+              </label>
+            </div>
+          </div>
+          
+          <div v-if="ttsSettings.enabled" class="col-md-6">
+            <label class="form-label">Язык озвучки</label>
+            <select v-model="ttsSettings.language" class="form-select">
+              <option value="ru">Русский</option>
+              <option value="fr">Французский</option>
+            </select>
+          </div>
+          
+          <div v-if="ttsSettings.enabled" class="col-md-6">
+            <label class="form-label">Громкость</label>
+            <input 
+              v-model.number="ttsSettings.volume" 
+              type="range" 
+              class="form-range" 
+              min="0" 
+              max="1" 
+              step="0.1"
+            />
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">0%</small>
+              <small class="fw-bold">{{ Math.round(ttsSettings.volume * 100) }}%</small>
+              <small class="text-muted">100%</small>
+            </div>
+          </div>
+          
+          <div v-if="ttsSettings.enabled" class="col-12">
+            <label class="form-label">Модель голоса</label>
+            <select v-model="ttsSettings.voiceModel" class="form-select">
+              <option value="silero_tts">Silero TTS (по умолчанию)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
       <!-- Кнопки управления -->
       <div class="upload-controls mt-3">
         <button
@@ -299,7 +355,7 @@
 import { ref, reactive } from 'vue'
 import { useToast } from 'vue-toastification'
 import { 
-  Upload, CloudUpload, FileVideo, Play, X, Trash2, BarChart3, Settings 
+  Upload, CloudUpload, FileVideo, Play, X, Trash2, BarChart3, Settings, Volume2 
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -340,6 +396,14 @@ const subtitleSettings = ref({
   fontColor: '#FFFFFF',
   backgroundColor: '#000000',
   backgroundTransparent: false
+})
+
+// Настройки TTS
+const ttsSettings = ref({
+  enabled: false,
+  volume: 0.7,
+  language: 'fr',
+  voiceModel: 'silero_tts'
 })
 
 let dragCounter = 0
@@ -489,7 +553,12 @@ async function uploadFiles() {
       subtitle_font_size: subtitleSettings.value.fontSize,
       subtitle_font_color: subtitleSettings.value.fontColor,
       subtitle_background_color: subtitleSettings.value.backgroundColor,
-      subtitle_background_transparent: subtitleSettings.value.backgroundTransparent
+      subtitle_background_transparent: subtitleSettings.value.backgroundTransparent,
+      // Настройки TTS
+      tts_enabled: ttsSettings.value.enabled,
+      tts_volume: ttsSettings.value.volume,
+      tts_language: ttsSettings.value.language,
+      tts_voice_model: ttsSettings.value.voiceModel
     }
     
     console.log('Настройки субтитров:', subtitleOptions)
@@ -642,7 +711,8 @@ defineExpose({
     }
   }
   
-  .subtitle-settings {
+  .subtitle-settings,
+  .tts-settings {
     background: white;
     border-radius: 15px;
     padding: 1.5rem;
@@ -743,6 +813,29 @@ defineExpose({
         font-weight: 500;
         color: #495057;
         cursor: pointer;
+      }
+    }
+    
+    // Специальные стили для переключателя TTS
+    .form-switch .form-check-input {
+      width: 3rem;
+      height: 1.5rem;
+      border-radius: 1rem;
+      background-color: #dee2e6;
+      border: 1px solid #dee2e6;
+      transition: all 0.3s ease;
+      
+      &:checked {
+        background-color: #198754;
+        border-color: #198754;
+        
+        &:focus {
+          box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+        }
+      }
+      
+      &:focus {
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
       }
     }
   }
