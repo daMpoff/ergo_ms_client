@@ -10,7 +10,8 @@
         <SourceSettings 
           v-if="showModal" 
           :field="selectedField" 
-          :tables="selectedTables" 
+          :tables="allTablesOfConnection" 
+          :selected-connection="selectedConnection"
           :cols="previewCols"
           :rows="previewRows" 
           @close="$emit('closeModal')" 

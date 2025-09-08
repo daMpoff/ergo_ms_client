@@ -10,7 +10,14 @@
     </div>
     <div class="settings-body">
       <SourceSettingsFormula v-if="activeTab === 'formula'" v-model:expression="expression" :fields="fieldsList" />
-      <SourceSettingsField v-else v-model:search="search" @insert-field="insertField" />
+      <SourceSettingsField 
+        v-else 
+        v-model:search="search" 
+        :tables="tables"
+        :selected-connection="selectedConnection"
+        :field="field"
+        @insert-field="insertField" 
+      />
       <div class="modal-actions d-flex justify-content-end gap-2 mt-3" :class="{ 'no-footer': !showHelp || activeTab === 'field' }">
         <button class="btn btn-sm btn-outline-light cancel-btn" @click="$emit('close')">Отменить</button>
         <button class="btn btn-sm btn-primary" @click="apply">Создать</button>
@@ -31,7 +38,9 @@ import SourceSettingsHelp from './SourceSettingsHelp.vue'
 const props = defineProps({
   field: Object,
   cols: { type: Array, default: () => [] },
-  rows: { type: Array, default: () => [] }
+  rows: { type: Array, default: () => [] },
+  tables: { type: Array, default: () => [] },
+  selectedConnection: { type: Object, default: null }
 })
 const emit = defineEmits(['close', 'create'])
 
