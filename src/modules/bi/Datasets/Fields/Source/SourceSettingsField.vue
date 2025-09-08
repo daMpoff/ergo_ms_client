@@ -3,26 +3,17 @@
         <div class="body-table">
             <div class="table-row">
                 <div class="table-row-label">Источник</div>
-                <select class="table-row-select select-1 form-select form-select-sm" id="smallSelect">
-                    <option selected>Откройте это меню выбора</option>
-                    <option value="1">Один</option>
-                    <option value="2">Два</option>
-                    <option value="3">Три</option>
-                </select>
-            </div>
-            <div class="table-row">
-                <div class="table-row-label">Поле источника</div>
                 <div class="dropdown-wrapper select-2">
-                    <button type="button" class="dropdown-toggle form-select form-select-sm table-row-select w-100" @click="isOpen = !isOpen">
-                        {{ selectedLabel }}
+                    <button type="button" class="dropdown-toggle form-select form-select-sm table-row-select w-100" @click="isTableOpen = !isTableOpen">
+                        {{ selectedTableLabel }}
                     </button>
-                    <div v-if="isOpen" class="dropdown-menu show">
+                    <div v-if="isTableOpen" class="dropdown-menu show">
                         <div class="dropdown-search p-2">
                             <input 
                                 type="text" 
                                 class="form-control form-control-sm" 
                                 placeholder="Поиск таблицы..." 
-                                v-model="filter"
+                                v-model="tableFilter"
                                 autocomplete="off"
                             />
                         </div>
@@ -31,12 +22,48 @@
                                 v-for="t in filteredTables" 
                                 :key="t.id"
                                 class="dropdown-item"
-                                :class="{ active: isSelected(t) }"
+                                :class="{ active: isSelectedTable(t) }"
                                 @click="selectTable(t)"
                             >
                                 {{ tableLabel(t) }}
                             </li>
                             <li v-if="filteredTables.length === 0" class="dropdown-empty">Нет результатов</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="table-row">
+                <div class="table-row-label">Поле источника</div>
+                <div class="dropdown-wrapper select-2">
+                    <button 
+                        type="button" 
+                        class="dropdown-toggle form-select form-select-sm table-row-select w-100" 
+                        :disabled="!selectedTable"
+                        @click="isColumnOpen = !isColumnOpen"
+                    >
+                        {{ selectedColumnLabel }}
+                    </button>
+                    <div v-if="isColumnOpen" class="dropdown-menu show">
+                        <div class="dropdown-search p-2">
+                            <input 
+                                type="text" 
+                                class="form-control form-control-sm" 
+                                placeholder="Поиск по полям..." 
+                                v-model="columnFilter"
+                                autocomplete="off"
+                            />
+                        </div>
+                        <ul class="dropdown-list">
+                            <li 
+                                v-for="col in filteredColumns" 
+                                :key="col"
+                                class="dropdown-item"
+                                :class="{ active: isSelectedColumn(col) }"
+                                @click="selectColumn(col)"
+                            >
+                                {{ col }}
+                            </li>
+                            <li v-if="filteredColumns.length === 0" class="dropdown-empty">Нет результатов</li>
                         </ul>
                     </div>
                 </div>
@@ -65,6 +92,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { fetchTableColumns } from './js/tableColumnsService'
 
 const props = defineProps({
     tables: { type: Array, default: () => [] },
@@ -74,9 +102,13 @@ const props = defineProps({
 
 const emit = defineEmits(['update:search', 'insert-field'])
 
-const isOpen = ref(false)
-const filter = ref('')
+const isTableOpen = ref(false)
+const tableFilter = ref('')
 const selectedTable = ref(null)
+const isColumnOpen = ref(false)
+const columnFilter = ref('')
+const columns = ref([])
+const selectedColumn = ref('')
 
 const connectionName = computed(() => props.selectedConnection?.name || 'Подключение')
 
@@ -85,7 +117,7 @@ function tableLabel(t) {
 }
 
 const filteredTables = computed(() => {
-    const s = filter.value.trim().toLowerCase()
+    const s = tableFilter.value.trim().toLowerCase()
     if (!s) return props.tables
     return props.tables.filter(t => {
         const lbl = tableLabel(t).toLowerCase()
@@ -93,24 +125,48 @@ const filteredTables = computed(() => {
     })
 })
 
-const selectedLabel = computed(() => {
+const selectedTableLabel = computed(() => {
     if (!selectedTable.value) return `${connectionName.value}.Выберите таблицу`
     return `${connectionName.value}.${tableLabel(selectedTable.value)}`
 })
 
-function selectTable(t) {
+const selectedColumnLabel = computed(() => {
+    if (!selectedTable.value) return 'Сначала выберите таблицу'
+    if (!selectedColumn.value) return 'Выберите поле'
+    return selectedColumn.value
+})
+
+const filteredColumns = computed(() => {
+    const s = columnFilter.value.trim().toLowerCase()
+    if (!s) return columns.value || []
+    return (columns.value || []).filter(col => String(col).toLowerCase().includes(s))
+})
+
+async function selectTable(t) {
     selectedTable.value = t
-    isOpen.value = false
+    isTableOpen.value = false
+    selectedColumn.value = ''
+    columns.value = await fetchTableColumns(t)
 }
 
-function isSelected(t) {
+function isSelectedTable(t) {
     return selectedTable.value && String(selectedTable.value.id) === String(t.id)
+}
+
+function selectColumn(col) {
+    selectedColumn.value = col
+    isColumnOpen.value = false
+}
+
+function isSelectedColumn(col) {
+    return selectedColumn.value === col
 }
 
 function onClickOutside(e) {
     const root = e.target.closest('.dropdown-wrapper')
     if (!root) {
-        isOpen.value = false
+        isTableOpen.value = false
+        isColumnOpen.value = false
     }
 }
 
@@ -127,6 +183,7 @@ function resolveSelectedFromField() {
     if (!props.field) return
     const srcTbl = props.field.source_table
     const src = props.field.source
+    const initialColumn = src && src.column ? String(src.column) : ''
 
     let found = null
     if (srcTbl && typeof srcTbl === 'object' && srcTbl.id) {
@@ -140,6 +197,15 @@ function resolveSelectedFromField() {
     }
     if (found) {
         selectedTable.value = found
+        // загрузим колонки выбранной таблицы
+        fetchTableColumns(found).then(cols => {
+            columns.value = cols || []
+        }).catch(() => {
+            columns.value = []
+        })
+        if (initialColumn) {
+            selectedColumn.value = initialColumn
+        }
     }
 }
 
