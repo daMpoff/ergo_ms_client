@@ -155,6 +155,18 @@ const computedLinkedTableIds = computed(() => {
 .modal-window-fields {
   width: min(1200px, 95vw);
   height: min(750px, 90vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Контент после шапки занимает доступную высоту и не вываливается */
+.modal-window-fields > .modal-header {
+  flex: 0 0 auto;
+}
+.modal-window-fields > :not(.modal-header) {
+  flex: 1 1 auto;
+  min-height: 0; /* важно для корректной работы overflow у внутренних областей */
 }
 
 .fade-enter-active,
