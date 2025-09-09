@@ -35,6 +35,15 @@ class VideoAnalysisAPI {
     if (subtitleOptions.subtitle_background_transparent !== undefined) {
       form.append('subtitle_background_transparent', subtitleOptions.subtitle_background_transparent)
     }
+    if (subtitleOptions.subtitle_alignment) {
+      form.append('subtitle_alignment', subtitleOptions.subtitle_alignment)
+    }
+    if (subtitleOptions.subtitle_margin_vertical !== undefined) {
+      form.append('subtitle_margin_vertical', subtitleOptions.subtitle_margin_vertical)
+    }
+    if (subtitleOptions.subtitle_margin_horizontal !== undefined) {
+      form.append('subtitle_margin_horizontal', subtitleOptions.subtitle_margin_horizontal)
+    }
     // Добавляем настройки TTS
     if (subtitleOptions.tts_enabled !== undefined) {
       form.append('tts_enabled', subtitleOptions.tts_enabled)
@@ -84,6 +93,18 @@ class VideoAnalysisAPI {
       form.append('subtitle_background_transparent', subtitleOptions.subtitle_background_transparent)
       console.log('Добавлено subtitle_background_transparent:', subtitleOptions.subtitle_background_transparent)
     }
+    if (subtitleOptions.subtitle_alignment) {
+      form.append('subtitle_alignment', subtitleOptions.subtitle_alignment)
+      console.log('Добавлено subtitle_alignment:', subtitleOptions.subtitle_alignment)
+    }
+    if (subtitleOptions.subtitle_margin_vertical !== undefined) {
+      form.append('subtitle_margin_vertical', subtitleOptions.subtitle_margin_vertical)
+      console.log('Добавлено subtitle_margin_vertical:', subtitleOptions.subtitle_margin_vertical)
+    }
+    if (subtitleOptions.subtitle_margin_horizontal !== undefined) {
+      form.append('subtitle_margin_horizontal', subtitleOptions.subtitle_margin_horizontal)
+      console.log('Добавлено subtitle_margin_horizontal:', subtitleOptions.subtitle_margin_horizontal)
+    }
     // Добавляем настройки TTS
     if (subtitleOptions.tts_enabled !== undefined) {
       form.append('tts_enabled', subtitleOptions.tts_enabled)
@@ -119,6 +140,10 @@ class VideoAnalysisAPI {
 
   async update(id, data) {
     return apiClient.patch(this.base.detail(id), data)
+  }
+
+  async cancel(id) {
+    return apiClient.post(this.base.cancel(id))
   }
 
   // Метод для скачивания файлов через API клиент с токеном

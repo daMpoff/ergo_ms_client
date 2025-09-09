@@ -107,6 +107,17 @@
           <span>Назад к списку</span>
         </router-link>
         <button 
+          v-if="analysis.status === 'processing' || analysis.status === 'pending'" 
+          class="btn btn-cancel-analysis" 
+          @click="cancelAnalysis"
+          :disabled="isCancelling"
+        >
+          <X v-if="!isCancelling" :size="16" />
+          <Loader v-else :size="16" class="spinner" />
+          <span v-if="!isCancelling">Отменить</span>
+          <span v-else>Отмена...</span>
+        </button>
+        <button 
           v-if="analysis.status === 'completed'" 
           class="btn btn-delete-analysis" 
           @click="showDeleteConfirm"
@@ -331,6 +342,36 @@
                         <span class="setting-value transparent-badge">Прозрачный</span>
                       </div>
                     </div>
+                    
+                    <div class="setting-item" v-if="analysis.subtitle_alignment">
+                      <div class="setting-icon">
+                        <AlignCenter :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Позиция</span>
+                        <span class="setting-value">{{ getAlignmentLabel(analysis.subtitle_alignment) }}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="setting-item" v-if="analysis.subtitle_margin_vertical !== undefined && analysis.subtitle_margin_vertical !== null">
+                      <div class="setting-icon">
+                        <MoveVertical :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Отступ по вертикали</span>
+                        <span class="setting-value">{{ analysis.subtitle_margin_vertical }}px</span>
+                      </div>
+                    </div>
+                    
+                    <div class="setting-item" v-if="analysis.subtitle_margin_horizontal !== undefined && analysis.subtitle_margin_horizontal !== null">
+                      <div class="setting-icon">
+                        <MoveHorizontal :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Отступ по горизонтали</span>
+                        <span class="setting-value">{{ analysis.subtitle_margin_horizontal > 0 ? '+' : '' }}{{ analysis.subtitle_margin_horizontal }}px</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -537,7 +578,8 @@ import { apiClient } from '@/js/api/manager.js'
 import { 
   Video, ArrowLeft, Trash2, Clock, CheckCircle, AlertTriangle, 
   Info, Calendar, Play, FileText, Download, Volume2, Hourglass, 
-  Loader, Settings, AlignLeft, Type, Palette, Square, Eye, Edit3, Save, X
+  Loader, Settings, AlignLeft, Type, Palette, Square, Eye, Edit3, Save, X,
+  AlignCenter, MoveVertical, MoveHorizontal
 } from 'lucide-vue-next'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
@@ -565,6 +607,7 @@ const editingData = ref({
   description: ''
 })
 const isUpdating = ref(false)
+const isCancelling = ref(false)
 let timer = null
 
 function statusClass(status) {
@@ -702,6 +745,16 @@ function getLinesText(count) {
   return 'строк'
 }
 
+function getAlignmentLabel(alignment) {
+  const alignmentLabels = {
+    'bottom': 'Снизу',
+    'top': 'Сверху',
+    'center': 'По центру',
+    'custom': 'Пользовательское'
+  }
+  return alignmentLabels[alignment] || alignment
+}
+
 async function load() {
   try {
     loading.value = true
@@ -780,6 +833,24 @@ async function saveChanges() {
     toast.error('Ошибка при обновлении анализа')
   } finally {
     isUpdating.value = false
+  }
+}
+
+async function cancelAnalysis() {
+  try {
+    isCancelling.value = true
+    const result = await videoAnalysisAPI.cancel(analysis.value.id)
+    
+    // Обновляем данные анализа
+    analysis.value.status = 'cancelled'
+    analysis.value.error_message = 'Анализ отменен пользователем'
+    
+    toast.success('Анализ успешно отменен')
+  } catch (error) {
+    console.error('Ошибка отмены анализа:', error)
+    toast.error('Ошибка при отмене анализа')
+  } finally {
+    isCancelling.value = false
   }
 }
 
@@ -1227,6 +1298,43 @@ function onOutputVideoPause() {
     }
   }
 
+  .btn-cancel-analysis {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.875rem 1.5rem;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+      color: white;
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    svg { flex-shrink: 0; margin: 0; align-self: center; }
+    
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    span {
+      white-space: nowrap;
+    }
+  }
+
   .btn-delete-analysis {
     background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     border: none;
@@ -1251,6 +1359,15 @@ function onOutputVideoPause() {
 
     span {
       white-space: nowrap;
+    }
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 }

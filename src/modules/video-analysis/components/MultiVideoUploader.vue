@@ -181,6 +181,50 @@
               </label>
             </div>
           </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Позиция субтитров</label>
+            <select v-model="subtitleSettings.alignment" class="form-select">
+              <option value="bottom">Снизу</option>
+              <option value="top">Сверху</option>
+              <option value="center">По центру</option>
+              <option value="custom">Пользовательская</option>
+            </select>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Отступ по вертикали</label>
+            <input 
+              v-model.number="subtitleSettings.marginVertical" 
+              type="range" 
+              class="form-range" 
+              min="0" 
+              max="200" 
+              step="5"
+            />
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">0px</small>
+              <small class="fw-bold">{{ subtitleSettings.marginVertical }}px</small>
+              <small class="text-muted">200px</small>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Отступ по горизонтали</label>
+            <input 
+              v-model.number="subtitleSettings.marginHorizontal" 
+              type="range" 
+              class="form-range" 
+              min="-200" 
+              max="200" 
+              step="10"
+            />
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">-200px</small>
+              <small class="fw-bold">{{ subtitleSettings.marginHorizontal }}px</small>
+              <small class="text-muted">200px</small>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -395,7 +439,10 @@ const subtitleSettings = ref({
   fontSize: 24,
   fontColor: '#FFFFFF',
   backgroundColor: '#000000',
-  backgroundTransparent: false
+  backgroundTransparent: false,
+  alignment: 'bottom',
+  marginVertical: 20,
+  marginHorizontal: 0
 })
 
 // Настройки TTS
@@ -554,6 +601,9 @@ async function uploadFiles() {
       subtitle_font_color: subtitleSettings.value.fontColor,
       subtitle_background_color: subtitleSettings.value.backgroundColor,
       subtitle_background_transparent: subtitleSettings.value.backgroundTransparent,
+      subtitle_alignment: subtitleSettings.value.alignment,
+      subtitle_margin_vertical: subtitleSettings.value.marginVertical,
+      subtitle_margin_horizontal: subtitleSettings.value.marginHorizontal,
       // Настройки TTS
       tts_enabled: ttsSettings.value.enabled,
       tts_volume: ttsSettings.value.volume,
