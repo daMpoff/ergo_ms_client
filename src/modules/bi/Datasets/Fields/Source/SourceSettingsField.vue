@@ -188,6 +188,8 @@ const dropdownStyle = computed(() => ({
 
 const connectionName = computed(() => props.selectedConnection?.name || 'Подключение')
 
+const isEditing = computed(() => !!props.field)
+
 function tableLabel(t) {
     return t.name || ((t.schema && t.table) ? `${t.schema}.${t.table}` : (t.table || ''))
 }
@@ -202,7 +204,9 @@ const filteredTables = computed(() => {
 })
 
 const selectedTableLabel = computed(() => {
-    if (!selectedTable.value) return `${connectionName.value}.Выберите таблицу`
+    if (!selectedTable.value) {
+        return isEditing.value ? `${connectionName.value}.Выберите таблицу` : 'Выберите таблицу'
+    }
     return `${connectionName.value}.${tableLabel(selectedTable.value)}`
 })
 

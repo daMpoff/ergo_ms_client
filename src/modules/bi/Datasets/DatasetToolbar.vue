@@ -17,7 +17,7 @@
       <button class="btn" style="display: flex; gap: 5px;" @click="$emit('togglePreview')" :disabled="isPreviewLoading">
         <Eye :size="16" /><div id="btn-text">Предпросмотр</div>
       </button>
-      <button v-if="activeTab === 'fields'" class="btn" style="display: flex; gap: 5px;" @click="$emit('addField')" hidden>
+      <button v-if="activeTab === 'fields'" class="btn" style="display: flex; gap: 5px;" @click="$emit('addField')">
         <Plus :size="16" /><div id="btn-text">Добавить поле</div>
       </button>
     </div>
