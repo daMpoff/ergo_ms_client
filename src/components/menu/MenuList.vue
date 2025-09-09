@@ -17,6 +17,7 @@ import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { CheckAccessToAdminPanel, GetClosedPagesForUser } from '@/modules/cms/adp/admin/js/GroupsPolitics'
+import { useUserStore } from '@/modules/cms/js/userStore.js'
 const props = defineProps({
   isVisible: Boolean,
   currentPage: String
@@ -29,19 +30,94 @@ watch(
     } else {
       // Пересчитываем ширину когда меню становится видимым
       initializeMenuWidth()
+      // Дополнительно обновляем через короткий промежуток
+      setTimeout(() => {
+        updateMenuWidth()
+      }, 50)
     }
   },
 )
 
 
 const emit = defineEmits(['left-padding', 'open-datasets', 'open-sidebar', 'reset-page', 'menu-state-change'])
+const userStore = useUserStore()
 
 // Состояние меню
 const isCollapsed = ref(false)
 const isHovering = ref(true)
 const menuWidth = ref(260) // Добавляем реактивную ширину меню
 const minMenuWidth = 260 // Минимальная ширина
-const maxMenuWidth = 400 // Максимальная ширина
+const maxMenuWidth = 500 // Максимальная ширина
+
+// Немедленно рассчитываем начальную ширину при создании компонента
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    const initialWidth = calculateOptimalWidth()
+    if (initialWidth > menuWidth.value) {
+      menuWidth.value = initialWidth
+    }
+  }, 0)
+}
+
+// Функция для расчета ширины тулбара на основе содержимого
+const calculateToolbarWidth = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return 0
+  }
+
+  try {
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    context.font = '14px system-ui, -apple-system, sans-serif'
+    
+    // Рассчитываем ширину элементов тулбара:
+    let toolbarWidth = 0
+    
+    // 1. Аватар пользователя: 40px
+    toolbarWidth += 40
+    
+    // 2. Имя пользователя + статус "В сети"
+    if (userStore.user) {
+      const firstName = userStore.user.first_name?.trim() || ''
+      const lastName = userStore.user.last_name?.trim() || ''
+      const fullName = `${firstName} ${lastName}`.trim() || 'Гость'
+      
+      // Ширина имени пользователя
+      const nameWidth = context.measureText(fullName).width
+      // Ширина статуса "В сети" (меньший шрифт)
+      context.font = '12px system-ui, -apple-system, sans-serif'
+      const statusWidth = context.measureText('В сети').width
+      context.font = '14px system-ui, -apple-system, sans-serif' // возвращаем обратно
+      
+      // Берем максимальную ширину из имени и статуса
+      toolbarWidth += Math.max(nameWidth, statusWidth) + 15 // +15px для отступов
+    } else {
+      toolbarWidth += 60 // примерная ширина для "Гость"
+    }
+    
+    // 3. Отступ между именем и кнопками
+    toolbarWidth += 15
+    
+    // 4. Кнопки (AI ассистент, смена темы, уведомления)
+    // Каждая кнопка ~32px (24px иконка + 8px padding)
+    toolbarWidth += 32 * 3 // 3 кнопки
+    
+    // 5. Отступы между кнопками (2px между кнопками)
+    toolbarWidth += 2 * 2 // между 3 кнопками = 2 промежутка
+    
+    // 6. Отступы тулбара (padding: 10px + margin: 3% от каждой стороны)
+    // Примерно 20px с каждой стороны = 40px
+    toolbarWidth += 40
+    
+    // 7. Дополнительный запас для комфортного размещения
+    toolbarWidth += 20
+    
+    return toolbarWidth
+  } catch {
+    // В случае ошибки возвращаем базовую ширину
+    return 280
+  }
+}
 
 // Функция для расчета оптимальной ширины меню
 const calculateOptimalWidth = () => {
@@ -94,6 +170,13 @@ const calculateOptimalWidth = () => {
     }
   }
   
+  // Рассчитываем ширину тулбара и учитываем её
+  const toolbarWidth = calculateToolbarWidth()
+  maxWidth = Math.max(maxWidth, toolbarWidth)
+  
+  // Добавляем небольшой запас для комфортного размещения
+  maxWidth += 10
+  
   // Ограничиваем ширину в разумных пределах
   return Math.min(Math.max(maxWidth, minMenuWidth), maxMenuWidth)
 }
@@ -108,21 +191,38 @@ const toggleMenu = () => {
 // Первоначальная установка ширины
 const initializeMenuWidth = () => {
   if (typeof window !== 'undefined') {
-    updateMenuWidth()
+    // Сразу рассчитываем оптимальную ширину
+    const newWidth = calculateOptimalWidth()
+    menuWidth.value = newWidth
+    
     // Устанавливаем правильный padding при инициализации
     setTimeout(() => {
       if (!isCollapsed.value) {
         emit('left-padding', `${menuWidth.value + 40}px`)
       }
       emit('menu-state-change', isCollapsed.value, menuWidth.value)
-    }, 200)
+    }, 100)
+    
+    // Дополнительно обновляем через небольшой промежуток для надежности
+    setTimeout(() => {
+      updateMenuWidth()
+    }, 300)
   }
 }
+
+// Дебаунс функция для пересчета ширины
+let widthUpdateTimeout = null
 
 // Обновляем ширину при изменении содержимого
 const updateMenuWidth = () => {
   if (typeof window !== 'undefined') {
-    setTimeout(() => {
+    // Отменяем предыдущий таймер
+    if (widthUpdateTimeout) {
+      clearTimeout(widthUpdateTimeout)
+    }
+    
+    // Устанавливаем новый таймер с дебаунсингом
+    widthUpdateTimeout = setTimeout(() => {
       const newWidth = calculateOptimalWidth()
       if (newWidth !== menuWidth.value) {
         menuWidth.value = newWidth
@@ -131,8 +231,21 @@ const updateMenuWidth = () => {
         }
         emit('menu-state-change', isCollapsed.value, menuWidth.value)
       }
-    }, 100)
+    }, 150)
   }
+}
+
+// Функция для настройки отслеживания изменений
+const setupWidthTracking = () => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  // Отслеживаем изменения размера окна
+  window.addEventListener('resize', updateMenuWidth)
+  
+  // Принудительно пересчитываем ширину при загрузке
+  updateMenuWidth()
 }
 
 const handleMouseEnter = () => {
@@ -283,6 +396,9 @@ onMounted(async()=>{
   
   // Рассчитываем оптимальную ширину после загрузки данных
   initializeMenuWidth()
+  
+  // Настраиваем отслеживание изменений ширины
+  setupWidthTracking()
 }
 )
 
@@ -337,6 +453,7 @@ const siteName = ref('...')
 // Следим за изменениями в меню для пересчета ширины
 watch(menuSections, updateMenuWidth, { deep: true })
 watch(siteName, updateMenuWidth)
+watch(() => userStore.user, updateMenuWidth, { deep: true })
 
 onMounted(async () => {
   try {
@@ -347,13 +464,18 @@ onMounted(async () => {
     } else {
       siteName.value = 'ERGO MS'
     }
-  } catch (error) {
+  } catch {
     // Тихо устанавливаем значение по умолчанию без логирования ошибки
     siteName.value = 'ERGO MS'
   }
   
   // Обновляем ширину после загрузки названия сайта
   initializeMenuWidth()
+  
+  // Настраиваем отслеживание изменений ширины (дублируем для надежности)
+  setTimeout(() => {
+    setupWidthTracking()
+  }, 500)
 })
 
 </script>

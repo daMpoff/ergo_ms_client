@@ -1,6 +1,6 @@
 <template>
   <div class="menu-toolbar">
-    <div class="tools" :class="{ collapsed: isCollapsed && !isHovering }">
+    <div id="menu-toolbar-content" class="tools" :class="{ collapsed: isCollapsed && !isHovering }">
       <div class="toolbar__user" :class="{ collapsed: isCollapsed && !isHovering }">
         <div class="tools__user__avatar">
           <UserMenu />

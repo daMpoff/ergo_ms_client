@@ -29,7 +29,7 @@ import TheHeader from '@/components/header/TheHeader.vue'
 import StorageSidebar from '@/modules/bi/MainPage/Sidebar/StorageSidebar.vue'
 
 const userStore = useUserStore()
-const leftPadding = ref('280px')
+const leftPadding = ref('300px') // Увеличиваем начальное значение для адаптивной ширины
 const isMenuVisible = ref(window.innerWidth >= 1200)
 const isMenuToggledManually = ref(false)
 const isOverlayVisible = ref(false)
