@@ -1,7 +1,7 @@
 <template>
   <div class="source-settings" :class="{ 'resizing-footer': isResizing }" :style="{ '--footer-height': showHelp ? helpHeight + 'px' : '0px' }">
     <div class="settings-top d-flex align-items-center gap-3">
-      <input v-model="local.name" class="form-control form-control-sm bg-dark text-white flex-grow-1" placeholder="Название поля" />
+      <input v-model="local.name" class="form-control form-control-sm flex-grow-1" placeholder="Название поля" />
       <div class="tab-group">
         <button class="tab-button" :class="{ active: activeTab === 'formula' }" @click="activeTab = 'formula'">Формула</button>
         <button class="tab-button" :class="{ active: activeTab === 'field' }" @click="activeTab = 'field'">Поле из источника</button>
@@ -72,7 +72,7 @@ const fieldsList = computed(() => {
   })
 })
 
-const showHelp = ref(true)
+const showHelp = ref(activeTab.value !== 'field')
 const helpHeight = ref(200)
 let isResizing = false, startY = 0, startH = 0
 
