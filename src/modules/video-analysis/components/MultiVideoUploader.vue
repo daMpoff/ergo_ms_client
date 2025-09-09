@@ -817,6 +817,12 @@ defineExpose({
     }
     
     // Специальные стили для переключателя TTS
+    .form-switch {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .form-switch .form-check-input {
       width: 3rem;
       height: 1.5rem;
@@ -824,6 +830,8 @@ defineExpose({
       background-color: #dee2e6;
       border: 1px solid #dee2e6;
       transition: all 0.3s ease;
+      vertical-align: middle;
+      margin-top: 0;
       
       &:checked {
         background-color: #198754;
@@ -837,6 +845,13 @@ defineExpose({
       &:focus {
         box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
       }
+    }
+
+    .form-switch .form-check-label {
+      margin: 0;
+      line-height: 1;
+      display: flex;
+      align-items: center;
     }
   }
   

@@ -88,6 +88,10 @@
                   <Clock :size="14" />
                   {{ analysis.duration_formatted }}
                 </span>
+                <span class="badge time-badge bg-light text-dark" v-if="analysis.status === 'completed' && analysis.processing_time_formatted">
+                  <Clock :size="14" />
+                  {{ analysis.processing_time_formatted }}
+                </span>
               </div>
               <p class="analysis-description" v-if="analysis.description">
                 {{ analysis.description }}
@@ -325,6 +329,52 @@
                       <div class="setting-content">
                         <span class="setting-label">Фон</span>
                         <span class="setting-value transparent-badge">Прозрачный</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Настройки озвучки -->
+                <div class="subtitle-settings-display mt-3 mb-4" v-if="analysis.tts_enabled !== undefined">
+                  <h6 class="mb-3">
+                    <Volume2 :size="20" class="me-2" />
+                    Настройки озвучки
+                  </h6>
+                  <div class="settings-grid">
+                    <div class="setting-item">
+                      <div class="setting-icon">
+                        <Volume2 :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Озвучка</span>
+                        <span class="setting-value">{{ analysis.tts_enabled ? 'Включена' : 'Выключена' }}</span>
+                      </div>
+                    </div>
+                    <div class="setting-item" v-if="analysis.tts_enabled">
+                      <div class="setting-icon">
+                        <Type :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Язык</span>
+                        <span class="setting-value">{{ analysis.tts_language === 'ru' ? 'Русский' : (analysis.tts_language === 'fr' ? 'Французский' : analysis.tts_language) }}</span>
+                      </div>
+                    </div>
+                    <div class="setting-item" v-if="analysis.tts_enabled">
+                      <div class="setting-icon">
+                        <Type :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Громкость</span>
+                        <span class="setting-value">{{ Math.round((analysis.tts_volume ?? 0) * 100) }}%</span>
+                      </div>
+                    </div>
+                    <div class="setting-item" v-if="analysis.tts_enabled && analysis.tts_voice_model">
+                      <div class="setting-icon">
+                        <Type :size="16" />
+                      </div>
+                      <div class="setting-content">
+                        <span class="setting-label">Модель голоса</span>
+                        <span class="setting-value">{{ analysis.tts_voice_model }}</span>
                       </div>
                     </div>
                   </div>

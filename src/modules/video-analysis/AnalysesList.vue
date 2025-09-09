@@ -22,6 +22,15 @@
           <Upload :size="16" />
           <span>Загрузить видео</span>
         </button>
+        <button 
+          class="btn btn-danger delete-selected-btn" 
+          @click="confirmBulkDelete" 
+          :disabled="selectedIds.size === 0"
+          title="Удалить выбранные"
+        >
+          <Trash2 :size="16" />
+          <span>Удалить выбранные</span>
+        </button>
       </div>
     </div>
 
@@ -152,16 +161,19 @@
     </div>
 
     <div v-else class="analyses-grid">
-      <div class="analysis-card" v-for="item in items" :key="item.id">
+      <div class="analysis-card" v-for="item in items" :key="item.id" :class="{ selected: selectedIds.has(item.id) }" @click="onCardClick(item, $event)">
         <div class="analysis-header" :class="getAnalysisHeaderClass(item.status)">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <span class="badge" :class="statusClass(item.status)">
               {{ item.status_display }}
             </span>
             <div class="analysis-actions">
+              <div class="form-check me-2 delete-check">
+                <input class="form-check-input delete-form-check" type="checkbox" :id="'sel_'+item.id" :checked="selectedIds.has(item.id)" @click.stop @change="toggleSelected(item.id)">
+              </div>
               <button 
                 class="btn btn-sm btn-delete-analysis" 
-                @click="showDeleteConfirm(item)"
+                @click.stop="showDeleteConfirm(item)"
                 title="Удалить анализ"
               >
                 <Trash2 :size="14" />
@@ -179,6 +191,14 @@
               <div class="info-content">
                 <span class="info-label">Длительность</span>
                 <span class="info-value">{{ item.duration_formatted || '-' }}</span>
+              </div>
+            </div>
+
+            <div class="info-item" v-if="item.status === 'completed'">
+              <Clock :size="16" class="info-icon" />
+              <div class="info-content">
+                <span class="info-label">Обработка</span>
+                <span class="info-value">{{ item.processing_time_formatted || '-' }}</span>
               </div>
             </div>
             
@@ -214,6 +234,7 @@
           <router-link 
             :to="`/video-analysis/analysis/${item.id}`" 
             class="btn btn-view-analysis"
+            @click.stop
           >
             <Eye :size="16" />
             <span>Открыть анализ</span>
@@ -390,6 +411,7 @@ import {
 const toast = useToast()
 
 const items = ref([])
+const selectedIds = ref(new Set())
 const stats = ref({ total: 0, by_status: {} })
 const showUploadModal = ref(false)
 const showDeleteModal = ref(false)
@@ -528,6 +550,13 @@ async function load() {
 
 
 
+function onCardClick(item, event) {
+  // Клик по всей карточке переключает выбор, если не по интерактивным элементам
+  // Перестраховка: если событие уже остановлено — ничего не делаем
+  if (event.defaultPrevented) return
+  toggleSelected(item.id)
+}
+
 function showDeleteConfirm(item) {
   itemToDelete.value = item
   showDeleteModal.value = true
@@ -551,6 +580,27 @@ async function confirmDelete() {
 function cancelDelete() {
   showDeleteModal.value = false
   itemToDelete.value = null
+}
+
+function toggleSelected(id) {
+  if (selectedIds.value.has(id)) {
+    selectedIds.value.delete(id)
+  } else {
+    selectedIds.value.add(id)
+  }
+}
+
+async function confirmBulkDelete() {
+  if (selectedIds.value.size === 0) return
+  try {
+    const ids = Array.from(selectedIds.value)
+    await videoAnalysisAPI.bulkDelete(ids)
+    toast.success(`Удалено ${ids.length} анализов`)
+    selectedIds.value.clear()
+    await load()
+  } catch (e) {
+    toast.error('Ошибка массового удаления')
+  }
 }
 
 function goPrev() {
@@ -780,6 +830,14 @@ watch([statusFilter, ordering, pageSize], () => {
       span {
         white-space: nowrap;
       }
+    }
+
+    .delete-selected-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      svg { align-self: center; margin: 0; }
+      span { align-self: center; }
     }
   }
 }
@@ -1074,10 +1132,15 @@ watch([statusFilter, ordering, pageSize], () => {
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
+  cursor: pointer;
   
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  &.selected {
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.35), 0 5px 20px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -1121,6 +1184,23 @@ watch([statusFilter, ordering, pageSize], () => {
     display: flex;
     gap: 0.5rem;
     
+    .delete-check {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .delete-form-check {
+      border-color: #dc3545;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .delete-form-check:checked {
+      background-color: #dc3545;
+      border-color: #dc3545;
+    }
+
     .btn-delete-analysis {
       background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
       border: none;

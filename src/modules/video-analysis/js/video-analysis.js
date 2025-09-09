@@ -35,6 +35,19 @@ class VideoAnalysisAPI {
     if (subtitleOptions.subtitle_background_transparent !== undefined) {
       form.append('subtitle_background_transparent', subtitleOptions.subtitle_background_transparent)
     }
+    // Добавляем настройки TTS
+    if (subtitleOptions.tts_enabled !== undefined) {
+      form.append('tts_enabled', subtitleOptions.tts_enabled)
+    }
+    if (subtitleOptions.tts_volume !== undefined) {
+      form.append('tts_volume', subtitleOptions.tts_volume)
+    }
+    if (subtitleOptions.tts_language) {
+      form.append('tts_language', subtitleOptions.tts_language)
+    }
+    if (subtitleOptions.tts_voice_model) {
+      form.append('tts_voice_model', subtitleOptions.tts_voice_model)
+    }
     
     return apiClient.post(this.base.create, form)
   }
@@ -71,6 +84,23 @@ class VideoAnalysisAPI {
       form.append('subtitle_background_transparent', subtitleOptions.subtitle_background_transparent)
       console.log('Добавлено subtitle_background_transparent:', subtitleOptions.subtitle_background_transparent)
     }
+    // Добавляем настройки TTS
+    if (subtitleOptions.tts_enabled !== undefined) {
+      form.append('tts_enabled', subtitleOptions.tts_enabled)
+      console.log('Добавлено tts_enabled:', subtitleOptions.tts_enabled)
+    }
+    if (subtitleOptions.tts_volume !== undefined) {
+      form.append('tts_volume', subtitleOptions.tts_volume)
+      console.log('Добавлено tts_volume:', subtitleOptions.tts_volume)
+    }
+    if (subtitleOptions.tts_language) {
+      form.append('tts_language', subtitleOptions.tts_language)
+      console.log('Добавлено tts_language:', subtitleOptions.tts_language)
+    }
+    if (subtitleOptions.tts_voice_model) {
+      form.append('tts_voice_model', subtitleOptions.tts_voice_model)
+      console.log('Добавлено tts_voice_model:', subtitleOptions.tts_voice_model)
+    }
     
     return apiClient.post(this.base.bulkCreate, form)
   }
@@ -81,6 +111,10 @@ class VideoAnalysisAPI {
 
   async remove(id) {
     return apiClient.delete(this.base.delete(id))
+  }
+
+  async bulkDelete(ids = []) {
+    return apiClient.post(this.base.bulkDelete, { ids })
   }
 
   async update(id, data) {
