@@ -747,10 +747,15 @@ function getLinesText(count) {
 
 function getAlignmentLabel(alignment) {
   const alignmentLabels = {
-    'bottom': 'Снизу',
-    'top': 'Сверху',
-    'center': 'По центру',
-    'custom': 'Пользовательское'
+    '1': 'Слева снизу',
+    '2': 'По центру снизу',
+    '3': 'Справа снизу',
+    '4': 'Сверху слева',
+    '5': 'По центру слева',
+    '6': 'Сверху по центру',
+    '7': 'Сверху справа',
+    '8': 'По центру',
+    '9': 'Справа по центру'
   }
   return alignmentLabels[alignment] || alignment
 }

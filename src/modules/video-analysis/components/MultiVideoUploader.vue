@@ -185,10 +185,15 @@
           <div class="col-md-6">
             <label class="form-label">Позиция субтитров</label>
             <select v-model="subtitleSettings.alignment" class="form-select">
-              <option value="bottom">Снизу</option>
-              <option value="top">Сверху</option>
-              <option value="center">По центру</option>
-              <option value="custom">Пользовательская</option>
+              <option value="1">Слева снизу</option>
+              <option value="2">По центру снизу</option>
+              <option value="3">Справа снизу</option>
+              <option value="4">Сверху слева</option>
+              <option value="5">По центру слева</option>
+              <option value="6">Сверху по центру</option>
+              <option value="7">Сверху справа</option>
+              <option value="8">По центру</option>
+              <option value="9">Справа по центру</option>
             </select>
           </div>
           
@@ -440,7 +445,7 @@ const subtitleSettings = ref({
   fontColor: '#FFFFFF',
   backgroundColor: '#000000',
   backgroundTransparent: false,
-  alignment: 'bottom',
+  alignment: '2',
   marginVertical: 20,
   marginHorizontal: 0
 })
