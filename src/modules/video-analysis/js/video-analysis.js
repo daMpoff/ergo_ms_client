@@ -61,6 +61,56 @@ class VideoAnalysisAPI {
     return apiClient.post(this.base.create, form)
   }
 
+  // Пофайловая загрузка с прогрессом
+  async createWithProgress(file, title = '', subtitleOptions = {}, onProgress) {
+    const form = new FormData()
+    form.append('video', file)
+    if (title) form.append('title', title)
+
+    if (subtitleOptions.subtitle_lines_count !== undefined) {
+      form.append('subtitle_lines_count', subtitleOptions.subtitle_lines_count)
+    }
+    if (subtitleOptions.subtitle_font_size !== undefined) {
+      form.append('subtitle_font_size', subtitleOptions.subtitle_font_size)
+    }
+    if (subtitleOptions.subtitle_font_color) {
+      form.append('subtitle_font_color', subtitleOptions.subtitle_font_color)
+    }
+    if (subtitleOptions.subtitle_background_color) {
+      form.append('subtitle_background_color', subtitleOptions.subtitle_background_color)
+    }
+    if (subtitleOptions.subtitle_background_transparent !== undefined) {
+      form.append('subtitle_background_transparent', subtitleOptions.subtitle_background_transparent)
+    }
+    if (subtitleOptions.subtitle_alignment) {
+      form.append('subtitle_alignment', subtitleOptions.subtitle_alignment)
+    }
+    if (subtitleOptions.subtitle_margin_vertical !== undefined) {
+      form.append('subtitle_margin_vertical', subtitleOptions.subtitle_margin_vertical)
+    }
+    if (subtitleOptions.subtitle_margin_horizontal !== undefined) {
+      form.append('subtitle_margin_horizontal', subtitleOptions.subtitle_margin_horizontal)
+    }
+    if (subtitleOptions.tts_enabled !== undefined) {
+      form.append('tts_enabled', subtitleOptions.tts_enabled)
+    }
+    if (subtitleOptions.tts_volume !== undefined) {
+      form.append('tts_volume', subtitleOptions.tts_volume)
+    }
+    if (subtitleOptions.tts_language) {
+      form.append('tts_language', subtitleOptions.tts_language)
+    }
+    if (subtitleOptions.tts_voice_model) {
+      form.append('tts_voice_model', subtitleOptions.tts_voice_model)
+    }
+
+    return apiClient.upload(this.base.create, form, true, (pe) => {
+      if (!pe || !pe.total) return
+      const percent = Math.round((pe.loaded * 100) / pe.total)
+      if (typeof onProgress === 'function') onProgress(percent)
+    })
+  }
+
   async bulkCreate(files, titles = [], subtitleOptions = {}) {
     const form = new FormData()
     files.forEach(file => {

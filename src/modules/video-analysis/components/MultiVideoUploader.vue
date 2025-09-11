@@ -329,7 +329,7 @@
         >
           <div class="d-flex justify-content-between align-items-center mb-1">
             <span class="small">{{ progress.filename }}</span>
-            <span class="small text-muted">{{ progress.status }}</span>
+            <span class="small text-muted">{{ getStatusLabel(progress.status) }}</span>
           </div>
           <div class="progress">
             <div 
@@ -437,6 +437,21 @@ const isUploading = ref(false)
 const uploadProgress = ref([])
 const showDeleteModal = ref(false)
 const fileToDelete = ref(null)
+
+function getStatusLabel(status) {
+  switch (status) {
+    case 'pending':
+      return 'Ожидание'
+    case 'uploading':
+      return 'Загрузка'
+    case 'completed':
+      return 'Готово'
+    case 'error':
+      return 'Ошибка'
+    default:
+      return status
+  }
+}
 
 // Настройки субтитров
 const subtitleSettings = ref({
@@ -576,31 +591,17 @@ async function uploadFiles() {
   if (selectedFiles.value.length === 0) return
   
   isUploading.value = true
-  uploadProgress.value = selectedFiles.value.map((file, index) => ({
+  uploadProgress.value = selectedFiles.value.map((file) => ({
     filename: file.name,
     status: 'pending',
     percent: 0
   }))
   
   try {
-    // Импортируем API
     const { videoAnalysisAPI } = await import('../js/video-analysis.js')
     
-    // Обновляем статус на "загрузка"
-    uploadProgress.value.forEach(progress => {
-      progress.status = 'uploading'
-      progress.percent = 50
-    })
-    
-    // Загружаем файлы
-    // Если название не введено, используем название файла
-    const titles = fileTitles.value.map((title, index) => {
-      const trimmedTitle = title.trim()
-      return trimmedTitle || selectedFiles.value[index].name
-    })
-    
-    // Подготавливаем настройки субтитров
-    const subtitleOptions = {
+    // Настройки субтитров / TTS
+    const baseSubtitleOptions = {
       subtitle_lines_count: subtitleSettings.value.linesCount,
       subtitle_font_size: subtitleSettings.value.fontSize,
       subtitle_font_color: subtitleSettings.value.fontColor,
@@ -609,41 +610,54 @@ async function uploadFiles() {
       subtitle_alignment: subtitleSettings.value.alignment,
       subtitle_margin_vertical: subtitleSettings.value.marginVertical,
       subtitle_margin_horizontal: subtitleSettings.value.marginHorizontal,
-      // Настройки TTS
       tts_enabled: ttsSettings.value.enabled,
       tts_volume: ttsSettings.value.volume,
       tts_language: ttsSettings.value.language,
       tts_voice_model: ttsSettings.value.voiceModel
     }
     
-    console.log('Настройки субтитров:', subtitleOptions)
-    console.log('Текущие настройки:', subtitleSettings.value)
+    // Пофайловая загрузка с индивидуальным прогрессом
+    const results = []
+    for (let i = 0; i < selectedFiles.value.length; i++) {
+      const file = selectedFiles.value[i]
+      const titleInput = (fileTitles.value[i] || '').trim()
+      const effectiveTitle = titleInput || file.name
+      // Старт статуса
+      uploadProgress.value[i].status = 'uploading'
+      uploadProgress.value[i].percent = 0
+      
+      try {
+        const res = await videoAnalysisAPI.createWithProgress(
+          file,
+          effectiveTitle,
+          baseSubtitleOptions,
+          (percent) => {
+            uploadProgress.value[i].percent = percent
+          }
+        )
+        results.push(res.data)
+        uploadProgress.value[i].status = 'completed'
+        uploadProgress.value[i].percent = 100
+      } catch (err) {
+        uploadProgress.value[i].status = 'error'
+        uploadProgress.value[i].percent = 100
+        console.error('Upload error for file:', file.name, err)
+        // Продолжаем остальные файлы
+      }
+    }
     
-    const result = await videoAnalysisAPI.bulkCreate(selectedFiles.value, titles, subtitleOptions)
-    
-    // Обновляем прогресс
-    uploadProgress.value.forEach(progress => {
-      progress.status = 'completed'
-      progress.percent = 100
-    })
-    
-    emit('upload-complete', result.data)
-    toast.success(`Загружено ${selectedFiles.value.length} файлов. Обработка началась.`)
-    
-    // Очищаем после успешной загрузки
-    setTimeout(() => {
-      clearFiles()
-    }, 2000)
-    
+    if (results.length > 0) {
+      emit('upload-complete', results)
+      toast.success(`Загружено ${results.length} из ${selectedFiles.value.length} файлов. Обработка началась.`)
+      setTimeout(() => {
+        clearFiles()
+      }, 1500)
+    } else {
+      emit('upload-error', new Error('Не удалось загрузить файлы'))
+      toast.error('Ошибка при загрузке файлов')
+    }
   } catch (error) {
-    console.error('Upload error:', error)
-    
-    // Обновляем прогресс с ошибкой
-    uploadProgress.value.forEach(progress => {
-      progress.status = 'error'
-      progress.percent = 100
-    })
-    
+    console.error('Upload batch error:', error)
     emit('upload-error', error)
     toast.error('Ошибка при загрузке файлов')
   } finally {

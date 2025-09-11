@@ -107,6 +107,16 @@
           <span>Назад к списку</span>
         </router-link>
         <button 
+          class="btn btn-refresh"
+          @click="load"
+          :disabled="loading"
+        >
+          <RefreshCw v-if="!loading" :size="16" />
+          <Loader v-else :size="16" class="spinner" />
+          <span v-if="!loading">Обновить</span>
+          <span v-else>Обновление...</span>
+        </button>
+        <button 
           v-if="analysis.status === 'processing' || analysis.status === 'pending'" 
           class="btn btn-cancel-analysis" 
           @click="cancelAnalysis"
@@ -868,11 +878,6 @@ onMounted(async () => {
   }
   
   await load()
-  timer = setInterval(() => {
-    if (analysis.value && (analysis.value.status === 'pending' || analysis.value.status === 'processing')) {
-      load()
-    }
-  }, 5000)
 })
 
 onBeforeUnmount(() => {

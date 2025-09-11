@@ -142,7 +142,7 @@ class ApiClient {
         }
     }
 
-    async upload(endpoint, formData, needToken = true) {
+    async upload(endpoint, formData, needToken = true, onUploadProgress) {
         try {
             const config = {
                 headers: {
@@ -151,6 +151,9 @@ class ApiClient {
             };
             if (needToken) {
                 this._addAuthToken(config);
+            }
+            if (typeof onUploadProgress === 'function') {
+                config.onUploadProgress = onUploadProgress;
             }
             const response = await this.client.post(endpoint, formData, config);
             return this.handleResponse(response);

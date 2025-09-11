@@ -199,41 +199,43 @@
               <p class="mb-0">Записи о изменениях появятся после первого сохранения</p>
             </div>
             
-            <!-- Мобильная версия (карточки) -->
-            <div v-else class="d-block d-xl-none">
-              <div v-for="item in logs" :key="item.id" class="border-bottom p-3">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <div class="flex-grow-1">
-                    <div class="d-flex align-items-center mb-1">
-                      <User :size="16" class="me-2 text-muted"/>
-                      <strong>{{ item.user || 'Система' }}</strong>
-                      <span class="badge bg-primary ms-2">#{{ item.id }}</span>
-                    </div>
-                    <div class="text-muted small mb-2">
-                      <Calendar :size="14" class="me-1"/>
-                      {{ new Date(item.timestamp).toLocaleString('ru-RU') }}
-                    </div>
-                    <div class="mb-2">
-                      <span class="badge bg-light text-dark">{{ item.action }}</span>
+            <!-- Данные есть - показываем в зависимости от размера экрана -->
+            <div v-else>
+              <!-- Мобильная версия (карточки) -->
+              <div class="d-block d-xl-none">
+                <div v-for="item in logs" :key="item.id" class="border-bottom p-3">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="flex-grow-1">
+                      <div class="d-flex align-items-center mb-1">
+                        <User :size="16" class="me-2 text-muted"/>
+                        <strong>{{ item.user || 'Система' }}</strong>
+                        <span class="badge bg-primary ms-2">#{{ item.id }}</span>
+                      </div>
+                      <div class="text-muted small mb-2">
+                        <Calendar :size="14" class="me-1"/>
+                        {{ new Date(item.timestamp).toLocaleString('ru-RU') }}
+                      </div>
+                      <div class="mb-2">
+                        <span class="badge bg-light text-dark">{{ item.action }}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <div v-if="item.changes && Object.keys(item.changes).length" class="mt-2">
-                  <small class="text-muted">Изменения:</small>
-                  <div class="mt-1">
-                    <div v-for="(change, field) in item.changes" :key="field" class="small text-muted mb-1">
-                      <span class="text-danger">{{ change[0] || 'пусто' }}</span>
-                      <span class="mx-1">→</span>
-                      <span class="text-success">{{ change[1] || 'пусто' }}</span>
+                  
+                  <div v-if="item.changes && Object.keys(item.changes).length" class="mt-2">
+                    <small class="text-muted">Изменения:</small>
+                    <div class="mt-1">
+                      <div v-for="(change, field) in item.changes" :key="field" class="small text-muted mb-1">
+                        <span class="text-danger">{{ change[0] || 'пусто' }}</span>
+                        <span class="mx-1">→</span>
+                        <span class="text-success">{{ change[1] || 'пусто' }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Десктопная версия (таблица) -->
-            <div v-else class="table-responsive d-none d-xl-block">
+              <!-- Десктопная версия (таблица) -->
+              <div class="table-responsive d-none d-xl-block">
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                   <tr>
@@ -291,6 +293,7 @@
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>

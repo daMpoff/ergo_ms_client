@@ -47,7 +47,7 @@ const isCollapsed = ref(false)
 const isHovering = ref(true)
 const menuWidth = ref(260) // Добавляем реактивную ширину меню
 const minMenuWidth = 260 // Минимальная ширина
-const maxMenuWidth = 500 // Максимальная ширина
+const maxMenuWidth = Infinity // Максимальная ширина (без жёсткого ограничения для исключения горизонтального скролла)
 
 // Немедленно рассчитываем начальную ширину при создании компонента
 if (typeof window !== 'undefined') {
@@ -177,8 +177,8 @@ const calculateOptimalWidth = () => {
   // Добавляем небольшой запас для комфортного размещения
   maxWidth += 10
   
-  // Ограничиваем ширину в разумных пределах
-  return Math.min(Math.max(maxWidth, minMenuWidth), maxMenuWidth)
+  // Ограничиваем только минимум, верхний предел не ограничиваем, чтобы меню расширялось без появления горизонтального скролла
+  return Math.max(maxWidth, minMenuWidth)
 }
 
 const toggleMenu = () => {
@@ -504,7 +504,7 @@ onMounted(async () => {
       </div>
     </div>
     <div class="side-header__shadow" style="display: block"></div>
-    <PerfectScrollbar :tag="'ul'" class="side-menu__list p-3" :class="{ short: !isHovering }">
+    <PerfectScrollbar :tag="'ul'" :options="{ suppressScrollX: true, wheelPropagation: false }" class="side-menu__list p-3" :class="{ short: !isHovering }">
       <li v-for="(section, index) in menuSections" :key="index">
         <!-- Сепаратор перед секцией -->
         <div v-if="hasSeparator(index)" class="side-menu__divider side-divider py-3">
@@ -646,6 +646,7 @@ onMounted(async () => {
   list-style: none;
   padding: 0;
   margin: 0;
+  overflow-x: hidden;
 
   &.short {
     overflow: hidden;
@@ -665,5 +666,14 @@ onMounted(async () => {
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+}
+
+// Принудительно скрываем горизонтальный скролл внутри PerfectScrollbar
+.ps {
+  overflow-x: hidden !important;
+}
+.ps__rail-x,
+.ps__thumb-x {
+  display: none !important;
 }
 </style>
