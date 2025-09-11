@@ -122,6 +122,10 @@
           "name": "Стратегические проекты",
           "children": [
             {
+              "routeName": "StrategicProjectsMain",
+              "name": "Главная"
+            },
+            {
               "routeName": "StrategicProjectsDashboard",
               "name": "Дашборд"
             },
