@@ -161,11 +161,15 @@
         },
         {
           "icon": "FolderKanban",
-          "routeName": "ProjectManagement",
+          "routeName": "ProjectEd",
           "name": "Управление проектами",
           "children": [
             {
-              "routeName": "MyProjectsList",
+              "routeName": "ProjectEdMain",
+              "name": "Главная"
+            },
+            {
+              "routeName": "ProjectEdMyProjects",
               "name": "Мои проекты"
             },
             {

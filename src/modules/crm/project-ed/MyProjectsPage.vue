@@ -19,9 +19,9 @@
                             </router-link>
                         </li>
                         <li class="breadcrumb-item">
-                            <router-link to="/crm/strategic-projects">
+                            <router-link to="/crm/project-ed">
                                 <FolderKanban class="lucide align-middle me-1" :size="18" />
-                                Стратегические проекты
+                                Управление проектами
                             </router-link>
                         </li>
                         <li class="breadcrumb-item active" aria-current="page">
@@ -68,7 +68,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { Home, Briefcase, FolderKanban, List } from 'lucide-vue-next'
-import ProjectTable from '@/modules/crm/strategic-projects/components/ProjectTable.vue'
+import ProjectTable from '@/modules/crm/project-ed/components/ProjectTable.vue'
 
 
 const roles = ['Руководитель', 'Исполнитель']

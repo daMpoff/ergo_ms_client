@@ -491,13 +491,28 @@
         "requiresAuth": true
       }
     },
-
-    "ProjectManagement": {
-      "path": "/crm/project-management",
-      "component": "@/modules/crm/project-management/ParentLayout.vue",
-      "redirect": "/crm/project-management/my-projects",
+    "ProjectEd": {
+      "path": "/crm/project-ed",
+      "component": "@/modules/crm/project-ed/ParentLayout.vue",
+      "redirect": "ProjectEdMain",
       "meta": {
         "title": "Управление проектами",
+        "requiresAuth": true
+      }
+    },
+    "ProjectEdMain": {
+      "path": "/crm/project-ed/main",
+      "component": "@/modules/crm/project-ed/MainPage.vue",
+      "meta": {
+        "title": "Управление проектами",
+        "requiresAuth": true
+      }
+    },
+    "ProjectEdMyProjects": {
+      "path": "/crm/project-ed/my-projects",
+      "component": "@/modules/crm/project-ed/MyProjectsPage.vue",
+      "meta": {
+        "title": "Мои проекты",
         "requiresAuth": true
       }
     },

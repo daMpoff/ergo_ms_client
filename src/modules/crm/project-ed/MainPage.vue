@@ -3,7 +3,7 @@
         <div class="page-content">
             <div class="content-projects">
                 <h3>
-                    <router-link :to="{ name: 'MyProjects' }" class="h3-link">Мои проекты</router-link>
+                    <router-link :to="{ name: 'ProjectEdMyProjects' }" class="h3-link">Мои проекты</router-link>
                 </h3>
                 <MyProjectsList />
             </div>

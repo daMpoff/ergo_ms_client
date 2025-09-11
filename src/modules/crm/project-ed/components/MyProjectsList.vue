@@ -9,7 +9,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import ProjectTable from '@/modules/crm/strategic-projects/components/ProjectTable.vue'
+import ProjectTable from '@/modules/crm/project-ed/components/ProjectTable.vue'
 
 // Входные данные (можно передать извне). Если не передали — покажем примеры для визуализации.
 const props = defineProps({
@@ -48,7 +48,7 @@ const router = useRouter()
 
 const onRowClick = () => {}
 const goToMyProjects = () => {
-    router.push({ name: 'MyProjects' })
+    router.push({ name: 'ProjectEdMyProjects' })
 }
 </script>
 

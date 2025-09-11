@@ -9,7 +9,7 @@
 </template>
 
 <script>
-import HeaderBar from '@/components/HeaderBar.vue'
+import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 
 export default {
   name: 'StrategicProjectsParentLayout',

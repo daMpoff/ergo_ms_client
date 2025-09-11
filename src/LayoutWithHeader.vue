@@ -10,7 +10,7 @@
 </template>
 
 <script setup>
-import HeaderBar from '@/components/HeaderBar.vue'
+import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 </script>
 
 <style scoped lang="scss">
