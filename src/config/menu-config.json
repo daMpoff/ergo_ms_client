@@ -173,6 +173,10 @@
               "name": "Мои проекты"
             },
             {
+              "routeName": "ProjectEdCreate",
+              "name": "Создать проект"
+            },
+            {
               "routeName": "ProjectCalendar",
               "name": "Календарь задач"
             },

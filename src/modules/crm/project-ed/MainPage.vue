@@ -1,5 +1,6 @@
 <template>
     <div class="page-container">
+        <Breadcrumbs :items="breadcrumbItems" />
         <div class="page-content">
             <div class="content-projects">
                 <h3>
@@ -39,11 +40,21 @@
 
 <script setup>
 import { ref } from 'vue'
+import { Home } from 'lucide-vue-next'
 import MyProjectsList from './components/MyProjectsList.vue'
 import ProgrammList from './components/ProgrammList.vue'
+import Breadcrumbs from './components/Breadcrumbs.vue'
 
 // Программа развития: выбранная вкладка
 const selectedProgramTab = ref('events')
+
+// Настройка breadcrumbs для главной страницы
+const breadcrumbItems = ref([
+    {
+        label: 'Главная',
+        icon: Home
+    }
+])
 </script>
 
 <style scoped lang="scss">

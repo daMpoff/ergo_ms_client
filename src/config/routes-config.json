@@ -516,6 +516,14 @@
         "requiresAuth": true
       }
     },
+    "ProjectEdCreate": {
+      "path": "/crm/project-ed/create",
+      "component": "@/modules/crm/project-ed/ProjectCreate.vue",
+      "meta": {
+        "title": "Создание проекта",
+        "requiresAuth": true
+      }
+    },
     "ProjectCalendar": {
       "path": "/crm/project-management/calendar",
       "component": "@/modules/crm/project-management/TaskCalendar.vue",

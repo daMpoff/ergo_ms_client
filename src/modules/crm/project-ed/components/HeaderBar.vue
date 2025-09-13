@@ -10,7 +10,13 @@
         </div>
         <div class="header-actions">
             <div class="header-buttons">
-                <div class="button-create" role="button" aria-label="Создать проект">
+                <div 
+                    v-if="!isCreatePage" 
+                    class="button-create" 
+                    role="button" 
+                    aria-label="Создать проект"
+                    @click="navigateToCreate"
+                >
                     <Plus :size="18" />
                     <span>Создать проект</span>
                 </div>
@@ -29,14 +35,27 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { UserRound, Bell, Plus, Search } from 'lucide-vue-next'
 
+const route = useRoute()
+const router = useRouter()
+
 const alertsCount = ref(0)
+
+const isCreatePage = computed(() => {
+    return route.name === 'ProjectEdCreate'
+})
+
 const incrementAlerts = () => {
     if (alertsCount.value < 99) {
         alertsCount.value += 1
     }
+}
+
+const navigateToCreate = () => {
+    router.push({ name: 'ProjectEdCreate' })
 }
 </script>
 

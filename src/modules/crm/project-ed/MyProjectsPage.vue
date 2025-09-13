@@ -1,37 +1,12 @@
 <template>
     <div class="container my-projects-page">
-        <h3 class="mb-3">Мои проекты</h3>
-
         <div class="row">
             <div class="col-12">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb bg-transparent px-0 mb-2">
-                        <li class="breadcrumb-item">
-                            <router-link to="/">
-                                <Home class="lucide align-middle me-1" :size="18" />
-                                Главная
-                            </router-link>
-                        </li>
-                        <li class="breadcrumb-item">
-                            <router-link to="/crm">
-                                <Briefcase class="lucide align-middle me-1" :size="18" />
-                                CRM
-                            </router-link>
-                        </li>
-                        <li class="breadcrumb-item">
-                            <router-link to="/crm/project-ed">
-                                <FolderKanban class="lucide align-middle me-1" :size="18" />
-                                Управление проектами
-                            </router-link>
-                        </li>
-                        <li class="breadcrumb-item active" aria-current="page">
-                            <List class="lucide align-middle me-1" :size="18" />
-                            Мои проекты
-                        </li>
-                    </ol>
-                </nav>
+                <Breadcrumbs :items="breadcrumbItems" />
             </div>
         </div>
+
+        <h3>Мои проекты</h3>
 
         <div class="filters-card">
             <div class="filters-grid">
@@ -69,12 +44,26 @@
 import { computed, ref } from 'vue'
 import { Home, Briefcase, FolderKanban, List } from 'lucide-vue-next'
 import ProjectTable from '@/modules/crm/project-ed/components/ProjectTable.vue'
+import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 
 
 const roles = ['Руководитель', 'Исполнитель']
 const statuses = ['Черновик', 'На утверждении', 'Отклонен', 'В работе', 'Завершен']
 
 const filters = ref({ shortName: '', role: '', status: '' })
+
+// Настройка breadcrumbs
+const breadcrumbItems = ref([
+    {
+        label: 'Главная',
+        to: '/crm/project-ed',
+        icon: Home
+    },
+    {
+        label: 'Мои проекты',
+        icon: List
+    }
+])
 
 // Временные данные для визуализации страницы
 const projects = ref([
@@ -108,10 +97,9 @@ const onRowClick = () => {
 </script>
 
 <style scoped lang="scss">
-.my-projects-page { display: flex; flex-direction: column; gap: 1rem; }
+.my-projects-page { display: flex; flex-direction: column; gap: .5rem; }
 
 .filters-card {
-    /* Bootstrap docs-like callout (info) */
     background-color: rgba(var(--bs-info-rgb, 13, 202, 240), .075);
     border-radius: 1rem;
     padding: 1rem;

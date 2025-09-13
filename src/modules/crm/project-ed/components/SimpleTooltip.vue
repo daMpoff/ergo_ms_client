@@ -1,0 +1,237 @@
+<template>
+    <Teleport to="body">
+        <Transition name="tooltip">
+            <div 
+                v-if="visible && targetElement"
+                ref="tooltipRef"
+                class="simple-tooltip"
+                :style="tooltipStyle"
+                @mouseenter="$emit('mouseenter')"
+                @mouseleave="$emit('mouseleave')"
+            >
+                <div class="tooltip-arrow" :style="arrowStyle"></div>
+                <div class="tooltip-content">
+                    <slot />
+                </div>
+            </div>
+        </Transition>
+    </Teleport>
+</template>
+
+<script setup>
+import { ref, computed, watch, nextTick } from 'vue'
+
+const props = defineProps({
+    visible: {
+        type: Boolean,
+        default: false
+    },
+    targetElement: {
+        type: [HTMLElement, null],
+        default: null
+    },
+    placement: {
+        type: String,
+        default: 'top' // top, bottom, left, right
+    },
+    offset: {
+        type: Number,
+        default: 8 // Отступ от элемента
+    }
+})
+
+defineEmits(['mouseenter', 'mouseleave'])
+
+const tooltipRef = ref(null)
+const tooltipDimensions = ref({ width: 0, height: 0 })
+
+// Отслеживаем изменения видимости для получения размеров тултипа
+watch(() => props.visible, async (newVal) => {
+    if (newVal) {
+        await nextTick()
+        if (tooltipRef.value) {
+            const rect = tooltipRef.value.getBoundingClientRect()
+            tooltipDimensions.value = {
+                width: rect.width,
+                height: rect.height
+            }
+        }
+    }
+})
+
+const tooltipStyle = computed(() => {
+    if (!props.targetElement || !props.visible) {
+        return { display: 'none' }
+    }
+
+    const targetRect = props.targetElement.getBoundingClientRect()
+    const tooltipWidth = tooltipDimensions.value.width || 250 // Дефолтная ширина
+    const tooltipHeight = tooltipDimensions.value.height || 100 // Дефолтная высота
+    const windowWidth = window.innerWidth
+    const windowHeight = window.innerHeight
+    const scrollX = window.scrollX
+    const scrollY = window.scrollY
+    
+    let position = { left: 0, top: 0 }
+    let actualPlacement = props.placement
+    
+    // Вычисляем позицию для размещения сверху
+    const calculateTopPosition = () => {
+        return {
+            left: targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2),
+            top: targetRect.top - tooltipHeight - props.offset
+        }
+    }
+    
+    // Вычисляем позицию для размещения снизу
+    const calculateBottomPosition = () => {
+        return {
+            left: targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2),
+            top: targetRect.bottom + props.offset
+        }
+    }
+    
+    // Пробуем разместить сверху (приоритетное размещение)
+    position = calculateTopPosition()
+    
+    // Проверяем, помещается ли тултип сверху
+    if (position.top < 10) {
+        // Если не помещается сверху, размещаем снизу
+        position = calculateBottomPosition()
+        actualPlacement = 'bottom'
+        
+        // Проверяем, не выходит ли за нижнюю границу экрана
+        if (position.top + tooltipHeight > windowHeight - 10) {
+            // Если и снизу не помещается, все равно показываем сверху, но прижимаем к верху экрана
+            position = calculateTopPosition()
+            position.top = Math.max(10, position.top)
+            actualPlacement = 'top'
+        }
+    }
+    
+    // Корректируем горизонтальную позицию, чтобы не выходить за границы экрана
+    const minLeft = 10
+    const maxLeft = windowWidth - tooltipWidth - 10
+    
+    if (position.left < minLeft) {
+        position.left = minLeft
+    } else if (position.left > maxLeft) {
+        position.left = maxLeft
+    }
+    
+    return {
+        position: 'fixed',
+        left: `${position.left}px`,
+        top: `${position.top}px`,
+        minWidth: '200px',
+        maxWidth: '280px',
+        maxHeight: '220px',
+        zIndex: 9999,
+        '--placement': actualPlacement
+    }
+})
+
+const arrowStyle = computed(() => {
+    if (!props.targetElement || !props.visible) {
+        return {}
+    }
+    
+    const targetRect = props.targetElement.getBoundingClientRect()
+    const tooltipLeft = parseFloat(tooltipStyle.value.left || 0)
+    const placement = tooltipStyle.value['--placement'] || 'top'
+    
+    // Вычисляем позицию стрелки относительно тултипа
+    const arrowOffset = (targetRect.left + targetRect.width / 2) - tooltipLeft
+    
+    return {
+        left: `${arrowOffset}px`,
+        transform: 'translateX(-50%)',
+        ...(placement === 'bottom' ? {
+            top: '-6px',
+            borderTop: 'none',
+            borderBottom: '6px solid #dee2e6'
+        } : {
+            bottom: '-6px',
+            borderBottom: 'none',
+            borderTop: '6px solid #dee2e6'
+        })
+    }
+})
+</script>
+
+<style scoped lang="scss">
+.simple-tooltip {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    position: relative;
+    pointer-events: auto;
+    overflow: hidden;
+}
+
+.tooltip-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #dee2e6;
+    
+    &::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+    }
+    
+    // Стрелка для позиции сверху
+    &:not([style*="border-bottom"]) {
+        &::after {
+            bottom: 1px;
+            border-top: 5px solid white;
+        }
+    }
+    
+    // Стрелка для позиции снизу
+    &[style*="border-bottom"] {
+        &::after {
+            top: 1px;
+            border-bottom: 5px solid white;
+        }
+    }
+}
+
+.tooltip-content {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: #495057;
+}
+
+// Анимации
+.tooltip-enter-active,
+.tooltip-leave-active {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tooltip-enter-from {
+    opacity: 0;
+    transform: translateY(4px);
+}
+
+.tooltip-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+.tooltip-enter-to,
+.tooltip-leave-from {
+    opacity: 1;
+    transform: translateY(0);
+}
+</style>
