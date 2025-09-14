@@ -283,25 +283,20 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="manager" class="form-label required">
+                            <label class="form-label required">
                                 Руководитель проекта
                             </label>
-                            <div class="select-wrapper">
-                                <select
-                                    id="manager"
-                                    v-model="localProvisions.manager"
-                                    class="form-select"
-                                    required
-                                >
-                                    <option value="">Выберите руководителя</option>
-                                    <option v-for="person in availablePersons" :key="person.id" :value="person.id">
-                                        {{ person.name }}, {{ person.position }}
-                                    </option>
-                                </select>
-                                <div class="select-arrow">▼</div>
-                            </div>
-                            <div v-if="errors.manager" class="error-message">
-                                {{ errors.manager }}
+                            <div class="manager-display">
+                                <div class="manager-avatar-container">
+                                    <UserAvatar
+                                        size="medium"
+                                        :title="props.userInfo.name"
+                                    />
+                                    <div class="manager-info">
+                                        <div class="manager-name">{{ props.userInfo.name }}</div>
+                                        <div class="manager-position">{{ props.userInfo.position || 'Руководитель проекта' }}</div>
+                                    </div>
+                                </div>
                             </div>
                             <!-- Комментарий для экспертов -->
                             <div v-if="showComments" class="comment-section">
@@ -462,6 +457,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { generateInitials, generateProjectName, generateShortProjectName } from '@/modules/crm/project-ed/components/steps/js/initialsGenerator.js'
 import { HelpCircle } from 'lucide-vue-next'
+import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 
 const props = defineProps({
     provisions: {
@@ -560,6 +556,39 @@ const convertFromDateString = (dateString) => {
     }
 }
 
+// Функция для получения даты по умолчанию (1 число следующего месяца)
+const getDefaultStartDate = () => {
+    const today = new Date()
+    // Получаем следующий месяц
+    const nextMonth = today.getMonth() + 1
+    const nextYear = nextMonth > 11 ? today.getFullYear() + 1 : today.getFullYear()
+    const actualNextMonth = nextMonth > 11 ? 0 : nextMonth
+    
+    const firstDayOfNextMonth = new Date(nextYear, actualNextMonth, 1)
+    // Используем локальную дату вместо UTC
+    const year = firstDayOfNextMonth.getFullYear()
+    const month = String(firstDayOfNextMonth.getMonth() + 1).padStart(2, '0')
+    const day = String(firstDayOfNextMonth.getDate()).padStart(2, '0')
+    const result = `${year}-${month}-${day}`
+    
+    
+    return result
+}
+
+// Функция для получения даты окончания по умолчанию (31 декабря текущего года)
+const getDefaultEndDate = () => {
+    const today = new Date()
+    const endOfYear = new Date(today.getFullYear(), 11, 31) // 11 = декабрь (0-индексированный)
+    // Используем локальную дату вместо UTC
+    const year = endOfYear.getFullYear()
+    const month = String(endOfYear.getMonth() + 1).padStart(2, '0')
+    const day = String(endOfYear.getDate()).padStart(2, '0')
+    const result = `${year}-${month}-${day}`
+    
+    
+    return result
+}
+
 // Инициализация данных с учетом новой структуры
 const localProvisions = ref({
     // Основные поля
@@ -572,7 +601,7 @@ const localProvisions = ref({
     endDate: props.provisions.endDate || convertToDateString(props.provisions.endDate) || '',
     curator: props.provisions.curator || '',
     customer: props.provisions.customer || '',
-    manager: props.provisions.manager || '',
+    manager: props.provisions.manager || props.userInfo.name || '', // Автоматически устанавливаем создателя проекта
     executors: props.provisions.executors || [''],
     plannedResults: props.provisions.plannedResults || ['', ''],
     budget: props.provisions.budget || 0,
@@ -614,7 +643,6 @@ const isFormValid = computed(() => {
            localProvisions.value.endDate !== '' &&
            localProvisions.value.curator !== '' &&
            localProvisions.value.customer !== '' &&
-           localProvisions.value.manager !== '' &&
            localProvisions.value.executors.some(executor => executor !== '') &&
            localProvisions.value.plannedResults.some(result => result?.trim() !== '')
 })
@@ -704,10 +732,6 @@ const validateForm = () => {
     
     if (!localProvisions.value.customer) {
         errors.value.customer = 'Необходимо выбрать заказчика проекта'
-    }
-    
-    if (!localProvisions.value.manager) {
-        errors.value.manager = 'Необходимо выбрать руководителя проекта'
     }
     
     if (!localProvisions.value.executors.some(executor => executor !== '')) {
@@ -807,6 +831,34 @@ onMounted(() => {
         // Инициализация popover
         initializePopover()
         initializeShortNamePopover()
+        
+        // Устанавливаем даты по умолчанию, если они пустые
+        // Проверяем, есть ли валидные даты
+        const hasValidStartDate = localProvisions.value.startDate && 
+                                 localProvisions.value.startDate !== '' && 
+                                 !isNaN(new Date(localProvisions.value.startDate).getTime())
+        
+        const hasValidEndDate = localProvisions.value.endDate && 
+                               localProvisions.value.endDate !== '' && 
+                               !isNaN(new Date(localProvisions.value.endDate).getTime())
+        
+        if (!hasValidStartDate) {
+            localProvisions.value.startDate = getDefaultStartDate()
+        }
+        if (!hasValidEndDate) {
+            localProvisions.value.endDate = getDefaultEndDate()
+        }
+        
+        // Дополнительная проверка через nextTick
+        nextTick(() => {
+            // Принудительно устанавливаем даты, если они все еще пустые
+            if (!localProvisions.value.startDate || localProvisions.value.startDate === '') {
+                localProvisions.value.startDate = getDefaultStartDate()
+            }
+            if (!localProvisions.value.endDate || localProvisions.value.endDate === '') {
+                localProvisions.value.endDate = getDefaultEndDate()
+            }
+        })
     })
 })
 
@@ -1220,6 +1272,40 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 2rem;
+}
+
+// Стили для отображения руководителя проекта
+.manager-display {
+    margin-bottom: 0.5rem;
+}
+
+.manager-avatar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.manager-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.manager-name {
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.95rem;
+    line-height: 1.2;
+}
+
+.manager-position {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.125rem;
+    line-height: 1.2;
 }
 
 .select-wrapper {
