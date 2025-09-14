@@ -338,43 +338,10 @@
                 <div class="form-section">
                     <div class="form-group">
                         <label class="form-label required">Исполнители проекта</label>
-                        <div class="executors-list">
-                            <div 
-                                v-for="(executor, index) in localProvisions.executors" 
-                                :key="index" 
-                                class="executor-item"
-                            >
-                                <div class="executor-number">{{ index + 1 }}</div>
-                                <div class="select-wrapper">
-                                    <select
-                                        v-model="localProvisions.executors[index]"
-                                        class="form-select executor-select"
-                                        required
-                                    >
-                                        <option value="">Фамилия И.О., должность</option>
-                                        <option v-for="person in availablePersons" :key="person.id" :value="person.id">
-                                            {{ person.name }}, {{ person.position }}
-                                        </option>
-                                    </select>
-                                    <div class="select-arrow">▼</div>
-                                </div>
-                                <button 
-                                    v-if="localProvisions.executors.length > 1"
-                                    type="button" 
-                                    class="remove-executor-btn"
-                                    @click="removeExecutor(index)"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        </div>
-                        <button 
-                            type="button" 
-                            class="add-executor-btn"
-                            @click="addExecutor"
-                        >
-                            + Добавить исполнителя
-                        </button>
+                        <ExecutorSelector
+                            v-model="localProvisions.executors"
+                            :available-users="availablePersons"
+                        />
                         <div v-if="errors.executors" class="error-message">
                             {{ errors.executors }}
                         </div>
@@ -482,6 +449,7 @@ import { generateInitials, generateProjectName, generateShortProjectName } from 
 import { HelpCircle, ChevronDown } from 'lucide-vue-next'
 import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import ExecutorSelector from '@/modules/crm/project-ed/components/ExecutorSelector.vue'
 
 const props = defineProps({
     provisions: {
@@ -638,7 +606,7 @@ const localProvisions = ref({
     curator: props.provisions.curator || '',
     customer: props.provisions.customer || props.rectorInfo.name || '', // Автоматически устанавливаем ректора
     manager: props.provisions.manager || props.userInfo.name || '', // Автоматически устанавливаем создателя проекта
-    executors: props.provisions.executors || [''],
+    executors: props.provisions.executors || [],
     plannedResults: props.provisions.plannedResults || ['', ''],
     budget: props.provisions.budget || 0,
     
@@ -679,7 +647,7 @@ const isFormValid = computed(() => {
            localProvisions.value.startDate !== '' &&
            localProvisions.value.endDate !== '' &&
            localProvisions.value.curator !== '' &&
-           localProvisions.value.executors.some(executor => executor !== '') &&
+           localProvisions.value.executors && localProvisions.value.executors.length > 0 &&
            localProvisions.value.plannedResults.some(result => result?.trim() !== '')
 })
 
@@ -694,15 +662,6 @@ const removeTask = (index) => {
     }
 }
 
-const addExecutor = () => {
-    localProvisions.value.executors.push('')
-}
-
-const removeExecutor = (index) => {
-    if (localProvisions.value.executors.length > 1) {
-        localProvisions.value.executors.splice(index, 1)
-    }
-}
 
 const addResult = () => {
     localProvisions.value.plannedResults.push('')
@@ -768,7 +727,7 @@ const validateForm = () => {
     
     // Заказчик предустановлен (ректор), валидация не нужна
     
-    if (!localProvisions.value.executors.some(executor => executor !== '')) {
+    if (!localProvisions.value.executors || localProvisions.value.executors.length === 0) {
         errors.value.executors = 'Необходимо выбрать хотя бы одного исполнителя'
     }
     
@@ -1548,9 +1507,8 @@ onUnmounted(() => {
     }
 }
 
-// Стили для списков (задачи, исполнители, результаты)
+// Стили для списков (задачи, результаты)
 .tasks-list,
-.executors-list,
 .results-list {
     display: flex;
     flex-direction: column;
@@ -1559,7 +1517,6 @@ onUnmounted(() => {
 }
 
 .task-item,
-.executor-item,
 .result-item {
     display: flex;
     align-items: flex-start;
@@ -1571,7 +1528,6 @@ onUnmounted(() => {
 }
 
 .task-number,
-.executor-number,
 .result-number {
     display: flex;
     align-items: center;
@@ -1593,13 +1549,7 @@ onUnmounted(() => {
     min-height: 60px;
 }
 
-.executor-select {
-    flex: 1;
-    margin: 0;
-}
-
 .remove-task-btn,
-.remove-executor-btn,
 .remove-result-btn {
     display: flex;
     justify-content: center;
@@ -1623,7 +1573,6 @@ onUnmounted(() => {
 }
 
 .add-task-btn,
-.add-executor-btn,
 .add-result-btn {
     padding: 0.75rem 1.5rem;
     background: #28a745;
@@ -1764,14 +1713,12 @@ onUnmounted(() => {
     
     
     .task-item,
-    .executor-item,
     .result-item {
         flex-direction: column;
         gap: 0.75rem;
     }
     
     .task-number,
-    .executor-number,
     .result-number {
         align-self: flex-start;
     }
