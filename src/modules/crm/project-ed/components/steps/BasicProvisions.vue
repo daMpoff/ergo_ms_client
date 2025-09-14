@@ -222,19 +222,47 @@
                             <label for="curator" class="form-label required">
                                 Куратор проекта
                             </label>
-                            <div class="select-wrapper">
-                                <select
-                                    id="curator"
-                                    v-model="localProvisions.curator"
-                                    class="form-select"
-                                    required
+                            <div class="curator-dropdown-wrapper" ref="curatorDropdownRef">
+                                <div 
+                                    class="curator-select-trigger"
+                                    @click="toggleCuratorDropdown"
+                                    :class="{ 'is-open': isCuratorDropdownOpen }"
                                 >
-                                    <option value="">Выберите куратора</option>
-                                    <option v-for="person in availablePersons" :key="person.id" :value="person.id">
-                                        {{ person.name }}, {{ person.position }}
-                                    </option>
-                                </select>
-                                <div class="select-arrow">▼</div>
+                                    <div v-if="getSelectedCurator()" class="curator-selected">
+                                        <DefaultAvatar
+                                            :size="'medium'"
+                                            :title="getSelectedCurator().name"
+                                        />
+                                        <div class="curator-info">
+                                            <div class="curator-name curator-name--selected">{{ getSelectedCurator().name }}</div>
+                                            <div class="curator-position">{{ getSelectedCurator().position }}</div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="curator-placeholder">
+                                        Выберите куратора
+                                    </div>
+                                    <div class="select-arrow" :class="{ 'rotated': isCuratorDropdownOpen }">
+                                        <ChevronDown :size="16" />
+                                    </div>
+                                </div>
+                                
+                                <div v-if="isCuratorDropdownOpen" class="curator-dropdown-list">
+                                    <div 
+                                        v-for="person in availablePersons" 
+                                        :key="person.id" 
+                                        class="curator-dropdown-item"
+                                        @click="selectCurator(person)"
+                                    >
+                                        <DefaultAvatar
+                                            :size="'medium'"
+                                            :title="person.name"
+                                        />
+                                        <div class="curator-info">
+                                            <div class="curator-name">{{ person.name }}</div>
+                                            <div class="curator-position">{{ person.position }}</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div v-if="errors.curator" class="error-message">
                                 {{ errors.curator }}
@@ -251,25 +279,20 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="customer" class="form-label required">
+                            <label class="form-label required">
                                 Заказчик проекта
                             </label>
-                            <div class="select-wrapper">
-                                <select
-                                    id="customer"
-                                    v-model="localProvisions.customer"
-                                    class="form-select"
-                                    required
-                                >
-                                    <option value="">Выберите заказчика</option>
-                                    <option v-for="person in availablePersons" :key="person.id" :value="person.id">
-                                        {{ person.name }}, {{ person.position }}
-                                    </option>
-                                </select>
-                                <div class="select-arrow">▼</div>
-                            </div>
-                            <div v-if="errors.customer" class="error-message">
-                                {{ errors.customer }}
+                            <div class="customer-display">
+                                <div class="customer-avatar-container">
+                                    <DefaultAvatar
+                                        size="medium"
+                                        :title="rectorInfo.name"
+                                    />
+                                    <div class="customer-info">
+                                        <div class="customer-name">{{ rectorInfo.name }}</div>
+                                        <div class="customer-position">{{ rectorInfo.position }}</div>
+                                    </div>
+                                </div>
                             </div>
                             <!-- Комментарий для экспертов -->
                             <div v-if="showComments" class="comment-section">
@@ -456,8 +479,9 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { generateInitials, generateProjectName, generateShortProjectName } from '@/modules/crm/project-ed/components/steps/js/initialsGenerator.js'
-import { HelpCircle } from 'lucide-vue-next'
+import { HelpCircle, ChevronDown } from 'lucide-vue-next'
 import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
+import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const props = defineProps({
     provisions: {
@@ -478,6 +502,14 @@ const props = defineProps({
             name: 'Иванов А.И.',
             initials: 'И.А.'
         })
+    },
+    rectorInfo: {
+        type: Object,
+        default: () => ({
+            name: 'Федонин Олег Николаевич',
+            position: 'Ректор университета',
+            initials: 'Ф.О.Н.'
+        })
     }
 })
 
@@ -497,6 +529,10 @@ const shortNameInfoIconRef = ref(null)
 // Ref для popover элементов
 const popoverElement = ref(null)
 const shortNamePopoverElement = ref(null)
+
+// Состояние для выпадающего списка куратора
+const isCuratorDropdownOpen = ref(false)
+const curatorDropdownRef = ref(null)
 
 // Функция для автоматического изменения высоты textarea
 const autoResizeTextarea = (textarea) => {
@@ -600,7 +636,7 @@ const localProvisions = ref({
     startDate: props.provisions.startDate || convertToDateString(props.provisions.startDate) || '',
     endDate: props.provisions.endDate || convertToDateString(props.provisions.endDate) || '',
     curator: props.provisions.curator || '',
-    customer: props.provisions.customer || '',
+    customer: props.provisions.customer || props.rectorInfo.name || '', // Автоматически устанавливаем ректора
     manager: props.provisions.manager || props.userInfo.name || '', // Автоматически устанавливаем создателя проекта
     executors: props.provisions.executors || [''],
     plannedResults: props.provisions.plannedResults || ['', ''],
@@ -626,11 +662,12 @@ const errors = ref({})
 
 // Моковые данные для выпадающих списков
 const availablePersons = ref([
-    { id: 1, name: 'Иванов И.И.', position: 'Директор' },
-    { id: 2, name: 'Петров П.П.', position: 'Заместитель директора' },
-    { id: 3, name: 'Сидоров С.С.', position: 'Руководитель отдела' },
-    { id: 4, name: 'Козлов К.К.', position: 'Ведущий специалист' },
-    { id: 5, name: 'Морозов М.М.', position: 'Специалист' }
+    { id: 1, name: 'Сканцев Виталий Михайлович', position: 'Первый проректор', initials: 'С.В.М.' },
+    { id: 2, name: 'Шкаберин Виталий Александрович', position: 'Первый проректор по учебной работе и цифровизации', initials: 'Ш.В.А.' },
+    { id: 3, name: 'Киричек Андрей Викторович', position: 'Проректор по перспективному развитию', initials: 'К.А.В.' },
+    { id: 4, name: 'Симкин Альберт Зямович', position: 'Проректор по молодежной политике и воспитательной работе', initials: 'С.А.З.' },
+    { id: 5, name: 'Глебов Глеб Владимирович', position: 'Проректор по АХР', initials: 'Г.Г.В.' },
+    { id: 6, name: 'Геращенкова Татьяна Михайловна', position: 'Проректор по качеству и аккредитации', initials: 'Г.Т.М.' }
 ])
 
 // Валидация формы
@@ -642,7 +679,6 @@ const isFormValid = computed(() => {
            localProvisions.value.startDate !== '' &&
            localProvisions.value.endDate !== '' &&
            localProvisions.value.curator !== '' &&
-           localProvisions.value.customer !== '' &&
            localProvisions.value.executors.some(executor => executor !== '') &&
            localProvisions.value.plannedResults.some(result => result?.trim() !== '')
 })
@@ -730,9 +766,7 @@ const validateForm = () => {
         errors.value.curator = 'Необходимо выбрать куратора проекта'
     }
     
-    if (!localProvisions.value.customer) {
-        errors.value.customer = 'Необходимо выбрать заказчика проекта'
-    }
+    // Заказчик предустановлен (ректор), валидация не нужна
     
     if (!localProvisions.value.executors.some(executor => executor !== '')) {
         errors.value.executors = 'Необходимо выбрать хотя бы одного исполнителя'
@@ -800,6 +834,24 @@ const openCalendar = (inputRef) => {
     }
 }
 
+// Функции для управления выпадающим списком куратора
+const toggleCuratorDropdown = () => {
+    isCuratorDropdownOpen.value = !isCuratorDropdownOpen.value
+}
+
+const selectCurator = (person) => {
+    localProvisions.value.curator = person.id
+    isCuratorDropdownOpen.value = false
+}
+
+const getSelectedCurator = () => {
+    return availablePersons.value.find(person => person.id === localProvisions.value.curator)
+}
+
+const closeCuratorDropdown = () => {
+    isCuratorDropdownOpen.value = false
+}
+
 // Следим за изменениями выбранного мероприятия и обновляем наименование проекта
 watch(() => props.selectedEvent, (newEvent) => {
     if (newEvent) {
@@ -860,6 +912,14 @@ onMounted(() => {
             }
         })
     })
+    
+    // Обработчик клика вне выпадающего списка
+    const handleClickOutside = (event) => {
+        if (curatorDropdownRef.value && !curatorDropdownRef.value.contains(event.target)) {
+            closeCuratorDropdown()
+        }
+    }
+    document.addEventListener('click', handleClickOutside)
 })
 
 // Функция инициализации popover
@@ -1033,6 +1093,9 @@ onUnmounted(() => {
         shortNamePopoverElement.value.remove()
         shortNamePopoverElement.value = null
     }
+    
+    // Удаляем обработчик клика вне выпадающего списка
+    document.removeEventListener('click', handleClickOutside)
 })
 
 </script>
@@ -1108,6 +1171,9 @@ onUnmounted(() => {
 }
 
 .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
     background: white;
     border-radius: 12px;
     padding: 2rem;
@@ -1116,7 +1182,6 @@ onUnmounted(() => {
 }
 
 .form-group {
-    margin-bottom: 2rem;
 
     &:last-child {
         margin-bottom: 0;
@@ -1269,9 +1334,9 @@ onUnmounted(() => {
 
 // Стили для участников
 .participants-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 // Стили для отображения руководителя проекта
@@ -1308,6 +1373,40 @@ onUnmounted(() => {
     line-height: 1.2;
 }
 
+// Стили для отображения заказчика проекта
+.customer-display {
+    margin-bottom: 0.5rem;
+}
+
+.customer-avatar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.customer-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.customer-name {
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.95rem;
+    line-height: 1.2;
+}
+
+.customer-position {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.125rem;
+    line-height: 1.2;
+}
+
 .select-wrapper {
     position: relative;
     
@@ -1322,10 +1421,131 @@ onUnmounted(() => {
     }
 }
 
+// Стили для кастомного выпадающего списка куратора
+.curator-dropdown-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.curator-select-trigger {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 56px; // Высота как у руководителя проекта (40px аватар + 16px отступы)
+    
+    &:hover {
+        border-color: #0d6efd;
+        background: white;
+    }
+    
+    &.is-open {
+        border-color: #0d6efd;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+    }
+}
+
+.curator-selected {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.curator-placeholder {
+    color: #6c757d;
+    flex: 1;
+}
+
+.curator-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.curator-name {
+    font-weight: 500;
+    color: #212529;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    
+    &--selected {
+        font-weight: 600;
+    }
+}
+
+.curator-position {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.125rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.curator-dropdown-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #0d6efd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.curator-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #e9ecef;
+    
+    &:last-child {
+        border-bottom: none;
+    }
+    
+    &:hover {
+        background-color: #f8f9fa;
+    }
+    
+    &:active {
+        background-color: #e9ecef;
+    }
+}
+
 .form-select {
     appearance: none;
     cursor: pointer;
     padding-right: 3rem;
+}
+
+.select-arrow {
+    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.rotated {
+        transform: rotate(180deg);
+    }
 }
 
 // Стили для списков (задачи, исполнители, результаты)
@@ -1525,11 +1745,6 @@ onUnmounted(() => {
 
 // Адаптивность
 @media (max-width: 1024px) {
-    .participants-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-    }
-    
     .dates-row {
         grid-template-columns: 1fr;
         gap: 1.5rem;
@@ -1547,9 +1762,6 @@ onUnmounted(() => {
         text-align: center;
     }
     
-    .participants-grid {
-        grid-template-columns: 1fr;
-    }
     
     .task-item,
     .executor-item,
@@ -1568,6 +1780,18 @@ onUnmounted(() => {
         flex-direction: column;
         align-items: flex-start;
         max-width: none;
+    }
+    
+    .curator-dropdown-list {
+        max-height: 250px;
+    }
+    
+    .curator-name {
+        font-size: 0.9rem;
+    }
+    
+    .curator-position {
+        font-size: 0.75rem;
     }
 }
 
