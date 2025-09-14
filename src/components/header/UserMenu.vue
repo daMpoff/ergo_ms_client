@@ -9,6 +9,8 @@ const userStore = useUserStore()
 const dropdownElement = ref(null)
 let dropdownInstance = null
 
+const emit = defineEmits(['dropdown-toggle'])
+
 // Обработка ошибки загрузки изображения
 const onImageError = () => {
   console.error('Ошибка загрузки аватара в UserMenu')
@@ -24,6 +26,15 @@ onMounted(async () => {
   await nextTick()
   if (dropdownElement.value) {
     dropdownInstance = new Dropdown(dropdownElement.value)
+    
+    // Добавляем обработчики событий для отслеживания состояния dropdown
+    dropdownElement.value.addEventListener('show.bs.dropdown', () => {
+      emit('dropdown-toggle', true)
+    })
+    
+    dropdownElement.value.addEventListener('hide.bs.dropdown', () => {
+      emit('dropdown-toggle', false)
+    })
   }
 })
 

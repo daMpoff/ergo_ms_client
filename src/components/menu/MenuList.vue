@@ -49,6 +49,9 @@ const menuWidth = ref(260) // Добавляем реактивную ширин
 const minMenuWidth = 260 // Минимальная ширина
 const maxMenuWidth = Infinity // Максимальная ширина (без жёсткого ограничения для исключения горизонтального скролла)
 
+// Состояние для отслеживания активных выпадающих элементов тулбара
+const isToolbarDropdownActive = ref(false)
+
 // Немедленно рассчитываем начальную ширину при создании компонента
 if (typeof window !== 'undefined') {
   setTimeout(() => {
@@ -57,6 +60,40 @@ if (typeof window !== 'undefined') {
       menuWidth.value = initialWidth
     }
   }, 0)
+}
+
+// Функция для обрезки текста до определенного количества символов (аналогично MenuToolbar.vue)
+const truncateText = (text, maxLength = 30) => {
+  if (!text || text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
+
+// Функция для получения отображаемого имени пользователя (аналогично MenuToolbar.vue)
+const getDisplayUserName = () => {
+  if (!userStore.user) return 'Гость'
+
+  if (userStore.displayName === 'Гость') return 'Гость'
+
+  const firstName = userStore.user.first_name?.trim()
+  const lastName = userStore.user.last_name?.trim()
+
+  const cleanFirstName = firstName === ' ' ? '' : firstName
+  const cleanLastName = lastName === ' ' ? '' : lastName
+
+  let fullName = ''
+
+  if (cleanFirstName && cleanLastName) {
+    fullName = `${cleanFirstName} ${cleanLastName}`
+  } else if (cleanFirstName) {
+    fullName = cleanFirstName
+  } else if (cleanLastName) {
+    fullName = cleanLastName
+  } else {
+    return 'Гость'
+  }
+
+  // Ограничиваем длину имени до 30 символов (как в MenuToolbar.vue)
+  return truncateText(fullName, 30)
 }
 
 // Функция для расчета ширины тулбара на основе содержимого
@@ -78,12 +115,11 @@ const calculateToolbarWidth = () => {
     
     // 2. Имя пользователя + статус "В сети"
     if (userStore.user) {
-      const firstName = userStore.user.first_name?.trim() || ''
-      const lastName = userStore.user.last_name?.trim() || ''
-      const fullName = `${firstName} ${lastName}`.trim() || 'Гость'
+      // Используем отображаемое имя (с обрезкой до 30 символов)
+      const displayName = getDisplayUserName()
       
-      // Ширина имени пользователя
-      const nameWidth = context.measureText(fullName).width
+      // Ширина отображаемого имени пользователя
+      const nameWidth = context.measureText(displayName).width
       // Ширина статуса "В сети" (меньший шрифт)
       context.font = '12px system-ui, -apple-system, sans-serif'
       const statusWidth = context.measureText('В сети').width
@@ -252,7 +288,18 @@ const handleMouseEnter = () => {
   if (isCollapsed.value) isHovering.value = true
 }
 const handleMouseLeave = () => {
-  if (isCollapsed.value) isHovering.value = false
+  // Если есть активные выпадающие элементы тулбара, не скрываем меню
+  if (isCollapsed.value && !isToolbarDropdownActive.value) {
+    isHovering.value = false
+  }
+}
+
+// Функции для управления состоянием выпадающих элементов тулбара
+const setToolbarDropdownActive = (active) => {
+  isToolbarDropdownActive.value = active
+  if (active && isCollapsed.value) {
+    isHovering.value = true
+  }
 }
 
 const route = useRoute()
@@ -453,7 +500,28 @@ const siteName = ref('...')
 // Следим за изменениями в меню для пересчета ширины
 watch(menuSections, updateMenuWidth, { deep: true })
 watch(siteName, updateMenuWidth)
-watch(() => userStore.user, updateMenuWidth, { deep: true })
+
+// Специальная логика для обновления имени пользователя
+watch(() => userStore.user, (newUser, oldUser) => {
+  // Проверяем, изменилось ли имя пользователя
+  const oldName = oldUser ? `${oldUser.first_name || ''} ${oldUser.last_name || ''}`.trim() : ''
+  const newName = newUser ? `${newUser.first_name || ''} ${newUser.last_name || ''}`.trim() : ''
+  
+  if (oldName !== newName && newName) {
+    // Если имя изменилось и меню свернуто, сначала расширяем его
+    if (isCollapsed.value) {
+      isHovering.value = true
+      // Небольшая задержка для плавного расширения
+      setTimeout(() => {
+        updateMenuWidth()
+      }, 100)
+    } else {
+      updateMenuWidth()
+    }
+  } else {
+    updateMenuWidth()
+  }
+}, { deep: true })
 
 onMounted(async () => {
   try {
@@ -529,7 +597,11 @@ onMounted(async () => {
         />
       </li>
     </PerfectScrollbar>
-    <MenuToolbar :is-collapsed="isCollapsed" :is-hovering="isHovering" />
+    <MenuToolbar 
+      :is-collapsed="isCollapsed" 
+      :is-hovering="isHovering" 
+      @dropdown-state-change="setToolbarDropdownActive"
+    />
   </aside>
   
 </template>

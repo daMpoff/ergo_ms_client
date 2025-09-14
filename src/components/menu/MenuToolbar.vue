@@ -3,10 +3,10 @@
     <div id="menu-toolbar-content" class="tools" :class="{ collapsed: isCollapsed && !isHovering }">
       <div class="toolbar__user" :class="{ collapsed: isCollapsed && !isHovering }">
         <div class="tools__user__avatar">
-          <UserMenu />
+          <UserMenu @dropdown-toggle="(active) => setDropdownActive('userMenu', active)" />
         </div>
         <div class="tools__user__name" v-if="shouldShowFullInfo">
-          <div class="user__fullname">{{ userFullName }}</div>
+          <div class="user__fullname" :title="getFullUserName()">{{ userFullName }}</div>
           <div class="user__description">В сети</div>
         </div>
       </div>
@@ -22,10 +22,10 @@
           </div>
         </div>
         <div class="tools__theme">
-          <ToggleTheme />
+          <ToggleTheme @dropdown-toggle="(active) => setDropdownActive('theme', active)" />
         </div>
         <div class="tools__notifications">
-          <UserNotifications />
+          <UserNotifications @dropdown-toggle="(active) => setDropdownActive('notifications', active)" />
         </div>
       </div>
     </div>
@@ -62,15 +62,40 @@ const props = defineProps({
   },
 })
 
+const emit = defineEmits(['dropdown-state-change'])
+
 const userStore = useUserStore()
 const isAssistantVisible = ref(false)
 const assistantChat = ref(null)
+
+// Состояние для отслеживания активных выпадающих элементов
+const activeDropdowns = ref(new Set())
 
 const shouldShowFullInfo = computed(() => {
   return !props.isCollapsed || props.isHovering
 })
 
-const userFullName = computed(() => {
+// Функции для управления состоянием выпадающих элементов
+const setDropdownActive = (dropdownId, active) => {
+  if (active) {
+    activeDropdowns.value.add(dropdownId)
+  } else {
+    activeDropdowns.value.delete(dropdownId)
+  }
+  
+  // Уведомляем родительский компонент об изменении состояния
+  emit('dropdown-state-change', activeDropdowns.value.size > 0)
+}
+
+
+// Функция для обрезки текста до определенного количества символов
+const truncateText = (text, maxLength = 30) => {
+  if (!text || text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
+
+// Функция для получения полного имени пользователя без обрезки
+const getFullUserName = () => {
   if (!userStore.user) return 'Гость'
 
   if (userStore.displayName === 'Гость') return 'Гость'
@@ -94,6 +119,33 @@ const userFullName = computed(() => {
   }
 
   return 'Гость'
+}
+
+const userFullName = computed(() => {
+  if (!userStore.user) return 'Гость'
+
+  if (userStore.displayName === 'Гость') return 'Гость'
+
+  const firstName = userStore.user.first_name?.trim()
+  const lastName = userStore.user.last_name?.trim()
+
+  const cleanFirstName = firstName === ' ' ? '' : firstName
+  const cleanLastName = lastName === ' ' ? '' : lastName
+
+  let fullName = ''
+
+  if (cleanFirstName && cleanLastName) {
+    fullName = `${cleanFirstName} ${cleanLastName}`
+  } else if (cleanFirstName) {
+    fullName = cleanFirstName
+  } else if (cleanLastName) {
+    fullName = cleanLastName
+  } else {
+    return 'Гость'
+  }
+
+  // Ограничиваем длину имени до 30 символов
+  return truncateText(fullName, 30)
 })
 
 const toggleAssistant = () => {
@@ -347,6 +399,15 @@ const handleHelpIntent = async () => {
 .tools__user__name {
   display: flex;
   flex-direction: column;
+  min-width: 0; // Позволяет flex элементам сжиматься
+  overflow: hidden;
+}
+
+.user__fullname {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .tools-buttons {
