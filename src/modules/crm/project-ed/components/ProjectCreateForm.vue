@@ -187,20 +187,12 @@ const formData = reactive({
         shortName: '',
         projectGoal: '',
         projectTasks: ['', ''],
-        startDate: {
-            day: '',
-            month: '',
-            year: ''
-        },
-        endDate: {
-            day: '',
-            month: '',
-            year: ''
-        },
-        curator: '',
+        startDate: '',
+        endDate: '',
+        curator: null,
         customer: '',
         manager: '',
-        executors: [''],
+        executors: [],
         plannedResults: ['', ''],
         budget: 0,
         
@@ -250,16 +242,12 @@ const canProceed = computed(() => {
                    formData.basicProvisions.shortName.trim() !== '' &&
                    formData.basicProvisions.projectGoal.trim() !== '' &&
                    formData.basicProvisions.projectTasks.some(task => task.trim() !== '') &&
-                   formData.basicProvisions.startDate.day !== '' &&
-                   formData.basicProvisions.startDate.month !== '' &&
-                   formData.basicProvisions.startDate.year !== '' &&
-                   formData.basicProvisions.endDate.day !== '' &&
-                   formData.basicProvisions.endDate.month !== '' &&
-                   formData.basicProvisions.endDate.year !== '' &&
-                   formData.basicProvisions.curator !== '' &&
+                   formData.basicProvisions.startDate !== '' &&
+                   formData.basicProvisions.endDate !== '' &&
+                   formData.basicProvisions.curator !== null &&
                    formData.basicProvisions.customer !== '' &&
                    formData.basicProvisions.manager !== '' &&
-                   formData.basicProvisions.executors.some(executor => executor !== '') &&
+                   formData.basicProvisions.executors && formData.basicProvisions.executors.length > 0 &&
                    formData.basicProvisions.plannedResults.some(result => result.trim() !== '')
         case 3:
             return formData.targetIndicators.quantitative.length > 0 || 

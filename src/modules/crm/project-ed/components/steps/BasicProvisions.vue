@@ -603,7 +603,7 @@ const localProvisions = ref({
     projectTasks: props.provisions.projectTasks || ['', ''],
     startDate: props.provisions.startDate || convertToDateString(props.provisions.startDate) || '',
     endDate: props.provisions.endDate || convertToDateString(props.provisions.endDate) || '',
-    curator: props.provisions.curator || '',
+    curator: props.provisions.curator || null,
     customer: props.provisions.customer || props.rectorInfo.name || '', // Автоматически устанавливаем ректора
     manager: props.provisions.manager || props.userInfo.name || '', // Автоматически устанавливаем создателя проекта
     executors: props.provisions.executors || [],
@@ -646,7 +646,7 @@ const isFormValid = computed(() => {
            localProvisions.value.projectTasks.some(task => task?.trim() !== '') &&
            localProvisions.value.startDate !== '' &&
            localProvisions.value.endDate !== '' &&
-           localProvisions.value.curator !== '' &&
+           localProvisions.value.curator !== null &&
            localProvisions.value.executors && localProvisions.value.executors.length > 0 &&
            localProvisions.value.plannedResults.some(result => result?.trim() !== '')
 })
@@ -721,7 +721,7 @@ const validateForm = () => {
         }
     }
     
-    if (!localProvisions.value.curator) {
+    if (!localProvisions.value.curator || localProvisions.value.curator === null) {
         errors.value.curator = 'Необходимо выбрать куратора проекта'
     }
     
