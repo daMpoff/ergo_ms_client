@@ -46,6 +46,8 @@
                     v-if="currentStep === 2"
                     v-model:provisions="formData.basicProvisions"
                     :user-role="userRole"
+                    :selected-event="formData.event"
+                    :user-info="userInfo"
                     @next="nextStep"
                     @prev="prevStep"
                 />
@@ -125,6 +127,8 @@
 
 <script setup>
 import { ref, computed, reactive, watch } from 'vue'
+import { generateInitials } from '@/modules/crm/project-ed/components/steps/js/initialsGenerator.js'
+import { useUserStore } from '@/modules/cms/js/userStore.js'
 import { 
     Calendar, 
     FileText, 
@@ -137,8 +141,20 @@ import {
     Check
 } from 'lucide-vue-next'
 
-// Роль пользователя (в реальном приложении получается из store или API)
+// Получаем данные пользователя из store
+const userStore = useUserStore()
+
+// Роль пользователя
 const userRole = ref('expert') // Может быть: 'user', 'expert', 'admin', 'supervisor'
+
+// Информация о пользователе из store
+const userInfo = computed(() => {
+    const fullName = userStore.fullName
+    return {
+        name: fullName,
+        initials: generateInitials(fullName)
+    }
+})
 
 // Импорт компонентов этапов
 import EventSelection from './steps/EventSelection.vue'

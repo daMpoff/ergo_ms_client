@@ -14,22 +14,30 @@
                     <div class="form-group">
                         <label for="projectName" class="form-label required">
                             Наименование проекта
+                            <HelpCircle 
+                                ref="infoIconRef"
+                                class="info-icon" 
+                                :size="16"
+                            />
                         </label>
-                        <input
+                        <textarea
                             id="projectName"
+                            ref="projectNameTextarea"
                             v-model="localProvisions.projectName"
-                            type="text"
-                            class="form-input"
+                            class="form-textarea readonly-input auto-resize"
                             placeholder="Код мероприятия-год-инициалы РП(ФИО) наименование мероприятия"
+                            readonly
                             required
-                        />
+                            rows="1"
+                            @input="autoResizeTextarea(projectNameTextarea)"
+                        ></textarea>
                         <div v-if="errors.projectName" class="error-message">
                             {{ errors.projectName }}
                         </div>
                         <input
                             v-model="localProvisions.projectNameClarification"
                             type="text"
-                            class="form-input clarification-input"
+                            class="form-input clarification-field"
                             placeholder="(уточняющее название)"
                         />
                         <!-- Комментарий для экспертов -->
@@ -46,13 +54,19 @@
                     <div class="form-group">
                         <label for="shortName" class="form-label required">
                             Краткое наименование проекта
+                            <HelpCircle 
+                                ref="shortNameInfoIconRef"
+                                class="info-icon" 
+                                :size="16"
+                            />
                         </label>
                         <input
                             id="shortName"
                             v-model="localProvisions.shortName"
                             type="text"
-                            class="form-input"
+                            class="form-input readonly-input"
                             placeholder="Код мероприятия-год-инициалы РП"
+                            readonly
                             required
                         />
                         <div v-if="errors.shortName" class="error-message">
@@ -477,7 +491,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { generateInitials, generateProjectName, generateShortProjectName } from '@/modules/crm/project-ed/components/steps/js/initialsGenerator.js'
+import { HelpCircle } from 'lucide-vue-next'
 
 const props = defineProps({
     provisions: {
@@ -487,10 +503,56 @@ const props = defineProps({
     userRole: {
         type: String,
         default: 'user'
+    },
+    selectedEvent: {
+        type: Object,
+        default: null
+    },
+    userInfo: {
+        type: Object,
+        default: () => ({
+            name: 'Иванов А.И.',
+            initials: 'И.А.'
+        })
     }
 })
 
 const emit = defineEmits(['update:provisions'])
+
+// Ref для textarea наименования проекта
+const projectNameTextarea = ref(null)
+
+// Ref для иконки с popover
+const infoIconRef = ref(null)
+const shortNameInfoIconRef = ref(null)
+
+// Ref для popover элементов
+const popoverElement = ref(null)
+const shortNamePopoverElement = ref(null)
+
+// Функция для автоматического изменения высоты textarea
+const autoResizeTextarea = (textarea) => {
+    if (!textarea) return
+    
+    // Сбрасываем высоту до минимальной
+    textarea.style.height = 'auto'
+    
+    // Получаем высоту содержимого
+    const scrollHeight = textarea.scrollHeight
+    
+    // Устанавливаем минимальную высоту для одной строки (2.5rem)
+    const minHeight = 40 // 2.5rem в пикселях
+    
+    // Устанавливаем максимальную высоту (8rem)
+    const maxHeight = 128 // 8rem в пикселях
+    
+    // Вычисляем оптимальную высоту
+    const optimalHeight = Math.max(scrollHeight, minHeight)
+    const finalHeight = Math.min(optimalHeight, maxHeight)
+    
+    // Устанавливаем высоту
+    textarea.style.height = finalHeight + 'px'
+}
 
 // Определяем, показывать ли комментарии (для экспертов и администраторов)
 const showComments = computed(() => {
@@ -667,10 +729,223 @@ const validateForm = () => {
     return Object.keys(errors.value).length === 0
 }
 
+// Функция для автоматического формирования наименования проекта
+const generateProjectNameLocal = () => {
+    return generateProjectName(props.selectedEvent, props.userInfo)
+}
+
+// Функция для автоматического формирования краткого наименования проекта
+const generateShortProjectNameLocal = () => {
+    return generateShortProjectName(props.selectedEvent, props.userInfo)
+}
+
+// Следим за изменениями выбранного мероприятия и обновляем наименование проекта
+watch(() => props.selectedEvent, (newEvent) => {
+    if (newEvent) {
+        localProvisions.value.projectName = generateProjectNameLocal()
+        localProvisions.value.shortName = generateShortProjectNameLocal()
+        // Автоматически изменяем высоту textarea после обновления содержимого
+        nextTick(() => {
+            autoResizeTextarea(projectNameTextarea.value)
+        })
+    }
+}, { immediate: true })
+
+// Следим за изменениями наименования проекта и автоматически изменяем высоту
+watch(() => localProvisions.value.projectName, () => {
+    nextTick(() => {
+        autoResizeTextarea(projectNameTextarea.value)
+    })
+})
+
 // Следим за изменениями и обновляем родительский компонент
 watch(localProvisions, (newValue) => {
     emit('update:provisions', newValue)
 }, { deep: true })
+
+// Инициализация высоты textarea при монтировании компонента
+onMounted(() => {
+    nextTick(() => {
+        autoResizeTextarea(projectNameTextarea.value)
+        // Инициализация popover
+        initializePopover()
+        initializeShortNamePopover()
+    })
+})
+
+// Функция инициализации popover
+const initializePopover = () => {
+    if (infoIconRef.value) {
+        const iconElement = infoIconRef.value.$el || infoIconRef.value
+        if (iconElement) {
+            console.log('Инициализируем кастомный popover для элемента:', iconElement)
+            
+            // Создаем popover элемент
+            const popover = document.createElement('div')
+            popover.className = 'custom-popover'
+            popover.innerHTML = `
+                <div class="custom-popover-arrow"></div>
+                <div class="custom-popover-content">
+                    Заполняется автоматически на основе выбранного мероприятия
+                </div>`
+            document.body.appendChild(popover)
+            popoverElement.value = popover
+            
+            // Показываем popover при наведении
+            iconElement.addEventListener('mouseenter', () => {
+                const rect = iconElement.getBoundingClientRect()
+                const scrollX = window.pageXOffset || document.documentElement.scrollLeft
+                const scrollY = window.pageYOffset || document.documentElement.scrollTop
+                
+                popover.style.display = 'block'
+                
+                // Позиционируем popover относительно иконки
+                const popoverLeft = rect.left + scrollX + (rect.width / 2) - (popover.offsetWidth / 2)
+                const popoverTop = rect.top + scrollY - popover.offsetHeight - 8
+                
+                popover.style.left = Math.max(10, popoverLeft) + 'px' // Минимум 10px от края
+                popover.style.top = Math.max(10, popoverTop) + 'px'   // Минимум 10px от верха
+            })
+            
+            // Скрываем popover при уходе курсора
+            iconElement.addEventListener('mouseleave', () => {
+                popover.style.display = 'none'
+            })
+            
+            // Скрываем popover при уходе с самого popover
+            popover.addEventListener('mouseleave', () => {
+                popover.style.display = 'none'
+            })
+            
+            // Обработка изменения размера окна
+            const handleResize = () => {
+                if (popover.style.display === 'block') {
+                    const rect = iconElement.getBoundingClientRect()
+                    const scrollX = window.pageXOffset || document.documentElement.scrollLeft
+                    const scrollY = window.pageYOffset || document.documentElement.scrollTop
+                    
+                    const popoverLeft = rect.left + scrollX + (rect.width / 2) - (popover.offsetWidth / 2)
+                    const popoverTop = rect.top + scrollY - popover.offsetHeight - 8
+                    
+                    popover.style.left = Math.max(10, popoverLeft) + 'px'
+                    popover.style.top = Math.max(10, popoverTop) + 'px'
+                }
+            }
+            
+            window.addEventListener('resize', handleResize)
+            window.addEventListener('scroll', handleResize)
+            
+            // Сохраняем обработчики для очистки
+            popover._resizeHandler = handleResize
+            
+            console.log('Кастомный popover создан')
+        } else {
+            console.log('Элемент иконки не найден')
+        }
+    } else {
+        console.log('Ref не найден')
+    }
+}
+
+// Функция инициализации popover для краткого наименования
+const initializeShortNamePopover = () => {
+    if (shortNameInfoIconRef.value) {
+        const iconElement = shortNameInfoIconRef.value.$el || shortNameInfoIconRef.value
+        if (iconElement) {
+            console.log('Инициализируем кастомный popover для краткого наименования:', iconElement)
+            
+            // Создаем popover элемент
+            const popover = document.createElement('div')
+            popover.className = 'custom-popover'
+            popover.innerHTML = `
+                <div class="custom-popover-arrow"></div>
+                <div class="custom-popover-content">
+                    Генерируется автоматически на основе кода мероприятия, года и инициалов
+                </div>`
+            document.body.appendChild(popover)
+            shortNamePopoverElement.value = popover
+            
+            // Показываем popover при наведении
+            iconElement.addEventListener('mouseenter', () => {
+                const rect = iconElement.getBoundingClientRect()
+                const scrollX = window.pageXOffset || document.documentElement.scrollLeft
+                const scrollY = window.pageYOffset || document.documentElement.scrollTop
+                
+                popover.style.display = 'block'
+                
+                // Позиционируем popover относительно иконки
+                const popoverLeft = rect.left + scrollX + (rect.width / 2) - (popover.offsetWidth / 2)
+                const popoverTop = rect.top + scrollY - popover.offsetHeight - 8
+                
+                popover.style.left = Math.max(10, popoverLeft) + 'px' // Минимум 10px от края
+                popover.style.top = Math.max(10, popoverTop) + 'px'   // Минимум 10px от верха
+            })
+            
+            // Скрываем popover при уходе курсора
+            iconElement.addEventListener('mouseleave', () => {
+                popover.style.display = 'none'
+            })
+            
+            // Скрываем popover при уходе с самого popover
+            popover.addEventListener('mouseleave', () => {
+                popover.style.display = 'none'
+            })
+            
+            // Обработка изменения размера окна
+            const handleResize = () => {
+                if (popover.style.display === 'block') {
+                    const rect = iconElement.getBoundingClientRect()
+                    const scrollX = window.pageXOffset || document.documentElement.scrollLeft
+                    const scrollY = window.pageYOffset || document.documentElement.scrollTop
+                    
+                    const popoverLeft = rect.left + scrollX + (rect.width / 2) - (popover.offsetWidth / 2)
+                    const popoverTop = rect.top + scrollY - popover.offsetHeight - 8
+                    
+                    popover.style.left = Math.max(10, popoverLeft) + 'px'
+                    popover.style.top = Math.max(10, popoverTop) + 'px'
+                }
+            }
+            
+            window.addEventListener('resize', handleResize)
+            window.addEventListener('scroll', handleResize)
+            
+            // Сохраняем обработчики для очистки
+            popover._resizeHandler = handleResize
+            
+            console.log('Кастомный popover для краткого наименования создан')
+        } else {
+            console.log('Элемент иконки краткого наименования не найден')
+        }
+    } else {
+        console.log('Ref краткого наименования не найден')
+    }
+}
+
+// Очистка при размонтировании компонента
+onUnmounted(() => {
+    if (popoverElement.value) {
+        // Удаляем обработчики событий
+        if (popoverElement.value._resizeHandler) {
+            window.removeEventListener('resize', popoverElement.value._resizeHandler)
+            window.removeEventListener('scroll', popoverElement.value._resizeHandler)
+        }
+        
+        popoverElement.value.remove()
+        popoverElement.value = null
+    }
+    
+    if (shortNamePopoverElement.value) {
+        // Удаляем обработчики событий
+        if (shortNamePopoverElement.value._resizeHandler) {
+            window.removeEventListener('resize', shortNamePopoverElement.value._resizeHandler)
+            window.removeEventListener('scroll', shortNamePopoverElement.value._resizeHandler)
+        }
+        
+        shortNamePopoverElement.value.remove()
+        shortNamePopoverElement.value = null
+    }
+})
+
 </script>
 
 <style scoped lang="scss">
@@ -760,7 +1035,9 @@ watch(localProvisions, (newValue) => {
 }
 
 .form-label {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
     font-weight: 600;
     color: #212529;
     margin-bottom: 0.75rem;
@@ -770,6 +1047,45 @@ watch(localProvisions, (newValue) => {
         content: ' *';
         color: #dc3545;
     }
+}
+
+.info-icon {
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+// Стили для кастомного popover
+:global(.custom-popover) {
+    position: absolute;
+    z-index: 9999;
+    display: none;
+    max-width: 300px;
+    padding: 0;
+    background: #212529;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+:global(.custom-popover-arrow) {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #212529;
+}
+
+:global(.custom-popover-content) {
+    padding: 12px 16px;
 }
 
 .form-input,
@@ -795,11 +1111,6 @@ watch(localProvisions, (newValue) => {
     }
 }
 
-.clarification-input {
-    margin-top: 0.5rem;
-    background: #f1f3f4;
-    border-style: dashed;
-}
 
 .form-textarea {
     resize: vertical;
@@ -907,24 +1218,24 @@ watch(localProvisions, (newValue) => {
 .remove-task-btn,
 .remove-executor-btn,
 .remove-result-btn {
+    display: flex;
+    justify-content: center;
+    align-self: center;
     width: 2rem;
     height: 2rem;
     border: none;
-    background: #dc3545;
     color: white;
     border-radius: 50%;
     cursor: pointer;
     font-size: 1.2rem;
     font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background-color: #e28e96;
     transition: all 0.2s ease;
     flex-shrink: 0;
 
     &:hover {
         background: #c82333;
-        transform: scale(1.1);
+        transform: scale(1.05);
     }
 }
 
@@ -966,6 +1277,29 @@ watch(localProvisions, (newValue) => {
     cursor: not-allowed;
 }
 
+.readonly-input {
+    background: #e9ecef !important;
+    cursor: not-allowed;
+    color: #495057;
+    resize: none;
+    
+    &:focus {
+        background: #e9ecef !important;
+        border-color: #dee2e6 !important;
+        box-shadow: none !important;
+    }
+}
+
+.auto-resize {
+    min-height: 2.5rem; // Минимальная высота для одной строки
+    max-height: 8rem; // Максимальная высота для ограничения
+    overflow: hidden;
+    transition: height 0.1s ease;
+    line-height: 1.4;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+}
+
 .currency-label {
     font-weight: 600;
     color: #6c757d;
@@ -977,6 +1311,17 @@ watch(localProvisions, (newValue) => {
     font-size: 0.875rem;
     color: #6c757d;
     font-style: italic;
+}
+
+.field-note {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.clarification-field {
+    margin-top: 0.75rem;
 }
 
 // Стили для комментариев экспертов
