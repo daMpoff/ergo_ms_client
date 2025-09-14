@@ -168,32 +168,16 @@
                     <div class="dates-row">
                         <div class="form-group date-group">
                             <label class="form-label required">Дата начала проекта</label>
-                            <div class="date-inputs">
+                            <div class="date-picker-wrapper">
                                 <input
-                                    v-model="localProvisions.startDate.day"
-                                    type="number"
-                                    class="form-input date-input"
-                                    placeholder="ДД"
-                                    min="1"
-                                    max="31"
+                                    ref="startDateInput"
+                                    v-model="localProvisions.startDate"
+                                    type="date"
+                                    class="form-input date-picker"
+                                    :min="minDate"
                                     required
-                                />
-                                <input
-                                    v-model="localProvisions.startDate.month"
-                                    type="number"
-                                    class="form-input date-input"
-                                    placeholder="ММ"
-                                    min="1"
-                                    max="12"
-                                    required
-                                />
-                                <input
-                                    v-model="localProvisions.startDate.year"
-                                    type="number"
-                                    class="form-input date-input"
-                                    placeholder="ГГГГ"
-                                    min="2024"
-                                    required
+                                    @change="validateDateRange"
+                                    @click="openCalendar('startDateInput')"
                                 />
                             </div>
                             <div v-if="errors.startDate" class="error-message">
@@ -203,32 +187,16 @@
 
                         <div class="form-group date-group">
                             <label class="form-label required">Дата окончания проекта</label>
-                            <div class="date-inputs">
+                            <div class="date-picker-wrapper">
                                 <input
-                                    v-model="localProvisions.endDate.day"
-                                    type="number"
-                                    class="form-input date-input"
-                                    placeholder="ДД"
-                                    min="1"
-                                    max="31"
+                                    ref="endDateInput"
+                                    v-model="localProvisions.endDate"
+                                    type="date"
+                                    class="form-input date-picker"
+                                    :min="localProvisions.startDate"
                                     required
-                                />
-                                <input
-                                    v-model="localProvisions.endDate.month"
-                                    type="number"
-                                    class="form-input date-input"
-                                    placeholder="ММ"
-                                    min="1"
-                                    max="12"
-                                    required
-                                />
-                                <input
-                                    v-model="localProvisions.endDate.year"
-                                    type="number"
-                                    class="form-input date-input"
-                                    placeholder="ГГГГ"
-                                    min="2024"
-                                    required
+                                    @change="validateDateRange"
+                                    @click="openCalendar('endDateInput')"
                                 />
                             </div>
                             <div v-if="errors.endDate" class="error-message">
@@ -522,6 +490,10 @@ const emit = defineEmits(['update:provisions'])
 // Ref для textarea наименования проекта
 const projectNameTextarea = ref(null)
 
+// Ref для date picker'ов
+const startDateInput = ref(null)
+const endDateInput = ref(null)
+
 // Ref для иконки с popover
 const infoIconRef = ref(null)
 const shortNameInfoIconRef = ref(null)
@@ -560,6 +532,34 @@ const showComments = computed(() => {
     // return ['expert', 'admin', 'supervisor'].includes(props.userRole)
 })
 
+// Вычисляем минимальную дату (5 лет назад от текущей даты)
+const minDate = computed(() => {
+    const today = new Date()
+    const fiveYearsAgo = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate())
+    return fiveYearsAgo.toISOString().split('T')[0]
+})
+
+// Функция для конвертации старого формата дат в новый
+const convertToDateString = (dateObj) => {
+    if (!dateObj || typeof dateObj !== 'object') return ''
+    const { day, month, year } = dateObj
+    if (!day || !month || !year) return ''
+    
+    const date = new Date(year, month - 1, day)
+    return date.toISOString().split('T')[0]
+}
+
+// Функция для конвертации нового формата в старый (для совместимости)
+const convertFromDateString = (dateString) => {
+    if (!dateString) return { day: '', month: '', year: '' }
+    const date = new Date(dateString)
+    return {
+        day: date.getDate(),
+        month: date.getMonth() + 1,
+        year: date.getFullYear()
+    }
+}
+
 // Инициализация данных с учетом новой структуры
 const localProvisions = ref({
     // Основные поля
@@ -568,16 +568,8 @@ const localProvisions = ref({
     shortName: props.provisions.shortName || '',
     projectGoal: props.provisions.projectGoal || '',
     projectTasks: props.provisions.projectTasks || ['', ''],
-    startDate: {
-        day: props.provisions.startDate?.day || '',
-        month: props.provisions.startDate?.month || '',
-        year: props.provisions.startDate?.year || ''
-    },
-    endDate: {
-        day: props.provisions.endDate?.day || '',
-        month: props.provisions.endDate?.month || '',
-        year: props.provisions.endDate?.year || ''
-    },
+    startDate: props.provisions.startDate || convertToDateString(props.provisions.startDate) || '',
+    endDate: props.provisions.endDate || convertToDateString(props.provisions.endDate) || '',
     curator: props.provisions.curator || '',
     customer: props.provisions.customer || '',
     manager: props.provisions.manager || '',
@@ -618,12 +610,8 @@ const isFormValid = computed(() => {
            localProvisions.value.shortName?.trim() !== '' &&
            localProvisions.value.projectGoal?.trim() !== '' &&
            localProvisions.value.projectTasks.some(task => task?.trim() !== '') &&
-           localProvisions.value.startDate.day !== '' &&
-           localProvisions.value.startDate.month !== '' &&
-           localProvisions.value.startDate.year !== '' &&
-           localProvisions.value.endDate.day !== '' &&
-           localProvisions.value.endDate.month !== '' &&
-           localProvisions.value.endDate.year !== '' &&
+           localProvisions.value.startDate !== '' &&
+           localProvisions.value.endDate !== '' &&
            localProvisions.value.curator !== '' &&
            localProvisions.value.customer !== '' &&
            localProvisions.value.manager !== '' &&
@@ -683,22 +671,26 @@ const validateForm = () => {
     }
     
     // Валидация дат
-    const startDate = localProvisions.value.startDate
-    const endDate = localProvisions.value.endDate
-    
-    if (!startDate.day || !startDate.month || !startDate.year) {
-        errors.value.startDate = 'Дата начала проекта должна быть заполнена полностью'
+    if (!localProvisions.value.startDate) {
+        errors.value.startDate = 'Дата начала проекта обязательна для заполнения'
+    } else {
+        const startDate = new Date(localProvisions.value.startDate)
+        const today = new Date()
+        const fiveYearsAgo = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate())
+        
+        if (startDate < fiveYearsAgo) {
+            errors.value.startDate = 'Дата начала не может быть более чем на 5 лет раньше текущей даты'
+        }
     }
     
-    if (!endDate.day || !endDate.month || !endDate.year) {
-        errors.value.endDate = 'Дата окончания проекта должна быть заполнена полностью'
+    if (!localProvisions.value.endDate) {
+        errors.value.endDate = 'Дата окончания проекта обязательна для заполнения'
     }
     
     // Проверка корректности дат
-    if (startDate.day && startDate.month && startDate.year && 
-        endDate.day && endDate.month && endDate.year) {
-        const start = new Date(startDate.year, startDate.month - 1, startDate.day)
-        const end = new Date(endDate.year, endDate.month - 1, endDate.day)
+    if (localProvisions.value.startDate && localProvisions.value.endDate) {
+        const start = new Date(localProvisions.value.startDate)
+        const end = new Date(localProvisions.value.endDate)
         
         if (start >= end) {
             errors.value.startDate = 'Дата начала должна быть раньше даты окончания'
@@ -737,6 +729,51 @@ const generateProjectNameLocal = () => {
 // Функция для автоматического формирования краткого наименования проекта
 const generateShortProjectNameLocal = () => {
     return generateShortProjectName(props.selectedEvent, props.userInfo)
+}
+
+// Функция для валидации диапазона дат
+const validateDateRange = () => {
+    // Очищаем предыдущие ошибки дат
+    if (errors.value.startDate && (errors.value.startDate.includes('Дата начала должна быть раньше') || 
+        errors.value.startDate.includes('Дата начала не может быть более чем на 5 лет раньше'))) {
+        delete errors.value.startDate
+    }
+    if (errors.value.endDate && errors.value.endDate.includes('Дата окончания должна быть позже')) {
+        delete errors.value.endDate
+    }
+    
+    // Проверяем ограничение на 5 лет для даты начала
+    if (localProvisions.value.startDate) {
+        const startDate = new Date(localProvisions.value.startDate)
+        const today = new Date()
+        const fiveYearsAgo = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate())
+        
+        if (startDate < fiveYearsAgo) {
+            errors.value.startDate = 'Дата начала не может быть более чем на 5 лет раньше текущей даты'
+            return
+        }
+    }
+    
+    // Проверяем диапазон дат
+    if (localProvisions.value.startDate && localProvisions.value.endDate) {
+        const start = new Date(localProvisions.value.startDate)
+        const end = new Date(localProvisions.value.endDate)
+        
+        if (start >= end) {
+            errors.value.startDate = 'Дата начала должна быть раньше даты окончания'
+            errors.value.endDate = 'Дата окончания должна быть позже даты начала'
+        }
+    }
+}
+
+// Функция для открытия календаря
+const openCalendar = (inputRef) => {
+    const input = inputRef === 'startDateInput' ? startDateInput.value : endDateInput.value
+    if (input) {
+        // Фокусируемся на инпуте и открываем календарь
+        input.focus()
+        input.showPicker && input.showPicker()
+    }
 }
 
 // Следим за изменениями выбранного мероприятия и обновляем наименование проекта
@@ -1126,15 +1163,55 @@ onUnmounted(() => {
 }
 
 .date-group {
-    .date-inputs {
+    .date-picker-wrapper {
+        position: relative;
         display: flex;
-        gap: 0.5rem;
-    }
-    
-    .date-input {
-        flex: 1;
-        text-align: center;
-        font-weight: 600;
+        align-items: center;
+        
+        .date-picker {
+            width: 100%;
+            cursor: pointer;
+            font-weight: 500;
+            color: #495057;
+            padding: 0.875rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            
+            &:focus {
+                outline: none;
+                border-color: #0d6efd;
+                background: white;
+                box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+            }
+            
+            &:hover {
+                border-color: #0d6efd;
+                background: white;
+            }
+            
+            // Скрываем стандартную иконку календаря браузера
+            &::-webkit-calendar-picker-indicator {
+                opacity: 0;
+                position: absolute;
+                right: 0;
+                width: 100%;
+                height: 100%;
+                cursor: pointer;
+            }
+            
+            // Для Firefox
+            &::-moz-calendar-picker-indicator {
+                opacity: 0;
+                position: absolute;
+                right: 0;
+                width: 100%;
+                height: 100%;
+                cursor: pointer;
+            }
+        }
     }
 }
 
@@ -1413,12 +1490,7 @@ onUnmounted(() => {
         padding: 1.5rem;
     }
     
-    .date-inputs {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    
-    .date-input {
+    .date-picker-wrapper {
         width: 100%;
     }
 }
