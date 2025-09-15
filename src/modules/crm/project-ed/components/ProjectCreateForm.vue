@@ -211,10 +211,7 @@ const formData = reactive({
             budget: ''
         }
     },
-    targetIndicators: {
-        quantitative: [],
-        qualitative: []
-    },
+    targetIndicators: [],
     calendarPlan: {
         startDate: '',
         endDate: '',
@@ -250,8 +247,7 @@ const canProceed = computed(() => {
                    formData.basicProvisions.executors && formData.basicProvisions.executors.length > 0 &&
                    formData.basicProvisions.plannedResults.some(result => result.trim() !== '')
         case 3:
-            return formData.targetIndicators.quantitative.length > 0 || 
-                   formData.targetIndicators.qualitative.length > 0
+            return formData.targetIndicators.length > 0
         case 4:
             return formData.calendarPlan.startDate !== '' && 
                    formData.calendarPlan.endDate !== ''

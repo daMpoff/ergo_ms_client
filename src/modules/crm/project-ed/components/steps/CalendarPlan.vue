@@ -9,161 +9,100 @@
 
         <div class="form-content">
             <form class="calendar-form">
-                <!-- Основные даты -->
-                <div class="form-section">
-                    <h3 class="section-title">Временные рамки проекта</h3>
-                    
-                    <div class="date-range">
-                        <div class="form-group">
-                            <label for="startDate" class="form-label required">
-                                Дата начала проекта
-                            </label>
-                            <input
-                                id="startDate"
-                                v-model="localPlan.startDate"
-                                type="date"
-                                class="form-input"
-                                required
-                            />
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="endDate" class="form-label required">
-                                Дата окончания проекта
-                            </label>
-                            <input
-                                id="endDate"
-                                v-model="localPlan.endDate"
-                                type="date"
-                                class="form-input"
-                                :min="localPlan.startDate"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div v-if="projectDuration" class="duration-info">
-                        <Calendar class="icon" :size="16" />
-                        Продолжительность проекта: {{ projectDuration }} дней
-                    </div>
-                </div>
-
-                <!-- Вехи проекта -->
+                <!-- Этапы проекта -->
                 <div class="form-section">
                     <div class="section-header">
-                        <h3 class="section-title">Ключевые вехи проекта</h3>
-                        <button
-                            type="button"
-                            class="btn btn-outline-primary btn-sm"
-                            @click="addMilestone"
-                        >
-                            <Plus class="btn-icon" :size="16" />
-                            Добавить веху
-                        </button>
-                    </div>
-
-                    <div class="milestones-list">
-                        <div
-                            v-for="(milestone, index) in localPlan.milestones"
-                            :key="`milestone-${index}`"
-                            class="milestone-card"
-                        >
-                            <div class="milestone-header">
-                                <h4>Веха {{ index + 1 }}</h4>
-                                <button
-                                    type="button"
-                                    class="btn-remove"
-                                    @click="removeMilestone(index)"
-                                >
-                                    <X class="icon" :size="16" />
-                                </button>
-                            </div>
-                            
-                            <div class="milestone-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="form-label required">Название вехи</label>
-                                        <input
-                                            v-model="milestone.name"
-                                            type="text"
-                                            class="form-input"
-                                            placeholder="Например: Завершение планирования"
-                                        />
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label required">Планируемая дата</label>
-                                        <input
-                                            v-model="milestone.date"
-                                            type="date"
-                                            class="form-input"
-                                            :min="localPlan.startDate"
-                                            :max="localPlan.endDate"
-                                        />
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Описание</label>
-                                    <textarea
-                                        v-model="milestone.description"
-                                        class="form-textarea"
-                                        rows="2"
-                                        placeholder="Описание вехи и ожидаемых результатов"
-                                    ></textarea>
-                                </div>
-                            </div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-outline-primary btn-sm" @click="addStage">
+                                <Plus class="btn-icon" :size="16" />
+                                Добавить этап
+                            </button>
                         </div>
                     </div>
 
-                    <div v-if="localPlan.milestones.length === 0" class="empty-state">
+                    <div class="stages-grid">
+                        <div
+                            v-for="(stage, index) in localPlan.stages"
+                            :key="`stage-${index}`"
+                            class="stage-row"
+                        >
+                            <div class="stage-number">{{ index + 1 }}</div>
+
+                            <div class="field">
+                                <input
+                                    v-model="stage.name"
+                                    type="text"
+                                    class="form-input"
+                                    placeholder="наименование этапа"
+                                />
+                                <div class="field-caption">наименование этапа</div>
+                            </div>
+
+                            <div class="field field--with-icon" :class="{ 'is-readonly': index === 0 }">
+                                <div class="date-input-wrapper">
+                                    <input
+                                        v-model="stage.start"
+                                        @click="openNativePicker"
+                                        type="date"
+                                        class="form-input"
+                                        :readonly="index === 0"
+                                        :min="normalizedStartDate"
+                                        :max="normalizedEndDate"
+                                    />
+                                    <div v-if="index === 0" class="info-icon" @mouseenter="showInfo('start', index, $event)" @mouseleave="hideInfo">
+                                        <CircleQuestionMark :size="18" />
+                                    </div>
+                                </div>
+                                <div class="field-caption">дата начала</div>
+                            </div>
+
+                            <div class="field field--with-icon" :class="{ 'is-readonly': index === localPlan.stages.length - 1 }">
+                                <div class="date-input-wrapper">
+                                    <input
+                                        v-model="stage.end"
+                                        @click="openNativePicker"
+                                        type="date"
+                                        class="form-input"
+                                        :readonly="index === localPlan.stages.length - 1"
+                                        :min="normalizedStartDate"
+                                        :max="normalizedEndDate"
+                                    />
+                                    <div v-if="index === localPlan.stages.length - 1" class="info-icon" @mouseenter="showInfo('end', index, $event)" @mouseleave="hideInfo">
+                                        <CircleQuestionMark :size="18" />
+                                    </div>
+                                </div>
+                                <div class="field-caption">дата окончания</div>
+                            </div>
+
+                            <div class="field">
+                                <input
+                                    v-model="stage.result"
+                                    type="text"
+                                    class="form-input"
+                                    placeholder="планируемые результаты работы"
+                                />
+                                <div class="field-caption">планируемые результаты работы</div>
+                            </div>
+
+                            <button
+                                v-if="localPlan.stages.length > 1"
+                                type="button"
+                                class="btn-remove stage-remove"
+                                @click="removeStage(index)"
+                                aria-label="Удалить этап"
+                            >
+                                <X class="icon" :size="16" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="localPlan.stages.length === 0" class="empty-state">
                         <Calendar class="empty-icon" :size="48" />
-                        <h4>Нет вех проекта</h4>
-                        <p>Добавьте ключевые этапы для отслеживания прогресса</p>
-                        <button
-                            type="button"
-                            class="btn btn-primary"
-                            @click="addMilestone"
-                        >
-                            <Plus class="btn-icon" :size="16" />
-                            Добавить первую веху
+                        <h4>Нет этапов</h4>
+                        <p>Добавьте этапы проекта</p>
+                        <button type="button" class="btn btn-primary" @click="addStage">
+                            <Plus class="btn-icon" :size="16" /> Добавить первый этап
                         </button>
-                    </div>
-                </div>
-
-                <!-- Календарная визуализация -->
-                <div v-if="localPlan.milestones.length > 0" class="form-section">
-                    <h3 class="section-title">Временная шкала проекта</h3>
-                    <div class="timeline">
-                        <div class="timeline-item start">
-                            <div class="timeline-marker start"></div>
-                            <div class="timeline-content">
-                                <h5>Начало проекта</h5>
-                                <p>{{ formatDate(localPlan.startDate) }}</p>
-                            </div>
-                        </div>
-                        
-                        <div
-                            v-for="(milestone, index) in sortedMilestones"
-                            :key="`timeline-${index}`"
-                            class="timeline-item milestone"
-                        >
-                            <div class="timeline-marker milestone"></div>
-                            <div class="timeline-content">
-                                <h5>{{ milestone.name }}</h5>
-                                <p>{{ formatDate(milestone.date) }}</p>
-                                <p v-if="milestone.description" class="description">
-                                    {{ milestone.description }}
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-item end">
-                            <div class="timeline-marker end"></div>
-                            <div class="timeline-content">
-                                <h5>Окончание проекта</h5>
-                                <p>{{ formatDate(localPlan.endDate) }}</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </form>
@@ -173,11 +112,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, nextTick, onUnmounted } from 'vue'
 import { 
     Calendar, 
     Plus, 
-    X
+    X,
+    CircleHelp as CircleQuestionMark
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -189,51 +129,171 @@ const props = defineProps({
 
 const emit = defineEmits(['update:plan'])
 
+// Нормализация дат к формату YYYY-MM-DD (поддержка старых структур)
+const toISODate = (value) => {
+    if (!value) return ''
+    if (typeof value === 'string') {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+        const parsed = new Date(value)
+        if (!isNaN(parsed)) {
+            const y = parsed.getFullYear()
+            const m = String(parsed.getMonth() + 1).padStart(2, '0')
+            const d = String(parsed.getDate()).padStart(2, '0')
+            return `${y}-${m}-${d}`
+        }
+        return ''
+    }
+    if (value instanceof Date && !isNaN(value)) {
+        const y = value.getFullYear()
+        const m = String(value.getMonth() + 1).padStart(2, '0')
+        const d = String(value.getDate()).padStart(2, '0')
+        return `${y}-${m}-${d}`
+    }
+    if (typeof value === 'object' && value.day && value.month && value.year) {
+        const y = value.year
+        const m = String(value.month).padStart(2, '0')
+        const d = String(value.day).padStart(2, '0')
+        return `${y}-${m}-${d}`
+    }
+    return ''
+}
+
 // Локальные данные
 const localPlan = ref({
-    startDate: props.plan.startDate || '',
-    endDate: props.plan.endDate || '',
-    milestones: [...(props.plan.milestones || [])]
+    startDate: toISODate(props.plan.startDate) || '',
+    endDate: toISODate(props.plan.endDate) || '',
+    stages: props.plan.stages ? [...props.plan.stages] : [
+        { name: '', start: '', end: '', result: '' },
+        { name: '', start: '', end: '', result: '' },
+        { name: '', start: '', end: '', result: '' }
+    ]
 })
 
 // Вычисляемые свойства
 const projectDuration = computed(() => {
-    if (!localPlan.value.startDate || !localPlan.value.endDate) {
-        return null
-    }
-    
+    if (!localPlan.value.startDate || !localPlan.value.endDate) return null
     const start = new Date(localPlan.value.startDate)
     const end = new Date(localPlan.value.endDate)
     const diffTime = Math.abs(end - start)
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    return diffDays
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 })
 
-const sortedMilestones = computed(() => {
-    return [...localPlan.value.milestones].sort((a, b) => 
-        new Date(a.date) - new Date(b.date)
-    )
-})
+const normalizedStartDate = computed(() => toISODate(localPlan.value.startDate))
+const normalizedEndDate = computed(() => toISODate(localPlan.value.endDate))
+
+// Даты по умолчанию (как в BasicProvisions)
+const getDefaultStartDate = () => {
+    const today = new Date()
+    const nextMonth = today.getMonth() + 1
+    const nextYear = nextMonth > 11 ? today.getFullYear() + 1 : today.getFullYear()
+    const actualNextMonth = nextMonth > 11 ? 0 : nextMonth
+    const firstDay = new Date(nextYear, actualNextMonth, 1)
+    return toISODate(firstDay)
+}
+
+const getDefaultEndDate = () => {
+    const today = new Date()
+    const endOfYear = new Date(today.getFullYear(), 11, 31)
+    return toISODate(endOfYear)
+}
+
 
 const isFormValid = computed(() => {
-    return localPlan.value.startDate !== '' && 
-           localPlan.value.endDate !== '' &&
-           new Date(localPlan.value.startDate) < new Date(localPlan.value.endDate)
+    return localPlan.value.startDate !== '' &&
+        localPlan.value.endDate !== '' &&
+        new Date(localPlan.value.startDate) < new Date(localPlan.value.endDate)
 })
 
 // Методы
-const addMilestone = () => {
-    localPlan.value.milestones.push({
-        name: '',
-        date: '',
-        description: ''
-    })
+const addStage = () => {
+    localPlan.value.stages.push({ name: '', start: '', end: '', result: '' })
 }
 
-const removeMilestone = (index) => {
-    localPlan.value.milestones.splice(index, 1)
+const removeStage = (index) => {
+    localPlan.value.stages.splice(index, 1)
 }
+
+// Обработчики больше не нужны — используем v-model у инпутов дат
+
+// Открыть нативный пикер даты по клику/фокусу
+const openNativePicker = (e) => {
+    const el = e?.target
+    // Блокируем не пользовательские вызовы и readonly инпуты
+    if (!e?.isTrusted || !el || el.readOnly) return
+    if (typeof el.showPicker === 'function') {
+        try {
+            el.showPicker()
+        } catch (_) {
+            // в браузерах без поддержки или без активации пользователя — просто игнорируем
+        }
+    }
+}
+
+// Поповер как в BasicProvisions
+const datePopover = ref(null)
+let popoverTarget = null
+
+const ensureDatePopover = () => {
+    if (!datePopover.value) {
+        const popover = document.createElement('div')
+        popover.className = 'custom-popover'
+        popover.innerHTML = `
+            <div class="custom-popover-arrow"></div>
+            <div class="custom-popover-content"></div>
+        `
+        document.body.appendChild(popover)
+        datePopover.value = popover
+
+        const handleResize = () => repositionPopover()
+        window.addEventListener('resize', handleResize)
+        window.addEventListener('scroll', handleResize)
+        popover._resizeHandler = handleResize
+    }
+}
+
+const repositionPopover = () => {
+    if (!datePopover.value || !popoverTarget) return
+    const rect = popoverTarget.getBoundingClientRect()
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop
+    const pop = datePopover.value
+    pop.style.display = 'block'
+    // позиционируем над центром иконки
+    const left = rect.left + scrollX + rect.width / 2 - pop.offsetWidth / 2
+    const top = rect.top + scrollY - pop.offsetHeight - 8
+    pop.style.left = Math.max(10, left) + 'px'
+    pop.style.top = Math.max(10, top) + 'px'
+}
+
+const showInfo = (type, index, evt) => {
+    ensureDatePopover()
+    const target = evt?.currentTarget
+    if (!datePopover.value || !target) return
+    popoverTarget = target
+    const content = datePopover.value.querySelector('.custom-popover-content')
+    if (content) {
+        content.textContent = type === 'start' ? 'Дата берётся из даты начала проекта' : 'Дата берётся из даты окончания проекта'
+    }
+    repositionPopover()
+}
+
+const hideInfo = () => {
+    if (datePopover.value) {
+        datePopover.value.style.display = 'none'
+    }
+    popoverTarget = null
+}
+
+onUnmounted(() => {
+    if (datePopover.value) {
+        if (datePopover.value._resizeHandler) {
+            window.removeEventListener('resize', datePopover.value._resizeHandler)
+            window.removeEventListener('scroll', datePopover.value._resizeHandler)
+        }
+        datePopover.value.remove()
+        datePopover.value = null
+    }
+})
 
 const formatDate = (dateString) => {
     if (!dateString) return ''
@@ -247,10 +307,39 @@ const formatDate = (dateString) => {
 }
 
 
+// Синхронизация дат: начало первого этапа и окончание последнего
+watch(() => [normalizedStartDate.value, normalizedEndDate.value, localPlan.value.stages.length], () => {
+    if (localPlan.value.stages.length > 0) {
+        // проставляем значения прямо в модели этапов, в ISO-формате
+        localPlan.value.stages[0].start = normalizedStartDate.value || ''
+        localPlan.value.stages[localPlan.value.stages.length - 1].end = normalizedEndDate.value || ''
+    }
+}, { immediate: true })
+
+// При изменении входных данных плана снаружи (выбор мероприятия), подтягиваем даты в первый/последний этап
+watch(() => props.plan, (newPlan) => {
+    if (!newPlan) return
+    if (newPlan.startDate !== undefined) localPlan.value.startDate = toISODate(newPlan.startDate)
+    if (newPlan.endDate !== undefined) localPlan.value.endDate = toISODate(newPlan.endDate)
+}, { deep: true, immediate: true })
+
 // Следим за изменениями и обновляем родительский компонент
 watch(localPlan, (newValue) => {
     emit('update:plan', newValue)
 }, { deep: true })
+
+// Инициализация дат по умолчанию при пустых значениях (поведение как в BasicProvisions)
+onMounted(() => {
+    nextTick(() => {
+        if (!localPlan.value.startDate) localPlan.value.startDate = getDefaultStartDate()
+        if (!localPlan.value.endDate) localPlan.value.endDate = getDefaultEndDate()
+        // Притянуть сразу в этапы
+        if (localPlan.value.stages.length > 0) {
+            localPlan.value.stages[0].start = normalizedStartDate.value
+            localPlan.value.stages[localPlan.value.stages.length - 1].end = normalizedEndDate.value
+        }
+    })
+})
 </script>
 
 <style scoped lang="scss">
@@ -352,10 +441,108 @@ watch(localPlan, (newValue) => {
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
 }
+.form-input[type='date'] {
+
+    &::-webkit-calendar-picker-indicator {
+        position: absolute;
+        right: 12px;
+    }
+
+    &::-moz-calendar-picker-indicator {
+        position: absolute;
+        right: 12px;
+    }
+}
+
 
 .form-textarea {
     resize: vertical;
     min-height: 80px;
+}
+
+// Сетка этапов
+.stages-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.stage-row {
+    display: grid;
+    grid-template-columns: 48px 1.2fr 0.9fr 0.9fr 1.4fr 40px;
+    gap: 0.75rem;
+    align-items: start;
+}
+
+.stage-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+}
+
+.field-caption {
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.field--with-icon .date-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.field--with-icon .info-icon {
+    position: absolute;
+    right: 16px; // оставляем место под нативную иконку календаря
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-secondary-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto; // позволяем hover
+    cursor: help;
+    z-index: 2;
+}
+
+.date-info-popover {
+    position: absolute;
+    z-index: 1100;
+    background: #212529;
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-width: 220px;
+    pointer-events: none;
+}
+
+// Чтобы иконка не перекрывала текст
+.field--with-icon .form-input {
+    width: 100%;
+}
+
+.stage-remove {
+    align-self: start;
+    margin-top: 8px; // выравнивание относительно высоты инпута, а не всей строки
+}
+
+.form-input[readonly] {
+    background: #e9ecef;
+    cursor: not-allowed;
 }
 
 .duration-info {
@@ -420,6 +607,13 @@ watch(localPlan, (newValue) => {
     .icon {
         flex-shrink: 0;
     }
+}
+
+// Выровнять кнопку удаления по вертикали относительно инпута
+.stage-row .stage-remove {
+    height: 40px;
+    width: 40px;
+    display: inline-flex;
 }
 
 .milestone-form {
@@ -546,6 +740,15 @@ watch(localPlan, (newValue) => {
         flex-direction: column;
         gap: 1rem;
         align-items: stretch;
+    }
+
+    .stage-row {
+        grid-template-columns: 32px 1fr;
+    }
+
+    .stage-remove {
+        grid-column: 2 / 3;
+        justify-self: start;
     }
 
     .timeline {

@@ -502,6 +502,13 @@ const shortNamePopoverElement = ref(null)
 const isCuratorDropdownOpen = ref(false)
 const curatorDropdownRef = ref(null)
 
+// Глобальный обработчик клика вне выпадающего списка
+const handleClickOutside = (event) => {
+    if (curatorDropdownRef.value && !curatorDropdownRef.value.contains(event.target)) {
+        closeCuratorDropdown()
+    }
+}
+
 // Функция для автоматического изменения высоты textarea
 const autoResizeTextarea = (textarea) => {
     if (!textarea) return
@@ -873,11 +880,6 @@ onMounted(() => {
     })
     
     // Обработчик клика вне выпадающего списка
-    const handleClickOutside = (event) => {
-        if (curatorDropdownRef.value && !curatorDropdownRef.value.contains(event.target)) {
-            closeCuratorDropdown()
-        }
-    }
     document.addEventListener('click', handleClickOutside)
 })
 
