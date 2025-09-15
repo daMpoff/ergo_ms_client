@@ -107,7 +107,7 @@
           <span>Назад к списку</span>
         </router-link>
         <button 
-          class="btn btn-refresh"
+          class="btn btn-warning btn-refresh"
           @click="load"
           :disabled="loading"
         >
@@ -589,7 +589,7 @@ import {
   Video, ArrowLeft, Trash2, Clock, CheckCircle, AlertTriangle, 
   Info, Calendar, Play, FileText, Download, Volume2, Hourglass, 
   Loader, Settings, AlignLeft, Type, Palette, Square, Eye, Edit3, Save, X,
-  AlignCenter, MoveVertical, MoveHorizontal
+  AlignCenter, MoveVertical, MoveHorizontal, RefreshCw
 } from 'lucide-vue-next'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
