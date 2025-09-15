@@ -408,7 +408,7 @@
       "list": [
         {
           "routeName": "ImpulsAnalysisMain",
-          "name": "Создание анализа"
+          "name": "Загрузка файлов"
         },
         {
           "routeName": "ImpulsAnalysisList",

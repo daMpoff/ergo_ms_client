@@ -21,7 +21,7 @@ import NavigationButtons from '@/components/NavigationButtons.vue'
 const navigationButtons = computed(() => [
   {
     icon: FileText,
-    title: 'Создание анализа',
+    title: 'Загрузка файлов',
     link: 'ImpulsAnalysisMain'
   },
   {

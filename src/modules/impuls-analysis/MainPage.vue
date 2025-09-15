@@ -8,8 +8,8 @@
             <Zap :size="28" color="white" />
           </div>
           <div class="page-title">
-            <h1>Создание анализа</h1>
-            <p class="page-subtitle">Загрузка файлов и создание анализов импульсных нагрузок</p>
+            <h1>Загрузка файлов</h1>
+            <p class="page-subtitle">Импорт данных для анализов импульсных нагрузок</p>
           </div>
         </div>
       </div>
@@ -25,7 +25,7 @@
     <!-- Формы -->
     <div class="row g-4">
       <!-- Загрузка файлов для импорта данных -->
-      <div class="col-lg-6">
+      <div class="col-lg-12">
         <div class="action-card upload-card">
           <div class="card-header">
             <div class="card-icon">
@@ -96,102 +96,7 @@
         </div>
       </div>
             
-      <!-- Создание анализа из протокола -->
-      <div class="col-lg-6">
-        <div class="action-card create-card">
-          <div class="card-header">
-            <div class="card-icon">
-              <FileCheck :size="24" />
-            </div>
-            <div class="card-title">
-              <h3>Создать анализ</h3>
-              <p>Из доступных протоколов</p>
-            </div>
-          </div>
-          <div class="card-body">
-            <div v-if="availableProtocols.length === 0" class="empty-protocols">
-              <FileX :size="48" class="empty-icon" />
-              <h4>Нет доступных протоколов</h4>
-              <p>Протоколы становятся доступными после загрузки файлов "Расчет силы" и "План эксперимента"</p>
-            </div>
-            
-            <div v-else>
-              <div class="form-section">
-                <label for="protocolSelect" class="form-label">Выберите протокол</label>
-                <select
-                  class="form-select"
-                  id="protocolSelect"
-                  v-model="selectedProtocol"
-                  @change="onProtocolSelect"
-                >
-                  <option value="">Выберите протокол...</option>
-                  <option 
-                    v-for="protocol in availableProtocols" 
-                    :key="protocol.protocol_number"
-                    :value="protocol.protocol_number"
-                  >
-                    Протокол {{ protocol.protocol_number }}
-                  </option>
-                </select>
-              </div>
-              
-              <div v-if="selectedProtocolData" class="protocol-data">
-                <h6>Данные протокола:</h6>
-                <div class="data-grid">
-                  <div class="data-item">
-                    <span class="data-label">Pст:</span>
-                    <span class="data-value">{{ selectedProtocolData.force_data.pct_static }}%</span>
-                  </div>
-                  <div class="data-item">
-                    <span class="data-label">Энергия:</span>
-                    <span class="data-value">{{ selectedProtocolData.force_data.energy_j }} Дж</span>
-                  </div>
-                  <div class="data-item">
-                    <span class="data-label">Скорость:</span>
-                    <span class="data-value">{{ selectedProtocolData.force_data.velocity_ms }} м/с</span>
-                  </div>
-                  <div class="data-item">
-                    <span class="data-label">Сила:</span>
-                    <span class="data-value">{{ selectedProtocolData.force_data.force_n }} Н</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="form-section">
-                <label for="protocolTitle" class="form-label">Название анализа</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="protocolTitle"
-                  v-model="protocolAnalysis.title"
-                  :placeholder="`Анализ протокола ${selectedProtocol || ''}`"
-                />
-              </div>
-              
-              <div class="form-section">
-                <label for="protocolDescription" class="form-label">Описание</label>
-                <textarea
-                  class="form-control"
-                  id="protocolDescription"
-                  v-model="protocolAnalysis.description"
-                  rows="2"
-                  placeholder="Описание анализа из протокола"
-                ></textarea>
-              </div>
-              
-              <button
-                type="button"
-                class="btn btn-success btn-create"
-                @click="createAnalysisFromProtocol"
-                :disabled="!selectedProtocol || isCreatingFromProtocol"
-              >
-                <FileCheck :size="16" />
-                <span>{{ isCreatingFromProtocol ? 'Создание...' : 'Создать анализ' }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      
     </div>
   </div>
 </template>

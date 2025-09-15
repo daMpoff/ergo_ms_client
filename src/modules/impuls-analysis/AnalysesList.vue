@@ -388,15 +388,25 @@ export default {
         
         const response = await impulsAnalysisAPI.getAnalyses(params)
         if (response && response.success) {
-          this.analyses = response.data.results || []
+          const data = response.data || {}
+          // DRF стандарт: { count, next, previous, results }
+          this.analyses = data.results || (Array.isArray(data) ? data : [])
+          const total = (data.total ?? data.count ?? (Array.isArray(this.analyses) ? this.analyses.length : 0))
+          const hasNext = Boolean(data.has_next ?? data.next)
+          const hasPrevious = Boolean(data.has_previous ?? data.previous)
+          const currentPage = params.page || 1
+          const pageSize = params.page_size || data.page_size || this.pagination.page_size
+
           this.pagination = {
-            current_page: response.data.current_page || 1,
-            page_size: response.data.page_size || 20,
-            total: response.data.total || 0,
-            has_next: response.data.has_next || false,
-            has_previous: response.data.has_previous || false,
-            start_index: response.data.start_index || 0,
-            end_index: response.data.end_index || 0
+            current_page: currentPage,
+            page_size: pageSize,
+            total: total,
+            has_next: hasNext,
+            has_previous: hasPrevious,
+            start_index: (currentPage - 1) * pageSize + (total > 0 ? 1 : 0),
+            end_index: Math.min(currentPage * pageSize, total),
+            next_page: (data.next_page ?? (hasNext ? currentPage + 1 : null)),
+            previous_page: (data.previous_page ?? (hasPrevious ? currentPage - 1 : null))
           }
         }
       } catch (error) {

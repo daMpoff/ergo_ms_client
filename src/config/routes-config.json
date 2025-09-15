@@ -1166,7 +1166,7 @@
       "path": "/impuls-analysis/create",
       "component": "@/modules/impuls-analysis/MainPage.vue",
       "meta": {
-        "title": "Создание анализа",
+        "title": "Загрузка файлов",
         "requiresAuth": true
       }
     },
