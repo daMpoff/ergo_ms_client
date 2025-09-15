@@ -3,25 +3,59 @@
     <div class="container-fluid">
       <div class="row">
         <div class="col-12">
-          <!-- Заголовок -->
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1 class="h2 mb-2 text-primary">
-                <i class="fas fa-microscope me-3"></i>
-                Анализ пористости
-              </h1>
-              <p class="text-muted mb-0">Создавайте и управляйте анализами пористости материалов</p>
+          <!-- Заголовок в едином стиле -->
+          <div class="page-header">
+            <div class="header-content">
+              <div class="page-title-section">
+                <div class="page-icon">
+                  <Microscope :size="28" color="white" />
+                </div>
+                <div class="page-title">
+                  <h1>Анализ пористости</h1>
+                  <p class="page-subtitle">Создание анализов и загрузка изображений для обработки</p>
+                </div>
+              </div>
             </div>
-            <router-link to="/porosity-analysis/analyses" class="btn btn-outline-primary btn-lg">
-              <i class="fas fa-list me-2"></i>
-              Все анализы
-            </router-link>
+            
           </div>
           
-          <!-- Статистика -->
-          <div class="row mb-4">
-            <div class="col-12">
-              <AnalysisStats :stats="stats" :show-details="false" />
+          <!-- Статистика в едином стиле -->
+          <div class="row g-4 mb-4">
+            <div class="col-xl-3 col-md-6">
+              <div class="statistics-card card-primary">
+                <div class="card-content">
+                  <div class="card-icon">
+                    <BarChart3 :size="24" />
+                  </div>
+                  <div class="card-info">
+                    <h6 class="card-subtitle">Всего анализов</h6>
+                    <h3 class="card-value">{{ totalAnalyses }}</h3>
+                    <div class="card-progress">
+                      <div class="progress">
+                        <div class="progress-bar bg-primary" style="width: 100%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-3 col-md-6" v-for="(count, key) in statsByStatus" :key="key">
+              <div class="statistics-card" :class="getStatusCardClass(key)">
+                <div class="card-content">
+                  <div class="card-icon">
+                    <component :is="getStatusIcon(key)" :size="24" />
+                  </div>
+                  <div class="card-info">
+                    <h6 class="card-subtitle">{{ getStatusLabel(key) }}</h6>
+                    <h3 class="card-value">{{ count }}</h3>
+                    <div class="card-progress">
+                      <div class="progress">
+                        <div class="progress-bar" :class="getStatusProgressClass(key)" :style="`width: ${getPercentage(count)}%`"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -29,11 +63,14 @@
           <div class="row g-4">
             <div class="col-lg-6">
               <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-primary text-white">
-                  <h5 class="card-title mb-0">
-                    <i class="fas fa-plus-circle me-2"></i>
-                    Создать анализ
-                  </h5>
+                <div class="card-header">
+                  <div class="card-icon">
+                    <Plus :size="20" />
+                  </div>
+                  <div class="card-title">
+                    <h3>Создать анализ</h3>
+                    <p>Название, параметры и загрузка исходного изображения</p>
+                  </div>
                 </div>
                 <div class="card-body p-4">
                   <form @submit.prevent="createAnalysis">
@@ -105,8 +142,8 @@
                     </div>
                     
                     <button type="submit" class="btn btn-primary btn-lg w-100" :disabled="isCreating || !selectedAnalysisImage">
-                      <i class="fas fa-plus me-2"></i>
-                      {{ isCreating ? 'Создание...' : 'Создать анализ' }}
+                      <Plus :size="16" />
+                      <span>{{ isCreating ? 'Создание...' : 'Создать анализ' }}</span>
                     </button>
                   </form>
                 </div>
@@ -115,11 +152,14 @@
             
             <div class="col-lg-6">
               <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-success text-white">
-                  <h5 class="card-title mb-0">
-                    <i class="fas fa-upload me-2"></i>
-                    Быстрая загрузка
-                  </h5>
+                <div class="card-header">
+                  <div class="card-icon success">
+                    <Upload :size="20" />
+                  </div>
+                  <div class="card-title">
+                    <h3>Быстрая загрузка</h3>
+                    <p>Перетащите набор изображений и создайте несколько анализов</p>
+                  </div>
                 </div>
                 <div class="card-body p-4">
                   <div class="mb-4">
@@ -142,7 +182,7 @@
                         ref="quickUploadInput"
                       />
                       <div class="text-center">
-                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                        <Upload :size="32" class="text-muted mb-2" />
                         <p class="mb-2">Перетащите файлы сюда или нажмите для выбора</p>
                         <p class="text-muted small">Поддерживаются форматы: PNG, JPG, JPEG</p>
                       </div>
@@ -158,7 +198,7 @@
                         class="file-item d-flex justify-content-between align-items-center p-2 border rounded mb-2"
                       >
                         <div class="d-flex align-items-center">
-                          <i class="fas fa-image text-primary me-2"></i>
+                          <Image :size="16" class="text-primary me-2" />
                           <span class="text-truncate">{{ file.name }}</span>
                         </div>
                         <button
@@ -166,7 +206,7 @@
                           class="btn btn-sm btn-outline-danger"
                           @click="removeQuickUploadFile(index)"
                         >
-                          <i class="fas fa-times"></i>
+                          <X :size="14" />
                         </button>
                       </div>
                     </div>
@@ -193,14 +233,20 @@
 
 <script>
 import { porosityAnalysisAPI } from './js/porosity-analysis.js'
-import AnalysisStats from './components/AnalysisStats.vue'
 import { useToast } from 'vue-toastification'
+import { Microscope, List, Plus, Upload, Image, X, BarChart3, Clock, Loader2, CheckCircle, AlertTriangle } from 'lucide-vue-next'
 
 const toast = useToast()
 
 export default {
   components: {
-    AnalysisStats
+    Microscope,
+    List,
+    Plus,
+    Upload,
+    Image,
+    X,
+    BarChart3
   },
   name: 'PorosityAnalysisMainPage',
   data() {
@@ -402,32 +448,160 @@ export default {
       }
     }
   }
+  ,
+  computed: {
+    totalAnalyses() {
+      return (this.stats.pending || 0) + (this.stats.processing || 0) + (this.stats.completed || 0) + (this.stats.failed || 0)
+    },
+    statsByStatus() {
+      return {
+        pending: this.stats.pending,
+        processing: this.stats.processing,
+        completed: this.stats.completed,
+        failed: this.stats.failed
+      }
+    },
+    getStatusCardClass() {
+      return (status) => {
+        const classes = { pending: 'card-secondary', processing: 'card-warning', completed: 'card-success', failed: 'card-danger' }
+        return classes[status] || 'card-secondary'
+      }
+    },
+    getStatusProgressClass() {
+      return (status) => {
+        const classes = { pending: 'bg-secondary', processing: 'bg-warning', completed: 'bg-success', failed: 'bg-danger' }
+        return classes[status] || 'bg-secondary'
+      }
+    },
+    getStatusIcon() {
+      return (status) => {
+        const icons = { pending: Clock, processing: Loader2, completed: CheckCircle, failed: AlertTriangle }
+        return icons[status] || Clock
+      }
+    },
+    getStatusLabel() {
+      return (status) => {
+        const labels = { pending: 'Ожидает', processing: 'Обрабатывается', completed: 'Завершен', failed: 'Ошибка' }
+        return labels[status] || status
+      }
+    },
+    getPercentage() {
+      return (value) => {
+        const total = this.totalAnalyses
+        if (!total) return 0
+        return Math.round((value / total) * 100)
+      }
+    }
+  }
 }
 </script>
 
 <style scoped>
 .porosity-analysis-main {
-  padding: 20px 0;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem;
   min-height: 100vh;
+  background: var(--bs-gray-100);
+}
+
+/* Единый заголовок страницы */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.page-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.page-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.page-title h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--bs-heading-color);
+  margin: 0 0 0.5rem 0;
+}
+
+.page-subtitle {
+  color: var(--bs-secondary-color);
+  margin: 0;
+  font-size: 1rem;
 }
 
 .card {
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
   border: none;
   border-radius: 15px;
   transition: transform 0.2s ease-in-out;
 }
 
-.card:hover {
-  transform: translateY(-2px);
-}
+.card:hover { transform: translateY(-2px); }
 
 .card-header {
-  border-radius: 15px 15px 0 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bs-light);
   border: none;
+  border-bottom: 1px solid var(--bs-border-color);
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1rem 1.25rem;
 }
 
+.card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+}
+
+.card-icon.success { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); }
+
+.card-title h3 { font-size: 1.25rem; font-weight: 600; margin: 0; }
+.card-title p { margin: 0; color: var(--bs-secondary-color); font-size: .875rem; }
+
+/* Статистические карточки */
+.statistics-card { background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 5px 20px rgba(0,0,0,0.08); transition: all .3s ease; position: relative; overflow: hidden; }
+.statistics-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; }
+.statistics-card.card-primary::before { background: linear-gradient(90deg, #007bff 0%, #0056b3 100%); }
+.statistics-card.card-warning::before { background: linear-gradient(90deg, #ffc107 0%, #e0a800 100%); }
+.statistics-card.card-success::before { background: linear-gradient(90deg, #28a745 0%, #1e7e34 100%); }
+.statistics-card.card-danger::before { background: linear-gradient(90deg, #dc3545 0%, #c82333 100%); }
+.statistics-card.card-secondary::before { background: linear-gradient(90deg, #6c757d 0%, #5a6268 100%); }
+.card-content { display: flex; align-items: center; gap: 1.5rem; }
+.card-icon { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; }
+.card-primary .card-icon { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); }
+.card-warning .card-icon { background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); }
+.card-success .card-icon { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); }
+.card-danger .card-icon { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+.card-secondary .card-icon { background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); }
+.card-info .card-icon { background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%); }
+.card-info { flex: 1; }
+.card-subtitle { color: #6c757d; font-size: .875rem; font-weight: 500; margin-bottom: .5rem; }
+.card-value { font-size: 2rem; font-weight: 700; margin: 0; color: #2d3436; }
+.card-progress { margin-top: .5rem; }
+.card-progress .progress { height: 5px; background-color: #e9ecef; border-radius: 5px; }
 .upload-area {
   border: 2px dashed #dee2e6;
   border-radius: 10px;

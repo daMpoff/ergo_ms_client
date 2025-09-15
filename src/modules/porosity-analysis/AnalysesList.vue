@@ -1,5 +1,20 @@
 <template>
   <div class="porosity-analyses-list">
+    <!-- Заголовок страницы в едином стиле -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="page-title-section">
+          <div class="page-icon">
+            <Microscope :size="28" color="white" />
+          </div>
+          <div class="page-title">
+            <h1>Мои анализы пористости</h1>
+            <p class="page-subtitle">Управление, перезапуск, скачивание результатов и отчетов</p>
+          </div>
+        </div>
+      </div>
+      
+    </div>
     <!-- Модальное окно подтверждения удаления -->
     <ConfirmDialog
       :show="showDeleteConfirm"
@@ -92,6 +107,46 @@
             </div>
           </div>
           <div class="card-body">
+            <!-- Статистические карточки -->
+            <div class="row g-4 mb-3">
+              <div class="col-xl-3 col-md-6">
+                <div class="statistics-card card-primary">
+                  <div class="card-content">
+                    <div class="card-icon">
+                      <BarChart3 :size="24" />
+                    </div>
+                    <div class="card-info">
+                      <h6 class="card-subtitle">Всего анализов</h6>
+                      <h3 class="card-value">{{ stats.total }}</h3>
+                      <div class="card-progress">
+                        <div class="progress">
+                          <div class="progress-bar bg-primary" style="width: 100%"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-xl-3 col-md-6" v-for="(count, key) in statsByStatus" :key="key">
+                <div class="statistics-card" :class="getStatusCardClass(key)">
+                  <div class="card-content">
+                    <div class="card-icon">
+                      <component :is="getStatusIcon(key)" :size="24" />
+                    </div>
+                    <div class="card-info">
+                      <h6 class="card-subtitle">{{ getStatusText(key) }}</h6>
+                      <h3 class="card-value">{{ count }}</h3>
+                      <div class="card-progress">
+                        <div class="progress">
+                          <div class="progress-bar" :class="getStatusProgressClass(key)" :style="`width: ${getPercentage(count)}%`"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div v-if="loading" class="text-center py-4">
               <div class="spinner-border" role="status">
                 <span class="visually-hidden">Загрузка...</span>
@@ -116,8 +171,8 @@
                   class="col-md-6 col-lg-4 mb-4"
                 >
                   <div class="analysis-card">
-                    <div class="card-header">
-                      <div class="d-flex justify-content-between align-items-start">
+                    <div class="analysis-header d-flex justify-content-between align-items-start" :class="getAnalysisHeaderClass(analysis.status)">
+                      <div class="d-flex justify-content-between align-items-start w-100">
                         <h6 class="card-title mb-0">{{ analysis.name }}</h6>
                         <span :class="getStatusBadgeClass(analysis.status)">
                           <component :is="getStatusIcon(analysis.status)" class="me-1" size="14" />
@@ -324,7 +379,7 @@
 import { porosityAnalysisAPI } from './js/porosity-analysis.js'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { 
-  List, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus, 
+  Microscope, List, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
   Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
   ChevronLeft, ChevronRight
 } from 'lucide-vue-next'
@@ -337,7 +392,7 @@ export default {
   name: 'PorosityAnalysesList',
   components: {
     ConfirmDialog,
-    List, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
+    Microscope, List, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
     Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
     ChevronLeft, ChevronRight
   },
@@ -358,6 +413,14 @@ export default {
         total_pages: 1,
         count: 0,
         page_size: 20
+      },
+      // Статистика по статусам
+      stats: {
+        total: 0,
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0
       }
     }
   },
@@ -394,12 +457,79 @@ export default {
       }
       
       return pages
+    },
+    statsByStatus() {
+      return {
+        pending: this.stats.pending,
+        processing: this.stats.processing,
+        completed: this.stats.completed,
+        failed: this.stats.failed
+      }
     }
   },
   async mounted() {
-    await this.loadAnalyses()
+    await Promise.all([
+      this.loadAnalyses(),
+      this.loadStats()
+    ])
   },
   methods: {
+    async loadStats() {
+      try {
+        const response = await porosityAnalysisAPI.getStatistics()
+        if (response && response.success) {
+          this.stats = {
+            total: (response.data?.pending || 0) + (response.data?.processing || 0) + (response.data?.completed || 0) + (response.data?.failed || 0),
+            pending: response.data?.pending || 0,
+            processing: response.data?.processing || 0,
+            completed: response.data?.completed || 0,
+            failed: response.data?.failed || 0
+          }
+        }
+      } catch (e) {
+        // игнорируем, оставим нули
+      }
+    },
+    getStatusCardClass(status) {
+      const classes = {
+        pending: 'card-secondary',
+        processing: 'card-warning',
+        completed: 'card-success',
+        failed: 'card-danger'
+      }
+      return classes[status] || 'card-secondary'
+    },
+    getStatusProgressClass(status) {
+      const classes = {
+        pending: 'bg-secondary',
+        processing: 'bg-warning',
+        completed: 'bg-success',
+        failed: 'bg-danger'
+      }
+      return classes[status] || 'bg-secondary'
+    },
+    getStatusIcon(status) {
+      const icons = {
+        pending: 'Clock',
+        processing: 'Loader2',
+        completed: 'CheckCircle',
+        failed: 'AlertTriangle'
+      }
+      return icons[status] || 'Clock'
+    },
+    getPercentage(value) {
+      if (!this.stats.total) return 0
+      return Math.round((value / this.stats.total) * 100)
+    },
+    getAnalysisHeaderClass(status) {
+      const classes = {
+        pending: 'header-secondary',
+        processing: 'header-warning',
+        completed: 'header-success',
+        failed: 'header-danger'
+      }
+      return classes[status] || 'header-secondary'
+    },
     async loadAnalyses(page = 1) {
       this.loading = true
       try {
@@ -742,8 +872,84 @@ export default {
 
 <style scoped>
 .porosity-analyses-list {
-  padding: 20px 0;
+  padding: 2rem;
+  min-height: 100vh;
+  background: var(--bs-gray-100);
 }
+
+/* Единый заголовок страницы */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.page-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.page-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.page-title h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--bs-heading-color);
+  margin: 0 0 0.5rem 0;
+}
+
+.page-subtitle {
+  color: var(--bs-secondary-color);
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Статистические карточки */
+.statistics-card {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.statistics-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; }
+.statistics-card.card-primary::before { background: linear-gradient(90deg, #007bff 0%, #0056b3 100%); }
+.statistics-card.card-warning::before { background: linear-gradient(90deg, #ffc107 0%, #e0a800 100%); }
+.statistics-card.card-success::before { background: linear-gradient(90deg, #28a745 0%, #1e7e34 100%); }
+.statistics-card.card-danger::before { background: linear-gradient(90deg, #dc3545 0%, #c82333 100%); }
+.statistics-card.card-secondary::before { background: linear-gradient(90deg, #6c757d 0%, #5a6268 100%); }
+
+.card-content { display: flex; align-items: center; gap: 1.5rem; }
+.card-icon { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; }
+.card-warning .card-icon { background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); }
+.card-primary .card-icon { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); }
+.card-success .card-icon { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); }
+.card-danger .card-icon { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+.card-secondary .card-icon { background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); }
+.card-info .card-icon { background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%); }
+.card-info { flex: 1; }
+.card-subtitle { color: #6c757d; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; }
+.card-value { font-size: 2rem; font-weight: 700; margin: 0; color: #2d3436; }
+.card-progress { margin-top: 0.5rem; }
+.card-progress .progress { height: 5px; background-color: #e9ecef; border-radius: 5px; }
 
 .filter-buttons {
   display: flex;
@@ -879,6 +1085,19 @@ export default {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   border-color: #007bff;
 }
+.analysis-header {
+  padding: 1rem;
+  background: var(--bs-light);
+  border-left: 4px solid;
+  border-bottom: 1px solid #e9ecef;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.analysis-header.header-secondary { border-color: var(--bs-secondary); }
+.analysis-header.header-warning { border-color: var(--bs-warning); }
+.analysis-header.header-success { border-color: var(--bs-success); }
+.analysis-header.header-danger { border-color: var(--bs-danger); }
+
 
 .card-header {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -1252,6 +1471,7 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .porosity-analyses-list { padding: 1rem; }
   .filter-buttons {
     flex-direction: column;
     width: 100%;

@@ -1,5 +1,66 @@
 <template>
   <div class="porosity-analysis-detail">
+    <!-- Заголовок страницы в едином стиле -->
+    <div class="page-header">
+      <div class="header-content">
+        <nav aria-label="breadcrumb" class="breadcrumb-nav">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+              <router-link to="/porosity-analysis/analyses" class="breadcrumb-link">
+                <Microscope :size="16" />
+                <span>Анализ пористости</span>
+              </router-link>
+            </li>
+            <li class="breadcrumb-item active">
+              {{ analysis?.name || 'Детали анализа' }}
+            </li>
+          </ol>
+        </nav>
+
+        <div class="analysis-title-section">
+          <div class="analysis-icon icon-primary">
+            <component :is="getHeaderStatusIcon(analysis.status)" :size="24" color="white" />
+          </div>
+          <div class="analysis-title">
+            <h1>{{ analysis?.name || 'Анализ пористости' }}</h1>
+            <div class="analysis-meta-badges">
+              <span class="badge" :class="statusClass(analysis.status)">
+                {{ getStatusText(analysis.status) }}
+              </span>
+            </div>
+            <p class="analysis-description" v-if="analysis?.description">
+              {{ analysis.description }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <router-link to="/porosity-analysis/analyses" class="btn btn-back-to-list">
+          <ArrowLeft :size="16" />
+          <span>К списку</span>
+        </router-link>
+        <button 
+          v-if="analysis.status === 'failed'"
+          type="button"
+          class="btn btn-warning"
+          @click="restartAnalysis"
+          :disabled="restarting"
+        >
+          <RotateCcw :size="16" />
+          <span>{{ restarting ? 'Перезапуск...' : 'Перезапустить' }}</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-delete-analysis"
+          @click="deleteAnalysis"
+          :disabled="deleting"
+        >
+          <Trash2 :size="16" />
+          <span>{{ deleting ? 'Удаление...' : 'Удалить' }}</span>
+        </button>
+      </div>
+    </div>
     <!-- Модальное окно подтверждения удаления -->
     <ConfirmDialog
       :show="showDeleteConfirm"
@@ -247,6 +308,65 @@
 </template>
 
 <style scoped>
+.porosity-analysis-detail {
+  padding: 2rem 0 0 0;
+}
+
+/* Единый заголовок страницы */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.breadcrumb-nav {
+  margin-bottom: 1rem;
+}
+
+.analysis-title-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.analysis-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.icon-primary { background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); }
+.icon-warning { background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); }
+.icon-success { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); }
+.icon-danger { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+.icon-secondary { background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); }
+
+.analysis-title h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--bs-heading-color);
+  margin: 0 0 0.5rem 0;
+}
+
+.analysis-meta-badges { display: flex; gap: .5rem; margin-bottom: .75rem; }
+
+.btn-back-to-list {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+}
 .card-header .btn-link {
   text-decoration: none;
   transition: all 0.2s ease;
@@ -407,6 +527,28 @@ export default {
     await this.loadAnalysis()
   },
   methods: {
+    getHeaderStatusIcon(status) {
+      const map = {
+        pending: Clock,
+        processing: Clock,
+        completed: CheckCircle,
+        failed: Trash2
+      }
+      return map[status] || Clock
+    },
+    statusClass(status) {
+      switch (status) {
+        case 'completed': return 'bg-success'
+        case 'processing': return 'bg-warning'
+        case 'failed': return 'bg-danger'
+        case 'pending': return 'bg-secondary'
+        default: return 'bg-light text-dark'
+      }
+    },
+    getStatusText(status) {
+      const texts = { pending: 'Ожидает', processing: 'Обрабатывается', completed: 'Завершен', failed: 'Ошибка' }
+      return texts[status] || status
+    },
     async loadAnalysis() {
       this.loading = true
       try {

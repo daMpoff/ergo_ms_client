@@ -1,23 +1,36 @@
 <template>
   <div class="porosity-analysis-layout">
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-12">
-          <router-view />
-        </div>
+    <div class="card mb-4">
+      <div class="card-body p-3">
+        <NavigationButtons :data="navigationButtons" />
       </div>
     </div>
+    <RouterView />
   </div>
+  
 </template>
 
-<script>
-export default {
-  name: 'PorosityAnalysisParentLayout'
-}
+<script setup>
+import { computed } from 'vue'
+import { Microscope, List } from 'lucide-vue-next'
+import NavigationButtons from '@/components/NavigationButtons.vue'
+
+const navigationButtons = computed(() => [
+  {
+    icon: Microscope,
+    title: 'Создание анализа',
+    link: 'PorosityAnalysisMain'
+  },
+  {
+    icon: List,
+    title: 'Мои анализы',
+    link: 'PorosityAnalysisList'
+  }
+])
 </script>
 
 <style scoped>
 .porosity-analysis-layout {
-  padding: 20px;
+  padding: 20px 0;
 }
-</style> 
+</style>
