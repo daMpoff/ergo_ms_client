@@ -136,7 +136,7 @@
             <div class="analysis-actions">
               <button 
                 class="btn btn-sm btn-delete-analysis" 
-                @click="deleteAnalysis(analysis.id)"
+                @click="showDeleteConfirm(analysis.id)"
                 title="Удалить анализ"
               >
                 <Trash2 :size="14" />
@@ -189,6 +189,14 @@
           
           <div class="analysis-actions-footer" v-if="analysis.status === 'completed'">
             <button 
+              v-if="(analysis.protocols || []).length > 0"
+              @click="downloadProtocol(analysis)" 
+              class="btn btn-download-icon btn-download-protocol" 
+              title="Скачать протокол"
+            >
+              <FileText :size="14" />
+            </button>
+            <button 
               @click="downloadResults(analysis.id)" 
               class="btn btn-download-icon btn-download-results" 
               title="Скачать результаты"
@@ -214,6 +222,19 @@
       @page-change="loadPage"
       @page-size-change="onPageSizeChange"
     />
+    
+    <!-- Модальное окно подтверждения удаления анализа -->
+    <ConfirmDialog
+      :show="showDeleteModal"
+      title="Удаление анализа"
+      message="Вы уверены, что хотите удалить этот анализ? Это действие нельзя отменить."
+      confirm-text="Удалить"
+      cancel-text="Отмена"
+      variant="danger"
+      @confirm="confirmDeleteAnalysis"
+      @cancel="cancelDeleteAnalysis"
+      @close="cancelDeleteAnalysis"
+    />
   </div>
 </template>
 
@@ -223,6 +244,7 @@ import AnalysisStats from './components/AnalysisStats.vue'
 import AnalysisStatus from './components/AnalysisStatus.vue'
 import PaginationComponent from './components/PaginationComponent.vue'
 import { useToast } from 'vue-toastification'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { 
   X, FileX, Eye, Trash2, Loader2, Zap, 
   Search, RotateCcw, BarChart3, Clock, Hourglass, CheckCircle, 
@@ -237,6 +259,7 @@ export default {
     AnalysisStats,
     AnalysisStatus,
     PaginationComponent,
+    ConfirmDialog,
     X,
     FileX,
     Eye,
@@ -283,7 +306,9 @@ export default {
         start_index: 0,
         end_index: 0
       },
-      searchTimeout: null
+      searchTimeout: null,
+      showDeleteModal: false,
+      analysisIdToDelete: null
     }
   },
   computed: {
@@ -317,6 +342,40 @@ export default {
     await this.loadStats()
   },
   methods: {
+    async downloadProtocol(analysis) {
+      try {
+        const protocols = (analysis?.protocols || []).slice().sort((a, b) => new Date(b.generated_at) - new Date(a.generated_at))
+        if (!protocols.length) {
+          toast.info('Нет протоколов для скачивания')
+          return
+        }
+        const last = protocols[0]
+        const resp = await impulsAnalysisAPI.downloadProtocol(analysis.id, last.id)
+        if (resp && resp.success) {
+          const blob = resp.data
+          let filename = `protocol_${analysis.title || 'analysis'}.docx`
+          const disposition = resp.headers && (resp.headers['content-disposition'] || resp.headers['Content-Disposition'])
+          if (disposition && disposition.includes('filename=')) {
+            const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
+            const name = decodeURIComponent(match?.[1] || match?.[2] || '').trim()
+            if (name) filename = name
+          }
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = filename
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+          toast.success('Протокол скачан')
+        } else {
+          toast.error(resp?.message || 'Ошибка при скачивании протокола')
+        }
+      } catch (e) {
+        toast.error('Ошибка при скачивании протокола')
+      }
+    },
     async loadAnalyses() {
       this.isLoading = true
       try {
@@ -432,13 +491,14 @@ export default {
       }
     },
     
-    async deleteAnalysis(analysisId) {
-      if (!confirm('Вы уверены, что хотите удалить этот анализ?')) {
-        return
-      }
-      
+    showDeleteConfirm(analysisId) {
+      this.analysisIdToDelete = analysisId
+      this.showDeleteModal = true
+    },
+    async confirmDeleteAnalysis() {
+      if (!this.analysisIdToDelete) return
       try {
-        const response = await impulsAnalysisAPI.deleteAnalysis(analysisId)
+        const response = await impulsAnalysisAPI.deleteAnalysis(this.analysisIdToDelete)
         if (response && response.success) {
           toast.success('Анализ удален')
           await Promise.all([
@@ -450,15 +510,57 @@ export default {
         }
       } catch (error) {
         toast.error('Ошибка при удалении анализа')
+      } finally {
+        this.showDeleteModal = false
+        this.analysisIdToDelete = null
       }
+    },
+    cancelDeleteAnalysis() {
+      this.showDeleteModal = false
+      this.analysisIdToDelete = null
     },
     
     async downloadResults(analysisId) {
       try {
-        // Здесь можно реализовать скачивание результатов
-        toast.info('Функция скачивания результатов будет реализована')
+        const response = await impulsAnalysisAPI.downloadResults(analysisId)
+        if (response && response.success) {
+          const files = response.data?.files || []
+          if (!files.length) {
+            toast.info('Нет файлов результатов для скачивания')
+            return
+          }
+          for (const f of files) {
+            if (!f.url) continue
+            try {
+              const dl = await impulsAnalysisAPI.downloadByUrl(f.url)
+              if (dl && dl.success) {
+                const blob = dl.data
+                let filename = f.filename || 'result'
+                const disposition = dl.headers && (dl.headers['content-disposition'] || dl.headers['Content-Disposition'])
+                if (disposition && disposition.includes('filename=')) {
+                  const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
+                  const name = decodeURIComponent(match?.[1] || match?.[2] || '').trim()
+                  if (name) filename = name
+                }
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = filename
+                document.body.appendChild(a)
+                a.click()
+                a.remove()
+                window.URL.revokeObjectURL(url)
+              }
+            } catch (e) {
+              console.error('Ошибка скачивания файла результата:', f.url, e)
+            }
+          }
+          toast.success('Результаты анализа скачаны')
+        } else {
+          toast.error(response?.message || 'Ошибка при получении результатов')
+        }
       } catch (error) {
-        toast.error('Ошибка при скачивании результатов')
+        toast.error('Ошибка при получении результатов')
       }
     },
     
@@ -999,6 +1101,17 @@ export default {
         background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+      }
+    }
+    
+    &.btn-download-protocol {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      color: white;
+      
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
       }
     }
     

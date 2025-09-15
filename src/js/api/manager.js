@@ -194,7 +194,8 @@ class ApiClient {
                 success: true,
                 data: response.data, // Это blob объект
                 message: 'Файл успешно загружен',
-                status: response.status
+                status: response.status,
+                headers: response.headers
             };
         } catch (error) {
             console.error('Ошибка при скачивании файла:', error);

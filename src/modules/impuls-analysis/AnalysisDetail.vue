@@ -55,7 +55,7 @@
         </button>
         <button 
           class="btn btn-delete-analysis"
-          @click="deleteAnalysis"
+          @click="showDeleteConfirm"
           :disabled="isDeleting"
         >
           <Trash2 :size="16" />
@@ -186,12 +186,27 @@
       </router-link>
     </div>
   </div>
+
+  <!-- Модальное окно подтверждения удаления -->
+  <ConfirmDialog
+    ref="deleteDialog"
+    :show="showDeleteModal"
+    title="Удаление анализа"
+    message="Вы уверены, что хотите удалить этот анализ? Это действие нельзя отменить."
+    confirm-text="Удалить"
+    cancel-text="Отмена"
+    variant="danger"
+    @confirm="deleteAnalysisConfirmed"
+    @cancel="cancelDeleteAnalysis"
+    @close="cancelDeleteAnalysis"
+  />
 </template>
 
 <script>
 import { impulsAnalysisAPI } from './js/impuls-analysis.js'
 import AnalysisStatus from './components/AnalysisStatus.vue'
 import { useToast } from 'vue-toastification'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { 
   RefreshCw, Trash2, FileX, Loader2, Download, FileText, 
   File, FileCheck, CheckCircle, Zap, Info, Calendar, 
@@ -203,6 +218,7 @@ const toast = useToast()
 export default {
   components: {
     AnalysisStatus,
+    ConfirmDialog,
     RefreshCw,
     Trash2,
     FileX,
@@ -229,7 +245,8 @@ export default {
       isRestarting: false,
       isDeleting: false,
       showFiles: false,
-      showProtocols: false
+      showProtocols: false,
+      showDeleteModal: false
     }
   },
   async mounted() {
@@ -241,14 +258,18 @@ export default {
       try {
         const analysisId = this.$route.params.id
         const response = await impulsAnalysisAPI.getAnalysis(analysisId)
-        if (response && response.success) {
+        if (response && response.success && response.data) {
           this.analysis = response.data
-        } else {
+        } else if (!this.analysis) {
+          // Только если данных еще не было — показываем пустое состояние
           this.analysis = null
         }
       } catch (error) {
         console.error('Error loading analysis:', error)
-        this.analysis = null
+        // Не обнуляем уже загруженный анализ при временной ошибке
+        if (!this.analysis) {
+          this.analysis = null
+        }
       } finally {
         this.isLoading = false
       }
@@ -279,11 +300,11 @@ export default {
       }
     },
     
-    async deleteAnalysis() {
-      if (!confirm('Вы уверены, что хотите удалить этот анализ? Это действие нельзя отменить.')) {
-        return
-      }
-      
+    showDeleteConfirm() {
+      this.$refs.deleteDialog?.open?.() // на случай, если ConfirmDialog предоставляет метод open
+      this.showDeleteModal = true
+    },
+    async deleteAnalysisConfirmed() {
       this.isDeleting = true
       try {
         const response = await impulsAnalysisAPI.deleteAnalysis(this.analysis.id)
@@ -297,13 +318,34 @@ export default {
         toast.error('Ошибка при удалении анализа')
       } finally {
         this.isDeleting = false
+        this.showDeleteModal = false
       }
+    },
+    cancelDeleteAnalysis() {
+      this.showDeleteModal = false
     },
     
     async downloadProtocol(protocolId) {
       try {
         const response = await impulsAnalysisAPI.downloadProtocol(this.analysis.id, protocolId)
         if (response && response.success) {
+          const blob = response.data
+          // Пытаемся извлечь имя файла из Content-Disposition
+          let filename = `protocol_${this.analysis.title || 'analysis'}.docx`
+          const disposition = response.headers && (response.headers['content-disposition'] || response.headers['Content-Disposition'])
+          if (disposition && disposition.includes('filename=')) {
+            const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
+            const name = decodeURIComponent(match?.[1] || match?.[2] || '').trim()
+            if (name) filename = name
+          }
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = filename
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
           toast.success('Протокол скачан')
         } else {
           toast.error(response?.message || 'Ошибка при скачивании протокола')
@@ -317,23 +359,80 @@ export default {
       try {
         const response = await impulsAnalysisAPI.downloadResults(this.analysis.id)
         if (response && response.success) {
+          const files = response.data?.files || []
+          if (!files.length) {
+            toast.info('Нет файлов результатов для скачивания')
+            return
+          }
+          // Скачиваем каждый файл как blob и сохраняем через якорь
+          for (const f of files) {
+            if (!f.url) continue
+            try {
+              const dl = await impulsAnalysisAPI.downloadByUrl(f.url)
+              if (dl && dl.success) {
+                const blob = dl.data
+                let filename = f.filename || 'result'
+                const disposition = dl.headers && (dl.headers['content-disposition'] || dl.headers['Content-Disposition'])
+                if (disposition && disposition.includes('filename=')) {
+                  const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
+                  const name = decodeURIComponent(match?.[1] || match?.[2] || '').trim()
+                  if (name) filename = name
+                }
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = filename
+                document.body.appendChild(a)
+                a.click()
+                a.remove()
+                window.URL.revokeObjectURL(url)
+              }
+            } catch (e) {
+              console.error('Ошибка скачивания файла результата:', f.url, e)
+            }
+          }
           toast.success('Результаты анализа скачаны')
         } else {
-          toast.error(response?.message || 'Ошибка при скачивании результатов')
+          toast.error(response?.message || 'Ошибка при получении результатов')
         }
       } catch (error) {
-        toast.error('Ошибка при скачивании результатов')
+        toast.error('Ошибка при получении результатов')
       }
     },
     
     async downloadAllProtocols() {
       try {
-        const response = await impulsAnalysisAPI.bulkDownloadProtocols([this.analysis.id])
-        if (response && response.success) {
-          toast.success('Протоколы скачаны')
-        } else {
-          toast.error(response?.message || 'Ошибка при скачивании протоколов')
+        const list = (this.analysis?.protocols || []).slice()
+        if (!list.length) {
+          toast.info('Нет протоколов для скачивания')
+          return
         }
+        for (const p of list) {
+          try {
+            const resp = await impulsAnalysisAPI.downloadProtocol(this.analysis.id, p.id)
+            if (resp && resp.success) {
+              const blob = resp.data
+              let filename = `protocol_${this.analysis.title || 'analysis'}_${new Date(p.generated_at || Date.now()).toISOString().replace(/[:.]/g,'-')}.docx`
+              const disposition = resp.headers && (resp.headers['content-disposition'] || resp.headers['Content-Disposition'])
+              if (disposition && disposition.includes('filename=')) {
+                const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
+                const name = decodeURIComponent(match?.[1] || match?.[2] || '').trim()
+                if (name) filename = name
+              }
+              const url = window.URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = filename
+              document.body.appendChild(a)
+              a.click()
+              a.remove()
+              window.URL.revokeObjectURL(url)
+            }
+          } catch (e) {
+            console.error('Ошибка скачивания протокола:', p?.id, e)
+          }
+        }
+        toast.success('Протоколы скачаны')
       } catch (error) {
         toast.error('Ошибка при скачивании протоколов')
       }

@@ -232,9 +232,7 @@ class ImpulsAnalysisAPI {
    */
   async downloadResults(analysisId) {
     try {
-      const response = await apiClient.downloadFile(
-        `${this.baseEndpoint}${analysisId}/download_results/`
-      )
+      const response = await apiClient.get(`${this.baseEndpoint}${analysisId}/download_results/`)
       return response
     } catch (error) {
       console.error('Error downloading results:', error)
@@ -251,6 +249,23 @@ class ImpulsAnalysisAPI {
    */
   getFileDownloadUrl(analysisId, filePath) {
     return `${apiClient.baseUrl}${apiClient.apiPath}${this.baseEndpoint}${analysisId}/download_file/?file=${encodeURIComponent(filePath)}`
+  }
+
+  /**
+   * Скачать по абсолютному или относительному URL через API-клиент (с токеном)
+   */
+  async downloadByUrl(url) {
+    try {
+      const response = await apiClient.downloadFile(url)
+      return response
+    } catch (error) {
+      console.error('Error downloading by url:', url, error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании файла',
+        data: null
+      }
+    }
   }
 }
 
