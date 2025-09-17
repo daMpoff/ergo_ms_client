@@ -2,654 +2,627 @@
     <div class="budget">
         <div class="step-header">
             <h2 class="step-title">Бюджет проекта</h2>
-            <p class="step-description">
-                Определите финансовые ресурсы и статьи расходов проекта
-            </p>
+            <p class="step-description">Заполните расходы по этапам. Итоги считаются автоматически.</p>
         </div>
 
         <div class="form-content">
-            <form class="budget-form">
-                <!-- Общая сумма бюджета -->
-                <div class="form-section">
-                    <h3 class="section-title">Общий бюджет</h3>
+            <div class="stages-container">
+                <div
+                    class="stage-block"
+                    v-for="(stage, sIndex) in localStages"
+                    :key="`stage-${sIndex}`"
+                >
+                    <div class="stage-header">
+                        <h3 class="stage-title">Этап {{ sIndex + 1 }}. {{ stage.name }}</h3>
+                    </div>
                     
-                    <div class="budget-summary">
-                        <div class="form-group">
-                            <label for="totalAmount" class="form-label required">
-                                Общая сумма бюджета (руб.)
-                            </label>
-                            <div class="input-group">
-                                <input
-                                    id="totalAmount"
-                                    v-model.number="localBudget.totalAmount"
-                                    type="number"
-                                    class="form-input"
-                                    placeholder="0"
-                                    min="0"
-                                    step="0.01"
-                                    required
-                                />
-                                <span class="input-suffix">₽</span>
-                            </div>
-                        </div>
-                        
-                        <div v-if="localBudget.totalAmount > 0" class="budget-info">
-                            <DollarSign class="icon" :size="16" />
-                            Общий бюджет: {{ formatCurrency(localBudget.totalAmount) }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Статьи расходов -->
-                <div class="form-section">
-                    <div class="section-header">
-                        <h3 class="section-title">Статьи расходов</h3>
-                        <button
-                            type="button"
-                            class="btn btn-outline-primary btn-sm"
-                            @click="addBudgetItem"
-                        >
-                            <Plus class="btn-icon" :size="16" />
-                            Добавить статью
-                        </button>
-                    </div>
-
-                    <div class="budget-items-list">
-                        <div
-                            v-for="(item, index) in localBudget.items"
-                            :key="`item-${index}`"
-                            class="budget-item-card"
-                        >
-                            <div class="item-header">
-                                <h4>Статья {{ index + 1 }}</h4>
-                                <button
-                                    type="button"
-                                    class="btn-remove"
-                                    @click="removeBudgetItem(index)"
-                                >
-                                    <X class="icon" :size="16" />
-                                </button>
-                            </div>
-                            
-                            <div class="item-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="form-label required">Название статьи</label>
-                                        <input
-                                            v-model="item.name"
-                                            type="text"
-                                            class="form-input"
-                                            placeholder="Например: Аренда помещения"
-                                        />
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label required">Категория</label>
-                                        <select
-                                            v-model="item.category"
-                                            class="form-select"
-                                        >
-                                            <option value="">Выберите категорию</option>
-                                            <option value="personnel">Персонал</option>
-                                            <option value="equipment">Оборудование</option>
-                                            <option value="materials">Материалы</option>
-                                            <option value="services">Услуги</option>
-                                            <option value="travel">Командировки</option>
-                                            <option value="other">Прочее</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="form-label required">Сумма (руб.)</label>
-                                        <div class="input-group">
-                                            <input
-                                                v-model.number="item.amount"
-                                                type="number"
-                                                class="form-input"
-                                                placeholder="0"
-                                                min="0"
-                                                step="0.01"
-                                            />
-                                            <span class="input-suffix">₽</span>
+                    <div class="stage-content">
+                        <div class="stage-items">
+                            <div
+                                class="stage-item"
+                                v-for="(row, rIndex) in stage.items"
+                                :key="`item-${sIndex}-${rIndex}`"
+                            >
+                                <div class="input-row single-row">
+                                    <div class="input-group">
+                                        <label class="input-label">Статья расходов</label>
+                                        <div class="select-wrapper">
+                                            <select class="form-select" v-model="row.article">
+                                                <option value="salary">заработная плата</option>
+                                                <option value="other">другие расходы</option>
+                                            </select>
+                                            <ChevronDown class="select-icon" :size="16" />
                                         </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Количество</label>
-                                        <input
-                                            v-model.number="item.quantity"
-                                            type="number"
-                                            class="form-input"
-                                            placeholder="1"
-                                            min="1"
+                                    <div class="input-group">
+                                        <label class="input-label">Источник финансирования</label>
+                                        <div class="select-wrapper">
+                                            <select class="form-select" v-model="row.source">
+                                                <option value="budget">бюджетные источники финансирования</option>
+                                                <option value="nonbudget">внебюджетные источники финансирования</option>
+                                            </select>
+                                            <ChevronDown class="select-icon" :size="16" />
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Сумма, руб.</label>
+                                        <input 
+                                            type="text"
+                                            inputmode="decimal"
+                                            class="form-input amount-input" 
+                                            :class="{ 'input-error': hasAmountError(sIndex, rIndex) }"
+                                            :value="row.amount"
+                                            @keydown="onAmountKeydown($event)"
+                                            @paste="onAmountPaste(sIndex, rIndex, $event)"
+                                            @input="onAmountInput(sIndex, rIndex, $event)"
                                         />
+                                        <div v-if="hasAmountError(sIndex, rIndex)" class="input-error-message">
+                                            Сумма некорректна
+                                        </div>
+                                    </div>
+                                    <div class="input-group input-group-actions" v-if="stage.items.length > 1">
+                                        <button 
+                                            type="button" 
+                                            class="btn-remove" 
+                                            title="Удалить строку" 
+                                            @click="removeRow(sIndex, rIndex)"
+                                        >
+                                            <Trash2 :size="16" />
+                                        </button>
                                     </div>
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Описание</label>
-                                    <textarea
-                                        v-model="item.description"
-                                        class="form-textarea"
-                                        rows="2"
-                                        placeholder="Дополнительное описание статьи расходов"
-                                    ></textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="localBudget.items.length === 0" class="empty-state">
-                        <DollarSign class="empty-icon" :size="48" />
-                        <h4>Нет статей расходов</h4>
-                        <p>Добавьте статьи для детализации бюджета проекта</p>
-                        <button
-                            type="button"
-                            class="btn btn-primary"
-                            @click="addBudgetItem"
-                        >
-                            <Plus class="btn-icon" :size="16" />
-                            Добавить первую статью
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Сводка по бюджету -->
-                <div v-if="localBudget.items.length > 0" class="form-section">
-                    <h3 class="section-title">Сводка по бюджету</h3>
-                    
-                    <div class="budget-summary-grid">
-                        <div class="summary-card">
-                            <div class="summary-header">
-                                <h4>Общая сумма статей</h4>
-                                <Calculator class="icon" :size="20" />
-                            </div>
-                            <div class="summary-value">
-                                {{ formatCurrency(totalItemsAmount) }}
                             </div>
                         </div>
                         
-                        <div class="summary-card">
-                            <div class="summary-header">
-                                <h4>Разница с общим бюджетом</h4>
-                                <TrendingUp class="icon" :size="20" />
-                            </div>
-                            <div 
-                                class="summary-value"
-                                :class="budgetDifferenceClass"
+                        <div class="stage-total">
+                            <button 
+                                type="button" 
+                                class="btn btn-outline-primary btn-sm" 
+                                @click="addRow(sIndex)"
                             >
-                                {{ formatCurrency(budgetDifference) }}
+                                Добавить статью расходов
+                            </button>
+                            <div class="stage-total-info">
+                                <div class="stage-total-label">Итого по этапу, руб.</div>
+                                <div class="stage-total-display">{{ formatCurrency(stageTotal(stage)) }}</div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- График по категориям -->
-                    <div class="categories-chart">
-                        <h4>Распределение по категориям</h4>
-                        <div class="chart-container">
-                            <div
-                                v-for="category in categoriesSummary"
-                                :key="category.name"
-                                class="category-bar"
-                            >
-                                <div class="category-info">
-                                    <span class="category-name">{{ category.label }}</span>
-                                    <span class="category-amount">{{ formatCurrency(category.amount) }}</span>
+            <div class="form-section totals">
+                <h3 class="section-title">Итоги</h3>
+
+                <div class="totals-grid">
+                    <div class="totals-row">
+                        <div class="label">Итого бюджет проекта с учетом страховых взносов, руб.</div>
+                        <div class="value">{{ formatCurrency(totalWithInsurance) }}</div>
+                    </div>
+
+                    <div class="sub-title">Из них:</div>
+
+                    <div class="two-cols">
+                        <div>
+                            <div class="totals-row">
+                                <div class="label">Заработная плата, руб.</div>
+                                <div class="value">{{ formatCurrency(totalSalary) }}</div>
+                            </div>
+                            <div class="subgrid">
+                                <div class="totals-row">
+                                    <div class="label sm">внебюджетные источники финансирования</div>
+                                    <div class="value">{{ formatCurrency(totalBy('salary','nonbudget')) }}</div>
                                 </div>
-                                <div class="bar-container">
-                                    <div 
-                                        class="bar-fill"
-                                        :style="{ width: `${category.percentage}%` }"
-                                    ></div>
+                                <div class="totals-row">
+                                    <div class="label sm">бюджетные источники финансирования</div>
+                                    <div class="value">{{ formatCurrency(totalBy('salary','budget')) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="totals-row">
+                                <div class="label">Другие расходы, руб.</div>
+                                <div class="value">{{ formatCurrency(totalOther) }}</div>
+                            </div>
+                            <div class="subgrid">
+                                <div class="totals-row">
+                                    <div class="label sm">внебюджетные источники финансирования</div>
+                                    <div class="value">{{ formatCurrency(totalBy('other','nonbudget')) }}</div>
+                                </div>
+                                <div class="totals-row">
+                                    <div class="label sm">бюджетные источники финансирования</div>
+                                    <div class="value">{{ formatCurrency(totalBy('other','budget')) }}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
-
     </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { 
-    DollarSign, 
-    Plus, 
-    X, 
-    Calculator, 
-    TrendingUp
-} from 'lucide-vue-next'
+import { ChevronDown, Trash2 } from 'lucide-vue-next'
+
+const INSURANCE_COEFF = 1.302
 
 const props = defineProps({
-    budget: {
-        type: Object,
-        required: true
+    // календарный план для получения количества и названий этапов
+    plan: { type: Object, required: true },
+    // внешнее состояние бюджета (сохраняемость между шагами)
+    budget: { type: Object, required: false, default: () => ({}) }
+})
+
+const emit = defineEmits(['update:budget', 'validation-change'])
+
+// Локальная модель по этапам
+const localStages = ref([])
+
+const normalizeFromPlan = () => {
+    const stages = Array.isArray(props?.plan?.stages) ? props.plan.stages : []
+    // переносим существующие суммы, если бюджет уже был
+    const byName = new Map()
+    if (Array.isArray(props?.budget?.stages)) {
+        props.budget.stages.forEach(s => byName.set(s.name, s))
     }
-})
-
-const emit = defineEmits(['update:budget'])
-
-// Локальные данные
-const localBudget = ref({
-    totalAmount: props.budget.totalAmount || 0,
-    items: [...(props.budget.items || [])]
-})
-
-// Категории расходов
-const categories = {
-    personnel: 'Персонал',
-    equipment: 'Оборудование',
-    materials: 'Материалы',
-    services: 'Услуги',
-    travel: 'Командировки',
-    other: 'Прочее'
-}
-
-// Вычисляемые свойства
-const totalItemsAmount = computed(() => {
-    return localBudget.value.items.reduce((sum, item) => {
-        return sum + (item.amount || 0) * (item.quantity || 1)
-    }, 0)
-})
-
-const budgetDifference = computed(() => {
-    return localBudget.value.totalAmount - totalItemsAmount.value
-})
-
-const budgetDifferenceClass = computed(() => {
-    if (budgetDifference.value > 0) return 'positive'
-    if (budgetDifference.value < 0) return 'negative'
-    return 'neutral'
-})
-
-const categoriesSummary = computed(() => {
-    const summary = {}
-    
-    localBudget.value.items.forEach(item => {
-        if (!summary[item.category]) {
-            summary[item.category] = 0
+    localStages.value = stages.map(s => {
+        const name = s?.name || ''
+        const existing = byName.get(name)
+        return {
+            name,
+            items: existing?.items?.length ? existing.items.map(r => ({
+                article: r.article === 'salary' ? 'salary' : r.article === 'other' ? 'other' : 'other',
+                source: r.source === 'budget' ? 'budget' : 'nonbudget',
+                amount: Number(r.amount) || 0
+            })) : [ { article: 'salary', source: 'budget', amount: 0 } ]
         }
-        summary[item.category] += (item.amount || 0) * (item.quantity || 1)
-    })
-    
-    const maxAmount = Math.max(...Object.values(summary), 1)
-    
-    return Object.entries(summary).map(([key, amount]) => ({
-        name: key,
-        label: categories[key] || key,
-        amount,
-        percentage: (amount / maxAmount) * 100
-    })).sort((a, b) => b.amount - a.amount)
-})
-
-const isFormValid = computed(() => {
-    return localBudget.value.totalAmount > 0
-})
-
-// Методы
-const addBudgetItem = () => {
-    localBudget.value.items.push({
-        name: '',
-        category: '',
-        amount: 0,
-        quantity: 1,
-        description: ''
     })
 }
 
-const removeBudgetItem = (index) => {
-    localBudget.value.items.splice(index, 1)
+normalizeFromPlan()
+
+watch(() => props.plan, normalizeFromPlan, { deep: true })
+
+// действия с строками
+const addRow = (stageIndex) => {
+    localStages.value[stageIndex].items.push({ article: 'salary', source: 'budget', amount: 0 })
+}
+const removeRow = (stageIndex, rowIndex) => {
+    const items = localStages.value[stageIndex].items
+    items.splice(rowIndex, 1)
+    if (items.length === 0) items.push({ article: 'salary', source: 'budget', amount: 0 })
 }
 
-const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('ru-RU', {
-        style: 'currency',
-        currency: 'RUB',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount)
+// суммы
+const stageTotal = (stage) => stage.items.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+
+const flatItems = computed(() => localStages.value.flatMap(s => s.items))
+
+const totalBy = (article, source) => flatItems.value
+    .filter(r => r.article === article && r.source === source)
+    .reduce((s, r) => s + (Number(r.amount) || 0), 0)
+
+const totalSalary = computed(() => flatItems.value
+    .filter(r => r.article === 'salary')
+    .reduce((s, r) => s + (Number(r.amount) || 0), 0))
+
+const totalOther = computed(() => flatItems.value
+    .filter(r => r.article === 'other')
+    .reduce((s, r) => s + (Number(r.amount) || 0), 0))
+
+const totalWithInsurance = computed(() => totalSalary.value * INSURANCE_COEFF + totalOther.value)
+
+// Валидация данных бюджета
+const validationErrors = ref([])
+
+const isBudgetValid = computed(() => {
+    const errors = []
+    
+    // Проверяем, что все этапы имеют хотя бы одну статью расходов
+    localStages.value.forEach((stage, stageIndex) => {
+        if (!stage.items || stage.items.length === 0) {
+            errors.push(`Этап "${stage.name}" должен содержать хотя бы одну статью расходов`)
+        }
+    })
+    
+    // Проверяем, что есть хотя бы одна сумма больше 0
+    const hasAnyAmount = localStages.value.some(stage => 
+        stage.items.some(item => (Number(item.amount) || 0) > 0)
+    )
+    
+    if (!hasAnyAmount) {
+        errors.push('Необходимо заполнить хотя бы одну сумму расходов')
+    }
+    
+    // Проверяем, что заполненные суммы корректны
+    localStages.value.forEach((stage, stageIndex) => {
+        stage.items.forEach((item, itemIndex) => {
+            const amount = Number(item.amount) || 0
+            if (amount > 0 && amount > 999999999) {
+                errors.push(`В этапе "${stage.name}" статья расходов №${itemIndex + 1} имеет слишком большую сумму`)
+            }
+        })
+    })
+    
+    // Проверяем, что общий бюджет не превышает разумные пределы
+    if (totalWithInsurance.value > 1000000000) {
+        errors.push('Общий бюджет проекта не должен превышать 1 млрд рублей')
+    }
+    
+    validationErrors.value = errors
+    return errors.length === 0
+})
+
+// Функция для проверки ошибки в конкретном поле суммы
+const hasAmountError = (stageIndex, rowIndex) => {
+    const item = localStages.value[stageIndex]?.items?.[rowIndex]
+    if (!item) return false
+    const amount = Number(item.amount) || 0
+    // Показываем ошибку только если поле было заполнено, но сумма некорректна
+    return amount < 0 || amount > 999999999
 }
 
+// Эмитим изменения валидации
+watch(isBudgetValid, (isValid) => {
+    emit('validation-change', {
+        isValid,
+        errors: validationErrors.value
+    })
+}, { immediate: true })
 
-// Следим за изменениями и обновляем родительский компонент
-watch(localBudget, (newValue) => {
-    emit('update:budget', newValue)
-}, { deep: true })
+// валидация и нормализация суммы
+const sanitizeAmount = (raw) => {
+    if (raw == null) return 0
+    const str = String(raw)
+        .replace(/\s+/g, '')
+        .replace(/,/g, '.')
+        .replace(/[^0-9.\-]/g, '')
+    // оставляем только одну точку и один минус в начале
+    const parts = str.split('.')
+    let joined = parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : parts[0]
+    
+    // Ограничиваем дробную часть до 2 цифр
+    if (parts.length > 1) {
+        const integerPart = parts[0]
+        const decimalPart = parts.slice(1).join('').slice(0, 2)
+        joined = integerPart + '.' + decimalPart
+    }
+    
+    const normalized = joined.replace(/(?!^)-/g, '')
+    const num = Number(normalized)
+    return isFinite(num) && !isNaN(num) ? (num < 0 ? 0 : num) : 0
+}
+
+const onAmountInput = (stageIndex, rowIndex, evt) => {
+    const raw = evt?.target?.value ?? ''
+    // Нормализуем для отображения: убираем пробелы, заменяем запятую на точку,
+    // оставляем только цифры и один разделитель
+    const stripped = String(raw)
+        .replace(/\s+/g, '')
+        .replace(/,/g, '.')
+        .replace(/[^0-9.]/g, '')
+
+    const firstDotIndex = stripped.indexOf('.')
+    let display = stripped
+    
+    if (firstDotIndex !== -1) {
+        // Ограничиваем дробную часть до 2 цифр
+        const integerPart = stripped.slice(0, firstDotIndex)
+        const decimalPart = stripped.slice(firstDotIndex + 1).replace(/\./g, '').slice(0, 2)
+        display = integerPart + '.' + decimalPart
+    }
+
+    // Если пользователь только что ввёл разделитель и ещё не набрал дробную часть,
+    // не конвертируем в число, чтобы точка/запятая не пропадала визуально
+    const endsWithDot = display.endsWith('.')
+
+    if (evt && evt.target) {
+        evt.target.value = display
+    }
+
+    if (endsWithDot || display === '') {
+        // Не обновляем числовую модель, пока дробная часть не введена
+        // или поле пустое. Для пустого поля храним 0, но не переписываем ввод.
+        localStages.value[stageIndex].items[rowIndex].amount = display === '' ? 0 : localStages.value[stageIndex].items[rowIndex].amount
+        return
+    }
+
+    const parsed = Number(display)
+    localStages.value[stageIndex].items[rowIndex].amount = (isFinite(parsed) && !isNaN(parsed) && parsed >= 0) ? parsed : 0
+}
+
+const onAmountKeydown = (evt) => {
+    const allowedControl = [
+        'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Tab'
+    ]
+    // Разрешаем сочетания Ctrl/Cmd: C, V, X, A, Z, Y
+    const allowedWithMeta = ['a', 'c', 'v', 'x', 'z', 'y']
+    if (evt.ctrlKey || evt.metaKey) {
+        if (allowedWithMeta.includes(evt.key.toLowerCase())) return
+    }
+    if (allowedControl.includes(evt.key)) return
+
+    const isDigit = /[0-9]/.test(evt.key)
+    const isPointKey = evt.key === '.' || evt.key === ',' || evt.key === 'Decimal' || evt.code === 'NumpadDecimal'
+
+    if (isDigit) return
+
+    if (isPointKey) {
+        const input = evt.target
+        const value = String(input.value || '')
+        const selectionStart = input.selectionStart ?? value.length
+        const selectionEnd = input.selectionEnd ?? value.length
+        
+        // Симулируем вставку символа
+        const newValue = value.slice(0, selectionStart) + '.' + value.slice(selectionEnd)
+        const separatorCount = (newValue.match(/[.,]/g) || []).length
+        
+        // Разрешаем, если разделителей будет не больше одного
+        if (separatorCount <= 1) return
+    }
+
+    evt.preventDefault()
+}
+
+const onAmountPaste = (stageIndex, rowIndex, evt) => {
+    const text = (evt.clipboardData || window.clipboardData)?.getData('text') || ''
+    const sanitized = sanitizeAmount(text)
+    evt.preventDefault()
+    localStages.value[stageIndex].items[rowIndex].amount = sanitized
+    if (evt && evt.target) {
+        evt.target.value = String(sanitized)
+    }
+}
+
+// форматирование
+const formatCurrency = (value) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2, minimumFractionDigits: 0 }).format(value || 0)
+
+// эмит наружу
+watch(localStages, (val) => {
+    emit('update:budget', {
+        stages: val.map(s => ({ name: s.name, items: s.items })),
+        totals: {
+            salary: totalSalary.value,
+            other: totalOther.value,
+            withInsurance: totalWithInsurance.value,
+            byArticleSource: {
+                salary: { budget: totalBy('salary','budget'), nonbudget: totalBy('salary','nonbudget') },
+                other: { budget: totalBy('other','budget'), nonbudget: totalBy('other','nonbudget') }
+            }
+        }
+    })
+}, { deep: true, immediate: true })
 </script>
 
 <style scoped lang="scss">
 .budget {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
 }
 
 .step-header {
     text-align: center;
-    margin-bottom: 1rem;
 }
 
-.step-title {
-    font-size: 1.5rem;
+.step-title { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.5rem 0; color: #212529; }
+.step-description { color: #6c757d; margin: 0; }
+
+.form-section { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 12px; padding: 1rem; }
+.section-title { font-size: 1.125rem; font-weight: 600; color: #212529; margin: 0 0 1rem 0; border-bottom: 2px solid #0d6efd; padding-bottom: .5rem; }
+
+/* Контейнер этапов */
+.stages-container { display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* Блок этапа */
+.stage-block { background: #fff; border: 1px solid #e6e9ef; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+
+.stage-header { background: #f8f9fa; border-bottom: 1px solid #dee2e6; padding: 1rem 1.25rem; }
+.stage-title { font-size: 1.125rem; font-weight: 600; color: #212529; margin: 0; }
+
+.stage-content { padding: 1.25rem; }
+.stage-items { display: flex; flex-direction: column; gap: 1rem; }
+
+.stage-item { 
+    background: #fdfdfd; 
+    border: 1px solid #e6e9ef; 
+    border-radius: 10px; 
+    padding: 1rem; 
+    transition: background .15s ease, box-shadow .15s ease; 
+}
+.stage-item:hover { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+
+/* Строки с полями ввода */
+.input-row { 
+    display: grid; 
+    gap: 1rem; 
+    margin-bottom: 1rem; 
+    align-items: start;
+    overflow: visible;
+}
+.input-row.single-row { grid-template-columns: 0.8fr 1.2fr 1fr auto; }
+
+.input-group { 
+    display: flex; 
+    flex-direction: column; 
+    gap: .5rem; 
+    min-height: fit-content;
+    overflow: visible;
+}
+
+.input-group-actions {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    min-width: 42px;
+    padding-top: 1.5rem;
+}
+.input-label { font-size: .875rem; font-weight: 600; color: #495057; margin: 0; }
+
+.form-input, .form-select { 
+    padding: .6rem .7rem; 
+    border: 1px solid #dbe0e7; 
+    border-radius: 8px !important;
+    font-size: 0.95rem; 
+    background: #fff; 
+    transition: border-color .15s ease, box-shadow .15s ease;
+    min-height: 42px;
+    box-sizing: border-box;
+    width: 100%;
+}
+.form-input:focus, .form-select:focus { 
+    outline: none; 
+    border-color: #0d6efd; 
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25); 
+}
+
+.form-input.input-error {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220,53,69,.25);
+}
+
+.input-error-message {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+/* Обертка для select с иконкой */
+.select-wrapper { position: relative; }
+.select-wrapper .form-select { appearance: none; padding-right: 2rem; }
+.select-icon { 
+    position: absolute; 
+    right: 0.6rem; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    color: #6c757d; 
+    pointer-events: none; 
+}
+
+/* Итого по этапу */
+.stage-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e6e9ef;
+}
+
+.stage-total-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stage-total-label {
+    font-size: 1rem;
     font-weight: 600;
-    color: #212529;
-    margin: 0 0 0.5rem 0;
+    color: #495057;
 }
 
-.step-description {
-    color: #6c757d;
-    margin: 0;
+.stage-total-display { 
+    padding: .6rem .7rem; 
+    background: #f1f3f5; 
+    border: 1px solid #dee2e6; 
+    border-radius: 8px !important; 
+    font-weight: 700; 
+    color: #212529; 
+    text-align: right;
+    min-height: 42px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    white-space: nowrap;
+    min-width: 150px;
 }
 
 .form-content {
-    flex: 1;
-}
-
-.budget-form {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 2.5rem;
 }
 
-.form-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 1.5rem;
-    border: 1px solid #dee2e6;
+
+/* Действия с элементами */
+.item-actions { 
+    display: flex; 
+    justify-content: flex-start; 
+    align-items: center; 
+    gap: .75rem; 
+    margin-top: .5rem; 
+    padding-top: .75rem; 
+    border-top: 1px solid #e6e9ef; 
 }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
+.btn { 
+    border: 1px solid #0d6efd; 
+    color: #0d6efd; 
+    background: #fff; 
+    padding: .38rem .64rem; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    font-size: .875rem;
+    transition: background .15s ease;
 }
-
-.section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #212529;
-    margin: 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #0d6efd;
-}
-
-.budget-summary {
-    max-width: 400px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 1rem;
-
-    &:last-child {
-        margin-bottom: 0;
-    }
-}
-
-.form-label {
-    font-weight: 500;
-    color: #212529;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-
-    &.required::after {
-        content: ' *';
-        color: #dc3545;
-    }
-}
-
-.input-group {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.form-input,
-.form-select,
-.form-textarea {
-    padding: 0.75rem;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    font-size: 1rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-    &:focus {
-        outline: none;
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-}
-
-.input-suffix {
-    position: absolute;
-    right: 0.75rem;
-    color: #6c757d;
-    font-weight: 500;
-    pointer-events: none;
-}
-
-.form-textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-.budget-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: #d1ecf1;
-    color: #0c5460;
-    border-radius: 6px;
-    font-weight: 500;
-
-    .icon {
-        flex-shrink: 0;
-    }
-}
-
-.budget-items-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.budget-item-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1.5rem;
-}
-
-.item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-
-    h4 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #212529;
-    }
-}
-
-.btn-remove {
+.btn:hover { background: #eef5ff; }
+.btn-remove { 
+    width: 32px; 
+    height: 32px; 
+    border-radius: 6px; 
+    border: 1px solid #dc3545; 
+    background: #fff; 
+    color: #dc3545; 
+    cursor: pointer; 
+    box-shadow: 0 1px 2px rgba(0,0,0,.06); 
+    transition: all .15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+}
+.btn-remove:hover { 
+    background: #dc3545; 
+    color: #fff;
+    transform: scale(1.05);
+}
 
-    &:hover {
-        background: #c82333;
+.totals-grid { display: flex; flex-direction: column; gap: .75rem; }
+.totals-row { display: flex; justify-content: space-between; gap: 1rem; background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: .6rem .8rem; }
+.label { color: #495057; }
+.label.sm { font-size: .9rem; }
+.value { font-weight: 700; color: #212529; }
+.sub-title { margin: .5rem 0 .25rem; color: #6c757d; font-weight: 600; }
+.two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.subgrid { display: flex; flex-direction: column; gap: .5rem; margin-top: .35rem; }
+
+@media (max-width: 900px) {
+    .input-row.single-row { 
+        grid-template-columns: 1fr; 
+        gap: 0.75rem;
     }
-
-    .icon {
-        flex-shrink: 0;
+    .input-group-actions {
+        align-items: center;
+        justify-content: flex-end;
+        min-width: auto;
     }
-}
-
-.item-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
+    .two-cols { grid-template-columns: 1fr; }
+    .stage-content { padding: 1rem; }
+    .stage-total { 
+        flex-direction: column; 
+        align-items: stretch; 
+        gap: 0.5rem; 
     }
-}
-
-.empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: #6c757d;
-
-    .empty-icon {
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-
-    h4 {
-        margin: 0 0 0.5rem 0;
-        color: #495057;
-    }
-
-    p {
-        margin: 0 0 1.5rem 0;
-    }
-}
-
-.budget-summary-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
-}
-
-.summary-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1.5rem;
-}
-
-.summary-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-
-    h4 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #212529;
-    }
-
-    .icon {
-        color: #6c757d;
-    }
-}
-
-.summary-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #212529;
-
-    &.positive {
-        color: #198754;
-    }
-
-    &.negative {
-        color: #dc3545;
-    }
-
-    &.neutral {
-        color: #6c757d;
-    }
-}
-
-.categories-chart {
-    h4 {
-        margin: 0 0 1rem 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #212529;
-    }
-}
-
-.chart-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.category-bar {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.category-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.875rem;
-}
-
-.category-name {
-    font-weight: 500;
-    color: #212529;
-}
-
-.category-amount {
-    color: #6c757d;
-    font-weight: 600;
-}
-
-.bar-container {
-    height: 8px;
-    background: #e9ecef;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #0d6efd, #0b5ed7);
-    transition: width 0.3s ease;
-}
-
-
-// Адаптивность
-@media (max-width: 768px) {
-    .section-header {
+    .stage-total-info {
         flex-direction: column;
-        gap: 1rem;
         align-items: stretch;
+        gap: 0.5rem;
     }
-
+    .stage-total-display { min-width: auto; }
 }
 </style>

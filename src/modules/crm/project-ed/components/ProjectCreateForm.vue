@@ -72,6 +72,8 @@
                 <Budget
                     v-if="currentStep === 5"
                     v-model:budget="formData.budget"
+                    :plan="formData.calendarPlan"
+                    @validation-change="(validation) => stepValidation.budget = validation"
                     @next="nextStep"
                     @prev="prevStep"
                 />
@@ -177,6 +179,11 @@ const steps = [
 // Текущий шаг
 const currentStep = ref(1)
 
+// Состояние валидации для каждого шага
+const stepValidation = reactive({
+    budget: { isValid: false, errors: [] }
+})
+
 // Данные формы
 const formData = reactive({
     event: null,
@@ -215,6 +222,7 @@ const formData = reactive({
     calendarPlan: {
         startDate: '',
         endDate: '',
+        stages: [],
         milestones: []
     },
     budget: {
@@ -252,7 +260,7 @@ const canProceed = computed(() => {
             return formData.calendarPlan.startDate !== '' && 
                    formData.calendarPlan.endDate !== ''
         case 5:
-            return formData.budget.totalAmount > 0
+            return stepValidation.budget.isValid
         case 6:
             return true // Дополнительная информация необязательна
         default:
@@ -284,8 +292,8 @@ const prevStep = () => {
 }
 
 // Синхронизация бюджета между разделами
-watch(() => formData.budget.totalAmount, (newAmount) => {
-    formData.basicProvisions.budget = newAmount
+watch(() => formData.budget.totals?.withInsurance, (newAmount) => {
+    formData.basicProvisions.budget = newAmount || 0
 }, { immediate: true })
 
 // Отправка формы
