@@ -1,19 +1,12 @@
 <template>
     <div class="project-create-form">
-        <!-- Прогресс-бар -->
-        <div class="progress-container">
-            <div class="progress-bar">
-                <div 
-                    class="progress-fill" 
-                    :style="{ width: `${(currentStep / steps.length) * 100}%` }"
-                ></div>
-            </div>
-            <div class="progress-text">
-                Шаг {{ currentStep }} из {{ steps.length }}: {{ steps[currentStep - 1].title }}
-            </div>
+        <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: `${(currentStep / steps.length) * 100}%` }"></div>
+            <span class="progress-text">
+                Шаг {{ currentStep }}. {{ steps[currentStep - 1].title }}
+            </span>
         </div>
 
-        <!-- Навигация по вкладкам -->
         <div class="tabs-navigation">
             <button
                 v-for="(step, index) in steps"
@@ -21,27 +14,24 @@
                 class="tab-button"
                 :class="{
                     'active': currentStep === index + 1,
-                    'completed': currentStep > index + 1,
-                    'disabled': currentStep < index + 1
+                    'completed': isStepCompleted(index + 1),
+                    'disabled': !isStepAccessible(index + 1)
                 }"
                 @click="goToStep(index + 1)"
-                :disabled="currentStep < index + 1"
+                :disabled="!isStepAccessible(index + 1)"
             >
                 <component :is="step.icon" class="tab-icon" :size="20" />
                 <span class="tab-label">{{ step.title }}</span>
             </button>
         </div>
 
-        <!-- Контент формы -->
         <div class="form-content">
             <div class="form-container">
-                <!-- Выбор мероприятия -->
                 <EventSelection
                     v-if="currentStep === 1"
                     v-model:event="formData.event"
                 />
 
-                <!-- Основные положения -->
                 <BasicProvisions
                     v-if="currentStep === 2"
                     v-model:provisions="formData.basicProvisions"
@@ -52,7 +42,6 @@
                     @prev="prevStep"
                 />
 
-                <!-- Целевые показатели -->
                 <TargetIndicators
                     v-if="currentStep === 3"
                     v-model:indicators="formData.targetIndicators"
@@ -60,7 +49,6 @@
                     @prev="prevStep"
                 />
 
-                <!-- Календарный план-график -->
                 <CalendarPlan
                     v-if="currentStep === 4"
                     v-model:plan="formData.calendarPlan"
@@ -68,7 +56,6 @@
                     @prev="prevStep"
                 />
 
-                <!-- Бюджет -->
                 <Budget
                     v-if="currentStep === 5"
                     v-model:budget="formData.budget"
@@ -78,7 +65,6 @@
                     @prev="prevStep"
                 />
 
-                <!-- Дополнительная информация -->
                 <AdditionalInfo
                     v-if="currentStep === 6"
                     v-model:info="formData.additionalInfo"
@@ -88,7 +74,6 @@
             </div>
         </div>
 
-        <!-- Навигационные кнопки -->
         <div class="form-actions">
             <button
                 v-if="currentStep > 1"
@@ -274,9 +259,68 @@ const canSubmit = computed(() => {
 
 // Навигация
 const goToStep = (step) => {
-    if (step <= currentStep.value) {
+    // Разрешаем переход к любой вкладке, если она уже была пройдена
+    // или является следующей после последней пройденной
+    const maxAllowedStep = getMaxAllowedStep()
+    if (step <= maxAllowedStep) {
         currentStep.value = step
     }
+}
+
+// Определяем максимально доступный шаг
+const getMaxAllowedStep = () => {
+    // Проверяем шаги последовательно, начиная с первого
+    for (let i = 1; i <= steps.length; i++) {
+        if (!isStepCompleted(i)) {
+            return i // Возвращаем первый незаполненный шаг
+        }
+    }
+    return steps.length // Если все шаги заполнены, разрешаем все
+}
+
+// Проверяем, заполнен ли шаг
+const isStepCompleted = (step) => {
+    switch (step) {
+        case 1:
+            return formData.event !== null
+        case 2:
+            return formData.basicProvisions.projectName.trim() !== '' &&
+                   formData.basicProvisions.shortName.trim() !== '' &&
+                   formData.basicProvisions.projectGoal.trim() !== '' &&
+                   formData.basicProvisions.projectTasks.some(task => task.trim() !== '') &&
+                   formData.basicProvisions.startDate !== '' &&
+                   formData.basicProvisions.endDate !== '' &&
+                   formData.basicProvisions.curator !== null &&
+                   formData.basicProvisions.customer !== '' &&
+                   formData.basicProvisions.manager !== '' &&
+                   formData.basicProvisions.executors && formData.basicProvisions.executors.length > 0 &&
+                   formData.basicProvisions.plannedResults.some(result => result.trim() !== '')
+        case 3:
+            return formData.targetIndicators.length > 0
+        case 4:
+            return formData.calendarPlan.startDate !== '' && 
+                   formData.calendarPlan.endDate !== ''
+        case 5:
+            return stepValidation.budget.isValid
+        case 6:
+            return true // Дополнительная информация необязательна
+        default:
+            return false
+    }
+}
+
+// Проверяем, доступна ли вкладка для перехода
+const isStepAccessible = (step) => {
+    // Первая вкладка всегда доступна
+    if (step === 1) return true
+    
+    // Для остальных вкладок проверяем, что все предыдущие шаги заполнены
+    for (let i = 1; i < step; i++) {
+        if (!isStepCompleted(i)) {
+            return false
+        }
+    }
+    return true
 }
 
 const nextStep = () => {
@@ -320,60 +364,69 @@ const submitForm = () => {
 }
 
 // Прогресс-бар
-.progress-container {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 1.5rem;
-    border: 1px solid #dee2e6;
-}
-
 .progress-bar {
     width: 100%;
-    height: 8px;
+    height: 48px;
     background: #e9ecef;
-    border-radius: 4px;
+    border-radius: 32px;
     overflow: hidden;
-    margin-bottom: 0.5rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #0d6efd, #0b5ed7);
     transition: width 0.3s ease;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .progress-text {
     font-size: 0.875rem;
-    color: #6c757d;
+    font-weight: 700;
+    color: var(--bs-body-color);
     text-align: center;
+    white-space: nowrap;
+    z-index: 2;
+    position: relative;
+    padding: 0 1rem;
 }
 
 // Навигация по вкладкам
 .tabs-navigation {
     display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
+    gap: 0.25rem;
     padding: 0.5rem;
     background: #f8f9fa;
     border-radius: 8px;
     border: 1px solid #dee2e6;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .tab-button {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     white-space: nowrap;
     min-width: fit-content;
+    flex: 1;
+    max-width: 200px;
+    justify-content: center;
+    position: relative;
 
     &:hover:not(.disabled) {
-        background: #f8f9fa;
         border-color: #0d6efd;
     }
 
@@ -381,6 +434,9 @@ const submitForm = () => {
         background: #0d6efd;
         color: white;
         border-color: #0d6efd;
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        font-weight: 600;
     }
 
     &.completed {
@@ -399,11 +455,17 @@ const submitForm = () => {
 
 .tab-icon {
     flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.tab-button.active .tab-icon {
+    transform: scale(1.1);
 }
 
 .tab-label {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
+    text-align: center;
 }
 
 // Контент формы
@@ -424,9 +486,6 @@ const submitForm = () => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.5rem;
-    background: #f8f9fa;
-    border-top: 1px solid #dee2e6;
 }
 
 .actions-spacer {
@@ -491,6 +550,8 @@ const submitForm = () => {
 
     .tab-button {
         justify-content: center;
+        max-width: none;
+        flex: none;
     }
 
     .form-actions {
@@ -500,6 +561,17 @@ const submitForm = () => {
 
     .actions-spacer {
         display: none;
+    }
+}
+
+@media (max-width: 1200px) {
+    .tab-button {
+        max-width: 150px;
+        padding: 0.4rem 0.5rem;
+    }
+    
+    .tab-label {
+        font-size: 0.7rem;
     }
 }
 </style>
