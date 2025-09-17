@@ -91,7 +91,7 @@
     <div class="protocols-section">
       <div class="section-header">
         <h3 class="section-title">Доступные протоколы</h3>
-        <p class="section-subtitle">Выберите протокол для создания анализа</p>
+        <p class="section-subtitle">Выберите протоколы для создания анализов или введите номера вручную</p>
         
         <!-- Сортировка -->
         <SortComponent
@@ -99,6 +99,70 @@
           :current-sort="sort"
           @sort-change="onSortChange"
         />
+
+        <!-- Панель групповых действий -->
+        <div class="bulk-actions mt-3">
+          <div class="bulk-card">
+            <div class="bulk-header">
+              <div class="bulk-title">Групповое создание анализов</div>
+              <div class="bulk-counters">
+                <span class="badge bg-primary-subtle text-primary">
+                  Введено: {{ parsedInputNumbers.length }}
+                </span>
+                <span class="badge bg-success-subtle text-success">
+                  Выбрано: {{ selectedCount }}
+                </span>
+              </div>
+            </div>
+
+            <div class="row g-3 align-items-start">
+              <div class="col-12 col-lg-6">
+                <label class="form-label mb-2">Создание по номерам</label>
+                <div class="input-group mb-2">
+                  <span class="input-group-text">Номера протоколов</span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    v-model="protocolsInput"
+                    placeholder="Например: 1, 2 3; 10-12"
+                  />
+                  <button
+                    class="btn btn-primary"
+                    :disabled="isBulkCreating || !parsedInputNumbers.length"
+                    @click="createAnalysesFromInput"
+                  >
+                    <Plus size="16" />
+                    {{ isBulkCreating ? 'Создание...' : `Создать по номерам (${parsedInputNumbers.length})` }}
+                  </button>
+                </div>
+                <div v-if="parsedInputNumbers.length" class="chips">
+                  <span v-for="n in parsedInputNumbers" :key="`chip-${n}`" class="chip">{{ n }}</span>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <label class="form-label mb-2">Создание по выбранным</label>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <button
+                    class="btn btn-success"
+                    :disabled="isBulkCreating || selectedCount === 0"
+                    @click="createAnalysesForSelected"
+                  >
+                    <Plus size="16" />
+                    {{ isBulkCreating ? 'Создание...' : `Создать для выбранных (${selectedCount})` }}
+                  </button>
+                  <button
+                    class="btn btn-outline-secondary"
+                    :disabled="isBulkCreating || selectedCount === 0"
+                    @click="clearSelection"
+                  >
+                    Очистить выбор
+                  </button>
+                </div>
+                <small class="text-secondary d-block mt-2">Выбрано протоколов: {{ selectedCount }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div v-if="isLoading" class="loading-state">
@@ -126,6 +190,8 @@
           v-for="protocol in availableProtocols" 
           :key="protocol.protocol_number"
           class="protocol-card"
+          :class="{ selected: isSelected(protocol.protocol_number) }"
+          @click="toggleSelect(protocol.protocol_number)"
         >
           <div class="protocol-header">
             <div class="protocol-number">
@@ -234,7 +300,7 @@
           <div class="protocol-actions">
             <button 
               class="btn btn-primary btn-action"
-              @click="createAnalysisFromProtocol(protocol)"
+              @click.stop="createAnalysisFromProtocol(protocol)"
               title="Создать анализ"
             >
               <Plus size="16" />
@@ -242,12 +308,15 @@
             </button>
             <button 
               class="btn btn-primary btn-action btn-details"
-              @click="viewProtocolDetails(protocol)"
+              @click.stop="viewProtocolDetails(protocol)"
               title="Подробности"
             >
               <Eye size="16" />
               Подробности
             </button>
+          </div>
+          <div class="selected-check" v-if="isSelected(protocol.protocol_number)">
+            <CheckCircle size="18" />
           </div>
         </div>
       </div>
@@ -471,7 +540,7 @@ import SortComponent from './components/SortComponent.vue'
 import { useToast } from 'vue-toastification'
 import { Modal } from 'bootstrap'
 import { 
-  RefreshCw, Plus, FileCheck, CheckCircle, Loader2, Clock, 
+  Plus, FileCheck, CheckCircle, Loader2, Clock, 
   FileX, Eye, Info, Zap, Target, X, BarChart3 
 } from 'lucide-vue-next'
 
@@ -481,10 +550,9 @@ export default {
   components: {
     PaginationComponent,
     SortComponent,
-    RefreshCw,
     Plus,
-    FileCheck,
     CheckCircle,
+    FileCheck,
     Loader2,
     Clock,
     FileX,
@@ -501,11 +569,14 @@ export default {
       availableProtocols: [],
       isLoading: false,
       selectedProtocol: null,
+      selectedProtocols: new Set(),
       newAnalysis: {
         title: '',
         description: ''
       },
       isCreating: false,
+      isBulkCreating: false,
+      protocolsInput: '',
       stats: {
         total: 0,
         pending: 0,
@@ -541,6 +612,12 @@ export default {
     },
     pendingAnalyses() {
       return this.stats.pending || 0
+    },
+    selectedCount() {
+      return this.selectedProtocols.size
+    },
+    parsedInputNumbers() {
+      return this.parseProtocolNumbers(this.protocolsInput)
     }
   },
   async mounted() {
@@ -666,6 +743,83 @@ export default {
           modal.show()
         }
       })
+    },
+    toggleSelect(protocolNumber) {
+      if (this.selectedProtocols.has(protocolNumber)) {
+        this.selectedProtocols.delete(protocolNumber)
+      } else {
+        this.selectedProtocols.add(protocolNumber)
+      }
+      // force update since Set is not reactive by default in Vue2 options API
+      this.selectedProtocols = new Set(this.selectedProtocols)
+    },
+    isSelected(protocolNumber) {
+      return this.selectedProtocols.has(protocolNumber)
+    },
+    clearSelection() {
+      this.selectedProtocols = new Set()
+    },
+    parseProtocolNumbers(input) {
+      if (!input) return []
+      const parts = input.split(/[,;\s]+/).filter(Boolean)
+      const numbers = new Set()
+      for (const part of parts) {
+        if (/^\d+-\d+$/.test(part)) {
+          const [start, end] = part.split('-').map(n => parseInt(n, 10))
+          if (!isNaN(start) && !isNaN(end)) {
+            const [from, to] = start <= end ? [start, end] : [end, start]
+            for (let i = from; i <= to; i++) numbers.add(i)
+          }
+        } else {
+          const n = parseInt(part, 10)
+          if (!isNaN(n)) numbers.add(n)
+        }
+      }
+      return Array.from(numbers)
+    },
+    async createAnalysesForSelected() {
+      const list = Array.from(this.selectedProtocols)
+      if (!list.length) return
+      this.isBulkCreating = true
+      try {
+        for (const protocolNumber of list) {
+          const title = `Анализ протокола ${protocolNumber}`
+          const description = ''
+          const response = await impulsAnalysisAPI.createFromProtocol(protocolNumber, title, description)
+          if (!response || !response.success) {
+            toast.error(`Не удалось создать анализ для протокола ${protocolNumber}: ${response?.message || 'ошибка'}`)
+          }
+        }
+        toast.success(`Создание анализов запущено для ${list.length} протокол(ов)`)
+        this.clearSelection()
+        await this.loadStats()
+      } catch {
+        toast.error('Ошибка при массовом создании анализов')
+      } finally {
+        this.isBulkCreating = false
+      }
+    },
+    async createAnalysesFromInput() {
+      const list = this.parsedInputNumbers
+      if (!list.length) return
+      this.isBulkCreating = true
+      try {
+        for (const protocolNumber of list) {
+          const title = `Анализ протокола ${protocolNumber}`
+          const description = ''
+          const response = await impulsAnalysisAPI.createFromProtocol(protocolNumber, title, description)
+          if (!response || !response.success) {
+            toast.error(`Не удалось создать анализ для протокола ${protocolNumber}: ${response?.message || 'ошибка'}`)
+          }
+        }
+        toast.success(`Создание анализов запущено для ${list.length} протокол(ов)`)
+        this.protocolsInput = ''
+        await this.loadStats()
+      } catch {
+        toast.error('Ошибка при создании по номерам')
+      } finally {
+        this.isBulkCreating = false
+      }
     },
     
     async submitCreateAnalysis() {
@@ -1067,10 +1221,15 @@ export default {
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: all 0.3s ease;
+  position: relative;
   
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  &.selected {
+    outline: 3px solid #0d6efd;
   }
 }
 
@@ -1128,6 +1287,21 @@ export default {
       }
     }
   }
+}
+
+.selected-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0d6efd;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.4);
 }
 
 // Контент протокола
@@ -1658,6 +1832,53 @@ export default {
       grid-template-columns: 1fr;
       gap: 1.5rem;
     }
+  }
+}
+
+// Панель групповых действий (улучшенный UI)
+.bulk-actions {
+  .bulk-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--bs-border-color);
+    padding: 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+
+  .bulk-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .bulk-title {
+    font-weight: 600;
+    color: var(--bs-heading-color);
+  }
+
+  .bulk-counters {
+    display: flex;
+    gap: 0.5rem;
+    .badge {
+      font-weight: 600;
+      border: 1px solid var(--bs-border-color);
+    }
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .chip {
+    background: var(--bs-light);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    color: var(--bs-heading-color);
   }
 }
 </style>

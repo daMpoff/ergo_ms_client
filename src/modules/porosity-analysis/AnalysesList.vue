@@ -31,82 +31,49 @@
     
     <div class="row">
       <div class="col-12">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="card-title mb-0">
-              <List class="me-2" size="20" />
-              Список анализируемых образцов
-            </h4>
-
-            <div class="d-flex align-items-center gap-3">
-              <div class="filter-buttons">
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'all' }"
-                  data-filter="all"
-                  @click="setFilter('all')"
-                >
-                  <List class="me-1" size="16" />
-                  Все
-                </button>
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'pending' }"
-                  data-filter="pending"
-                  @click="setFilter('pending')"
-                >
-                  <Clock class="me-1" size="16" />
-                  Ожидающие
-                </button>
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'processing' }"
-                  data-filter="processing"
-                  @click="setFilter('processing')"
-                >
-                  <Loader2 class="me-1" size="16" />
-                  Обрабатываются
-                </button>
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'completed' }"
-                  data-filter="completed"
-                  @click="setFilter('completed')"
-                >
-                  <CheckCircle class="me-1" size="16" />
-                  Завершенные
-                </button>
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'failed' }"
-                  data-filter="failed"
-                  @click="setFilter('failed')"
-                >
-                  <AlertTriangle class="me-1" size="16" />
-                  Ошибки
-                </button>
-              </div>
-              
-              <div class="bulk-actions">
-                <button
-                  v-if="failedAnalyses.length > 0"
-                  type="button"
-                  class="btn btn-warning btn-sm"
-                  @click="restartFailedAnalyses"
-                  :disabled="restartingMultiple"
-                >
-                  <RotateCcw class="me-1" size="16" />
-                  {{ restartingMultiple ? 'Перезапуск...' : `Перезапустить ошибки (${failedAnalyses.length})` }}
-                </button>
+            <!-- Фильтры и поиск (как в видео-аналитике) -->
+            <div class="filters-card mb-3">
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">
+                      <Search :size="16" />
+                      <span>Поиск</span>
+                    </label>
+                    <input 
+                      v-model.trim="search" 
+                      type="text" 
+                      class="form-control" 
+                      placeholder="Название или описание анализа..."
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Сортировка</label>
+                    <select v-model="ordering" class="form-select">
+                      <option value="-created_at">По дате создания ↓</option>
+                      <option value="created_at">По дате создания ↑</option>
+                      <option value="name">По названию ↑</option>
+                      <option value="-name">По названию ↓</option>
+                      <option value="status">По статусу</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">На странице</label>
+                    <select v-model.number="pagination.page_size" class="form-select" @change="changePage(1)">
+                      <option :value="5">5</option>
+                      <option :value="10">10</option>
+                      <option :value="20">20</option>
+                      <option :value="50">50</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2 d-grid align-self-end">
+                    <button class="btn btn-reset-filters" @click="resetFilters" title="Сбросить фильтры и обновить список">
+                      <RotateCcw :size="16" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="card-body">
             <!-- Статистические карточки -->
             <div class="row g-4 mb-3">
               <div class="col-xl-3 col-md-6">
@@ -156,17 +123,13 @@
             <div v-else-if="filteredAnalyses.length === 0" class="text-center py-4">
               <Inbox class="text-muted mb-3" size="48" />
               <h5 class="text-muted">Анализы не найдены</h5>
-              <p class="text-muted">Создайте первый анализ для начала работы</p>
-              <router-link to="/porosity-analysis" class="btn btn-primary">
-                <Plus class="me-2" size="16" />
-                Создать анализ
-              </router-link>
+              <p class="text-muted">Попробуйте изменить параметры фильтрации/сортировки или создайте новый анализ</p>
             </div>
             
             <div v-else>
               <div class="row">
                 <div
-                  v-for="analysis in filteredAnalyses"
+                  v-for="analysis in paginatedAnalyses"
                   :key="analysis.id"
                   class="col-md-6 col-lg-4 mb-4"
                 >
@@ -313,63 +276,86 @@
                   </div>
                 </div>
               </div>
-              
-              <!-- Пагинация -->
-              <div v-if="pagination.total_pages > 1" class="d-flex justify-content-center mt-4">
-                <nav aria-label="Навигация по страницам">
-                  <ul class="pagination">
-                    <!-- Кнопка "Предыдущая" -->
-                    <li class="page-item" :class="{ disabled: pagination.current_page === 1 }">
-                      <button 
-                        class="page-link" 
-                        @click="changePage(pagination.current_page - 1)"
-                        :disabled="pagination.current_page === 1"
-                      >
-                        <ChevronLeft class="me-1" size="16" />
-                        Предыдущая
-                      </button>
-                    </li>
-                    
-                    <!-- Номера страниц -->
-                    <li 
-                      v-for="page in visiblePages" 
-                      :key="page"
-                      class="page-item"
-                      :class="{ active: page === pagination.current_page }"
-                    >
-                      <button 
-                        class="page-link" 
-                        @click="changePage(page)"
-                      >
-                        {{ page }}
-                      </button>
-                    </li>
-                    
-                    <!-- Кнопка "Следующая" -->
-                    <li class="page-item" :class="{ disabled: pagination.current_page === pagination.total_pages }">
-                      <button 
-                        class="page-link" 
-                        @click="changePage(pagination.current_page + 1)"
-                        :disabled="pagination.current_page === pagination.total_pages"
-                      >
-                        Следующая
-                        <ChevronRight class="ms-1" size="16" />
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
-              
-              <!-- Информация о страницах -->
-              <div v-if="pagination.total_pages > 1" class="text-center mt-3">
-                <small class="text-muted">
-                  Страница {{ pagination.current_page }} из {{ pagination.total_pages }} 
-                  ({{ pagination.count }} анализов всего)
-                </small>
-              </div>
             </div>
-          </div>
-        </div>
+            
+            <!-- Пагинация: всегда отображается -->
+            <div class="d-flex justify-content-center mt-4">
+              <nav aria-label="Навигация по страницам">
+                <ul class="pagination">
+                  <!-- Кнопка "Первая" -->
+                  <li class="page-item" :class="{ disabled: pagination.current_page === 1 }">
+                    <button 
+                      class="page-link" 
+                      @click="changePage(1)"
+                      :disabled="pagination.current_page === 1"
+                      title="Первая страница"
+                    >
+                      <ChevronsLeft :size="16" />
+                    </button>
+                  </li>
+                  
+                  <!-- Кнопка "Предыдущая" -->
+                  <li class="page-item" :class="{ disabled: pagination.current_page === 1 }">
+                    <button 
+                      class="page-link" 
+                      @click="changePage(pagination.current_page - 1)"
+                      :disabled="pagination.current_page === 1"
+                    >
+                      <ChevronLeft class="me-1" size="16" />
+                      Предыдущая
+                    </button>
+                  </li>
+                  
+                  <!-- Номера страниц -->
+                  <li 
+                    v-for="page in visiblePages" 
+                    :key="page"
+                    class="page-item"
+                    :class="{ active: page === pagination.current_page }"
+                  >
+                    <button 
+                      class="page-link" 
+                      @click="changePage(page)"
+                    >
+                      {{ page }}
+                    </button>
+                  </li>
+                  
+                  <!-- Кнопка "Следующая" -->
+                  <li class="page-item" :class="{ disabled: pagination.current_page === displayTotalPages }">
+                    <button 
+                      class="page-link" 
+                      @click="changePage(pagination.current_page + 1)"
+                      :disabled="pagination.current_page === displayTotalPages"
+                    >
+                      Следующая
+                      <ChevronRight class="ms-1" size="16" />
+                    </button>
+                  </li>
+                  
+                  <!-- Кнопка "Последняя" -->
+                  <li class="page-item" :class="{ disabled: pagination.current_page === displayTotalPages }">
+                    <button 
+                      class="page-link" 
+                      @click="changePage(displayTotalPages)"
+                      :disabled="pagination.current_page === displayTotalPages"
+                      title="Последняя страница"
+                    >
+                      <ChevronsRight :size="16" />
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+            
+            <!-- Информация о страницах: всегда отображается -->
+            <div class="text-center mt-3">
+              <small class="text-muted">
+                Страница {{ pagination.current_page }} из {{ displayTotalPages }} 
+                ({{ displayTotalItems }} анализов всего)
+              </small>
+            </div>
+          
       </div>
     </div>
   </div>
@@ -379,9 +365,9 @@
 import { porosityAnalysisAPI } from './js/porosity-analysis.js'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { 
-  Microscope, List, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
+  Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
   Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search
 } from 'lucide-vue-next'
 
 import { useToast } from 'vue-toastification'
@@ -392,15 +378,18 @@ export default {
   name: 'PorosityAnalysesList',
   components: {
     ConfirmDialog,
-    Microscope, List, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
+    Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
     Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
-    ChevronLeft, ChevronRight
+    ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+    , Search
   },
   data() {
     return {
       analyses: [],
       loading: true,
       currentFilter: 'all',
+      search: '',
+      ordering: '-created_at',
       restartingAnalysis: null,
       downloadingAnalysis: null,
       deletingAnalysis: null,
@@ -412,7 +401,7 @@ export default {
         current_page: 1,
         total_pages: 1,
         count: 0,
-        page_size: 20
+        page_size: 10
       },
       // Статистика по статусам
       stats: {
@@ -426,20 +415,70 @@ export default {
   },
   computed: {
     filteredAnalyses() {
-      if (this.currentFilter === 'all') {
-        return this.analyses
+      let list = this.analyses
+
+      // Фильтр по статусу
+      if (this.currentFilter !== 'all') {
+        list = list.filter(analysis => analysis.status === this.currentFilter)
       }
-      return this.analyses.filter(analysis => analysis.status === this.currentFilter)
+
+      // Поиск по имени и описанию
+      const query = (this.search || '').toString().trim().toLowerCase()
+      if (query) {
+        list = list.filter(a => {
+          const name = (a.name || '').toString().toLowerCase()
+          const desc = (a.description || '').toString().toLowerCase()
+          return name.includes(query) || desc.includes(query)
+        })
+      }
+
+      // Сортировка на клиенте
+      const ord = this.ordering || '-created_at'
+      const sorted = [...list]
+      const getDate = v => (v ? new Date(v).getTime() : 0)
+      if (ord === 'created_at') {
+        sorted.sort((a, b) => getDate(a.created_at) - getDate(b.created_at))
+      } else if (ord === '-created_at') {
+        sorted.sort((a, b) => getDate(b.created_at) - getDate(a.created_at))
+      } else if (ord === 'name') {
+        sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      } else if (ord === '-name') {
+        sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''))
+      } else if (ord === 'status') {
+        sorted.sort((a, b) => (a.status || '').localeCompare(b.status || ''))
+      }
+      return sorted
+    },
+    // Количество элементов и страниц для отображения
+    displayTotalItems() {
+      return this.filteredAnalyses.length
+    },
+    displayTotalPages() {
+      return Math.max(1, Math.ceil(this.displayTotalItems / this.pagination.page_size))
+    },
+    // Элементы текущей страницы
+    paginatedAnalyses() {
+      const start = (this.pagination.current_page - 1) * this.pagination.page_size
+      const end = start + this.pagination.page_size
+      return this.filteredAnalyses.slice(start, end)
     },
     
     failedAnalyses() {
       return this.analyses.filter(analysis => analysis.status === 'failed')
     },
+    resetFilters() {
+      this.search = ''
+      this.ordering = '-created_at'
+      this.currentFilter = 'all'
+      if (this.pagination.current_page !== 1) {
+        this.loadAnalyses(1)
+      }
+    },
     
     // Вычисляем видимые страницы для пагинации
     visiblePages() {
       const current = this.pagination.current_page
-      const total = this.pagination.total_pages
+      const total = this.displayTotalPages
       const delta = 2 // Количество страниц с каждой стороны от текущей
       
       let start = Math.max(1, current - delta)
@@ -547,7 +586,7 @@ export default {
               current_page: response.data.current_page || page,
               total_pages: response.data.total_pages || 1,
               count: response.data.count || 0,
-              page_size: response.data.page_size || 20
+              page_size: response.data.page_size || this.pagination.page_size
             }
           } else {
             // Fallback для старого формата ответа
@@ -556,7 +595,7 @@ export default {
               current_page: 1,
               total_pages: 1,
               count: this.analyses.length,
-              page_size: 20
+              page_size: this.pagination.page_size
             }
           }
         } else {
@@ -594,18 +633,14 @@ export default {
     
     // Метод для смены страницы
     async changePage(page) {
-      if (page >= 1 && page <= this.pagination.total_pages && page !== this.pagination.current_page) {
-        await this.loadAnalyses(page)
+      const total = this.displayTotalPages
+      if (page >= 1 && page <= total && page !== this.pagination.current_page) {
+        this.pagination.current_page = page
+        // Данные уже загружены; пагинация клиентская
       }
     },
     
-    setFilter(filter) {
-      this.currentFilter = filter
-      // При смене фильтра возвращаемся на первую страницу
-      if (this.pagination.current_page !== 1) {
-        this.loadAnalyses(1)
-      }
-    },
+    // setFilter больше не используется (старые фильтры удалены)
     
     getStatusBadgeClass(status) {
       const classes = {
@@ -796,6 +831,8 @@ export default {
           
           // Немедленно удаляем анализ из списка
           this.analyses = this.analyses.filter(analysis => analysis.id !== this.analysisToDelete)
+          // Обновляем статистику карточек сразу
+          try { await this.loadStats() } catch {}
           
           // Пытаемся обновить список в фоне, но не блокируем UI
           this.loadAnalyses(this.pagination.current_page).catch(() => {
@@ -950,6 +987,15 @@ export default {
 .card-value { font-size: 2rem; font-weight: 700; margin: 0; color: #2d3436; }
 .card-progress { margin-top: 0.5rem; }
 .card-progress .progress { height: 5px; background-color: #e9ecef; border-radius: 5px; }
+
+.filters-card { background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08); }
+.filters-card .card-body { padding: 1rem; }
+.filters-card .form-label { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--bs-heading-color); margin-bottom: 0.5rem; }
+.filters-card .form-control, .filters-card .form-select { border-radius: 8px; border-color: var(--bs-border-color); }
+.filters-card .form-control:focus, .filters-card .form-select:focus { border-color: var(--bs-primary); box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25); }
+.btn-reset-filters { display: flex; align-items: center; justify-content: center; width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; color: white; font-weight: 600; border-radius: 8px; transition: all 0.2s ease; }
+.btn-reset-filters:hover { background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4); }
+.btn-reset-filters:active { transform: translateY(0); }
 
 .filter-buttons {
   display: flex;
@@ -1572,6 +1618,13 @@ export default {
   height: 40px;
   transition: all 0.2s ease;
 }
+
+/* Промежутки между кнопками пагинации */
+.pagination .page-item + .page-item {
+  margin-left: 0.25rem;
+}
+
+.pagination .page-item { display: inline-flex; }
 
 .page-link:hover {
   color: #0056b3;
