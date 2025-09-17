@@ -21,7 +21,7 @@
                                     v-model="indicator.name"
                                     class="form-select"
                                 >
-                                    <option value="">Выберите показатель</option>
+                                    <option v-if="!indicator.name" value="" disabled>Выберите показатель</option>
                                     <option 
                                         v-for="option in indicatorOptions" 
                                         :key="option.value"
@@ -41,7 +41,7 @@
                                     v-model="indicator.unit"
                                     class="form-select"
                                 >
-                                    <option value="">Выберите единицу</option>
+                                    <option v-if="!indicator.unit" value="" disabled>Выберите единицу</option>
                                     <option 
                                         v-for="unit in unitOptions" 
                                         :key="unit.value"
@@ -142,6 +142,18 @@ const unitOptions = ref([
     { value: 'синх/нед', label: 'кол-во синхронизаций в неделю' }
 ])
 
+// Связка показателей и допустимых единиц измерения
+const indicatorToUnits = {
+    participants: ['чел'],
+    satisfaction: ['балл', '%'],
+    completion_rate: ['%'],
+    revenue: ['руб'],
+    costs: ['руб'],
+    efficiency: ['%'],
+    quality: ['балл', '%'],
+    time: ['синх/нед', 'ед']
+}
+
 // Методы
 const addIndicator = () => {
     const next = [
@@ -167,6 +179,17 @@ if (localIndicators.value.length === 0) {
 
 // Следим за изменениями локального списка и обновляем родителя
 watch(localIndicators, (newValue) => {
+    // Автокоррекция единиц при смене показателя
+    newValue.forEach((ind) => {
+        const allowed = indicatorToUnits[ind.name]
+        if (allowed && !allowed.includes(ind.unit)) {
+            ind.unit = allowed[0]
+        }
+        // Если показатель не выбран, не навязываем единицу
+        if (!ind.name && ind.unit && !unitOptions.value.find(u => u.value === ind.unit)) {
+            ind.unit = ''
+        }
+    })
     emit('update:indicators', newValue)
 }, { deep: true })
 
