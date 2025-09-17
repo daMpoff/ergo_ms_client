@@ -24,75 +24,81 @@
                         <div
                             v-for="(stage, index) in localPlan.stages"
                             :key="`stage-${index}`"
-                            class="stage-row"
+                            class="stage-card"
                         >
-                            <div class="stage-number">{{ index + 1 }}</div>
-
-                            <div class="field">
-                                <input
-                                    v-model="stage.name"
-                                    type="text"
-                                    class="form-input"
-                                    placeholder="наименование этапа"
-                                />
-                                <div class="field-caption">наименование этапа</div>
+                            <div class="stage-card__header">
+                                <div class="stage-index">Этап {{ index + 1 }}</div>
+                                <button
+                                    v-if="localPlan.stages.length > 1"
+                                    type="button"
+                                    class="btn-remove stage-remove"
+                                    @click="removeStage(index)"
+                                    aria-label="Удалить этап"
+                                >
+                                    <X class="icon" :size="16" />
+                                </button>
                             </div>
 
-                            <div class="field field--with-icon" :class="{ 'is-readonly': index === 0 }">
-                                <div class="date-input-wrapper">
+                            <div class="stage-row-1">
+                                <div class="field">
+                                    <div class="field-caption">Наименование этапа</div>
                                     <input
-                                        v-model="stage.start"
-                                        @click="openNativePicker"
-                                        type="date"
+                                        v-model="stage.name"
+                                        type="text"
                                         class="form-input"
-                                        :readonly="index === 0"
-                                        :min="normalizedStartDate"
-                                        :max="normalizedEndDate"
+                                        placeholder="Введите текст"
                                     />
-                                    <div v-if="index === 0" class="info-icon" @mouseenter="showInfo('start', index, $event)" @mouseleave="hideInfo">
-                                        <CircleQuestionMark :size="18" />
+                                </div>
+                            </div>
+
+                            <div class="stage-row-2">
+                                <div class="field field--with-icon" :class="{ 'is-readonly': index === 0 }">
+                                    <div class="field-caption">Дата начала</div>
+                                    <div class="date-input-wrapper">
+                                        <input
+                                            v-model="stage.start"
+                                            @click="openNativePicker"
+                                            type="date"
+                                            class="form-input"
+                                            :readonly="index === 0"
+                                            :min="normalizedStartDate"
+                                            :max="normalizedEndDate"
+                                        />
+                                        <div v-if="index === 0" class="info-icon" @mouseenter="showInfo('start', index, $event)" @mouseleave="hideInfo">
+                                            <CircleQuestionMark :size="18" />
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="field-caption">дата начала</div>
-                            </div>
 
-                            <div class="field field--with-icon" :class="{ 'is-readonly': index === localPlan.stages.length - 1 }">
-                                <div class="date-input-wrapper">
-                                    <input
-                                        v-model="stage.end"
-                                        @click="openNativePicker"
-                                        type="date"
-                                        class="form-input"
-                                        :readonly="index === localPlan.stages.length - 1"
-                                        :min="normalizedStartDate"
-                                        :max="normalizedEndDate"
-                                    />
-                                    <div v-if="index === localPlan.stages.length - 1" class="info-icon" @mouseenter="showInfo('end', index, $event)" @mouseleave="hideInfo">
-                                        <CircleQuestionMark :size="18" />
+                                <div class="field field--with-icon" :class="{ 'is-readonly': index === localPlan.stages.length - 1 }">
+                                    <div class="field-caption">Дата окончания</div>
+                                    <div class="date-input-wrapper">
+                                        <input
+                                            v-model="stage.end"
+                                            @click="openNativePicker"
+                                            type="date"
+                                            class="form-input"
+                                            :readonly="index === localPlan.stages.length - 1"
+                                            :min="normalizedStartDate"
+                                            :max="normalizedEndDate"
+                                        />
+                                        <div v-if="index === localPlan.stages.length - 1" class="info-icon" @mouseenter="showInfo('end', index, $event)" @mouseleave="hideInfo">
+                                            <CircleQuestionMark :size="18" />
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="field-caption">дата окончания</div>
                             </div>
 
-                            <div class="field">
-                                <input
-                                    v-model="stage.result"
-                                    type="text"
-                                    class="form-input"
-                                    placeholder="планируемые результаты работы"
-                                />
-                                <div class="field-caption">планируемые результаты работы</div>
+                            <div class="stage-row-3">
+                                <div class="field">
+                                    <div class="field-caption">Планируемые результаты работы</div>
+                                    <textarea
+                                        v-model="stage.result"
+                                        class="form-textarea"
+                                        placeholder="Введите текст"
+                                    ></textarea>
+                                </div>
                             </div>
-
-                            <button
-                                v-if="localPlan.stages.length > 1"
-                                type="button"
-                                class="btn-remove stage-remove"
-                                @click="removeStage(index)"
-                                aria-label="Удалить этап"
-                            >
-                                <X class="icon" :size="16" />
-                            </button>
                         </div>
                     </div>
 
@@ -467,6 +473,48 @@ onMounted(() => {
     gap: 1rem;
 }
 
+.stage-card {
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.stage-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.stage-index {
+    font-weight: 600;
+    color: #495057;
+}
+
+.stage-row-1,
+.stage-row-3 {
+    display: block;
+}
+
+.stage-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .stage-row-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stage-card .stage-remove {
+    height: 32px;
+    width: 32px;
+    margin: 0;
+}
+
 .stage-row {
     display: grid;
     grid-template-columns: 48px 1.2fr 0.9fr 0.9fr 1.4fr 40px;
@@ -493,7 +541,7 @@ onMounted(() => {
 }
 
 .field-caption {
-    margin-top: 0.35rem;
+    margin-bottom: 0.35rem;
     font-size: 0.75rem;
     color: #6c757d;
 }
