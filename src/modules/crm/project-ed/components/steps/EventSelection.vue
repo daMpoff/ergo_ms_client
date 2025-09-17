@@ -617,6 +617,7 @@ onMounted(() => {
     grid-template-columns: 1fr 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 1rem;
+    align-items: end; // выравниваем группы по низу, чтобы инпуты были на одной линии
 }
 
 .filter-group {
@@ -630,6 +631,9 @@ onMounted(() => {
     font-weight: 500;
     color: #495057;
     line-height: 1.2;
+    min-height: 2.25rem; // обеспечиваем одинаковую высоту области подписи
+    display: flex;
+    align-items: flex-end; // текст подписи прижат к низу области
 }
 
 .combobox-container {
