@@ -21,13 +21,17 @@
                     <span>Создать проект</span>
                 </div>
             </div>
-            <div class="header-profile">
+            <div class="header-profile" ref="profileRef">
                 <div class="profile-alerts" @click="incrementAlerts" role="button" aria-label="Уведомления">
                     <Bell :size="18" />
                     <span v-if="alertsCount > 0" class="badge-count">{{ alertsCount >= 99 ? '99+' : alertsCount }}</span>
                 </div>
-                <div class="profile-avatar">
-                    <UserRound :size="18" />
+                <div class="profile-avatar" role="button" aria-haspopup="dialog" aria-expanded="showProfileMenu ? 'true' : 'false'" @click="toggleProfileMenu">
+                    <img v-if="avatarUrl" :src="avatarUrl" alt="Аватар" class="avatar-img" />
+                    <UserRound v-else :size="18" />
+                </div>
+                <div class="profile-menu-wrapper" v-show="showProfileMenu">
+                    <ProfileMenu :visible="showProfileMenu" @navigate="onMenuNavigate" />
                 </div>
             </div>
         </div>
@@ -35,18 +39,26 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { UserRound, Bell, Plus, Search } from 'lucide-vue-next'
+import ProfileMenu from './ProfileMenu.vue'
+import { useUserStore } from '@/modules/cms/js/userStore.js'
 
 const route = useRoute()
 const router = useRouter()
 
+const userStore = useUserStore()
+
 const alertsCount = ref(0)
+const showProfileMenu = ref(false)
+const profileRef = ref(null)
 
 const isCreatePage = computed(() => {
     return route.name === 'ProjectEdCreate'
 })
+
+const avatarUrl = computed(() => userStore.avatarUrl)
 
 const incrementAlerts = () => {
     if (alertsCount.value < 99) {
@@ -57,6 +69,46 @@ const incrementAlerts = () => {
 const navigateToCreate = () => {
     router.push({ name: 'ProjectEdCreate' })
 }
+
+const toggleProfileMenu = () => {
+    showProfileMenu.value = !showProfileMenu.value
+}
+
+const closeOnOutside = (event) => {
+    const root = profileRef.value
+    if (!root) return
+    if (!root.contains(event.target)) {
+        showProfileMenu.value = false
+    }
+}
+
+const closeOnEsc = (event) => {
+    if (event.key === 'Escape') {
+        showProfileMenu.value = false
+    }
+}
+
+const onMenuNavigate = (action) => {
+    // Навигацию подключим при интеграции реальных страниц
+    if (action === 'logout') {
+        // TODO: вызвать логаут когда будет готов
+    } else if (action === 'profile') {
+        // router.push({ name: 'Profile' })
+    } else if (action === 'settings') {
+        // router.push({ name: 'Settings' })
+    }
+    showProfileMenu.value = false
+}
+
+onMounted(() => {
+    document.addEventListener('click', closeOnOutside)
+    document.addEventListener('keydown', closeOnEsc)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', closeOnOutside)
+    document.removeEventListener('keydown', closeOnEsc)
+})
 </script>
 
 <style scoped lang="scss">
@@ -92,6 +144,7 @@ const navigateToCreate = () => {
     border-color: var(--bs-border-color, #ced4da);
 }
 .header-profile {
+    position: relative;
     display: flex;
     align-items: center;
     gap: .5rem;
@@ -145,7 +198,9 @@ const navigateToCreate = () => {
     justify-content: center;
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
+    overflow: hidden;
 }
+.avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .profile-alerts {
     width: 36px;
     height: 36px;
@@ -177,6 +232,8 @@ const navigateToCreate = () => {
     justify-content: center;
     z-index: 1;
 }
+.profile-menu-wrapper { position: absolute; top: 100%; right: 0; }
 </style>
+
 
 
