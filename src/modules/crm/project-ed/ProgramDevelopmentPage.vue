@@ -28,25 +28,18 @@
                 </div>
             </div>
 
-            <div v-for="block in sortedBlocks" :key="block.id" class="card p-3 mb-3" :class="{ 'archived-block': isBlockArchived(block) }">
+            <div v-for="block in blocks" :key="block.id" class="card p-3 mb-3">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span v-if="isBlockArchived(block)" class="archive-tag">АРХИВ</span>
-                            <h5 class="mb-0">{{ getBlockDisplayTitle(block) }}</h5>
-                        </div>
-                        <small class="text-muted">Срок реализации: {{ block.years || '—' }}</small>
+                        <h5 class="mb-0">{{ block.title }}</h5>
                     </div>
-                    <div class="d-flex gap-2" v-if="!isBlockArchived(block)">
+                    <div class="d-flex gap-2">
                         <button class="btn btn-outline-primary btn-sm" style="display: flex; align-items: center;" @click="addEventById(block.id)">
                             <Plus :size="14" class="me-1" />
                             Добавить мероприятие
                         </button>
                         <button class="btn btn-outline-secondary btn-sm" @click="editBlockById(block.id)">Редактировать</button>
                         <button class="btn btn-outline-danger btn-sm" @click="removeBlockById(block.id)">Удалить</button>
-                    </div>
-                    <div v-else class="text-muted">
-                        <small>Срок реализации истек</small>
                     </div>
                 </div>
 
@@ -69,19 +62,19 @@
                             </tr>
                             <tr v-for="(event, eIndex) in block.events" :key="event.id">
                                 <td>
-                                    <input v-model="event.code" type="text" class="form-control form-control-sm" placeholder="МП3.1" :disabled="true" readonly />
+                                    <input v-model="event.code" type="text" class="form-control form-control-sm" :disabled="true" readonly />
                                 </td>
                                 <td>
-                                    <input v-model="event.name" type="text" class="form-control form-control-sm" placeholder="Название мероприятия" :disabled="isBlockArchived(block)" />
+                                    <input v-model="event.name" type="text" class="form-control form-control-sm" placeholder="Название мероприятия" />
                                 </td>
                                 <td>
-                                    <input v-model="event.results" type="text" class="form-control form-control-sm" placeholder="Ожидаемые результаты" :disabled="isBlockArchived(block)" />
+                                    <input v-model="event.results" type="text" class="form-control form-control-sm" placeholder="Ожидаемые результаты" />
                                 </td>
                                 <td>
-                                    <input v-model="event.years" type="text" class="form-control form-control-sm" placeholder="2025–2026" :disabled="isBlockArchived(block)" />
+                                    <input v-model="event.years" type="text" class="form-control form-control-sm" placeholder="2025–2026" />
                                 </td>
                                 <td class="text-end">
-                                    <button v-if="!isBlockArchived(block)" class="btn btn-outline-danger btn-sm" @click="removeEventById(block.id, eIndex)">Удалить</button>
+                                    <button class="btn btn-outline-danger btn-sm" @click="removeEventById(block.id, eIndex)">Удалить</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -102,30 +95,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Название блока</label>
-                        <input v-model="newBlockTitle" type="text" class="form-control" placeholder="Воспитательная деятельность (например)" />
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Начальный год</label>
-                            <select v-model="newBlockStartYear" class="form-select">
-                                <option value="" disabled>Выберите год</option>
-                                <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Конечный год</label>
-                            <select v-model="newBlockEndYear" class="form-select" :disabled="!newBlockStartYear">
-                                <option value="" disabled>Выберите год</option>
-                                <option v-for="year in endYearOptions" :key="year" :value="year">{{ year }}</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div v-if="yearValidationError" class="alert alert-warning mt-2 mb-0">
-                        {{ yearValidationError }}
-                    </div>
-                    <div class="mt-3">
-                        <label class="form-label">Основные результаты</label>
-                        <textarea v-model="newBlockResults" class="form-control" rows="4" placeholder="Ключевые итоги по блоку" style="resize: vertical;"></textarea>
+                        <textarea v-model="newBlockTitle" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -148,30 +118,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Название блока</label>
-                        <input v-model="newBlockTitle" type="text" class="form-control" placeholder="Воспитательная деятельность (например)" />
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Начальный год</label>
-                            <select v-model="newBlockStartYear" class="form-select">
-                                <option value="" disabled>Выберите год</option>
-                                <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Конечный год</label>
-                            <select v-model="newBlockEndYear" class="form-select" :disabled="!newBlockStartYear">
-                                <option value="" disabled>Выберите год</option>
-                                <option v-for="year in endYearOptions" :key="year" :value="year">{{ year }}</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div v-if="yearValidationError" class="alert alert-warning mt-2 mb-0">
-                        {{ yearValidationError }}
-                    </div>
-                    <div class="mt-3">
-                        <label class="form-label">Основные результаты</label>
-                        <textarea v-model="newBlockResults" class="form-control" rows="4" placeholder="Ключевые итоги по блоку" style="resize: vertical;"></textarea>
+                        <textarea v-model="newBlockTitle" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -199,95 +146,26 @@ let nextBlockId = 1
 let nextEventId = 1
 
 const newBlockTitle = ref('')
-const newBlockStartYear = ref('')
-const newBlockEndYear = ref('')
-const newBlockResults = ref('')
-const yearValidationError = ref('')
 
 const blocks = ref([])
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const editingBlockIndex = ref(-1)
 
-// Генерируем список доступных годов (от 2024 года до +10 лет от текущего года)
-const currentYear = new Date().getFullYear()
-const availableYears = ref(Array.from({ length: currentYear - 2024 + 11 }, (_, i) => 2024 + i))
-
-// Функция для проверки, является ли блок архивным
-function isBlockArchived(block) {
-    if (!block.years) return false
-    
-    // Парсим годы из строки (например, "2025–2026" или "2025")
-    const yearsMatch = block.years.match(/(\d{4})(?:–(\d{4}))?/)
-    if (!yearsMatch) return false
-    
-    const endYear = parseInt(yearsMatch[2] || yearsMatch[1])
-    return endYear < currentYear
-}
-
-// Функция для получения отображаемого названия блока с пометкой архива
-function getBlockDisplayTitle(block) {
-    return block.title
-}
-
-// Вычисляем доступные конечные годы на основе выбранного начального года
-const endYearOptions = computed(() => {
-    if (!newBlockStartYear.value) return []
-    const startYear = parseInt(newBlockStartYear.value)
-    return availableYears.value.filter(year => year >= startYear)
-})
-
-// Отсортированный список блоков: активные сверху, архивные внизу
-const sortedBlocks = computed(() => {
-    const active = blocks.value.filter(block => !isBlockArchived(block))
-    const archived = blocks.value.filter(block => isBlockArchived(block))
-    return [...active, ...archived]
-})
-
-// Валидация годов
-watch([newBlockStartYear, newBlockEndYear], () => {
-    yearValidationError.value = ''
-    
-    if (newBlockStartYear.value && newBlockEndYear.value) {
-        const startYear = parseInt(newBlockStartYear.value)
-        const endYear = parseInt(newBlockEndYear.value)
-        
-        if (endYear < startYear) {
-            yearValidationError.value = 'Конечный год не может быть меньше начального года'
-        } else if (endYear - startYear > 10) {
-            yearValidationError.value = 'Период реализации не должен превышать 10 лет'
-        }
-    }
-})
 
 function addBlock() {
     if (!newBlockTitle.value.trim()) return
-    if (yearValidationError.value) return
     
     // Генерируем номер блока (количество существующих блоков + 1)
     const blockNumber = blocks.value.length + 1
     const titleWithPrefix = `МП${blockNumber}. ${newBlockTitle.value.trim()}`
     
-    // Формируем строку с годами
-    let yearsString = ''
-    if (newBlockStartYear.value && newBlockEndYear.value) {
-        const startYear = parseInt(newBlockStartYear.value)
-        const endYear = parseInt(newBlockEndYear.value)
-        yearsString = startYear === endYear ? `${startYear}` : `${startYear}–${endYear}`
-    }
-    
     blocks.value.push({
         id: nextBlockId++,
         title: titleWithPrefix,
-        years: yearsString,
-        results: newBlockResults.value.trim(),
         events: []
     })
     newBlockTitle.value = ''
-    newBlockStartYear.value = ''
-    newBlockEndYear.value = ''
-    newBlockResults.value = ''
-    yearValidationError.value = ''
 }
 
 function editBlock(index) {
@@ -295,17 +173,6 @@ function editBlock(index) {
     // Убираем префикс "МП№. " при редактировании для удобства пользователя
     const titleWithoutPrefix = block.title.replace(/^МП\d+\.\s*/, '')
     newBlockTitle.value = titleWithoutPrefix
-    newBlockResults.value = block.results
-    
-    // Парсим годы из строки
-    const yearsMatch = block.years.match(/(\d{4})(?:–(\d{4}))?/)
-    if (yearsMatch) {
-        newBlockStartYear.value = yearsMatch[1]
-        newBlockEndYear.value = yearsMatch[2] || yearsMatch[1]
-    } else {
-        newBlockStartYear.value = ''
-        newBlockEndYear.value = ''
-    }
     
     editingBlockIndex.value = index
     isEditModalOpen.value = true
@@ -389,32 +256,22 @@ function openCreateModal() {
 function closeCreateModal() {
     isCreateModalOpen.value = false
     newBlockTitle.value = ''
-    newBlockStartYear.value = ''
-    newBlockEndYear.value = ''
-    newBlockResults.value = ''
-    yearValidationError.value = ''
 }
 
 function closeEditModal() {
     isEditModalOpen.value = false
     editingBlockIndex.value = -1
     newBlockTitle.value = ''
-    newBlockStartYear.value = ''
-    newBlockEndYear.value = ''
-    newBlockResults.value = ''
-    yearValidationError.value = ''
 }
 
 function createBlockFromModal() {
     if (!newBlockTitle.value.trim()) return
-    if (yearValidationError.value) return
     addBlock()
     isCreateModalOpen.value = false
 }
 
 function updateBlockFromModal() {
     if (!newBlockTitle.value.trim()) return
-    if (yearValidationError.value) return
     
     const blockIndex = editingBlockIndex.value
     if (blockIndex >= 0 && blockIndex < blocks.value.length) {
@@ -423,19 +280,9 @@ function updateBlockFromModal() {
         const blockNumber = block.title.match(/^МП(\d+)\./)?.[1] || (blocks.value.length + 1)
         const titleWithPrefix = `МП${blockNumber}. ${newBlockTitle.value.trim()}`
         
-        // Формируем строку с годами
-        let yearsString = ''
-        if (newBlockStartYear.value && newBlockEndYear.value) {
-            const startYear = parseInt(newBlockStartYear.value)
-            const endYear = parseInt(newBlockEndYear.value)
-            yearsString = startYear === endYear ? `${startYear}` : `${startYear}–${endYear}`
-        }
-        
         blocks.value[blockIndex] = {
             ...block,
-            title: titleWithPrefix,
-            years: yearsString,
-            results: newBlockResults.value.trim()
+            title: titleWithPrefix
         }
         
         // Пересчитываем коды мероприятий в обновленном блоке
@@ -467,34 +314,6 @@ function updateBlockFromModal() {
     border-color: var(--bs-border-color, #ced4da);
 }
 
-.archived-block {
-    background-color: #f8f9fa;
-    border-color: #dee2e6;
-    opacity: 0.8;
-}
-
-.archived-block h5 {
-    color: #6c757d;
-}
-
-.archived-block .form-control:disabled {
-    background-color: #e9ecef;
-    opacity: 0.6;
-}
-
-.archive-tag {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1;
-    color: #fff;
-    background-color: #6c757d;
-    border-radius: 0.375rem;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
 </style>
 
 
