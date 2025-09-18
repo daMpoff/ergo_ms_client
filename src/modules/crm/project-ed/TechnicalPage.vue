@@ -4,7 +4,12 @@
         <div class="page-content">
             <h3>Служебная страница</h3>
             <div class="card p-3">
-                Внутренние служебные функции и ссылки.
+                <div class="d-flex flex-column gap-2">
+                    <div>Внутренние служебные функции и ссылки.</div>
+                    <router-link :to="{ name: 'ProjectEdProgramDevelopment' }" class="btn btn-outline-primary align-self-start">
+                        Перейти к программе развития БГТУ
+                    </router-link>
+                </div>
             </div>
         </div>
     </div>

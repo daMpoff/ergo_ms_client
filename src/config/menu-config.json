@@ -173,6 +173,10 @@
               "name": "Мои проекты"
             },
             {
+              "routeName": "ProjectEdProgramDevelopment",
+              "name": "Программа развития БГТУ"
+            },
+            {
               "routeName": "ProjectEdCreate",
               "name": "Создать проект"
             },
