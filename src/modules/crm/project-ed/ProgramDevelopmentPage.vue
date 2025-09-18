@@ -28,19 +28,25 @@
                 </div>
             </div>
 
-            <div v-for="(block, bIndex) in blocks" :key="block.id" class="card p-3 mb-3">
+            <div v-for="block in sortedBlocks" :key="block.id" class="card p-3 mb-3" :class="{ 'archived-block': isBlockArchived(block) }">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <div>
-                        <h5 class="mb-1">{{ block.title }}</h5>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span v-if="isBlockArchived(block)" class="archive-tag">АРХИВ</span>
+                            <h5 class="mb-0">{{ getBlockDisplayTitle(block) }}</h5>
+                        </div>
                         <small class="text-muted">Срок реализации: {{ block.years || '—' }}</small>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary btn-sm" style="display: flex; align-items: center;" @click="addEvent(bIndex)">
+                    <div class="d-flex gap-2" v-if="!isBlockArchived(block)">
+                        <button class="btn btn-outline-primary btn-sm" style="display: flex; align-items: center;" @click="addEventById(block.id)">
                             <Plus :size="14" class="me-1" />
                             Добавить мероприятие
                         </button>
-                        <button class="btn btn-outline-secondary btn-sm" @click="editBlock(bIndex)">Редактировать</button>
-                        <button class="btn btn-outline-danger btn-sm" @click="removeBlock(bIndex)">Удалить</button>
+                        <button class="btn btn-outline-secondary btn-sm" @click="editBlockById(block.id)">Редактировать</button>
+                        <button class="btn btn-outline-danger btn-sm" @click="removeBlockById(block.id)">Удалить</button>
+                    </div>
+                    <div v-else class="text-muted">
+                        <small>Срок реализации истек</small>
                     </div>
                 </div>
 
@@ -63,19 +69,19 @@
                             </tr>
                             <tr v-for="(event, eIndex) in block.events" :key="event.id">
                                 <td>
-                                    <input v-model="event.code" type="text" class="form-control form-control-sm" placeholder="МП3.1-1" />
+                                    <input v-model="event.code" type="text" class="form-control form-control-sm" placeholder="МП3.1" :disabled="true" readonly />
                                 </td>
                                 <td>
-                                    <input v-model="event.name" type="text" class="form-control form-control-sm" placeholder="Название мероприятия" />
+                                    <input v-model="event.name" type="text" class="form-control form-control-sm" placeholder="Название мероприятия" :disabled="isBlockArchived(block)" />
                                 </td>
                                 <td>
-                                    <input v-model="event.results" type="text" class="form-control form-control-sm" placeholder="Ожидаемые результаты" />
+                                    <input v-model="event.results" type="text" class="form-control form-control-sm" placeholder="Ожидаемые результаты" :disabled="isBlockArchived(block)" />
                                 </td>
                                 <td>
-                                    <input v-model="event.years" type="text" class="form-control form-control-sm" placeholder="2025–2026" />
+                                    <input v-model="event.years" type="text" class="form-control form-control-sm" placeholder="2025–2026" :disabled="isBlockArchived(block)" />
                                 </td>
                                 <td class="text-end">
-                                    <button class="btn btn-outline-danger btn-sm" @click="removeEvent(bIndex, eIndex)">Удалить</button>
+                                    <button v-if="!isBlockArchived(block)" class="btn btn-outline-danger btn-sm" @click="removeEventById(block.id, eIndex)">Удалить</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -203,15 +209,39 @@ const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const editingBlockIndex = ref(-1)
 
-// Генерируем список доступных годов (от текущего года до +10 лет)
+// Генерируем список доступных годов (от 2024 года до +10 лет от текущего года)
 const currentYear = new Date().getFullYear()
-const availableYears = ref(Array.from({ length: 11 }, (_, i) => currentYear + i))
+const availableYears = ref(Array.from({ length: currentYear - 2024 + 11 }, (_, i) => 2024 + i))
+
+// Функция для проверки, является ли блок архивным
+function isBlockArchived(block) {
+    if (!block.years) return false
+    
+    // Парсим годы из строки (например, "2025–2026" или "2025")
+    const yearsMatch = block.years.match(/(\d{4})(?:–(\d{4}))?/)
+    if (!yearsMatch) return false
+    
+    const endYear = parseInt(yearsMatch[2] || yearsMatch[1])
+    return endYear < currentYear
+}
+
+// Функция для получения отображаемого названия блока с пометкой архива
+function getBlockDisplayTitle(block) {
+    return block.title
+}
 
 // Вычисляем доступные конечные годы на основе выбранного начального года
 const endYearOptions = computed(() => {
     if (!newBlockStartYear.value) return []
     const startYear = parseInt(newBlockStartYear.value)
     return availableYears.value.filter(year => year >= startYear)
+})
+
+// Отсортированный список блоков: активные сверху, архивные внизу
+const sortedBlocks = computed(() => {
+    const active = blocks.value.filter(block => !isBlockArchived(block))
+    const archived = blocks.value.filter(block => isBlockArchived(block))
+    return [...active, ...archived]
 })
 
 // Валидация годов
@@ -283,12 +313,24 @@ function editBlock(index) {
 
 function removeBlock(index) {
     blocks.value.splice(index, 1)
+    // Пересчитываем коды мероприятий во всех блоках после удаления блока
+    blocks.value.forEach((_, blockIndex) => {
+        updateEventCodes(blockIndex)
+    })
 }
 
 function addEvent(blockIndex) {
+    const block = blocks.value[blockIndex]
+    // Извлекаем номер блока из заголовка (например, "МП3. Название" -> "3")
+    const blockNumber = block.title.match(/^МП(\d+)\./)?.[1] || '1'
+    // Генерируем порядковый номер мероприятия (количество существующих мероприятий + 1)
+    const eventNumber = block.events.length + 1
+    // Формируем код мероприятия
+    const eventCode = `МП${blockNumber}.${eventNumber}`
+    
     blocks.value[blockIndex].events.push({
         id: nextEventId++,
-        code: '',
+        code: eventCode,
         name: '',
         results: '',
         years: ''
@@ -297,6 +339,47 @@ function addEvent(blockIndex) {
 
 function removeEvent(blockIndex, eventIndex) {
     blocks.value[blockIndex].events.splice(eventIndex, 1)
+    // Пересчитываем коды мероприятий после удаления
+    updateEventCodes(blockIndex)
+}
+
+// Функция для обновления кодов мероприятий в блоке
+function updateEventCodes(blockIndex) {
+    const block = blocks.value[blockIndex]
+    const blockNumber = block.title.match(/^МП(\d+)\./)?.[1] || '1'
+    
+    block.events.forEach((event, index) => {
+        event.code = `МП${blockNumber}.${index + 1}`
+    })
+}
+
+// Обертки для работы по id с учетом сортировки
+function findBlockIndexById(blockId) {
+    return blocks.value.findIndex(b => b.id === blockId)
+}
+
+function addEventById(blockId) {
+    const index = findBlockIndexById(blockId)
+    if (index === -1) return
+    addEvent(index)
+}
+
+function removeEventById(blockId, eventIndex) {
+    const index = findBlockIndexById(blockId)
+    if (index === -1) return
+    removeEvent(index, eventIndex)
+}
+
+function editBlockById(blockId) {
+    const index = findBlockIndexById(blockId)
+    if (index === -1) return
+    editBlock(index)
+}
+
+function removeBlockById(blockId) {
+    const index = findBlockIndexById(blockId)
+    if (index === -1) return
+    removeBlock(index)
 }
 
 function openCreateModal() {
@@ -354,6 +437,9 @@ function updateBlockFromModal() {
             years: yearsString,
             results: newBlockResults.value.trim()
         }
+        
+        // Пересчитываем коды мероприятий в обновленном блоке
+        updateEventCodes(blockIndex)
     }
     
     closeEditModal()
@@ -379,6 +465,35 @@ function updateBlockFromModal() {
 .button-create:hover {
     background-color: var(--color-hover-background, #f8f9fa);
     border-color: var(--bs-border-color, #ced4da);
+}
+
+.archived-block {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    opacity: 0.8;
+}
+
+.archived-block h5 {
+    color: #6c757d;
+}
+
+.archived-block .form-control:disabled {
+    background-color: #e9ecef;
+    opacity: 0.6;
+}
+
+.archive-tag {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    background-color: #6c757d;
+    border-radius: 0.375rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 </style>
 
