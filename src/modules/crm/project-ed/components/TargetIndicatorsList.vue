@@ -55,7 +55,9 @@
                     <div class="cell text-center">{{ durationRange(ev) }}</div>
                 </div>
                 <div class="col-2 col-lg-2">
-                    <div class="cell text-center">{{ ev.category }}</div>
+                    <div class="cell text-center">
+                        <span :class="['badge', ev.category === 'А' ? 'bg-danger' : 'bg-secondary']">{{ ev.category }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -78,7 +80,7 @@ const props = defineProps({
 })
 
 const projects = computed(() => props.projects)
-const categories = computed(() => props.categories)
+const categories = computed(() => ['А', 'Б'])
 
 const [startYear, endYear] = props.yearsRange
 const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)

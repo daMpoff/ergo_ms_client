@@ -35,7 +35,7 @@ const projects = [
     { id: 2, name: 'Стратегический проект 2' },
 ]
 
-const categories = ['Категория', 'Научная', 'Образовательная']
+const categories = ['А', 'Б']
 
 // Мок-данные: одна строка МП3 с длинным контейнером
 const events = [
@@ -57,7 +57,7 @@ const targetIndicators = [
     {
         id: 101,
         projectId: 1,
-        category: 'Научная',
+        category: 'А',
         kpiName: 'Индекс цитируемости',
         unit: 'ед.',
         block: 'Публикации',
@@ -66,7 +66,7 @@ const targetIndicators = [
     {
         id: 102,
         projectId: 2,
-        category: 'Образовательная',
+        category: 'Б',
         kpiName: 'Доля трудоустройства выпускников',
         unit: '%',
         block: 'Карьера',
