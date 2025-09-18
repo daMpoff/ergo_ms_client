@@ -21,6 +21,11 @@
                     <span>Настройки</span>
                 </button>
                 <hr class="dropdown-divider" />
+                <button class="menu-item" type="button" @click="goToServicePage">
+                    <Wrench :size="18" />
+                    <span>Служебная страница</span>
+                </button>
+                <hr class="dropdown-divider" />
                 <button class="menu-item text-danger" type="button" @click="$emit('navigate', 'logout')">
                     <LogOut :size="18" />
                     <span>Выйти</span>
@@ -32,7 +37,8 @@
 
 <script setup>
 import { defineProps, defineEmits, computed } from 'vue'
-import { UserRound, Settings, LogOut } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { UserRound, Settings, LogOut, Wrench } from 'lucide-vue-next'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
 
 defineProps({
@@ -42,6 +48,7 @@ defineProps({
 defineEmits(['close', 'navigate'])
 
 const userStore = useUserStore()
+const router = useRouter()
 
 const userFullName = computed(() => {
     const user = userStore.user
@@ -61,6 +68,10 @@ const userFullName = computed(() => {
 
 const userEmail = computed(() => userStore.user?.email || '')
 const avatarUrl = computed(() => userStore.avatarUrl)
+
+function goToServicePage() {
+    router.push({ name: 'ProjectEdTechnical' })
+}
 </script>
 
 <style scoped lang="scss">
@@ -112,6 +123,14 @@ const avatarUrl = computed(() => userStore.avatarUrl)
     transition: background-color .15s ease, color .15s ease;
 }
 .menu-item:hover { background-color: var(--color-hover-background, #f8f9fa); }
+
+.dropdown-divider {
+    height: 0;
+    margin: .25rem 0;
+    overflow: visible;
+    border: 0;
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
 
 .fade-scale-enter-active, .fade-scale-leave-active { transition: all .12s ease; }
 .fade-scale-enter-from, .fade-scale-leave-to { opacity: 0; transform: translateY(-4px) scale(.98); }

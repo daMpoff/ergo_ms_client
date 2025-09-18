@@ -177,6 +177,10 @@
               "name": "Создать проект"
             },
             {
+              "routeName": "ProjectEdTechnical",
+              "name": "Служебная страница"
+            },
+            {
               "routeName": "ProjectCalendar",
               "name": "Календарь задач"
             },

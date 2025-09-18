@@ -516,6 +516,14 @@
         "requiresAuth": true
       }
     },
+    "ProjectEdTechnical": {
+      "path": "/crm/project-ed/technical",
+      "component": "@/modules/crm/project-ed/TechnicalPage.vue",
+      "meta": {
+        "title": "Служебная страница",
+        "requiresAuth": true
+      }
+    },
     "ProjectEdCreate": {
       "path": "/crm/project-ed/create",
       "component": "@/modules/crm/project-ed/ProjectCreate.vue",
