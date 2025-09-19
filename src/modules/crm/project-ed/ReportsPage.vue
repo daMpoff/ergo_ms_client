@@ -42,10 +42,7 @@
         <div v-if="activeTab" class="page-header-divider"></div>
         <div v-if="activeTab" class="reports-page-content">
             <MonthlyReportsPage v-if="activeTab === 'monthly'" />
-            <div v-else-if="activeTab === 'stages'">
-                <h5 class="mb-3">Отчёты о выполнении этапов</h5>
-                <div class="text-muted">Отслеживание статуса этапов проекта. (Здесь будет содержимое отчётов по этапам.)</div>
-            </div>
+            <StagesReportsPage v-else-if="activeTab === 'stages'" />
             <div v-else-if="activeTab === 'final'">
                 <h5 class="mb-3">Итоговый отчёт</h5>
                 <div class="text-muted">Формирование общего итогового отчёта. (Здесь будет содержимое итогового отчёта.)</div>
@@ -58,6 +55,7 @@
 import { ref } from 'vue'
 import { FileSpreadsheet, Flag, FileCheck } from 'lucide-vue-next'
 import MonthlyReportsPage from './reports/MonthlyReportsPage.vue'
+import StagesReportsPage from './reports/StagesReportsPage.vue'
 
 const activeTab = ref(null)
 
