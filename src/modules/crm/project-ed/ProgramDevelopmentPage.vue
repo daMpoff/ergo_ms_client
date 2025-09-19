@@ -34,7 +34,7 @@
                         <h5 class="mb-0">{{ block.title }}</h5>
                     </div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary btn-sm" style="display: flex; align-items: center;" @click="addEventById(block.id)">
+                        <button class="btn btn-outline-primary btn-sm" style="display: flex; align-items: center;" @click="openCreateEventModal(block.id)">
                             <Plus :size="14" class="me-1" />
                             Добавить мероприятие
                         </button>
@@ -61,20 +61,19 @@
                                 </td>
                             </tr>
                             <tr v-for="(event, eIndex) in block.events" :key="event.id">
-                                <td>
-                                    <input v-model="event.code" type="text" class="form-control form-control-sm" :disabled="true" readonly />
-                                </td>
-                                <td>
-                                    <input v-model="event.name" type="text" class="form-control form-control-sm" placeholder="Название мероприятия" />
-                                </td>
-                                <td>
-                                    <input v-model="event.results" type="text" class="form-control form-control-sm" placeholder="Ожидаемые результаты" />
-                                </td>
-                                <td>
-                                    <input v-model="event.years" type="text" class="form-control form-control-sm" placeholder="2025–2026" />
-                                </td>
-                                <td class="text-end">
-                                    <button class="btn btn-outline-danger btn-sm" @click="removeEventById(block.id, eIndex)">Удалить</button>
+                                <td>{{ event.code || '—' }}</td>
+                                <td>{{ event.name || '—' }}</td>
+                                <td>{{ event.results || '—' }}</td>
+                                <td>{{ event.years || '—' }}</td>
+                                <td class="text-end p-2">
+                                    <div class="d-flex gap-2 justify-content-end align-items-center h-100">
+                                        <button class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" @click="openEditEventModal(block.id, eIndex)" aria-label="Редактировать" title="Редактировать">
+                                            <Pencil :size="16" />
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" @click="removeEventById(block.id, eIndex)" aria-label="Удалить" title="Удалить">
+                                            <Trash2 :size="16" />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -129,11 +128,55 @@
         </div>
     </div>
     <div v-if="isEditModalOpen" class="modal-backdrop fade show"></div>
+
+    <!-- Модальное окно создания мероприятия -->
+    <div v-if="isCreateEventModalOpen" class="modal d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ isEditEventMode ? 'Редактирование мероприятия' : 'Создание мероприятия' }}</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @click="closeCreateEventModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Наименование мероприятия</label>
+                        <input v-model="newEventName" type="text" class="form-control" placeholder="Название мероприятия" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Основные результаты</label>
+                        <textarea v-model="newEventResults" class="form-control" rows="3" placeholder="Ожидаемые результаты" style="resize: vertical;"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Срок реализации (годы)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <select v-model="selectedStartYear" class="form-select">
+                                    <option v-for="year in yearsOptions" :key="`start-` + year" :value="year">{{ year }}</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select v-model="selectedEndYear" class="form-select">
+                                    <option v-for="year in yearsOptions" :key="`end-` + year" :value="year">{{ year }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-text">Выберите годы начала и окончания. Конечный год не раньше начального.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" @click="closeCreateEventModal">Отмена</button>
+                    <button type="button" class="btn btn-primary" @click="createEventFromModal">{{ isEditEventMode ? 'Сохранить' : 'Создать' }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div v-if="isCreateEventModalOpen" class="modal-backdrop fade show"></div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { Home, Target, Wrench, Inbox, Plus } from 'lucide-vue-next'
+import { ref, computed } from 'vue'
+import { useToast } from 'vue-toastification'
+import { Home, Target, Wrench, Inbox, Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 
 const breadcrumbItems = ref([
@@ -151,6 +194,25 @@ const blocks = ref([])
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const editingBlockIndex = ref(-1)
+
+// Состояние модального окна создания мероприятия
+const isCreateEventModalOpen = ref(false)
+const creatingForBlockId = ref(null)
+const editingEventIndex = ref(-1)
+const isEditEventMode = ref(false)
+const newEventName = ref('')
+const newEventResults = ref('')
+const selectedStartYear = ref(new Date().getFullYear())
+const selectedEndYear = ref(new Date().getFullYear())
+const yearsOptions = computed(() => {
+    const start = new Date().getFullYear()
+    const end = start + 10
+    const list = []
+    for (let y = start; y <= end; y++) list.push(y)
+    return list
+})
+
+const toast = useToast()
 
 
 function addBlock() {
@@ -186,23 +248,7 @@ function removeBlock(index) {
     })
 }
 
-function addEvent(blockIndex) {
-    const block = blocks.value[blockIndex]
-    // Извлекаем номер блока из заголовка (например, "МП3. Название" -> "3")
-    const blockNumber = block.title.match(/^МП(\d+)\./)?.[1] || '1'
-    // Генерируем порядковый номер мероприятия (количество существующих мероприятий + 1)
-    const eventNumber = block.events.length + 1
-    // Формируем код мероприятия
-    const eventCode = `МП${blockNumber}.${eventNumber}`
-    
-    blocks.value[blockIndex].events.push({
-        id: nextEventId++,
-        code: eventCode,
-        name: '',
-        results: '',
-        years: ''
-    })
-}
+// Удалена функция addEvent — создание происходит через модальное окно
 
 function removeEvent(blockIndex, eventIndex) {
     blocks.value[blockIndex].events.splice(eventIndex, 1)
@@ -225,11 +271,7 @@ function findBlockIndexById(blockId) {
     return blocks.value.findIndex(b => b.id === blockId)
 }
 
-function addEventById(blockId) {
-    const index = findBlockIndexById(blockId)
-    if (index === -1) return
-    addEvent(index)
-}
+// Удалена функция addEventById — создание происходит через модальное окно
 
 function removeEventById(blockId, eventIndex) {
     const index = findBlockIndexById(blockId)
@@ -290,6 +332,98 @@ function updateBlockFromModal() {
     }
     
     closeEditModal()
+}
+
+// Работа с модальным окном создания мероприятия
+function openCreateEventModal(blockId) {
+    creatingForBlockId.value = blockId
+    isCreateEventModalOpen.value = true
+    isEditEventMode.value = false
+    editingEventIndex.value = -1
+    newEventName.value = ''
+    newEventResults.value = ''
+    const nowYear = new Date().getFullYear()
+    selectedStartYear.value = nowYear
+    selectedEndYear.value = nowYear
+}
+
+function closeCreateEventModal() {
+    isCreateEventModalOpen.value = false
+    creatingForBlockId.value = null
+    isEditEventMode.value = false
+    editingEventIndex.value = -1
+    newEventName.value = ''
+    newEventResults.value = ''
+}
+
+function createEventFromModal() {
+    const blockIndex = findBlockIndexById(creatingForBlockId.value)
+    if (blockIndex === -1) {
+        toast.error('Не найден блок для создания мероприятия')
+        return
+    }
+    if (!newEventName.value.trim()) {
+        toast.warning('Введите наименование мероприятия')
+        return
+    }
+    if (selectedEndYear.value < selectedStartYear.value) {
+        toast.warning('Конечный год не может быть раньше начального')
+        return
+    }
+
+    const block = blocks.value[blockIndex]
+    const yearsLabel = `${selectedStartYear.value}–${selectedEndYear.value}`
+
+    if (isEditEventMode.value && editingEventIndex.value > -1) {
+        const event = block.events[editingEventIndex.value]
+        if (!event) {
+            toast.error('Не найдено мероприятие для редактирования')
+            return
+        }
+        event.name = newEventName.value.trim()
+        event.results = newEventResults.value.trim()
+        event.years = yearsLabel
+        toast.success('Мероприятие обновлено')
+    } else {
+        const blockNumber = block.title.match(/^МП(\d+)\./)?.[1] || '1'
+        const eventNumber = block.events.length + 1
+        const eventCode = `МП${blockNumber}.${eventNumber}`
+
+        blocks.value[blockIndex].events.push({
+            id: nextEventId++,
+            code: eventCode,
+            name: newEventName.value.trim(),
+            results: newEventResults.value.trim(),
+            years: yearsLabel
+        })
+        toast.success('Мероприятие создано')
+    }
+    closeCreateEventModal()
+}
+
+function openEditEventModal(blockId, eventIndex) {
+    const blockIndex = findBlockIndexById(blockId)
+    if (blockIndex === -1) return
+    const event = blocks.value[blockIndex].events[eventIndex]
+    if (!event) return
+
+    creatingForBlockId.value = blockId
+    editingEventIndex.value = eventIndex
+    isEditEventMode.value = true
+    isCreateEventModalOpen.value = true
+
+    newEventName.value = event.name || ''
+    newEventResults.value = event.results || ''
+
+    const yearsMatch = (event.years || '').match(/^(\d{4})\D+(\d{4})$/)
+    const nowYear = new Date().getFullYear()
+    if (yearsMatch) {
+        selectedStartYear.value = parseInt(yearsMatch[1])
+        selectedEndYear.value = parseInt(yearsMatch[2])
+    } else {
+        selectedStartYear.value = nowYear
+        selectedEndYear.value = nowYear
+    }
 }
 </script>
 
