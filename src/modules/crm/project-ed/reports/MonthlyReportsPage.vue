@@ -19,8 +19,25 @@
             <div class="month-content">
                 <div v-if="selectedMonth" class="selected-month-info">
                     <h5 class="mb-3">{{ selectedMonth.name }}</h5>
-                    <div class="text-muted">
-                        Здесь будет отображаться отчёт за {{ selectedMonth.name.toLowerCase() }}
+
+                    <div class="stages">
+                        <div class="stages-list">
+                            <details
+                                v-for="stage in stages"
+                                :key="stage.id"
+                                class="stage-item"
+                            >
+                                <summary class="stage-summary d-flex align-items-center">
+                                    <span class="icon d-inline-flex align-items-center justify-content-center me-2">
+                                        <ChevronDown :size="18" />
+                                    </span>
+                                    <span class="stage-title">Этап {{ stage.number }}. {{ stage.name }}</span>
+                                </summary>
+                                <div class="stage-body text-muted">
+                                    <!-- Здесь можно будет показать подробности этапа при необходимости -->
+                                </div>
+                            </details>
+                        </div>
                     </div>
                 </div>
                 <div v-else class="no-selection">
@@ -36,7 +53,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Calendar } from 'lucide-vue-next'
+import { Calendar, ChevronDown } from 'lucide-vue-next'
 
 const months = ref([
     { id: 1, name: 'Январь' },
@@ -54,6 +71,13 @@ const months = ref([
 ])
 
 const selectedMonth = ref(null)
+const stages = ref([
+    { id: 1, number: 1, name: 'Подготовительный этап' },
+    { id: 2, number: 2, name: 'Сбор и анализ данных' },
+    { id: 3, number: 3, name: 'Разработка материалов' },
+    { id: 4, number: 4, name: 'Валидация и тестирование' },
+    { id: 5, number: 5, name: 'Итоговый отчёт' }
+])
 
 function selectMonth(month) {
     selectedMonth.value = month
@@ -137,6 +161,45 @@ function selectMonth(month) {
     align-items: center;
     height: 100%;
     text-align: center;
+}
+
+// Спойлеры этапов
+.stages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stage-item {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.375rem;
+    background-color: #fff;
+    overflow: hidden;
+}
+
+.stage-summary {
+    list-style: none;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.stage-summary .icon {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+}
+
+details[open] .stage-summary .icon {
+    transform: rotate(180deg);
+}
+
+.stage-title {
+    font-weight: 500;
+}
+
+.stage-body {
+    padding: 0 1rem 1rem 2.15rem;
 }
 
 // Адаптивность для мобильных устройств
