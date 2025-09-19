@@ -41,7 +41,11 @@
         <div class="page-content">
             <div class="container">
                 <!-- Многоэтапная форма создания проекта -->
-                <ProjectCreateForm @project-created="handleProjectCreated" />
+                <ProjectCreateForm
+                    v-if="activeSection === 'passport'"
+                    @project-created="handleProjectCreated"
+                />
+                <ReportsPage v-else />
             </div>
         </div>
     </div>
@@ -52,6 +56,7 @@ import { ref } from 'vue'
 import { Home, Plus, List, FileText, BarChart } from 'lucide-vue-next'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import ProjectCreateForm from '@/modules/crm/project-ed/components/ProjectCreateForm.vue'
+import ReportsPage from '@/modules/crm/project-ed/ReportsPage.vue'
 
 // Настройка breadcrumbs
 const breadcrumbItems = ref([
