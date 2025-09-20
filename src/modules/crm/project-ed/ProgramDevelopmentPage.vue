@@ -93,8 +93,13 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Название блока</label>
-                        <textarea v-model="newBlockTitle" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;"></textarea>
+                        <label class="form-label">Код блока <span class="text-danger">*</span></label>
+                        <input v-model="newBlockCode" type="text" class="form-control" placeholder="МП1" required />
+                        <div class="form-text">Введите код блока мероприятий (например: МП1, МП2, и т.д.)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Название блока <span class="text-danger">*</span></label>
+                        <textarea v-model="newBlockTitle" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -116,8 +121,13 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Название блока</label>
-                        <textarea v-model="newBlockTitle" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;"></textarea>
+                        <label class="form-label">Код блока <span class="text-danger">*</span></label>
+                        <input v-model="newBlockCode" type="text" class="form-control" placeholder="МП1" required />
+                        <div class="form-text">Введите код блока мероприятий (например: МП1, МП2, и т.д.)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Название блока <span class="text-danger">*</span></label>
+                        <textarea v-model="newBlockTitle" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -189,6 +199,7 @@ let nextBlockId = 1
 let nextEventId = 1
 
 const newBlockTitle = ref('')
+const newBlockCode = ref('')
 
 const blocks = ref([])
 const isCreateModalOpen = ref(false)
@@ -216,11 +227,9 @@ const toast = useToast()
 
 
 function addBlock() {
-    if (!newBlockTitle.value.trim()) return
+    if (!newBlockTitle.value.trim() || !newBlockCode.value.trim()) return
     
-    // Генерируем номер блока (количество существующих блоков + 1)
-    const blockNumber = blocks.value.length + 1
-    const titleWithPrefix = `МП${blockNumber}. ${newBlockTitle.value.trim()}`
+    const titleWithPrefix = `${newBlockCode.value.trim()}. ${newBlockTitle.value.trim()}`
     
     blocks.value.push({
         id: nextBlockId++,
@@ -228,13 +237,20 @@ function addBlock() {
         events: []
     })
     newBlockTitle.value = ''
+    newBlockCode.value = ''
 }
 
 function editBlock(index) {
     const block = blocks.value[index]
-    // Убираем префикс "МП№. " при редактировании для удобства пользователя
-    const titleWithoutPrefix = block.title.replace(/^МП\d+\.\s*/, '')
-    newBlockTitle.value = titleWithoutPrefix
+    // Извлекаем код и название из заголовка блока
+    const match = block.title.match(/^(.+?)\.\s*(.+)$/)
+    if (match) {
+        newBlockCode.value = match[1]
+        newBlockTitle.value = match[2]
+    } else {
+        newBlockCode.value = ''
+        newBlockTitle.value = block.title
+    }
     
     editingBlockIndex.value = index
     isEditModalOpen.value = true
@@ -259,10 +275,10 @@ function removeEvent(blockIndex, eventIndex) {
 // Функция для обновления кодов мероприятий в блоке
 function updateEventCodes(blockIndex) {
     const block = blocks.value[blockIndex]
-    const blockNumber = block.title.match(/^МП(\d+)\./)?.[1] || '1'
+    const blockCode = block.title.match(/^(.+?)\./)?.[1] || 'МП1'
     
     block.events.forEach((event, index) => {
-        event.code = `МП${blockNumber}.${index + 1}`
+        event.code = `${blockCode}.${index + 1}`
     })
 }
 
@@ -298,29 +314,35 @@ function openCreateModal() {
 function closeCreateModal() {
     isCreateModalOpen.value = false
     newBlockTitle.value = ''
+    newBlockCode.value = ''
 }
 
 function closeEditModal() {
     isEditModalOpen.value = false
     editingBlockIndex.value = -1
     newBlockTitle.value = ''
+    newBlockCode.value = ''
 }
 
 function createBlockFromModal() {
-    if (!newBlockTitle.value.trim()) return
+    if (!newBlockTitle.value.trim() || !newBlockCode.value.trim()) {
+        toast.warning('Заполните все обязательные поля')
+        return
+    }
     addBlock()
     isCreateModalOpen.value = false
 }
 
 function updateBlockFromModal() {
-    if (!newBlockTitle.value.trim()) return
+    if (!newBlockTitle.value.trim() || !newBlockCode.value.trim()) {
+        toast.warning('Заполните все обязательные поля')
+        return
+    }
     
     const blockIndex = editingBlockIndex.value
     if (blockIndex >= 0 && blockIndex < blocks.value.length) {
         const block = blocks.value[blockIndex]
-        // Сохраняем номер блока из существующего заголовка
-        const blockNumber = block.title.match(/^МП(\d+)\./)?.[1] || (blocks.value.length + 1)
-        const titleWithPrefix = `МП${blockNumber}. ${newBlockTitle.value.trim()}`
+        const titleWithPrefix = `${newBlockCode.value.trim()}. ${newBlockTitle.value.trim()}`
         
         blocks.value[blockIndex] = {
             ...block,
@@ -385,9 +407,9 @@ function createEventFromModal() {
         event.years = yearsLabel
         toast.success('Мероприятие обновлено')
     } else {
-        const blockNumber = block.title.match(/^МП(\d+)\./)?.[1] || '1'
+        const blockCode = block.title.match(/^(.+?)\./)?.[1] || 'МП1'
         const eventNumber = block.events.length + 1
-        const eventCode = `МП${blockNumber}.${eventNumber}`
+        const eventCode = `${blockCode}.${eventNumber}`
 
         blocks.value[blockIndex].events.push({
             id: nextEventId++,
