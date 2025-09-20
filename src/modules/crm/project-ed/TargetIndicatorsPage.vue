@@ -73,13 +73,12 @@
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 60px;">№</th>
-                                        <th>Наименование показателя</th>
-                                        <th style="width: 150px;">Единица измерения</th>
-                                        <th style="width: 120px;">Плановое значение</th>
-                                        <th style="width: 120px;">Фактическое значение</th>
-                                        <th style="width: 100px;">Отклонение, %</th>
-                                        <th style="width: 120px;">Действия</th>
+                                        <th style="width: 50px;">№</th>
+                                        <th style="width: 250px;">Наименование показателя</th>
+                                        <th style="width: 100px;">Единица измерения</th>
+                                        <th style="width: 120px;">Блок мероприятий</th>
+                                        <th style="width: 200px;">Ответственный</th>
+                                        <th style="width: 80px;">Действия</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -90,16 +89,17 @@
                                             <small class="text-muted">{{ indicator.description }}</small>
                                         </td>
                                         <td>{{ indicator.unit }}</td>
-                                        <td>{{ indicator.plannedValue }}</td>
                                         <td>
-                                            <span :class="getDeviationClass(indicator.deviation)">
-                                                {{ indicator.actualValue }}
-                                            </span>
+                                            <div v-if="indicator.event_block" class="text-truncate" :title="indicator.event_block.code">
+                                                {{ indicator.event_block.code }}
+                                            </div>
+                                            <div v-else class="text-muted">Не указан</div>
                                         </td>
                                         <td>
-                                            <span :class="getDeviationClass(indicator.deviation)">
-                                                {{ indicator.deviation }}%
-                                            </span>
+                                            <div v-if="indicator.responsible" class="text-truncate" :title="getResponsibleDisplayText(indicator.responsible)">
+                                                {{ getResponsibleDisplayText(indicator.responsible) }}
+                                            </div>
+                                            <div v-else class="text-muted">Не указан</div>
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
@@ -117,6 +117,41 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Отдельная таблица для значений по годам -->
+                <div v-if="indicators.length > 0" class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Значения показателей по годам</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="years-table-container">
+                            <table class="table table-hover mb-0 years-table">
+                                <thead class="table-light sticky-header">
+                                    <tr>
+                                        <th style="width: 200px;">Показатель</th>
+                                        <th v-for="year in years" :key="year" class="year-column">
+                                            {{ year }}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="indicator in indicators" :key="`values-${indicator.id}`">
+                                        <td class="indicator-name-cell">
+                                            <div class="fw-medium">{{ indicator.name }}</div>
+                                            <small class="text-muted">{{ indicator.unit }}</small>
+                                        </td>
+                                        <td v-for="year in years" :key="`${indicator.id}-${year}`" class="year-value-cell">
+                                            <div v-if="indicator.values_by_year && indicator.values_by_year[year] !== undefined && indicator.values_by_year[year] !== ''">
+                                                {{ indicator.values_by_year[year] }}
+                                            </div>
+                                            <div v-else class="text-muted">-</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Вкладка "Категории показателей" -->
@@ -127,7 +162,7 @@
 
         <!-- Модальное окно создания/редактирования показателя -->
         <div class="modal fade" :class="{ 'show d-block': showModal }" tabindex="-1" v-if="showModal">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -135,78 +170,12 @@
                         </h5>
                         <button type="button" class="btn-close" @click="closeModal"></button>
                     </div>
-                    <div class="modal-body">
-                        <form @submit.prevent="saveIndicator">
-                            <div class="row">
-                                <div class="col-12 mb-3">
-                                    <label class="form-label">Наименование показателя *</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
-                                        v-model="formData.name"
-                                        required
-                                        placeholder="Введите наименование показателя"
-                                    >
-                                </div>
-                                <div class="col-12 mb-3">
-                                    <label class="form-label">Описание</label>
-                                    <textarea 
-                                        class="form-control" 
-                                        v-model="formData.description"
-                                        rows="2"
-                                        placeholder="Введите описание показателя"
-                                    ></textarea>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Единица измерения *</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
-                                        v-model="formData.unit"
-                                        required
-                                        placeholder="шт., %, руб. и т.д."
-                                    >
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Плановое значение *</label>
-                                    <input 
-                                        type="number" 
-                                        class="form-control" 
-                                        v-model="formData.plannedValue"
-                                        required
-                                        step="0.01"
-                                        placeholder="0"
-                                    >
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Фактическое значение</label>
-                                    <input 
-                                        type="number" 
-                                        class="form-control" 
-                                        v-model="formData.actualValue"
-                                        step="0.01"
-                                        placeholder="0"
-                                    >
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Отклонение, %</label>
-                                    <input 
-                                        type="number" 
-                                        class="form-control" 
-                                        v-model="formData.deviation"
-                                        step="0.01"
-                                        placeholder="0"
-                                        readonly
-                                    >
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @click="closeModal">Отмена</button>
-                        <button type="button" class="btn btn-primary" @click="saveIndicator">
-                            {{ editingIndicator ? 'Сохранить изменения' : 'Создать показатель' }}
-                        </button>
+                    <div class="modal-body p-0">
+                        <CreateIndicatorPage 
+                            :editing-indicator="editingIndicator"
+                            @saved="onIndicatorSaved"
+                            @cancelled="closeModal"
+                        />
                     </div>
                 </div>
             </div>
@@ -217,10 +186,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref } from 'vue'
 import { Home, Target, Plus, Edit, Trash2, Wrench, Layers2 } from 'lucide-vue-next'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 import CategoriesIndicators from './components/CategoriesIndicators.vue'
+import CreateIndicatorPage from './CreateIndicatorPage.vue'
 
 const breadcrumbItems = ref([
     { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
@@ -232,44 +202,12 @@ const showModal = ref(false)
 const editingIndicator = ref(null)
 const activeTab = ref('indicators')
 const categoriesComponent = ref(null)
-const indicators = ref([
-    {
-        id: 1,
-        name: 'Количество студентов',
-        description: 'Общее количество обучающихся в университете',
-        unit: 'чел.',
-        plannedValue: 15000,
-        actualValue: 14850,
-        deviation: -1.0
-    },
-    {
-        id: 2,
-        name: 'Процент трудоустройства',
-        description: 'Доля выпускников, трудоустроенных в течение года после выпуска',
-        unit: '%',
-        plannedValue: 85,
-        actualValue: 87.5,
-        deviation: 2.9
-    },
-    {
-        id: 3,
-        name: 'Объем НИОКР',
-        description: 'Объем научно-исследовательских и опытно-конструкторских работ',
-        unit: 'млн руб.',
-        plannedValue: 500,
-        actualValue: 520,
-        deviation: 4.0
-    }
-])
 
-const formData = ref({
-    name: '',
-    description: '',
-    unit: '',
-    plannedValue: 0,
-    actualValue: 0,
-    deviation: 0
-})
+// Годы с 2023 по 2032
+const years = ref([2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032])
+
+const indicators = ref([])
+
 
 
 // Вычисляемое свойство для определения класса отклонения
@@ -277,6 +215,35 @@ const getDeviationClass = (deviation) => {
     if (deviation > 0) return 'text-success'
     if (deviation < 0) return 'text-danger'
     return 'text-muted'
+}
+
+// Функция для отображения ответственного
+const getResponsibleDisplayText = (responsible) => {
+    if (!responsible) return 'Не указан'
+    
+    // Если это объект с полями name и position
+    if (typeof responsible === 'object' && responsible.name) {
+        return `${responsible.name}, ${responsible.position}`
+    }
+    
+    // Если это ID, нужно найти соответствующего пользователя
+    if (typeof responsible === 'number') {
+        // Список пользователей (должен совпадать с CreateIndicatorPage.vue)
+        const users = [
+            { id: 1, name: 'Сканцев Виталий Михайлович', position: 'Первый проректор', initials: 'Сканцев В.М.' },
+            { id: 2, name: 'Шкаберин Виталий Александрович', position: 'Первый проректор по учебной работе и цифровизации', initials: 'Шкаберин В.А.' },
+            { id: 3, name: 'Киричек Андрей Викторович', position: 'Проректор по перспективному развитию', initials: 'Киричек А.В.' },
+            { id: 4, name: 'Симкин Альберт Зямович', position: 'Проректор по молодежной политике и воспитательной работе', initials: 'Симкин А.З.' },
+            { id: 5, name: 'Глебов Глеб Владимирович', position: 'Проректор по АХР', initials: 'Глебов Г.В.' },
+            { id: 6, name: 'Геращенкова Татьяна Михайловна', position: 'Проректор по качеству и аккредитации', initials: 'Геращенкова Т.М.' }
+        ]
+        
+        const user = users.find(u => u.id === responsible)
+        return user ? `${user.initials}, ${user.position}` : 'Не указан'
+    }
+    
+    // Если это уже строка, возвращаем как есть
+    return responsible
 }
 
 // Открытие модального окна для создания категории
@@ -289,21 +256,12 @@ const openCreateCategoryModal = () => {
 // Открытие модального окна для создания
 const openCreateModal = () => {
     editingIndicator.value = null
-    formData.value = {
-        name: '',
-        description: '',
-        unit: '',
-        plannedValue: 0,
-        actualValue: 0,
-        deviation: 0
-    }
     showModal.value = true
 }
 
 // Открытие модального окна для редактирования
 const editIndicator = (indicator) => {
     editingIndicator.value = indicator
-    formData.value = { ...indicator }
     showModal.value = true
 }
 
@@ -313,28 +271,18 @@ const closeModal = () => {
     editingIndicator.value = null
 }
 
-
-// Сохранение показателя
-const saveIndicator = () => {
-    if (!formData.value.name || !formData.value.unit || formData.value.plannedValue === '') {
-        return
-    }
-
+// Обработка сохранения показателя
+const onIndicatorSaved = (indicator) => {
     if (editingIndicator.value) {
-        // Редактирование существующего показателя
+        // Обновление существующего показателя
         const index = indicators.value.findIndex(i => i.id === editingIndicator.value.id)
         if (index !== -1) {
-            indicators.value[index] = { ...formData.value }
+            indicators.value[index] = { ...indicator }
         }
     } else {
-        // Создание нового показателя
-        const newIndicator = {
-            ...formData.value,
-            id: Date.now()
-        }
-        indicators.value.push(newIndicator)
+        // Добавление нового показателя
+        indicators.value.push(indicator)
     }
-
     closeModal()
 }
 
@@ -345,16 +293,6 @@ const deleteIndicator = (id) => {
     }
 }
 
-// Автоматический расчет отклонения при изменении фактического значения
-watch(() => formData.value.actualValue, (newValue) => {
-    if (formData.value.plannedValue && newValue !== '') {
-        const planned = parseFloat(formData.value.plannedValue)
-        const actual = parseFloat(newValue)
-        if (planned !== 0) {
-            formData.value.deviation = ((actual - planned) / planned * 100).toFixed(1)
-        }
-    }
-})
 </script>
 
 <style scoped lang="scss">
@@ -382,6 +320,7 @@ watch(() => formData.value.actualValue, (newValue) => {
 .modal-backdrop.show {
     opacity: 0.5;
 }
+
 
 .table th {
     border-top: none;
@@ -426,5 +365,71 @@ watch(() => formData.value.actualValue, (newValue) => {
     --bs-btn-active-color: #0a58ca;
     --bs-btn-active-bg: #d6e8ff;
     --bs-btn-active-border-color: #0a58ca;
+}
+
+/* Стили для таблицы с годами */
+.years-table-container {
+    overflow-x: auto;
+    max-width: 100%;
+    border-radius: 0.375rem;
+}
+
+.years-table {
+    min-width: 800px; /* Минимальная ширина для корректного отображения */
+    width: max-content;
+}
+
+.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8f9fa;
+}
+
+.year-column {
+    min-width: 80px;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #495057;
+    padding: 0.75rem 0.5rem;
+    border-left: 1px solid #dee2e6;
+}
+
+.year-value-cell {
+    text-align: center;
+    padding: 0.5rem;
+    border-left: 1px solid #dee2e6;
+    min-width: 80px;
+    font-size: 0.875rem;
+}
+
+.indicator-name-cell {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 5;
+    border-right: 2px solid #dee2e6;
+    min-width: 200px;
+    max-width: 200px;
+}
+
+/* Стили для прокрутки */
+.years-table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.years-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.years-table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.years-table-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 </style>

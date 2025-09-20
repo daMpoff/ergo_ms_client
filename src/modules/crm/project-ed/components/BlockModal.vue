@@ -151,7 +151,6 @@ watch(() => props.isOpen, (isOpen) => {
     if (isOpen) {
         if (props.isEditMode && props.blockData) {
             // Режим редактирования
-            const match = props.blockData.title?.match(/^(.+?)\.\s*(.+)$/)
             const categoryId = props.blockData.categoryId || props.blockData.category || ''
             const subcategoryId = props.blockData.subcategoryId || props.blockData.subcategory || ''
             
@@ -160,8 +159,8 @@ watch(() => props.isOpen, (isOpen) => {
             console.log('Edit mode - subcategoryId:', subcategoryId)
             
             formData.value = {
-                code: match ? match[1] : '',
-                title: match ? match[2] : props.blockData.title || '',
+                code: props.blockData.code || '',
+                title: props.blockData.title || '',
                 categoryId: categoryId,
                 subcategoryId: subcategoryId
             }
@@ -208,7 +207,8 @@ const saveBlock = () => {
         : null
 
     const blockData = {
-        title: `${formData.value.code.trim()}. ${formData.value.title.trim()}`,
+        code: formData.value.code.trim(),
+        title: formData.value.title.trim(),
         description: '',
         categoryId: formData.value.categoryId,
         categoryName: selectedCategory?.name || '',

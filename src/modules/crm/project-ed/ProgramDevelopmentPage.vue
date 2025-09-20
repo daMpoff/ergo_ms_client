@@ -39,7 +39,7 @@
             <div v-for="block in blocks" :key="block.id" class="card p-3 mb-3">
                 <div class="d-flex justify-content-between mb-2">
                     <div class="flex-grow-1">
-                        <h5 class="mb-0">{{ block.title }}</h5>
+                        <h5 class="mb-0">{{ block.code ? `${block.code}. ${block.title}` : block.title }}</h5>
                         <div v-if="block.category_name" class="text-muted small mt-1">
                             <div class="mb-0">
                                 <span 
@@ -244,6 +244,7 @@ async function addBlock(blockData) {
     try {
         // Подготавливаем данные для API
         const apiData = {
+            code: blockData.code || '',
             title: blockData.title,
             description: blockData.description || '',
             category: blockData.categoryId || null,
@@ -355,6 +356,7 @@ async function handleBlockSave(blockData) {
             try {
                 // Подготавливаем данные для API
                 const apiData = {
+                    code: blockData.code || '',
                     title: blockData.title,
                     description: blockData.description || '',
                     category: blockData.categoryId || null,
@@ -363,6 +365,10 @@ async function handleBlockSave(blockData) {
                 
                 const response = await apiClient.patch(endpoints.project_ed.event_blocks.patch(block.id), apiData)
                 blocks.value[blockIndex] = response.data
+                
+                // Перезагружаем данные для получения обновленных кодов мероприятий
+                await loadBlocks()
+                
                 toast.success('Блок мероприятий обновлен')
             } catch (error) {
                 toast.error('Ошибка обновления блока')
@@ -382,11 +388,10 @@ function generateEventCode(blockId) {
     if (blockIndex === -1) return ''
     
     const block = blocks.value[blockIndex]
-    // Извлекаем код блока из названия (например, "МП1. Название блока" -> "МП1")
-    const blockCodeMatch = block.title?.match(/^([^.]+)\./)
-    if (!blockCodeMatch) return ''
+    // Используем поле code блока напрямую
+    const blockCode = block.code
+    if (!blockCode) return ''
     
-    const blockCode = blockCodeMatch[1]
     const existingEvents = block.events || []
     
     // Находим максимальный номер мероприятия в блоке

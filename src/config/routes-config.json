@@ -548,6 +548,22 @@
         "requiresAuth": true
       }
     },
+    "ProjectEdCreateIndicator": {
+      "path": "/crm/project-ed/target-indicators/create",
+      "component": "@/modules/crm/project-ed/CreateIndicatorPage.vue",
+      "meta": {
+        "title": "Создание показателя",
+        "requiresAuth": true
+      }
+    },
+    "ProjectEdEditIndicator": {
+      "path": "/crm/project-ed/target-indicators/:id/edit",
+      "component": "@/modules/crm/project-ed/CreateIndicatorPage.vue",
+      "meta": {
+        "title": "Редактирование показателя",
+        "requiresAuth": true
+      }
+    },
     "ProjectCalendar": {
       "path": "/crm/project-management/calendar",
       "component": "@/modules/crm/project-management/TaskCalendar.vue",
