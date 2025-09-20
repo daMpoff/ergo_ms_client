@@ -177,6 +177,10 @@
               "name": "Программа развития БГТУ"
             },
             {
+              "routeName": "ProjectEdTargetIndicators",
+              "name": "Целевые показатели"
+            },
+            {
               "routeName": "ProjectEdCreate",
               "name": "Создать проект"
             },

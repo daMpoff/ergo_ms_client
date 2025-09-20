@@ -6,9 +6,14 @@
             <div class="card p-3">
                 <div class="d-flex flex-column gap-2">
                     <div>Внутренние служебные функции и ссылки.</div>
-                    <router-link :to="{ name: 'ProjectEdProgramDevelopment' }" class="btn btn-outline-primary align-self-start">
-                        Перейти к программе развития БГТУ
-                    </router-link>
+                    <div class="d-flex flex-column gap-2">
+                        <router-link :to="{ name: 'ProjectEdProgramDevelopment' }" class="btn btn-outline-primary align-self-start">
+                            Перейти к программе развития БГТУ
+                        </router-link>
+                        <router-link :to="{ name: 'ProjectEdTargetIndicators' }" class="btn btn-outline-primary align-self-start">
+                            Перейти к целевым показателям
+                        </router-link>
+                    </div>
                 </div>
             </div>
         </div>

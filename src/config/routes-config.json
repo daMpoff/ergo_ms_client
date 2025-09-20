@@ -540,6 +540,14 @@
         "requiresAuth": true
       }
     },
+    "ProjectEdTargetIndicators": {
+      "path": "/crm/project-ed/target-indicators",
+      "component": "@/modules/crm/project-ed/TargetIndicatorsPage.vue",
+      "meta": {
+        "title": "Целевые показатели",
+        "requiresAuth": true
+      }
+    },
     "ProjectCalendar": {
       "path": "/crm/project-management/calendar",
       "component": "@/modules/crm/project-management/TaskCalendar.vue",
