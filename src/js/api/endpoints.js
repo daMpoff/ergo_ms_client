@@ -387,4 +387,36 @@ export const endpoints = {
         cancel: (id) => `video_analysis/video-analysis/${id}/cancel/`,
         statistics: 'video_analysis/video-analysis/statistics/'
     },
+    project_ed: {
+        projects: {
+            list: 'project_ed/project-ed/projects/',
+            create: 'project_ed/project-ed/projects/',
+            detail: (id) => `project_ed/project-ed/projects/${id}/`,
+            update: (id) => `project_ed/project-ed/projects/${id}/`,
+            delete: (id) => `project_ed/project-ed/projects/${id}/`,
+        },
+        categories: {
+            list: 'project_ed/project-ed/categories/',
+            create: 'project_ed/project-ed/categories/',
+            detail: (id) => `project_ed/project-ed/categories/${id}/`,
+            update: (id) => `project_ed/project-ed/categories/${id}/`,
+            patch: (id) => `project_ed/project-ed/categories/${id}/`,
+            updateOrder: (id) => `project_ed/project-ed/categories/${id}/update_order/`,
+            delete: (id) => `project_ed/project-ed/categories/${id}/safe_delete/`,
+        },
+        subcategories: {
+            list: 'project_ed/project-ed/subcategories/',
+            create: 'project_ed/project-ed/subcategories/',
+            detail: (id) => `project_ed/project-ed/subcategories/${id}/`,
+            update: (id) => `project_ed/project-ed/subcategories/${id}/`,
+            delete: (id) => `project_ed/project-ed/subcategories/${id}/safe_delete/`,
+        },
+        target_indicators: {
+            list: 'project_ed/project-ed/target-indicators/',
+            create: 'project_ed/project-ed/target-indicators/',
+            detail: (id) => `project_ed/project-ed/target-indicators/${id}/`,
+            update: (id) => `project_ed/project-ed/target-indicators/${id}/`,
+            delete: (id) => `project_ed/project-ed/target-indicators/${id}/`,
+        },
+    },
 };

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="categories.length === 0" class="card p-4 text-center">
+        <div v-if="!isLoading && categories.length === 0" class="card p-4 text-center">
             <div class="d-flex flex-column align-items-center justify-content-center my-2">
                 <Target :size="48" class="mb-2 text-muted" />
                 <h5 class="mb-1">Пока нет категорий показателей</h5>
@@ -10,7 +10,25 @@
         </div>
 
         <div v-else class="card">
-            <div class="card-body p-0">
+            <div v-if="isLoading" class="card-body text-center p-5">
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+                <p class="mt-3 text-muted">Загрузка категорий...</p>
+            </div>
+            <div v-else class="card-body p-0" :class="{ 'updating-order': isUpdatingOrder }">
+                <!-- Оверлей загрузки при обновлении порядка -->
+                <div v-if="isUpdatingOrder" class="loading-overlay">
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Обновление порядка...</span>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-muted">Обновление порядка категорий...</p>
+                </div>
+                
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
@@ -25,10 +43,10 @@
                             <template v-for="(category, index) in categories" :key="category.id">
                                 <!-- Основная строка категории -->
                                 <tr class="category-main-row clickable-row" @click="editCategory(category)">
-                                    <td class="text-muted">{{ index + 1 }}</td>
-                                    <td>
+                                <td class="text-muted">{{ index + 1 }}</td>
+                                <td>
                                         <div class="category-name">{{ category.name }}</div>
-                                    </td>
+                                </td>
                                     <td class="text-center">
                                         <div 
                                             class="indicators-count" 
@@ -38,9 +56,9 @@
                                         >
                                             <BarChart3 :size="16" class="me-1" />
                                             <span class="fw-medium indicators-number">{{ getCategoryIndicatorsCount(category) }}</span>
-                                        </div>
-                                    </td>
-                                    <td>
+                                    </div>
+                                </td>
+                                <td>
                                         <button class="btn btn-outline-danger btn-sm" @click.stop="deleteCategory(category.id)" title="Удалить категорию">
                                             <Trash2 :size="14" />
                                         </button>
@@ -54,23 +72,23 @@
                                     </td>
                                     <td>
                                         <div class="subcategory-name">
-                                            {{ subcategory }}
+                                            {{ subcategory.name }}
                                         </div>
                                     </td>
                                     <td class="text-center">
                                         <div 
                                             class="indicators-count subcategory-count" 
                                             :data-category-id="category.id"
-                                            :data-subcategory="subcategory"
+                                            :data-subcategory="subcategory.name"
                                             :data-count="getSubcategoryIndicatorsCount(category, subcategory)"
                                             data-is-subcategory="true"
                                         >
                                             <BarChart3 :size="14" class="me-1" />
                                             <span class="fw-medium indicators-number">{{ getSubcategoryIndicatorsCount(category, subcategory) }}</span>
-                                        </div>
-                                    </td>
+                                    </div>
+                                </td>
                                     <td></td>
-                                </tr>
+                            </tr>
                             </template>
                         </tbody>
                     </table>
@@ -97,6 +115,29 @@
                                     required
                                     placeholder="Введите название категории"
                                 >
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Позиция в списке</label>
+                                <select 
+                                    class="form-select" 
+                                    v-model="categoryFormData.order"
+                                >
+                                    <option 
+                                        v-for="option in getPositionOptions()" 
+                                        :key="option.value" 
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </option>
+                                </select>
+                                <div class="form-text">
+                                    <span v-if="editingCategory">
+                                        Текущая позиция: {{ getCurrentCategoryPosition() }}
+                                    </span>
+                                    <span v-else>
+                                        Категория будет добавлена в конец списка
+                                    </span>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <div class="form-check">
@@ -141,8 +182,13 @@
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @click="closeCategoryModal">Отмена</button>
-                        <button type="button" class="btn btn-primary" @click="saveCategory">
+                        <button type="button" class="btn btn-secondary" @click="closeCategoryModal" :disabled="isLoading">Отмена</button>
+                        <button type="button" class="btn btn-primary" @click="saveCategory" :disabled="isLoading">
+                            <div v-if="isLoading" class="loading-spinner-sm me-2">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Загрузка...</span>
+                                </div>
+                            </div>
                             {{ editingCategory ? 'Сохранить изменения' : 'Создать категорию' }}
                         </button>
                     </div>
@@ -179,8 +225,8 @@
                                 <div v-if="categoryToDelete && categoryToDelete.subcategories && categoryToDelete.subcategories.length > 0" class="subcategories-info">
                                     <p class="mb-1"><strong>Подкатегории:</strong></p>
                                     <ul class="subcategories-list">
-                                        <li v-for="subcategory in categoryToDelete.subcategories" :key="subcategory" class="subcategory-item">
-                                            {{ subcategory }}
+                                        <li v-for="subcategory in categoryToDelete.subcategories" :key="subcategory.id || subcategory" class="subcategory-item">
+                                            {{ subcategory.name }}
                                             <span v-if="getSubcategoryIndicatorsCount(categoryToDelete, subcategory) > 0" class="usage-count">
                                                 ({{ getSubcategoryIndicatorsCount(categoryToDelete, subcategory) }} 
                                                 {{ getSubcategoryIndicatorsCount(categoryToDelete, subcategory) === 1 ? 'показатель' : 'показателей'}})
@@ -192,9 +238,14 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @click="closeDeleteModal">Отмена</button>
-                        <button type="button" class="btn btn-danger" @click="confirmDelete">
-                            <Trash2 :size="16" class="me-1" />
+                        <button type="button" class="btn btn-secondary" @click="closeDeleteModal" :disabled="isLoading">Отмена</button>
+                        <button type="button" class="btn btn-danger" @click="confirmDelete" :disabled="isLoading">
+                            <div v-if="isLoading" class="loading-spinner-sm me-2">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Загрузка...</span>
+                                </div>
+                            </div>
+                            <Trash2 v-else :size="16" class="me-1" />
                             Удалить категорию
                         </button>
                     </div>
@@ -208,22 +259,99 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { Target, Plus, Edit, Trash2, BarChart3, AlertTriangle } from 'lucide-vue-next'
+import { useToast } from 'vue-toastification'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
 // События для родительского компонента
 const emit = defineEmits(['open-create-category-modal'])
+
+// Toast уведомления
+const toast = useToast()
 
 // Состояние компонента
 const showCategoryModal = ref(false)
 const editingCategory = ref(null)
 const showDeleteModal = ref(false)
 const categoryToDelete = ref(null)
+const isLoading = ref(true) // Начинаем с true, чтобы показать загрузку при первом рендере
+const isUpdatingOrder = ref(false)
+const isInitialLoad = ref(true) // Флаг для первой загрузки
 
 // Ref для popover элементов
 const popoverElements = ref([])
 const categories = ref([])
 
+// Загрузка категорий
+const loadCategories = async () => {
+    try {
+        isLoading.value = true
+        
+        const response = await apiClient.get(endpoints.project_ed.categories.list)
+        
+        if (response.success) {
+            categories.value = response.data
+        } else {
+            throw new Error(response.message || 'Ошибка загрузки категорий')
+        }
+        
+    } catch (error) {
+        console.error('Ошибка загрузки категорий:', error)
+        toast.error('Ошибка при загрузке категорий: ' + error.message)
+        categories.value = []
+    } finally {
+        isLoading.value = false
+        isInitialLoad.value = false
+    }
+}
+
+// Создание категории
+const createCategory = async (categoryData) => {
+    try {
+        const response = await apiClient.post(endpoints.project_ed.categories.create, categoryData)
+        if (response.success) {
+            return response.data
+        } else {
+            throw new Error(response.message || 'Ошибка создания категории')
+        }
+    } catch (error) {
+        console.error('Ошибка создания категории:', error)
+        throw error
+    }
+}
+
+// Обновление категории
+const updateCategory = async (id, categoryData) => {
+    try {
+        const response = await apiClient.put(endpoints.project_ed.categories.update(id), categoryData)
+        if (response.success) {
+            return response.data
+        } else {
+            throw new Error(response.message || 'Ошибка обновления категории')
+        }
+    } catch (error) {
+        console.error('Ошибка обновления категории:', error)
+        throw error
+    }
+}
+
+// Удаление категории
+const deleteCategoryAPI = async (id) => {
+    try {
+        const response = await apiClient.delete(endpoints.project_ed.categories.delete(id))
+        if (response.success) {
+            return response.data
+        } else {
+            throw new Error(response.message || 'Ошибка удаления категории')
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
 const categoryFormData = ref({
     name: '',
+    order: 0,
     hasSubcategories: false,
     subcategories: ['']
 })
@@ -233,6 +361,7 @@ const openCreateCategoryModal = () => {
     editingCategory.value = null
     categoryFormData.value = {
         name: '',
+        order: categories.value.length,
         hasSubcategories: false,
         subcategories: ['']
     }
@@ -242,11 +371,18 @@ const openCreateCategoryModal = () => {
 // Открытие модального окна для редактирования категории
 const editCategory = (category) => {
     editingCategory.value = category
+    
+    // Находим текущую позицию категории в списке
+    const sortedCategories = [...categories.value].sort((a, b) => a.order - b.order)
+    const currentIndex = sortedCategories.findIndex(cat => cat.id === category.id)
+    
+    
     categoryFormData.value = {
         name: category.name,
+        order: currentIndex !== -1 ? currentIndex : 0,
         hasSubcategories: category.subcategories && category.subcategories.length > 0,
         subcategories: category.subcategories && category.subcategories.length > 0 
-            ? [...category.subcategories] 
+            ? category.subcategories.map(sub => sub.name || sub) 
             : ['']
     }
     showCategoryModal.value = true
@@ -271,36 +407,62 @@ const removeSubcategory = (index) => {
 }
 
 // Сохранение категории
-const saveCategory = () => {
+const saveCategory = async () => {
     if (!categoryFormData.value.name.trim()) {
+        toast.error('Название категории обязательно для заполнения')
         return
     }
     
+    try {
+        isLoading.value = true
+    
     const categoryData = {
         name: categoryFormData.value.name.trim(),
+        description: '',
+        order: categoryFormData.value.order,
+        is_active: true,
         subcategories: categoryFormData.value.hasSubcategories 
             ? categoryFormData.value.subcategories.filter(sub => sub.trim() !== '')
-            : [],
-        indicatorsCount: 0,
-        subcategoryIndicators: {}
+            : []
     }
+    
     
     if (editingCategory.value) {
         // Редактирование существующей категории
-        const index = categories.value.findIndex(c => c.id === editingCategory.value.id)
-        if (index !== -1) {
-            categories.value[index] = { ...categories.value[index], ...categoryData }
+        // Находим текущую позицию в отсортированном списке
+        const sortedCategories = [...categories.value].sort((a, b) => a.order - b.order)
+        const currentIndex = sortedCategories.findIndex(cat => cat.id === editingCategory.value.id)
+        const oldOrder = currentIndex
+        const newOrder = categoryFormData.value.order
+        
+        
+        // Если позиция изменилась, обновляем порядок через специальный эндпоинт
+        if (oldOrder !== newOrder) {
+            // Отправляем индекс как новый порядок (0, 1, 2...)
+            await updateCategoryOrder(editingCategory.value.id, oldOrder, newOrder)
+            // После обновления порядка перезагружаем список и закрываем модалку
+            await loadCategories()
+            closeCategoryModal()
+            return
         }
+        
+        // Если позиция не изменилась, обновляем только данные категории
+        const updatedCategory = await updateCategory(editingCategory.value.id, categoryData)
+        toast.success('Категория успешно обновлена')
     } else {
         // Создание новой категории
-        const newCategory = {
-            ...categoryData,
-            id: Date.now()
-        }
-        categories.value.push(newCategory)
+        const newCategory = await createCategory(categoryData)
+        toast.success('Категория успешно создана')
     }
     
+    // Перезагружаем список категорий для получения актуальных данных
+    await loadCategories()
     closeCategoryModal()
+    } catch (error) {
+        toast.error('Ошибка при сохранении категории: ' + error.message)
+    } finally {
+        isLoading.value = false
+    }
 }
 
 // Удаление категории
@@ -310,7 +472,7 @@ const deleteCategory = (id) => {
     
     // Если категория не используется, удаляем сразу
     if (getCategoryIndicatorsCount(category) === 0) {
-        categories.value = categories.value.filter(c => c.id !== id)
+        performDelete(id)
         return
     }
     
@@ -319,10 +481,29 @@ const deleteCategory = (id) => {
     showDeleteModal.value = true
 }
 
+// Выполнение удаления
+const performDelete = async (id) => {
+    try {
+        isLoading.value = true
+        await deleteCategoryAPI(id)
+        // Перезагружаем список категорий для получения актуальных данных
+        await loadCategories()
+        toast.success('Категория успешно удалена')
+    } catch (error) {
+        if (error.message.includes('используется')) {
+            toast.error('Категория не может быть удалена: ' + error.message)
+        } else {
+            toast.error('Ошибка при удалении категории: ' + error.message)
+        }
+    } finally {
+        isLoading.value = false
+    }
+}
+
 // Подтверждение удаления
-const confirmDelete = () => {
+const confirmDelete = async () => {
     if (categoryToDelete.value) {
-        categories.value = categories.value.filter(c => c.id !== categoryToDelete.value.id)
+        await performDelete(categoryToDelete.value.id)
         closeDeleteModal()
     }
 }
@@ -335,12 +516,115 @@ const closeDeleteModal = () => {
 
 // Получение количества показателей для категории
 const getCategoryIndicatorsCount = (category) => {
-    return category.indicatorsCount || 0
+    return category.indicators_count || 0
 }
 
 // Получение количества показателей для подкатегории
 const getSubcategoryIndicatorsCount = (category, subcategory) => {
-    return category.subcategoryIndicators?.[subcategory] || 0
+    // Если subcategory - это объект, возвращаем его indicators_count
+    if (typeof subcategory === 'object' && subcategory !== null) {
+        return subcategory.indicators_count || 0
+    }
+    // Если subcategory - это строка, ищем объект подкатегории
+    const subcategoryObj = category.subcategories?.find(sub => sub.name === subcategory)
+    return subcategoryObj?.indicators_count || 0
+}
+
+// Получение доступных позиций для категории (исключая текущую редактируемую)
+const getAvailablePositions = () => {
+    if (!editingCategory.value) {
+        return categories.value
+    }
+    return categories.value.filter(cat => cat.id !== editingCategory.value.id)
+}
+
+// Получение правильной позиции для отображения
+const getPositionOptions = () => {
+    const sortedCategories = [...categories.value].sort((a, b) => a.order - b.order)
+    const options = []
+    
+    // Создаем список категорий без редактируемой
+    const categoriesWithoutEditing = editingCategory.value 
+        ? sortedCategories.filter(cat => cat.id !== editingCategory.value.id)
+        : sortedCategories
+
+    // Находим текущую позицию редактируемой категории в списке без неё
+    let currentPositionInFilteredList = -1
+    if (editingCategory.value) {
+        // Находим, на какой позиции была бы редактируемая категория в списке без неё
+        const editingCategoryOrder = editingCategory.value.order
+        currentPositionInFilteredList = categoriesWithoutEditing.filter(cat => cat.order < editingCategoryOrder).length
+    }
+
+    // Генерируем опции для всех возможных позиций
+    for (let i = 0; i <= categoriesWithoutEditing.length; i++) {
+        let label = ''
+        
+        if (editingCategory.value) {
+            // При редактировании
+            if (i === currentPositionInFilteredList) {
+                label = `${i + 1}. (Текущая позиция)`
+            } else if (i < categoriesWithoutEditing.length) {
+                // Если вставляем перед существующей категорией
+                const categoryAtThisSpot = categoriesWithoutEditing[i]
+                label = `${i + 1}. (Перед "${categoryAtThisSpot.name}")`
+            } else {
+                // Если вставляем в конец
+                label = `${i + 1}. (В конец списка)`
+            }
+        } else {
+            // При создании новой категории
+            if (i < categoriesWithoutEditing.length) {
+                const categoryAtThisSpot = categoriesWithoutEditing[i]
+                label = `${i + 1}. (Перед "${categoryAtThisSpot.name}")`
+            } else {
+                label = `${i + 1}. (В конец списка)`
+            }
+        }
+
+        options.push({
+            value: i,
+            label: label,
+        })
+    }
+    
+    return options
+}
+
+// Получение текущей позиции редактируемой категории
+const getCurrentCategoryPosition = () => {
+    if (!editingCategory.value) return 0
+    
+    // Сортируем категории по порядку
+    const sortedCategories = [...categories.value].sort((a, b) => a.order - b.order)
+    
+    // Находим индекс текущей категории в отсортированном списке
+    const currentIndex = sortedCategories.findIndex(cat => cat.id === editingCategory.value.id)
+    
+    return currentIndex !== -1 ? `Позиция ${currentIndex + 1}` : 'Позиция 1'
+}
+
+// Обновление порядка категорий при изменении позиции
+const updateCategoryOrder = async (categoryId, oldOrder, newOrder) => {
+    try {
+        isUpdatingOrder.value = true
+        
+        // Используем новый эндпоинт для обновления порядка
+        const response = await apiClient.patch(endpoints.project_ed.categories.updateOrder(categoryId), {
+            order: newOrder
+        })
+        
+        if (response.success) {
+            toast.success('Позиция категории успешно изменена')
+        } else {
+            throw new Error(response.message || 'Ошибка обновления порядка')
+        }
+    } catch (error) {
+        toast.error('Ошибка при изменении позиции: ' + error.message)
+        throw error
+    } finally {
+        isUpdatingOrder.value = false
+    }
 }
 
 // Функция для получения текста popover'а
@@ -463,7 +747,10 @@ watch(categories, () => {
 }, { deep: true })
 
 // Lifecycle hooks
-onMounted(() => {
+onMounted(async () => {
+    // Небольшая задержка для демонстрации анимации загрузки
+    await new Promise(resolve => setTimeout(resolve, 300))
+    await loadCategories()
     initializePopovers()
 })
 
@@ -735,5 +1022,117 @@ defineExpose({
 
 .subcategory-row td {
     padding: 8px 8px;
+}
+
+// Стили для модального окна редактирования
+.modal-body .form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.modal-body .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.modal-body .form-control,
+.modal-body .form-select {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.modal-body .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+// Стили для анимации загрузки
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-spinner-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-spinner .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+    animation: spin 1s linear infinite;
+}
+
+.loading-spinner-sm .spinner-border {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+// Дополнительные стили для плавности
+.spinner-border {
+    border: 0.25em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: -0.125em;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.125em;
+}
+
+// Оверлей загрузки при обновлении порядка
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    border-radius: 0.375rem;
+}
+
+.updating-order {
+    position: relative;
+}
+
+// Анимация для плавного появления/исчезновения
+.loading-overlay {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 </style>
