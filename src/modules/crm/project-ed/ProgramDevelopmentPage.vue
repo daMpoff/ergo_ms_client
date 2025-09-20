@@ -29,11 +29,29 @@
             </div>
 
             <div v-for="block in blocks" :key="block.id" class="card p-3 mb-3">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div>
+                <div class="d-flex justify-content-between mb-2">
+                    <div class="flex-grow-1">
                         <h5 class="mb-0">{{ block.title }}</h5>
+                        <div v-if="block.categoryName" class="text-muted small mt-1">
+                            <div class="mb-0">
+                                <span 
+                                    class="badge bg-primary category-badge" 
+                                    :title="block.categoryName"
+                                >
+                                    {{ block.categoryName }}
+                                </span>
+                            </div>
+                            <div v-if="block.subcategoryName" class="mt-1">
+                                <span 
+                                    class="badge bg-secondary subcategory-badge" 
+                                    :title="block.subcategoryName"
+                                >
+                                    {{ block.subcategoryName }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 align-items-start">
                         <button class="btn btn-outline-primary btn-sm" style="display: flex; align-items: center;" @click="openCreateEventModal(block.id)">
                             <Plus :size="14" class="me-1" />
                             Добавить мероприятие
@@ -83,61 +101,14 @@
         </div>
     </div>
 
-    <!-- Модальное окно создания блока -->
-    <div v-if="isCreateModalOpen" class="modal d-block" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Создание блока мероприятий</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @click="closeCreateModal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Код блока <span class="text-danger">*</span></label>
-                        <input v-model="newBlockCode" type="text" class="form-control" placeholder="МП1" required />
-                        <div class="form-text">Введите код блока мероприятий (например: МП1, МП2, и т.д.)</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Название блока <span class="text-danger">*</span></label>
-                        <textarea v-model="newBlockTitle" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" @click="closeCreateModal">Отмена</button>
-                    <button type="button" class="btn btn-primary" @click="createBlockFromModal">Создать</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div v-if="isCreateModalOpen" class="modal-backdrop fade show"></div>
-
-    <!-- Модальное окно редактирования блока -->
-    <div v-if="isEditModalOpen" class="modal d-block" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Редактирование блока мероприятий</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @click="closeEditModal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Код блока <span class="text-danger">*</span></label>
-                        <input v-model="newBlockCode" type="text" class="form-control" placeholder="МП1" required />
-                        <div class="form-text">Введите код блока мероприятий (например: МП1, МП2, и т.д.)</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Название блока <span class="text-danger">*</span></label>
-                        <textarea v-model="newBlockTitle" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" @click="closeEditModal">Отмена</button>
-                    <button type="button" class="btn btn-primary" @click="updateBlockFromModal">Сохранить</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div v-if="isEditModalOpen" class="modal-backdrop fade show"></div>
+    <!-- Модальное окно создания/редактирования блока -->
+    <BlockModal
+        :is-open="isCreateModalOpen || isEditModalOpen"
+        :is-edit-mode="isEditModalOpen"
+        :block-data="editingBlockData"
+        @close="closeModals"
+        @save="handleBlockSave"
+    />
 
     <!-- Модальное окно создания мероприятия -->
     <div v-if="isCreateEventModalOpen" class="modal d-block" tabindex="-1" role="dialog">
@@ -188,6 +159,9 @@ import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { Home, Target, Wrench, Inbox, Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
+import BlockModal from '@/modules/crm/project-ed/components/BlockModal.vue'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
 const breadcrumbItems = ref([
     { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
@@ -198,13 +172,10 @@ const breadcrumbItems = ref([
 let nextBlockId = 1
 let nextEventId = 1
 
-const newBlockTitle = ref('')
-const newBlockCode = ref('')
-
 const blocks = ref([])
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
-const editingBlockIndex = ref(-1)
+const editingBlockData = ref({})
 
 // Состояние модального окна создания мероприятия
 const isCreateEventModalOpen = ref(false)
@@ -225,34 +196,17 @@ const yearsOptions = computed(() => {
 
 const toast = useToast()
 
-
-function addBlock() {
-    if (!newBlockTitle.value.trim() || !newBlockCode.value.trim()) return
-    
-    const titleWithPrefix = `${newBlockCode.value.trim()}. ${newBlockTitle.value.trim()}`
-    
+function addBlock(blockData) {
     blocks.value.push({
         id: nextBlockId++,
-        title: titleWithPrefix,
+        ...blockData,
         events: []
     })
-    newBlockTitle.value = ''
-    newBlockCode.value = ''
 }
 
 function editBlock(index) {
     const block = blocks.value[index]
-    // Извлекаем код и название из заголовка блока
-    const match = block.title.match(/^(.+?)\.\s*(.+)$/)
-    if (match) {
-        newBlockCode.value = match[1]
-        newBlockTitle.value = match[2]
-    } else {
-        newBlockCode.value = ''
-        newBlockTitle.value = block.title
-    }
-    
-    editingBlockIndex.value = index
+    editingBlockData.value = { ...block, index }
     isEditModalOpen.value = true
 }
 
@@ -311,49 +265,31 @@ function openCreateModal() {
     isCreateModalOpen.value = true
 }
 
-function closeCreateModal() {
+function closeModals() {
     isCreateModalOpen.value = false
-    newBlockTitle.value = ''
-    newBlockCode.value = ''
-}
-
-function closeEditModal() {
     isEditModalOpen.value = false
-    editingBlockIndex.value = -1
-    newBlockTitle.value = ''
-    newBlockCode.value = ''
+    editingBlockData.value = {}
 }
 
-function createBlockFromModal() {
-    if (!newBlockTitle.value.trim() || !newBlockCode.value.trim()) {
-        toast.warning('Заполните все обязательные поля')
-        return
-    }
-    addBlock()
-    isCreateModalOpen.value = false
-}
-
-function updateBlockFromModal() {
-    if (!newBlockTitle.value.trim() || !newBlockCode.value.trim()) {
-        toast.warning('Заполните все обязательные поля')
-        return
-    }
-    
-    const blockIndex = editingBlockIndex.value
-    if (blockIndex >= 0 && blockIndex < blocks.value.length) {
-        const block = blocks.value[blockIndex]
-        const titleWithPrefix = `${newBlockCode.value.trim()}. ${newBlockTitle.value.trim()}`
-        
-        blocks.value[blockIndex] = {
-            ...block,
-            title: titleWithPrefix
+function handleBlockSave(blockData) {
+    if (isEditModalOpen.value) {
+        // Режим редактирования
+        const blockIndex = editingBlockData.value.index
+        if (blockIndex >= 0 && blockIndex < blocks.value.length) {
+            blocks.value[blockIndex] = {
+                ...blocks.value[blockIndex],
+                ...blockData
+            }
+            // Пересчитываем коды мероприятий в обновленном блоке
+            updateEventCodes(blockIndex)
         }
-        
-        // Пересчитываем коды мероприятий в обновленном блоке
-        updateEventCodes(blockIndex)
+        toast.success('Блок мероприятий обновлен')
+    } else {
+        // Режим создания
+        addBlock(blockData)
+        toast.success('Блок мероприятий создан')
     }
-    
-    closeEditModal()
+    closeModals()
 }
 
 // Работа с модальным окном создания мероприятия
@@ -447,6 +383,7 @@ function openEditEventModal(blockId, eventIndex) {
         selectedEndYear.value = nowYear
     }
 }
+
 </script>
 
 <style scoped lang="scss">
@@ -468,6 +405,19 @@ function openEditEventModal(blockId, eventIndex) {
 .button-create:hover {
     background-color: var(--color-hover-background, #f8f9fa);
     border-color: var(--bs-border-color, #ced4da);
+}
+
+.category-badge {
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+}
+
+.subcategory-badge {
+    white-space: nowrap;
+    display: inline-block;
 }
 
 </style>
