@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
@@ -107,12 +107,43 @@ const loadCategories = async () => {
 const availableSubcategories = computed(() => {
     if (!formData.value.categoryId) return []
     const category = categories.value.find(cat => cat.id === formData.value.categoryId)
-    return category?.subcategories || []
+    const subcategories = category?.subcategories || []
+    console.log('Available subcategories computed:', subcategories)
+    return subcategories
+})
+
+// Функция для восстановления подкатегории
+const restoreSubcategory = () => {
+    if (props.isEditMode && props.blockData && formData.value.categoryId) {
+        const savedSubcategoryId = props.blockData.subcategoryId || props.blockData.subcategory || ''
+        console.log('Trying to restore subcategory:', savedSubcategoryId)
+        console.log('Available subcategories:', availableSubcategories.value)
+        
+        if (savedSubcategoryId && availableSubcategories.value.some(sub => sub.id === savedSubcategoryId)) {
+            console.log('Found matching subcategory, setting it')
+            formData.value.subcategoryId = savedSubcategoryId
+            return true
+        }
+    }
+    return false
+}
+
+// Следим за изменением доступных подкатегорий и восстанавливаем выбор при редактировании
+watch(() => availableSubcategories.value, (newSubcategories) => {
+    if (newSubcategories.length > 0) {
+        nextTick(() => {
+            restoreSubcategory()
+        })
+    }
 })
 
 // Следим за изменением категории и сбрасываем подкатегорию
-watch(() => formData.value.categoryId, () => {
-    formData.value.subcategoryId = ''
+watch(() => formData.value.categoryId, (newCategoryId, oldCategoryId) => {
+    // Сбрасываем подкатегорию только если категория действительно изменилась
+    // и мы не в режиме инициализации при редактировании
+    if (newCategoryId !== oldCategoryId && oldCategoryId !== undefined) {
+        formData.value.subcategoryId = ''
+    }
 })
 
 // Инициализация формы при открытии модального окна
@@ -121,12 +152,21 @@ watch(() => props.isOpen, (isOpen) => {
         if (props.isEditMode && props.blockData) {
             // Режим редактирования
             const match = props.blockData.title?.match(/^(.+?)\.\s*(.+)$/)
+            const categoryId = props.blockData.categoryId || props.blockData.category || ''
+            const subcategoryId = props.blockData.subcategoryId || props.blockData.subcategory || ''
+            
+            console.log('Edit mode - blockData:', props.blockData)
+            console.log('Edit mode - categoryId:', categoryId)
+            console.log('Edit mode - subcategoryId:', subcategoryId)
+            
             formData.value = {
                 code: match ? match[1] : '',
                 title: match ? match[2] : props.blockData.title || '',
-                categoryId: props.blockData.categoryId || '',
-                subcategoryId: props.blockData.subcategoryId || ''
+                categoryId: categoryId,
+                subcategoryId: subcategoryId
             }
+            
+            console.log('Edit mode - formData after init:', formData.value)
         } else {
             // Режим создания
             formData.value = {
@@ -136,6 +176,21 @@ watch(() => props.isOpen, (isOpen) => {
                 subcategoryId: ''
             }
         }
+    }
+})
+
+// Следим за загрузкой категорий и восстанавливаем подкатегорию при редактировании
+watch(() => categories.value.length, (newLength) => {
+    if (newLength > 0 && props.isEditMode && props.blockData && formData.value.categoryId) {
+        console.log('Categories loaded, trying to restore subcategory')
+        nextTick(() => {
+            if (!restoreSubcategory()) {
+                // Если не удалось восстановить сразу, пробуем через небольшую задержку
+                setTimeout(() => {
+                    restoreSubcategory()
+                }, 100)
+            }
+        })
     }
 })
 
@@ -154,6 +209,7 @@ const saveBlock = () => {
 
     const blockData = {
         title: `${formData.value.code.trim()}. ${formData.value.title.trim()}`,
+        description: '',
         categoryId: formData.value.categoryId,
         categoryName: selectedCategory?.name || '',
         subcategoryId: formData.value.subcategoryId || null,

@@ -19,6 +19,14 @@
                 </div>
             </div>
 
+            <div v-else-if="isLoading" class="card p-4 text-center">
+                <div class="d-flex flex-column align-items-center justify-content-center my-2">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <h5 class="mb-1">Загрузка данных...</h5>
+                </div>
+            </div>
             <div v-else class="card p-4 text-center">
                 <div class="d-flex flex-column align-items-center justify-content-center my-2">
                     <Inbox :size="48" class="mb-2" />
@@ -32,21 +40,21 @@
                 <div class="d-flex justify-content-between mb-2">
                     <div class="flex-grow-1">
                         <h5 class="mb-0">{{ block.title }}</h5>
-                        <div v-if="block.categoryName" class="text-muted small mt-1">
+                        <div v-if="block.category_name" class="text-muted small mt-1">
                             <div class="mb-0">
                                 <span 
                                     class="badge bg-primary category-badge" 
-                                    :title="block.categoryName"
+                                    :title="block.category_name"
                                 >
-                                    {{ block.categoryName }}
+                                    {{ block.category_name }}
                                 </span>
                             </div>
-                            <div v-if="block.subcategoryName" class="mt-1">
+                            <div v-if="block.subcategory_name" class="mt-1">
                                 <span 
                                     class="badge bg-secondary subcategory-badge" 
-                                    :title="block.subcategoryName"
+                                    :title="block.subcategory_name"
                                 >
-                                    {{ block.subcategoryName }}
+                                    {{ block.subcategory_name }}
                                 </span>
                             </div>
                         </div>
@@ -82,7 +90,7 @@
                                 <td>{{ event.code || '—' }}</td>
                                 <td>{{ event.name || '—' }}</td>
                                 <td>{{ event.results || '—' }}</td>
-                                <td>{{ event.years || '—' }}</td>
+                                <td>{{ event.years_display || '—' }}</td>
                                 <td class="text-end p-2">
                                     <div class="d-flex gap-2 justify-content-end align-items-center h-100">
                                         <button class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" @click="openEditEventModal(block.id, eIndex)" aria-label="Редактировать" title="Редактировать">
@@ -120,6 +128,11 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label class="form-label">Код мероприятия</label>
+                        <input v-model="generatedEventCode" type="text" class="form-control" readonly />
+                        <div class="form-text">Код генерируется автоматически на основе кода блока</div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Наименование мероприятия</label>
                         <input v-model="newEventName" type="text" class="form-control" placeholder="Название мероприятия" />
                     </div>
@@ -155,7 +168,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { Home, Target, Wrench, Inbox, Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
@@ -169,13 +182,11 @@ const breadcrumbItems = ref([
     { label: 'Программа развития БГТУ', icon: Target }
 ])
 
-let nextBlockId = 1
-let nextEventId = 1
-
 const blocks = ref([])
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const editingBlockData = ref({})
+const isLoading = ref(false)
 
 // Состояние модального окна создания мероприятия
 const isCreateEventModalOpen = ref(false)
@@ -186,6 +197,7 @@ const newEventName = ref('')
 const newEventResults = ref('')
 const selectedStartYear = ref(new Date().getFullYear())
 const selectedEndYear = ref(new Date().getFullYear())
+const generatedEventCode = ref('')
 const yearsOptions = computed(() => {
     const start = new Date().getFullYear()
     const end = start + 10
@@ -196,52 +208,114 @@ const yearsOptions = computed(() => {
 
 const toast = useToast()
 
-function addBlock(blockData) {
-    blocks.value.push({
-        id: nextBlockId++,
-        ...blockData,
-        events: []
-    })
+// Загрузка данных при монтировании компонента
+onMounted(async () => {
+    await loadBlocks()
+})
+
+// Загрузка блоков мероприятий с сервера
+async function loadBlocks() {
+    isLoading.value = true
+    try {
+        // Попробуем загрузить блоки мероприятий
+        const url = endpoints.project_ed.event_blocks.list
+        const response = await apiClient.get(url)
+        blocks.value = response.data || []
+    } catch (error) {
+        // Временно показываем пустой массив, чтобы страница загрузилась
+        blocks.value = []
+        
+        if (error.response?.status === 404) {
+            toast.error('API эндпоинт не найден. Эндпоинт: ' + url)
+        } else if (error.response?.status === 500) {
+            toast.error('Ошибка сервера. Проверьте логи API.')
+        } else if (error.response?.status === 403) {
+            toast.error('Нет доступа к API. Проверьте авторизацию.')
+        } else {
+            toast.error(`Ошибка загрузки данных: ${error.response?.data?.detail || error.message}`)
+        }
+    } finally {
+        isLoading.value = false
+    }
 }
 
+// Создание блока мероприятий
+async function addBlock(blockData) {
+    try {
+        // Подготавливаем данные для API
+        const apiData = {
+            title: blockData.title,
+            description: blockData.description || '',
+            category: blockData.categoryId || null,
+            subcategory: blockData.subcategoryId || null
+        }
+        
+        const response = await apiClient.post(endpoints.project_ed.event_blocks.create, apiData)
+        blocks.value.push(response.data)
+        toast.success('Блок мероприятий создан')
+    } catch (error) {
+        toast.error('Ошибка создания блока')
+    }
+}
+
+// Редактирование блока мероприятий
 function editBlock(index) {
     const block = blocks.value[index]
-    editingBlockData.value = { ...block, index }
+    editingBlockData.value = { 
+        ...block, 
+        index,
+        categoryId: block.category || null,
+        subcategoryId: block.subcategory || null
+    }
     isEditModalOpen.value = true
 }
 
-function removeBlock(index) {
-    blocks.value.splice(index, 1)
-    // Пересчитываем коды мероприятий во всех блоках после удаления блока
-    blocks.value.forEach((_, blockIndex) => {
-        updateEventCodes(blockIndex)
-    })
+// Удаление блока мероприятий
+async function removeBlock(index) {
+    const block = blocks.value[index]
+    if (!block.id) {
+        blocks.value.splice(index, 1)
+        return
+    }
+
+    try {
+        await apiClient.delete(endpoints.project_ed.event_blocks.delete(block.id))
+        blocks.value.splice(index, 1)
+        toast.success('Блок мероприятий удален')
+    } catch (error) {
+        toast.error('Ошибка удаления блока')
+    }
 }
 
-// Удалена функция addEvent — создание происходит через модальное окно
-
-function removeEvent(blockIndex, eventIndex) {
-    blocks.value[blockIndex].events.splice(eventIndex, 1)
-    // Пересчитываем коды мероприятий после удаления
-    updateEventCodes(blockIndex)
-}
-
-// Функция для обновления кодов мероприятий в блоке
-function updateEventCodes(blockIndex) {
+// Удаление мероприятия
+async function removeEvent(blockIndex, eventIndex) {
     const block = blocks.value[blockIndex]
-    const blockCode = block.title.match(/^(.+?)\./)?.[1] || 'МП1'
+    const event = block.events[eventIndex]
     
-    block.events.forEach((event, index) => {
-        event.code = `${blockCode}.${index + 1}`
-    })
+    if (!event.id) {
+        block.events.splice(eventIndex, 1)
+        return
+    }
+
+    try {
+        await apiClient.delete(endpoints.project_ed.events.delete(event.id))
+        
+        // Удаляем мероприятие из локального состояния
+        block.events.splice(eventIndex, 1)
+        
+        // Перезагружаем данные для синхронизации с сервером
+        await loadBlocks()
+        
+        toast.success('Мероприятие удалено')
+    } catch (error) {
+        toast.error('Ошибка удаления мероприятия')
+    }
 }
 
 // Обертки для работы по id с учетом сортировки
 function findBlockIndexById(blockId) {
     return blocks.value.findIndex(b => b.id === blockId)
 }
-
-// Удалена функция addEventById — создание происходит через модальное окно
 
 function removeEventById(blockId, eventIndex) {
     const index = findBlockIndexById(blockId)
@@ -255,10 +329,10 @@ function editBlockById(blockId) {
     editBlock(index)
 }
 
-function removeBlockById(blockId) {
+async function removeBlockById(blockId) {
     const index = findBlockIndexById(blockId)
     if (index === -1) return
-    removeBlock(index)
+    await removeBlock(index)
 }
 
 function openCreateModal() {
@@ -271,25 +345,66 @@ function closeModals() {
     editingBlockData.value = {}
 }
 
-function handleBlockSave(blockData) {
+async function handleBlockSave(blockData) {
     if (isEditModalOpen.value) {
         // Режим редактирования
         const blockIndex = editingBlockData.value.index
-        if (blockIndex >= 0 && blockIndex < blocks.value.length) {
-            blocks.value[blockIndex] = {
-                ...blocks.value[blockIndex],
-                ...blockData
+        const block = blocks.value[blockIndex]
+        
+        if (blockIndex >= 0 && blockIndex < blocks.value.length && block.id) {
+            try {
+                // Подготавливаем данные для API
+                const apiData = {
+                    title: blockData.title,
+                    description: blockData.description || '',
+                    category: blockData.categoryId || null,
+                    subcategory: blockData.subcategoryId || null
+                }
+                
+                const response = await apiClient.patch(endpoints.project_ed.event_blocks.patch(block.id), apiData)
+                blocks.value[blockIndex] = response.data
+                toast.success('Блок мероприятий обновлен')
+            } catch (error) {
+                toast.error('Ошибка обновления блока')
+                return
             }
-            // Пересчитываем коды мероприятий в обновленном блоке
-            updateEventCodes(blockIndex)
         }
-        toast.success('Блок мероприятий обновлен')
     } else {
         // Режим создания
-        addBlock(blockData)
-        toast.success('Блок мероприятий создан')
+        await addBlock(blockData)
     }
     closeModals()
+}
+
+// Генерация кода мероприятия на основе кода блока
+function generateEventCode(blockId) {
+    const blockIndex = findBlockIndexById(blockId)
+    if (blockIndex === -1) return ''
+    
+    const block = blocks.value[blockIndex]
+    // Извлекаем код блока из названия (например, "МП1. Название блока" -> "МП1")
+    const blockCodeMatch = block.title?.match(/^([^.]+)\./)
+    if (!blockCodeMatch) return ''
+    
+    const blockCode = blockCodeMatch[1]
+    const existingEvents = block.events || []
+    
+    // Находим максимальный номер мероприятия в блоке
+    let maxNumber = 0
+    existingEvents.forEach(event => {
+        if (event.code) {
+            const eventCodeMatch = event.code.match(new RegExp(`^${blockCode}\\.(\\d+)$`))
+            if (eventCodeMatch) {
+                const number = parseInt(eventCodeMatch[1], 10)
+                if (number > maxNumber) {
+                    maxNumber = number
+                }
+            }
+        }
+    })
+    
+    // Возвращаем следующий номер
+    return `${blockCode}.${maxNumber + 1}`
 }
 
 // Работа с модальным окном создания мероприятия
@@ -303,6 +418,9 @@ function openCreateEventModal(blockId) {
     const nowYear = new Date().getFullYear()
     selectedStartYear.value = nowYear
     selectedEndYear.value = nowYear
+    
+    // Генерируем код мероприятия
+    generatedEventCode.value = generateEventCode(blockId)
 }
 
 function closeCreateEventModal() {
@@ -312,9 +430,10 @@ function closeCreateEventModal() {
     editingEventIndex.value = -1
     newEventName.value = ''
     newEventResults.value = ''
+    generatedEventCode.value = ''
 }
 
-function createEventFromModal() {
+async function createEventFromModal() {
     const blockIndex = findBlockIndexById(creatingForBlockId.value)
     if (blockIndex === -1) {
         toast.error('Не найден блок для создания мероприятия')
@@ -330,33 +449,45 @@ function createEventFromModal() {
     }
 
     const block = blocks.value[blockIndex]
-    const yearsLabel = `${selectedStartYear.value}–${selectedEndYear.value}`
-
-    if (isEditEventMode.value && editingEventIndex.value > -1) {
-        const event = block.events[editingEventIndex.value]
-        if (!event) {
-            toast.error('Не найдено мероприятие для редактирования')
-            return
-        }
-        event.name = newEventName.value.trim()
-        event.results = newEventResults.value.trim()
-        event.years = yearsLabel
-        toast.success('Мероприятие обновлено')
-    } else {
-        const blockCode = block.title.match(/^(.+?)\./)?.[1] || 'МП1'
-        const eventNumber = block.events.length + 1
-        const eventCode = `${blockCode}.${eventNumber}`
-
-        blocks.value[blockIndex].events.push({
-            id: nextEventId++,
-            code: eventCode,
-            name: newEventName.value.trim(),
-            results: newEventResults.value.trim(),
-            years: yearsLabel
-        })
-        toast.success('Мероприятие создано')
+    
+    const eventData = {
+        block: block.id,
+        code: generatedEventCode.value,
+        name: newEventName.value.trim(),
+        results: newEventResults.value.trim(),
+        start_year: selectedStartYear.value,
+        end_year: selectedEndYear.value
     }
-    closeCreateEventModal()
+
+    try {
+        if (isEditEventMode.value && editingEventIndex.value > -1) {
+            // Режим редактирования
+            const event = block.events[editingEventIndex.value]
+            if (!event || !event.id) {
+                toast.error('Не найдено мероприятие для редактирования')
+                return
+            }
+            
+            // При редактировании сохраняем существующий код или генерируем новый, если его нет
+            if (!event.code) {
+                eventData.code = generateEventCode(creatingForBlockId.value)
+            } else {
+                eventData.code = event.code
+            }
+            
+            const response = await apiClient.patch(endpoints.project_ed.events.patch(event.id), eventData)
+            block.events[editingEventIndex.value] = response.data
+            toast.success('Мероприятие обновлено')
+        } else {
+            // Режим создания
+            const response = await apiClient.post(endpoints.project_ed.events.create, eventData)
+            block.events.push(response.data)
+            toast.success('Мероприятие создано')
+        }
+        closeCreateEventModal()
+    } catch (error) {
+        toast.error('Ошибка сохранения мероприятия')
+    }
 }
 
 function openEditEventModal(blockId, eventIndex) {
@@ -372,12 +503,13 @@ function openEditEventModal(blockId, eventIndex) {
 
     newEventName.value = event.name || ''
     newEventResults.value = event.results || ''
+    generatedEventCode.value = event.code || ''
 
-    const yearsMatch = (event.years || '').match(/^(\d{4})\D+(\d{4})$/)
+    // Используем start_year и end_year из API
     const nowYear = new Date().getFullYear()
-    if (yearsMatch) {
-        selectedStartYear.value = parseInt(yearsMatch[1])
-        selectedEndYear.value = parseInt(yearsMatch[2])
+    if (event.start_year && event.end_year) {
+        selectedStartYear.value = event.start_year
+        selectedEndYear.value = event.end_year
     } else {
         selectedStartYear.value = nowYear
         selectedEndYear.value = nowYear
