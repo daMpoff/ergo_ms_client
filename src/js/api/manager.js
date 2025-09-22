@@ -1,5 +1,6 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
+import tokenService from '@/modules/cms/js/tokenService'
 
 // Класс для работы с API
 class ApiClient {
@@ -14,31 +15,39 @@ class ApiClient {
             },
         });
 
-        // Добавляем перехватчик ответов для автоматического logout при истечении токена
+        // Интерцептор запросов: тихий refresh перед отправкой, если срок на исходе
+        this.client.interceptors.request.use(async (config) => {
+            if (tokenService.shouldRefresh()) {
+                try { await tokenService.tryRefresh() } catch (_) { /* игнор, дадим серверу ответить 401 */ }
+            }
+            return config
+        })
+
+        // Интерцептор ответов: одноразовый silent refresh при 401 и повтор
         this.client.interceptors.response.use(
-            (response) => {
-                // Возвращаем успешные ответы как есть
-                return response;
-            },
-            (error) => {
-                // Проверяем, является ли ошибка 401 (Unauthorized)
-                if (error.response?.status === 401) {
-                    // Очищаем токены и данные пользователя
-                    this.logout();
-                    
-                    // Перенаправляем на стартовую страницу
-                    if (typeof window !== 'undefined' && window.location) {
-                        // Проверяем, не находимся ли мы уже на стартовой странице
-                        if (!window.location.pathname.includes('/start') && !window.location.pathname.includes('/login')) {
-                            window.location.href = '/start';
+            (response) => response,
+            async (error) => {
+                const originalRequest = error.config
+                if (error.response?.status === 401 && !originalRequest?._retry) {
+                    originalRequest._retry = true
+                    try {
+                        await tokenService.tryRefresh()
+                        // проставим новый Authorization и повторим запрос
+                        this._addAuthToken(originalRequest)
+                        return this.client(originalRequest)
+                    } catch (e) {
+                        // падение refresh — выполняем logout и редирект
+                        this.logout()
+                        if (typeof window !== 'undefined' && window.location) {
+                            if (!window.location.pathname.includes('/start') && !window.location.pathname.includes('/login')) {
+                                window.location.href = '/start'
+                            }
                         }
                     }
                 }
-                
-                // Возвращаем ошибку для дальнейшей обработки
-                return Promise.reject(error);
+                return Promise.reject(error)
             }
-        );
+        )
     }
 
     // Основные методы запросов
@@ -206,7 +215,7 @@ class ApiClient {
 
     // Вспомогательный метод для добавления токена авторизации в конфигурацию
     _addAuthToken(config) {
-        const token = Cookies.get('token');
+        const token = tokenService.getAccess();
         console.log('Токен из cookies:', token ? 'есть' : 'отсутствует');
         if (token) {
             if (!config.headers) {

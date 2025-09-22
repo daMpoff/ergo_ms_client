@@ -1,5 +1,6 @@
 import { authService } from '@/modules/cms/adp/js/auth'
 import Cookies from 'js-cookie'
+import tokenService from '@/modules/cms/js/tokenService'
 
 /**
  * Утилита для управления аутентификацией и автоматического logout
@@ -14,7 +15,7 @@ export class AuthGuard {
    * Запускает периодическую проверку токена
    * @param {number} intervalMs Интервал проверки в миллисекундах (по умолчанию 5 минут)
    */
-  startTokenValidation(intervalMs = 5 * 60 * 1000) {
+  startTokenValidation(intervalMs = 60 * 1000) {
     // Останавливаем предыдущий интервал если он был
     this.stopTokenValidation()
 
@@ -44,7 +45,7 @@ export class AuthGuard {
       return // Предотвращаем множественные одновременные проверки
     }
 
-    const token = Cookies.get('token')
+    const token = tokenService.getAccess()
     if (!token) {
       return // Если токена нет, проверка не нужна
     }
@@ -52,12 +53,14 @@ export class AuthGuard {
     this.isCheckingToken = true
 
     try {
-      const isValid = await authService.checkToken()
-      
-      if (!isValid) {
-        console.warn('Токен недействителен. Выполняется автоматический logout.')
-        this.forceLogout()
+      // Сначала локально: если срок на исходе — пробуем тихий refresh
+      if (tokenService.shouldRefresh(90)) {
+        try { await tokenService.tryRefresh(); return } catch (_) { /* пойдём к серверной проверке */ }
       }
+
+      // Опционально валидация на сервере
+      const isValid = await authService.checkToken()
+      if (!isValid) this.forceLogout()
     } catch (error) {
       console.error('Ошибка при проверке токена:', error)
       // При ошибке проверки также выполняем logout

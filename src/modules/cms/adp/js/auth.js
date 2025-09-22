@@ -1,8 +1,7 @@
 import { apiClient } from '../../../../js/api/manager';
 import { endpoints } from '../../../../js/api/endpoints';
 import Cookies from 'js-cookie';
-
-const thirtyMinutesInDays = 30 / (24 * 60);
+import tokenService from '@/modules/cms/js/tokenService'
 
 export const authService = {
     async login(username, password) {
@@ -12,9 +11,8 @@ export const authService = {
         }, false);
         
         if (response.success) {
-            Cookies.set('token', response.data.access, { expires: thirtyMinutesInDays });
-            Cookies.set('refresh', response.data.refresh, { expires: thirtyMinutesInDays });
-            Cookies.set('userId', response.data.user_id, { expires: thirtyMinutesInDays }); 
+            tokenService.setTokens(response.data.access, response.data.refresh)
+            Cookies.set('userId', response.data.user_id)
 
             // Запускаем проверку токена после успешной авторизации
             if (typeof window !== 'undefined') {
@@ -74,8 +72,7 @@ export const authService = {
     },
     
     logout() {
-        Cookies.remove('token');
-        Cookies.remove('refresh');
+        tokenService.clear()
         Cookies.remove('userId'); 
         
         // Останавливаем проверку токена
