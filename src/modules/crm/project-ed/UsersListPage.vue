@@ -47,14 +47,19 @@
                                         <td class="text-muted">{{ idx + 1 }}</td>
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <img :src="u.avatar_url || placeholderAvatar" alt="avatar" class="rounded-circle align-middle me-2" style="width:28px;height:28px;object-fit:cover;" />
+                                                <template v-if="u.avatar_url">
+                                                    <img :src="u.avatar_url" alt="avatar" class="rounded-circle align-middle me-2" style="width:28px;height:28px;object-fit:cover;" />
+                                                </template>
+                                                <template v-else>
+                                                    <DefaultAvatar size="small" class="me-2" style="width:28px;height:28px;border-width:0;" />
+                                                </template>
                                                 <span class="align-middle">{{ fullName(u) }}</span>
                                             </div>
                                         </td>
-                                        <td>{{ u.role || '—' }}</td>
-                                        <td>{{ u.position || '—' }}</td>
-                                        <td>{{ u.faculty || '—' }}</td>
-                                        <td>{{ u.department || '—' }}</td>
+                                        <td>{{ u.role || 'N/A' }}</td>
+                                        <td>{{ u.position || 'N/A' }}</td>
+                                        <td>{{ u.faculty || 'N/A' }}</td>
+                                        <td>{{ u.department || 'N/A' }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -133,7 +138,7 @@ import { Home, Users, Wrench, Search, RefreshCw } from 'lucide-vue-next'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 import { apiClient } from '@/js/api/manager'
 import { useToast } from 'vue-toastification'
-import placeholderAvatar from '@/assets/placeholder.svg'
+import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const breadcrumbItems = ref([
     { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
