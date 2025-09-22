@@ -69,25 +69,21 @@ router.beforeEach(async (to, from, next) => {
 
     // 2) requiresAdmin для страниц
     if (to.meta && to.meta.requiresAdmin) {
-      const { authService } = await import('@/modules/cms/adp/js/authService')
-      let isAdmin = await authService.isAdmin()
-
-      // Доп. проверка: администратор ProjectEd (роль "Администратор" в профиле ProjectEd)
-      if (!isAdmin) {
-        try {
-          const currentUser = await authService.getCurrentUser()
-          if (currentUser && currentUser.id) {
-            const { apiClient } = await import('./api/manager')
-            const resp = await apiClient.get('/project_ed/user-profiles/', { user: currentUser.id })
-            const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
-            const hasProjectEdAdmin = data.some(p => (p?.role_ref_name === 'Администратор') || (p?.role_name === 'Администратор') || (p?.role === 'Администратор') || (p?.role_ref?.name === 'Администратор'))
-            if (hasProjectEdAdmin) {
-              isAdmin = true
-            }
-          }
-        } catch (e) {
-          // игнорируем, пойдём по обычной логике редиректа
+      // Проверяем только ProjectEd-админа (без LMS и без auth сервисов)
+      let isAdmin = false
+      try {
+        const { useUserStore } = await import('@/modules/cms/js/userStore.js')
+        const userStore = useUserStore()
+        const uid = userStore.user?.id
+        if (uid) {
+          const { apiClient } = await import('./api/manager')
+          const resp = await apiClient.get('/project_ed/user-profiles/', { params: { user: uid } })
+          const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+          const hasProjectEdAdmin = data.some(p => (p?.role_ref_name === 'Администратор') || (p?.role_name === 'Администратор') || (p?.role === 'Администратор') || (p?.role_ref?.name === 'Администратор'))
+          if (hasProjectEdAdmin) isAdmin = true
         }
+      } catch (e) {
+        // игнорируем, редирект ниже
       }
 
       if (!isAdmin) {

@@ -8,7 +8,7 @@
                 </div>
                 <div class="user-meta">
                     <div class="user-name">{{ userFullName }}</div>
-                    <div class="user-email text-muted">{{ userEmail }}</div>
+                    <div class="user-email text-muted">{{ userRole }}</div>
                 </div>
             </div>
             <div class="menu-list">
@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed, ref, onMounted } from 'vue'
+import { defineProps, defineEmits, computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserRound, Settings, LogOut, Wrench } from 'lucide-vue-next'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
@@ -70,33 +70,43 @@ const userFullName = computed(() => {
     return 'Гость'
 })
 
-const userEmail = computed(() => userStore.user?.email || '')
+const userRole = ref('Роль не определена')
 const avatarUrl = computed(() => userStore.avatarUrl)
 
 // Админские права (унифицированная проверка)
 const isAdmin = ref(false)
 
-onMounted(async () => {
+async function loadRole(userId) {
+    let admin = false
     try {
-        let admin = await authService.isAdmin()
-        if (!admin) {
-            const currentUser = await authService.getCurrentUser()
-            if (currentUser && currentUser.id) {
-                try {
-                    const resp = await apiClient.get('/project_ed/user-profiles/', { user: currentUser.id })
-                    const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
-                    const hasProjectEdAdmin = data.some(p => (p?.role_ref_name === 'Администратор') || (p?.role_name === 'Администратор') || (p?.role === 'Администратор') || (p?.role_ref?.name === 'Администратор'))
-                    if (hasProjectEdAdmin) admin = true
-                } catch (e) {
-                    // игнорируем ошибки запроса, оставим admin как есть
-                }
-            }
+        const resp = await apiClient.get('/project_ed/user-profiles/', { params: { user: userId } })
+        const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+        if (data && data.length > 0) {
+            const p = data[0]
+            const rn = p?.role_ref_name || p?.role_name || p?.role_ref?.name || p?.role
+            userRole.value = rn && rn.trim() ? rn : 'Роль не определена'
+            admin = (rn === 'Администратор') || (p?.role_ref?.name === 'Администратор') || (p?.role_name === 'Администратор')
+        } else {
+            userRole.value = 'Роль не определена'
         }
-        isAdmin.value = admin
     } catch (e) {
-        isAdmin.value = false
+        userRole.value = 'Роль не определена'
+    }
+    isAdmin.value = admin
+}
+
+onMounted(async () => {
+    const uid = userStore.user?.id
+    if (uid) {
+        await loadRole(uid)
     }
 })
+
+watch(() => userStore.user?.id, async (newId, oldId) => {
+    if (newId && newId !== oldId) {
+        await loadRole(newId)
+    }
+}, { immediate: false })
 
 function goToServicePage() {
     router.push({ name: 'ProjectEdTechnical' })
