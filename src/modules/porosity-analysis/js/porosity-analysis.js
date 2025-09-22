@@ -58,6 +58,14 @@ class PorosityAnalysisAPI {
   }
 
   /**
+   * Массовое удаление анализов
+   */
+  async deleteMultipleAnalyses(params) {
+    // params: { analysis_ids?: number[], input?: string }
+    return await apiClient.post(`${this.baseEndpoint}delete_multiple/`, params)
+  }
+
+  /**
    * Загрузить изображение для анализа
    */
   async uploadImage(analysisId, imageFile) {

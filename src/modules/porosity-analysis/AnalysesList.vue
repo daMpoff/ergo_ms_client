@@ -28,13 +28,27 @@
       @cancel="cancelDeleteAnalysis"
       @close="cancelDeleteAnalysis"
     />
+
+    <!-- Модальное окно подтверждения массового удаления -->
+    <ConfirmDialog
+      :show="showBulkDeleteConfirm"
+      title="Массовое удаление анализов"
+      :message="bulkDeleteMessage"
+      confirm-text="Удалить выбранные"
+      cancel-text="Отмена"
+      variant="danger"
+      :loading="bulkDeleting"
+      @confirm="confirmBulkDelete"
+      @cancel="cancelBulkDelete"
+      @close="cancelBulkDelete"
+    />
     
     <div class="row">
       <div class="col-12">
             <!-- Фильтры и поиск (как в видео-аналитике) -->
             <div class="filters-card mb-3">
               <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-3 align-items-end">
                   <div class="col-md-4">
                     <label class="form-label">
                       <Search :size="16" />
@@ -47,27 +61,62 @@
                       placeholder="Название или описание анализа..."
                     />
                   </div>
-                  <div class="col-md-3">
-                    <label class="form-label">Сортировка</label>
-                    <select v-model="ordering" class="form-select">
-                      <option value="-created_at">По дате создания ↓</option>
-                      <option value="created_at">По дате создания ↑</option>
-                      <option value="name">По названию ↑</option>
-                      <option value="-name">По названию ↓</option>
-                      <option value="status">По статусу</option>
+                  <div class="col-auto">
+                    <label ref="statusLabel" class="form-label">Статус</label>
+                    <select 
+                      ref="statusSelect"
+                      v-model="currentFilter" 
+                      class="form-select w-auto d-inline-block" 
+                      :style="{ minWidth: statusMinWidth }"
+                      @change="changePage(1)"
+                    >
+                      <option value="all">Все</option>
+                      <option value="pending">Ожидает</option>
+                      <option value="processing">Обрабатывается</option>
+                      <option value="completed">Завершен</option>
+                      <option value="failed">Ошибка</option>
                     </select>
                   </div>
-                  <div class="col-md-3">
-                    <label class="form-label">На странице</label>
-                    <select v-model.number="pagination.page_size" class="form-select" @change="changePage(1)">
+                  <div class="col-auto">
+                    <label ref="orderingLabel" class="form-label">Сортировка</label>
+                    <select 
+                      ref="orderingSelect"
+                      v-model="ordering" 
+                      class="form-select w-auto d-inline-block"
+                      :style="{ minWidth: orderingMinWidth }"
+                    >
+                      <option value="-created_at">По дате создания ↓</option>
+                      <option value="created_at">По дате создания ↑</option>
+                      <option value="-start_time">По дате запуска ↓</option>
+                      <option value="start_time">По дате запуска ↑</option>
+                      <option value="name">По названию ↑</option>
+                      <option value="-name">По названию ↓</option>
+                      <option value="status">По статусу ↑</option>
+                      <option value="-status">По статусу ↓</option>
+                    </select>
+                  </div>
+                  <div class="col-auto">
+                    <label ref="pageSizeLabel" class="form-label">На странице</label>
+                    <select 
+                      ref="pageSizeSelect"
+                      v-model.number="pagination.page_size" 
+                      class="form-select w-auto d-inline-block" 
+                      :style="{ minWidth: pageSizeMinWidth }"
+                      @change="changePage(1)"
+                    >
                       <option :value="5">5</option>
                       <option :value="10">10</option>
                       <option :value="20">20</option>
                       <option :value="50">50</option>
                     </select>
                   </div>
-                  <div class="col-md-2 d-grid align-self-end">
-                    <button class="btn btn-reset-filters" @click="resetFilters" title="Сбросить фильтры и обновить список">
+                  <div class="col align-self-end">
+                    <button 
+                      class="btn btn-reset-filters w-100" 
+                      :style="resetBtnStyle"
+                      @click="resetFilters" 
+                      title="Сбросить фильтры и обновить список"
+                    >
                       <RotateCcw :size="16" />
                     </button>
                   </div>
@@ -127,16 +176,62 @@
             </div>
             
             <div v-else>
+              <!-- Панель массовых действий -->
+              <div class="card mb-3 bulk-actions">
+                <div class="card-body">
+                  <div class="row g-3 align-items-center">
+                    <!-- Блок удаления по номерам -->
+                    <div class="col-12 col-md-6">
+                      <label class="form-label d-flex align-items-center gap-2 mb-2">
+                        <Search :size="16" />
+                        <span class="fw-bold">Удалить по номерам</span>
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-text d-inline-flex align-items-center">
+                          <FileText size="16" />
+                        </span>
+                        <input
+                          v-model.trim="bulkInput"
+                          type="text"
+                          class="form-control"
+                          placeholder="Например: 12-15, 18; 20"
+                          aria-label="Номера анализов"
+                        />
+                        <button
+                          class="btn btn-danger d-inline-flex align-items-center gap-1 lh-1"
+                          :disabled="!canBulkDeleteByInput || bulkDeleting"
+                          @click="requestBulkDeleteByInput"
+                        >
+                          <Trash2 size="16" />
+                          <span class="d-inline-flex align-items-center">Удалить</span>
+                        </button>
+                      </div>
+                      <div class="form-text text-muted mt-1">
+                        Указывайте номера через запятую, пробел или точку с запятой. Диапазоны — через тире (например: 12-15).
+                      </div>
+                    </div>
+
+                    <!-- Блок действий с выделением -->
+                    <div class="col-12 col-md-6">
+                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
+                        <button class="btn btn-danger d-inline-flex align-items-center" :disabled="selectedIds.length === 0 || bulkDeleting" @click="requestBulkDeleteSelected">
+                          <Trash2 class="me-1" size="16" /> Удалить выбранные ({{ selectedIds.length }})
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="row">
                 <div
                   v-for="analysis in paginatedAnalyses"
                   :key="analysis.id"
                   class="col-md-6 col-lg-4 mb-4"
                 >
-                  <div class="analysis-card">
+                  <div class="analysis-card" :class="{ selected: isSelected(analysis.id) }" @click="onCardClick(analysis.id, $event)">
                     <div class="analysis-header d-flex justify-content-between align-items-start" :class="getAnalysisHeaderClass(analysis.status)">
                       <div class="d-flex justify-content-between align-items-start w-100">
-                        <h6 class="card-title mb-0">{{ analysis.name }}</h6>
+                        <h6 class="card-title mb-0">{{ analysis.name || 'Анализ пористости' }}</h6>
                         <span :class="getStatusBadgeClass(analysis.status)">
                           <component :is="getStatusIcon(analysis.status)" class="me-1" size="14" />
                           {{ getStatusText(analysis.status) }}
@@ -150,20 +245,34 @@
                       
                       <div class="analysis-info">
                         <div class="info-row">
-                          <div class="info-item">
-                            <Calendar class="me-1" size="14" />
-                            <small class="text-muted">Создан:</small>
-                            <div>{{ formatDate(analysis.created_at) }}</div>
+                          <div class="info-col">
+                            <div class="info-item">
+                              <FileText class="me-1" size="14" />
+                              <small class="text-muted">Номер анализа:</small>
+                              <div>{{ analysis.id }}</div>
+                            </div>
+                            <div class="info-item">
+                              <Calendar class="me-1" size="14" />
+                              <small class="text-muted">Создан:</small>
+                              <div>&nbsp;{{ formatDate(analysis.created_at) }}</div>
+                            </div>
+                            <div class="info-item" v-if="analysis.start_time">
+                              <Clock class="me-1" size="14" />
+                              <small class="text-muted">Запущен:</small>
+                              <div>&nbsp;{{ formatDate(analysis.start_time) }}</div>
+                            </div>
                           </div>
-                          <div class="info-item" v-if="analysis.duration_human">
-                            <Clock class="me-1" size="14" />
-                            <small class="text-muted">Длительность:</small>
-                            <div>{{ analysis.duration_human }}</div>
-                          </div>
-                          <div class="info-item">
-                            <Ruler class="me-1" size="14" />
-                            <small class="text-muted">Шкала:</small>
-                            <div>{{ analysis.scale_value }} мкм</div>
+                          <div class="info-col">
+                            <div class="info-item">
+                              <Ruler class="me-1" size="14" />
+                              <small class="text-muted">Шкала:</small>
+                              <div>{{ analysis.scale_value }} мкм</div>
+                            </div>
+                            <div class="info-item" v-if="analysis.duration_human">
+                              <Clock class="me-1" size="14" />
+                              <small class="text-muted">Длительность:</small>
+                              <div>{{ analysis.duration_human }}</div>
+                            </div>
                           </div>
                         </div>
                         
@@ -401,6 +510,13 @@ export default {
       showDeleteConfirm: false,
       analysisToDelete: null,
       restartingMultiple: false,
+      // Массовое удаление
+      selectedIds: [],
+      bulkInput: '',
+      showBulkDeleteConfirm: false,
+      bulkDeleting: false,
+      bulkMode: 'selected',
+      bulkPreviewIds: [],
       // Данные для пагинации
       pagination: {
         current_page: 1,
@@ -415,7 +531,13 @@ export default {
         processing: 0,
         completed: 0,
         failed: 0
-      }
+      },
+      // Минимальная ширина для селектов (под заголовок)
+      statusMinWidth: 'auto',
+      orderingMinWidth: 'auto',
+      pageSizeMinWidth: 'auto',
+      // Размеры для кнопки сброса
+      resetBtnStyle: {}
     }
   },
   computed: {
@@ -441,16 +563,28 @@ export default {
       const ord = this.ordering || '-created_at'
       const sorted = [...list]
       const getDate = v => (v ? new Date(v).getTime() : 0)
+      const statusRank = {
+        pending: 1,
+        processing: 2,
+        completed: 3,
+        failed: 4
+      }
       if (ord === 'created_at') {
         sorted.sort((a, b) => getDate(a.created_at) - getDate(b.created_at))
       } else if (ord === '-created_at') {
         sorted.sort((a, b) => getDate(b.created_at) - getDate(a.created_at))
+      } else if (ord === 'start_time') {
+        sorted.sort((a, b) => getDate(a.start_time) - getDate(b.start_time))
+      } else if (ord === '-start_time') {
+        sorted.sort((a, b) => getDate(b.start_time) - getDate(a.start_time))
       } else if (ord === 'name') {
         sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
       } else if (ord === '-name') {
         sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''))
       } else if (ord === 'status') {
-        sorted.sort((a, b) => (a.status || '').localeCompare(b.status || ''))
+        sorted.sort((a, b) => (statusRank[a.status] || 0) - (statusRank[b.status] || 0))
+      } else if (ord === '-status') {
+        sorted.sort((a, b) => (statusRank[b.status] || 0) - (statusRank[a.status] || 0))
       }
       return sorted
     },
@@ -470,14 +604,6 @@ export default {
     
     failedAnalyses() {
       return this.analyses.filter(analysis => analysis.status === 'failed')
-    },
-    resetFilters() {
-      this.search = ''
-      this.ordering = '-created_at'
-      this.currentFilter = 'all'
-      if (this.pagination.current_page !== 1) {
-        this.loadAnalyses(1)
-      }
     },
     
     // Вычисляем видимые страницы для пагинации
@@ -509,15 +635,60 @@ export default {
         completed: this.stats.completed,
         failed: this.stats.failed
       }
+    },
+    canBulkDeleteByInput() {
+      return (this.bulkInput || '').trim().length > 0
+    },
+    bulkDeleteMessage() {
+      const ids = this.bulkPreviewIds || []
+      if (!ids.length) return 'Не указаны корректные номера анализов.'
+      return `Будут удалены ${ids.length} анализ(а/ов). Действие необратимо.`
     }
   },
   async mounted() {
-    await Promise.all([
-      this.loadAnalyses(),
-      this.loadStats()
-    ])
+    this.syncSelectMinWidths()
+    await Promise.all([ this.loadAnalyses(), this.loadStats() ])
   },
   methods: {
+    syncSelectMinWidths() {
+      // Вычисляем минимальную ширину селектов по ширине соответствующих label (+ небольшой отступ)
+      const pad = 16
+      const setMin = (labelRef, key) => {
+        const el = this.$refs[labelRef]
+        if (el && el instanceof HTMLElement) {
+          const width = Math.ceil(el.getBoundingClientRect().width) + pad
+          this[key] = `${width}px`
+        }
+      }
+      setMin('statusLabel', 'statusMinWidth')
+      setMin('orderingLabel', 'orderingMinWidth')
+      setMin('pageSizeLabel', 'pageSizeMinWidth')
+      // Подгоняем кнопку под высоту одного из селектов и ширину в 4 раза больше
+      this.$nextTick(() => {
+        const refSelect = this.$refs.pageSizeSelect || this.$refs.orderingSelect || this.$refs.statusSelect
+        if (refSelect && refSelect instanceof HTMLElement) {
+          const rect = refSelect.getBoundingClientRect()
+          const height = Math.ceil(rect.height)
+          const width = Math.ceil(rect.width) * 4
+          this.resetBtnStyle = {
+            height: `${height}px`
+          }
+        }
+      })
+    },
+    getDisplayName(analysis) {
+      // Больше не используем, оставлено для совместимости, возвращаем только имя
+      return (analysis && analysis.name) ? analysis.name : 'Анализ пористости'
+    },
+    resetFilters() {
+      this.search = ''
+      this.ordering = '-created_at'
+      this.currentFilter = 'all'
+      this.pagination.current_page = 1
+      // Перезагружаем список и статистику
+      this.loadAnalyses(1)
+      this.loadStats().catch(() => {})
+    },
     async loadStats() {
       try {
         const response = await porosityAnalysisAPI.getStatistics()
@@ -635,6 +806,128 @@ export default {
         this.loading = false
       }
     },
+    isSelected(id) {
+      return this.selectedIds.includes(id)
+    },
+    toggleSelect(id) {
+      const idx = this.selectedIds.indexOf(id)
+      if (idx === -1) this.selectedIds.push(id)
+      else this.selectedIds.splice(idx, 1)
+    },
+    onCardClick(id, event) {
+      // Не переключаем выделение при клике по интерактивным элементам внутри карточки
+      const interactiveSelectors = 'a, button, input, select, textarea, .dropdown-menu, .dropdown-toggle'
+      const target = event.target
+      if (target && (target.closest(interactiveSelectors))) {
+        return
+      }
+      this.toggleSelect(id)
+    },
+    selectAllOnPage() {
+      const pageIds = this.paginatedAnalyses.map(a => a.id)
+      const set = new Set(this.selectedIds)
+      pageIds.forEach(id => set.add(id))
+      this.selectedIds = Array.from(set)
+    },
+    clearSelection() {
+      this.selectedIds = []
+    },
+    parseIdsFromInput(text) {
+      if (!text) return []
+      const tokens = String(text).split(/[,;\s]+/).map(t => t.trim()).filter(Boolean)
+      const ids = []
+      for (const token of tokens) {
+        if (/^\d+$/.test(token)) {
+          ids.push(parseInt(token, 10))
+          continue
+        }
+        const m = token.match(/^(\d+)-(\d+)$/)
+        if (m) {
+          const start = parseInt(m[1], 10)
+          const end = parseInt(m[2], 10)
+          if (start <= end) {
+            for (let i = start; i <= end; i += 1) ids.push(i)
+          } else {
+            for (let i = start; i >= end; i -= 1) ids.push(i)
+          }
+          continue
+        }
+        // игнорируем некорректные токены, уведомим отдельно
+      }
+      return Array.from(new Set(ids)).sort((a, b) => a - b)
+    },
+    requestBulkDeleteSelected() {
+      if (this.selectedIds.length === 0) return
+      this.bulkMode = 'selected'
+      this.bulkPreviewIds = [...this.selectedIds]
+      this.showBulkDeleteConfirm = true
+    },
+    requestBulkDeleteByInput() {
+      const raw = String(this.bulkInput || '')
+      const tokens = raw.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean)
+      const ids = this.parseIdsFromInput(raw)
+      if (ids.length === 0) {
+        toast.warning('Укажите корректные номера анализов')
+        return
+      }
+      const validTokenRe = /^(\d+)|(\d+)-(\d+)$/
+      const invalid = tokens.filter(t => !validTokenRe.test(t))
+      if (invalid.length > 0) {
+        toast.warning(`Некорректные элементы: ${invalid.join(', ')}`)
+      }
+      // предупредим об отсутствующих в списке анализах
+      try {
+        const availableIds = new Set((this.analyses || []).map(a => a.id))
+        const missing = ids.filter(id => !availableIds.has(id))
+        if (missing.length > 0) {
+          toast.info(`Отсутствуют в списке: ${missing.join(', ')}`)
+        }
+      } catch {}
+      this.bulkMode = 'input'
+      this.bulkPreviewIds = ids
+      this.showBulkDeleteConfirm = true
+    },
+    async confirmBulkDelete() {
+      this.bulkDeleting = true
+      try {
+        let params = {}
+        if (this.bulkMode === 'selected') {
+          params = { analysis_ids: this.selectedIds }
+        } else {
+          params = { analysis_ids: this.bulkPreviewIds }
+        }
+        const response = await porosityAnalysisAPI.deleteMultipleAnalyses(params)
+        if (response && response.success) {
+          const payload = response.data || response
+          const deletedCount = payload.deleted_count || payload.deleted || 0
+          toast.success(`Удалено ${deletedCount} анализов`)
+          // Удаляем из локального списка
+          const deletedIds = new Set((payload.deleted_ids || []).concat(this.bulkPreviewIds))
+          this.analyses = this.analyses.filter(a => !deletedIds.has(a.id))
+          // Сначала закрываем модалку, затем очищаем стейты предпросмотра/выделения
+          this.showBulkDeleteConfirm = false
+          this.$nextTick(() => {
+            this.clearSelection()
+            this.bulkInput = ''
+            this.bulkPreviewIds = []
+          })
+          // Обновляем статистику и список в фоне
+          try { await this.loadStats() } catch {}
+          this.loadAnalyses(this.pagination.current_page).catch(() => {})
+        } else {
+          toast.error(response?.error || response?.message || 'Ошибка при массовом удалении')
+        }
+      } catch (error) {
+        const msg = error?.response?.data?.message || error?.message || 'Ошибка при массовом удалении'
+        toast.error(msg)
+      } finally {
+        this.bulkDeleting = false
+      }
+    },
+    cancelBulkDelete() {
+      this.showBulkDeleteConfirm = false
+      this.bulkPreviewIds = []
+    },
     
     // Метод для смены страницы
     async changePage(page) {
@@ -699,6 +992,7 @@ export default {
           const analysisIndex = this.analyses.findIndex(a => a.id === analysisId)
           if (analysisIndex !== -1) {
             this.analyses[analysisIndex].status = 'pending'
+            this.analyses[analysisIndex].start_time = new Date().toISOString()
             this.analyses[analysisIndex].updated_at = new Date().toISOString()
           }
           
@@ -743,10 +1037,11 @@ export default {
           toast.success(`Перезапущено ${response.restarted_count} анализов`)
           
           // Немедленно обновляем статусы анализов в списке
-          this.failedAnalyses.forEach(analysis => {
+            this.failedAnalyses.forEach(analysis => {
             const analysisIndex = this.analyses.findIndex(a => a.id === analysis.id)
             if (analysisIndex !== -1) {
               this.analyses[analysisIndex].status = 'pending'
+              this.analyses[analysisIndex].start_time = new Date().toISOString()
               this.analyses[analysisIndex].updated_at = new Date().toISOString()
             }
           })
@@ -999,7 +1294,8 @@ export default {
 .filters-card .form-control, .filters-card .form-select { border-radius: 8px; border-color: var(--bs-border-color); }
 .filters-card .form-control:focus, .filters-card .form-select:focus { border-color: var(--bs-primary); box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25); }
 .btn-reset-filters { display: flex; align-items: center; justify-content: center; width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; color: white; font-weight: 600; border-radius: 8px; transition: all 0.2s ease; }
-.btn-reset-filters:hover { background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4); }
+.btn-reset-filters { width: auto; padding: 0 0.625rem; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
+.btn-reset-filters:hover { background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(220, 53, 69, 0.35); }
 .btn-reset-filters:active { transform: translateY(0); }
 
 .filter-buttons {
@@ -1129,12 +1425,45 @@ export default {
   flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
+  position: relative;
 }
 
 .analysis-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   border-color: #007bff;
+}
+.analysis-card.selected {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220,53,69,0.25), 0 10px 24px rgba(220,53,69,0.15);
+  background: linear-gradient(180deg, rgba(220,53,69,0.06) 0%, rgba(220,53,69,0.03) 100%);
+  transform: translateY(-4px);
+}
+
+/* Курсор и hover для взаимодействия */
+.analysis-card { cursor: pointer; }
+/* Для интерактивных элементов внутри карточки показываем указатель */
+.analysis-card .action-buttons,
+.analysis-card .dropdown,
+.analysis-card a,
+.analysis-card button,
+.analysis-card .dropdown-menu .dropdown-item {
+  cursor: pointer;
+}
+
+/* Бейдж в углу при выделении */
+.analysis-card.selected::before {
+  content: 'Выбрано';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #dc3545;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(220,53,69,0.3);
 }
 .analysis-header {
   padding: 1rem;
@@ -1307,8 +1636,10 @@ export default {
 /* Стили для кнопки массового перезапуска */
 .bulk-actions .btn svg {
   flex-shrink: 0;
-  margin-right: 0.25rem;
+  margin-right: 0.4rem;
   color: #212529;
+  position: relative;
+  top: -0.5px;
 }
 
 .bulk-actions .btn:hover svg {
@@ -1318,6 +1649,14 @@ export default {
 .bulk-actions .btn:disabled svg {
   color: #6c757d;
 }
+
+/* Улучшения визуала блока массовых действий */
+.bulk-actions .card-body { padding: 1rem; }
+.bulk-actions .input-group-text { background-color: #f8f9fa; }
+.bulk-actions .form-text { font-size: 0.8rem; }
+.bulk-actions .btn { min-height: 38px; }
+.bulk-actions .d-flex.gap-2 > .btn { flex-shrink: 0; }
+.bulk-actions .ms-auto { margin-left: auto !important; }
 
 .card-body {
   padding: 1rem;
@@ -1332,13 +1671,20 @@ export default {
 }
 
 .analysis-info {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 .info-row, .results-row {
-  display: flex;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
   margin-bottom: 0.75rem;
+}
+
+.info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .info-item {
@@ -1392,6 +1738,7 @@ export default {
   font-size: 0.75rem;
   margin-bottom: 0;
 }
+.info-item small + div { margin-left: 4px; }
 
 .info-item div {
   font-size: 0.875rem;
@@ -1538,7 +1885,8 @@ export default {
   }
   
   .info-row, .results-row {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 0.5rem;
   }
   

@@ -62,46 +62,56 @@
           <!-- Создание анализа с массовой загрузкой -->
           <div class="row g-4">
             <div class="col-12">
-              <div class="card h-100 shadow-sm border-0">
-                <div class="card-header">
-                  <div class="card-icon">
-                    <Plus :size="20" />
+              <div class="create-analysis-card">
+                <div class="create-analysis-header">
+                  <div class="header-icon">
+                    <Plus :size="24" />
                   </div>
-                  <div class="card-title">
-                    <h3>Создать анализ</h3>
-                    <p>Название, параметры и массовая загрузка исходных изображений</p>
+                  <div class="header-content">
+                    <h2 class="header-title">Создать новый анализ</h2>
+                    <p class="header-subtitle">Настройте параметры и загрузите изображения для анализа пористости</p>
                   </div>
                 </div>
-                <div class="card-body p-4">
+                
+                <div class="create-analysis-body">
                   <form @submit.prevent="createAnalyses">
-                    <div class="row g-4">
-                      <div class="col-lg-7">
-                        <div class="mb-3">
-                          <label for="analysisName" class="form-label fw-bold">Название анализа</label>
-                          <input
-                            type="text"
-                            class="form-control form-control-lg"
-                            id="analysisName"
-                            v-model="newAnalysis.name"
-                            required
-                            placeholder="Введите название анализа"
-                          />
+                    <div class="analysis-form-grid">
+                      <!-- Левая колонка: параметры -->
+                      <div class="parameters-section">
+                        <div class="section-header">
+                          <h3 class="section-title">Параметры анализа</h3>
+                          <p class="section-subtitle">Основные настройки для обработки изображений</p>
                         </div>
 
-                        <div class="mb-3">
-                          <label for="analysisDescription" class="form-label fw-bold">Описание</label>
+                        <div class="form-group">
+                          <label for="analysisName" class="form-label">
+                            Название анализа
+                            <span class="optional-badge">необязательно</span>
+                          </label>
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="analysisName"
+                            v-model="newAnalysis.name"
+                            placeholder="Автоматически сгенерируется, если не указано"
+                          />
+                          <div class="form-help">Если не указать, название будет создано автоматически</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label for="analysisDescription" class="form-label">Описание</label>
                           <textarea
                             class="form-control"
                             id="analysisDescription"
                             v-model="newAnalysis.description"
-                            rows="4"
-                            placeholder="Подробное описание анализа"
+                            rows="3"
+                            placeholder="Дополнительная информация об анализе..."
                           ></textarea>
                         </div>
 
-                        <div class="row g-3">
-                          <div class="col-md-6">
-                            <label for="scaleValue" class="form-label fw-bold">Масштаб</label>
+                        <div class="parameters-grid">
+                          <div class="form-group">
+                            <label for="scaleValue" class="form-label">Масштаб</label>
                             <div class="input-group">
                               <input
                                 type="number"
@@ -112,11 +122,13 @@
                                 min="0"
                                 placeholder="100.0"
                               />
-                              <span class="input-group-text">мкм/пиксель</span>
+                              <span class="input-group-text">мкм</span>
                             </div>
+                            <div class="form-help">Размер масштабной линейки</div>
                           </div>
-                          <div class="col-md-6">
-                            <label for="pixelsPerMicron" class="form-label fw-bold">Разрешение</label>
+                          
+                          <div class="form-group">
+                            <label for="pixelsPerMicron" class="form-label">Разрешение</label>
                             <div class="input-group">
                               <input
                                 type="number"
@@ -129,15 +141,21 @@
                               />
                               <span class="input-group-text">пикс/мкм</span>
                             </div>
+                            <div class="form-help">Пикселей на микрометр</div>
                           </div>
                         </div>
                       </div>
 
-                      <div class="col-lg-5">
-                        <label class="form-label fw-bold d-block">Изображения для анализа</label>
+                      <!-- Правая колонка: загрузка файлов -->
+                      <div class="upload-section">
+                        <div class="section-header">
+                          <h3 class="section-title">Изображения</h3>
+                          <p class="section-subtitle">Загрузите одно или несколько изображений</p>
+                        </div>
+
                         <div
-                          class="upload-area d-flex flex-column align-items-center justify-content-center"
-                          :class="{ dragover: dragActive }"
+                          class="upload-zone"
+                          :class="{ 'upload-zone--dragover': dragActive }"
                           @dragenter.prevent="onDragEnter"
                           @dragover.prevent="onDragOver"
                           @dragleave.prevent="onDragLeave"
@@ -146,16 +164,16 @@
                           role="button"
                           tabindex="0"
                         >
-                          <div class="mb-2 d-flex align-items-center justify-content-center">
-                            <Upload :size="28" />
+                          <div class="upload-icon">
+                            <Upload :size="32" />
                           </div>
-                          <div class="text-center">
-                            <div class="fw-semibold">Перетащите файлы сюда</div>
-                            <small class="text-muted">или</small>
-                            <div>
-                              <button type="button" class="btn btn-sm btn-outline-primary mt-2" @click.stop="openFileDialog">Выбрать файлы</button>
-                            </div>
-                            <small class="text-muted d-block mt-2">PNG, JPG, JPEG • можно несколько</small>
+                          <div class="upload-content">
+                            <div class="upload-title">Перетащите файлы сюда</div>
+                            <div class="upload-divider">или</div>
+                            <button type="button" class="btn-upload" @click.stop="openFileDialog">
+                              Выбрать файлы
+                            </button>
+                            <div class="upload-info">PNG, JPG, JPEG • можно выбрать несколько</div>
                           </div>
                           <input
                             type="file"
@@ -168,50 +186,63 @@
                           />
                         </div>
 
-                        <div v-if="selectedAnalysisImages.length > 0" class="mt-3">
-                          <h6 class="fw-bold mb-2">Выбрано файлов: {{ selectedAnalysisImages.length }}</h6>
-                          <div class="selected-files">
+                        <!-- Список выбранных файлов -->
+                        <div v-if="selectedAnalysisImages.length > 0" class="selected-files-section">
+                          <div class="files-header">
+                            <h4 class="files-count">Выбрано файлов: {{ selectedAnalysisImages.length }}</h4>
+                          </div>
+                          <div class="files-list">
                             <div
                               v-for="(file, index) in selectedAnalysisImages"
                               :key="index"
-                              class="file-item d-flex justify-content-between align-items-center p-2 border rounded mb-2"
+                              class="file-item"
                             >
-                              <div class="d-flex align-items-center">
-                                <Image :size="16" class="text-primary me-2" />
-                                <span class="text-truncate">{{ file.name }}</span>
+                              <div class="file-info">
+                                <Image :size="18" class="file-icon" />
+                                <span class="file-name">{{ file.name }}</span>
+                                <span class="file-size">{{ formatFileSize(file.size) }}</span>
                               </div>
                               <button
                                 type="button"
-                                class="btn btn-sm btn-outline-danger"
+                                class="file-remove"
                                 @click="removeSelectedImage(index)"
-                                title="Удалить файл из списка"
+                                title="Удалить файл"
                               >
-                                <X :size="14" />
+                                <X :size="16" />
                               </button>
                             </div>
                           </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-3" :disabled="isCreating || selectedAnalysisImages.length === 0">
-                          <Plus :size="16" />
-                          <span>
-                            {{ isCreating 
-                              ? 'Создание...'
-                              : (selectedAnalysisImages.length === 1 ? 'Создать анализ' : `Создать ${selectedAnalysisImages.length} анализов`) }}
-                          </span>
-                        </button>
+                        <!-- Кнопка создания и прогресс -->
+                        <div class="action-section">
+                          <button 
+                            type="submit" 
+                            class="btn-create" 
+                            :disabled="isCreating || selectedAnalysisImages.length === 0"
+                            :class="{ 'btn-create--loading': isCreating }"
+                          >
+                            <Plus :size="18" />
+                            <span>
+                              {{ isCreating 
+                                ? 'Создание анализов...'
+                                : (selectedAnalysisImages.length === 1 ? 'Создать анализ' : `Создать ${selectedAnalysisImages.length} анализов`) }}
+                            </span>
+                          </button>
 
-                        <div v-if="isCreating" class="mt-3">
-                          <div class="d-flex justify-content-between mb-1">
-                            <small class="text-muted">Прогресс</small>
-                            <small class="text-muted">{{ bulkProgress.processed }} / {{ bulkProgress.total }}</small>
-                          </div>
-                          <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-primary" role="progressbar" :style="`width: ${bulkProgressPercent}%`"></div>
-                          </div>
-                          <div class="d-flex justify-content-between mt-2">
-                            <small class="text-success">Успешно: {{ bulkProgress.success }}</small>
-                            <small class="text-danger">Ошибки: {{ bulkProgress.failed }}</small>
+                          <!-- Прогресс-бар -->
+                          <div v-if="isCreating" class="progress-section">
+                            <div class="progress-header">
+                              <span class="progress-label">Создание анализов</span>
+                              <span class="progress-counter">{{ bulkProgress.processed }} / {{ bulkProgress.total }}</span>
+                            </div>
+                            <div class="progress-bar-container">
+                              <div class="progress-bar" :style="`width: ${bulkProgressPercent}%`"></div>
+                            </div>
+                            <div class="progress-stats">
+                              <span class="stat-success">Успешно: {{ bulkProgress.success }}</span>
+                              <span class="stat-failed">Ошибки: {{ bulkProgress.failed }}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -329,7 +360,7 @@ export default {
           const file = fileQueue.shift()
           try {
             const analysisPayload = {
-              name: this.newAnalysis.name ? `${this.newAnalysis.name} — ${file.name.replace(/\.[^/.]+$/, '')}` : `Анализ ${file.name.replace(/\.[^/.]+$/, '')}`,
+              name: this.newAnalysis.name ? `${this.newAnalysis.name} — ${file.name.replace(/\.[^/.]+$/, '')}` : '',
               description: this.newAnalysis.description || `Автоматически созданный анализ для файла ${file.name}`,
               scale_value: this.newAnalysis.scale_value,
               pixels_per_micron: this.newAnalysis.pixels_per_micron
@@ -401,6 +432,14 @@ export default {
           failed: 0
         }
       }
+    },
+    
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 Б'
+      const k = 1024
+      const sizes = ['Б', 'КБ', 'МБ', 'ГБ']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
     }
   }
   ,
@@ -504,41 +543,452 @@ export default {
   font-size: 1rem;
 }
 
-.card {
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-  border: none;
-  border-radius: 15px;
-  transition: transform 0.2s ease-in-out;
+/* Карточка создания анализа */
+.create-analysis-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.card:hover { transform: translateY(-2px); }
+.create-analysis-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+}
 
-.card-header {
+/* Заголовок карточки */
+.create-analysis-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: var(--bs-light);
-  border: none;
-  border-bottom: 1px solid var(--bs-border-color);
-  border-radius: 15px 15px 0 0 !important;
-  padding: 1rem 1.25rem;
+  gap: 1.5rem;
 }
 
-.card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+.header-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  color: white;
+  backdrop-filter: blur(10px);
 }
 
-.card-icon.success { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); }
+.header-content {
+  flex: 1;
+}
 
-.card-title h3 { font-size: 1.25rem; font-weight: 600; margin: 0; }
-.card-title p { margin: 0; color: var(--bs-secondary-color); font-size: .875rem; }
+.header-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Тело карточки */
+.create-analysis-body {
+  padding: 2.5rem;
+}
+
+/* Сетка формы */
+.analysis-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+}
+
+@media (max-width: 992px) {
+  .analysis-form-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+/* Секции */
+.parameters-section,
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section-header {
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 0.5rem 0;
+}
+
+.section-subtitle {
+  font-size: 0.9rem;
+  color: #718096;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Группы форм */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.optional-badge {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  margin-left: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.form-control {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+}
+
+.form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: white;
+  outline: none;
+}
+
+.form-control::placeholder {
+  color: #a0aec0;
+}
+
+.form-help {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-top: 0.375rem;
+  line-height: 1.4;
+}
+
+/* Сетка параметров */
+.parameters-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .parameters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.input-group-text {
+  background: #f1f5f9;
+  border: 2px solid #e2e8f0;
+  border-left: none;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Зона загрузки */
+.upload-zone {
+  border: 3px dashed #cbd5e0;
+  border-radius: 16px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f8fafc;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.upload-zone:hover {
+  border-color: #667eea;
+  background: #f0f4ff;
+  transform: translateY(-2px);
+}
+
+.upload-zone--dragover {
+  border-color: #38a169;
+  background: #f0fff4;
+  transform: scale(1.02);
+  box-shadow: 0 8px 32px rgba(56, 161, 105, 0.2);
+}
+
+.upload-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.upload-zone--dragover .upload-icon {
+  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.upload-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.upload-divider {
+  font-size: 0.9rem;
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+.btn-upload {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  padding: 0.625rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-upload:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.upload-info {
+  font-size: 0.85rem;
+  color: #718096;
+  line-height: 1.4;
+}
+
+/* Выбранные файлы */
+.selected-files-section {
+  margin-top: 1.5rem;
+}
+
+.files-header {
+  margin-bottom: 1rem;
+}
+
+.files-count {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+}
+
+.files-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-item:hover {
+  background: #edf2f7;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-icon {
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #2d3748;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.file-size {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.file-remove {
+  background: none;
+  border: none;
+  color: #e53e3e;
+  padding: 0.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-remove:hover {
+  background: #fed7d7;
+  transform: scale(1.1);
+}
+
+/* Секция действий */
+.action-section {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.btn-create {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  border: none;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 56px;
+}
+
+.btn-create:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(72, 187, 120, 0.3);
+}
+
+.btn-create:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-create--loading {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Прогресс */
+.progress-section {
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.progress-label {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.9rem;
+}
+
+.progress-counter {
+  font-size: 0.85rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.progress-bar-container {
+  background: #e2e8f0;
+  border-radius: 8px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.stat-success {
+  color: #38a169;
+}
+
+.stat-failed {
+  color: #e53e3e;
+}
 
 /* Статистические карточки */
 .statistics-card { background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 5px 20px rgba(0,0,0,0.08); transition: all .3s ease; position: relative; overflow: hidden; }
@@ -561,81 +1011,41 @@ export default {
 .card-value { font-size: 2rem; font-weight: 700; margin: 0; color: #2d3436; }
 .card-progress { margin-top: .5rem; }
 .card-progress .progress { height: 5px; background-color: #e9ecef; border-radius: 5px; }
-.upload-area {
-  border: 2px dashed #dee2e6;
-  border-radius: 10px;
-  padding: 2rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background-color: #f8f9fa;
-}
-
-.upload-area:hover {
-  border-color: #007bff;
-  background-color: #e3f2fd;
-}
-
-.upload-area.dragover {
-  border-color: #28a745;
-  background-color: #d4edda;
-  transform: scale(1.02);
-  box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
-}
-
-.selected-files {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.file-item {
-  background-color: #f8f9fa;
-  transition: all 0.2s ease;
-}
-
-.file-item:hover {
-  background-color: #e9ecef;
-}
-
-.text-truncate {
-  max-width: 200px;
-}
-
-.btn-lg {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
-  border-radius: 10px;
-}
-
-.form-control-lg {
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-}
-
-.form-control {
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-  transition: border-color 0.2s ease;
-}
-
-.form-control:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.text-primary {
-  color: #007bff !important;
-}
-
-.bg-primary {
-  background-color: #007bff !important;
-}
-
-.bg-success {
-  background-color: #28a745 !important;
-}
-
-.shadow-sm {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+/* Адаптивность */
+@media (max-width: 576px) {
+  .create-analysis-header {
+    padding: 1.5rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .header-icon {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .header-title {
+    font-size: 1.5rem;
+  }
+  
+  .create-analysis-body {
+    padding: 1.5rem;
+  }
+  
+  .upload-zone {
+    padding: 2rem 1rem;
+    min-height: 160px;
+  }
+  
+  .upload-icon {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .btn-create {
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+  }
 }
 </style> 

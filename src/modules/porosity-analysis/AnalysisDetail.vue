@@ -12,7 +12,7 @@
               </router-link>
             </li>
             <li class="breadcrumb-item active">
-              {{ analysis?.name || 'Детали анализа' }}
+              {{ getDisplayName(analysis) || 'Детали анализа' }}
             </li>
           </ol>
         </nav>
@@ -22,7 +22,7 @@
             <component :is="getHeaderStatusIcon(analysis.status)" :size="24" color="white" />
           </div>
           <div class="analysis-title">
-            <h1>{{ analysis?.name || 'Анализ пористости' }}</h1>
+            <h1>{{ getDisplayName(analysis) || 'Анализ пористости' }}</h1>
             <div class="analysis-meta-badges">
               <span class="badge" :class="statusClass(analysis.status)">
                 {{ getStatusText(analysis.status) }}
@@ -82,7 +82,7 @@
             <div>
               <h4 class="card-title mb-0">
                 <Microscope class="me-2" size="20" />
-                {{ analysis.name }}
+                {{ getDisplayName(analysis) }}
               </h4>
               <small class="text-muted">Номер анализа: {{ analysis.id }}</small>
             </div>
@@ -533,6 +533,11 @@ export default {
     await this.loadAnalysis()
   },
   methods: {
+    getDisplayName(analysis) {
+      const base = (analysis && analysis.name) ? analysis.name.replace(/\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}(:\d{2})?$/, '').trim() : 'Анализ пористости'
+      const created = this.formatDate(analysis?.created_at)
+      return `${base} · ${created}`
+    },
     getHeaderStatusIcon(status) {
       const map = {
         pending: Clock,
