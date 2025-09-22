@@ -108,6 +108,33 @@
       </div>
     </div>
 
+    <!-- Панель массовых действий -->
+    <div v-if="selectedAnalyses.length > 0" class="bulk-actions-panel">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted">{{ selectedAnalyses.length }} анализов выбрано</span>
+          <button 
+            class="btn btn-clear-selection btn-sm" 
+            @click="clearSelection"
+          >
+            <X :size="16" />
+            <span>Снять выделение</span>
+          </button>
+        </div>
+        <div class="d-flex gap-2">
+          <button 
+            class="btn btn-bulk-delete btn-sm" 
+            @click="showBulkDeleteConfirm"
+            :disabled="isDeleting"
+          >
+            <Trash2 :size="16" />
+            <span v-if="isDeleting">Удаление...</span>
+            <span v-else>Удалить выбранные</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Список анализов -->
     <div v-if="isLoading" class="loading-state">
       <div class="d-flex flex-column align-items-center justify-content-center py-5">
@@ -127,16 +154,32 @@
     </div>
 
     <div v-else class="analyses-grid">
-      <div class="analysis-card" v-for="analysis in analyses" :key="analysis.id">
+      <div 
+        class="analysis-card" 
+        :class="{ 'selected': selectedAnalyses.includes(analysis.id) }"
+        v-for="analysis in analyses" 
+        :key="analysis.id"
+        @click="toggleAnalysisSelection(analysis.id)"
+      >
         <div class="analysis-header" :class="getAnalysisHeaderClass(analysis.status)">
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <span class="badge" :class="statusClass(analysis.status)">
-              {{ getStatusLabel(analysis.status) }}
-            </span>
+            <div class="d-flex align-items-center gap-2">
+              <input 
+                type="checkbox" 
+                :id="`analysis-${analysis.id}`"
+                :value="analysis.id"
+                v-model="selectedAnalyses"
+                class="form-check-input analysis-checkbox"
+                @click.stop
+              />
+              <span class="badge" :class="statusClass(analysis.status)">
+                {{ getStatusLabel(analysis.status) }}
+              </span>
+            </div>
             <div class="analysis-actions">
               <button 
                 class="btn btn-sm btn-delete-analysis" 
-                @click="showDeleteConfirm(analysis.id)"
+                @click.stop="showDeleteConfirm(analysis.id)"
                 title="Удалить анализ"
               >
                 <Trash2 :size="14" />
@@ -182,6 +225,7 @@
           <router-link 
             :to="`/impuls-analysis/analysis/${analysis.id}`" 
             class="btn btn-view-analysis"
+            @click.stop
           >
             <Eye :size="16" />
             <span>Открыть анализ</span>
@@ -190,14 +234,14 @@
           <div class="analysis-actions-footer" v-if="analysis.status === 'completed'">
             <button 
               v-if="(analysis.protocols || []).length > 0"
-              @click="downloadProtocol(analysis)" 
+              @click.stop="downloadProtocol(analysis)" 
               class="btn btn-download-icon btn-download-protocol" 
               title="Скачать протокол"
             >
               <FileText :size="14" />
             </button>
             <button 
-              @click="downloadResults(analysis.id)" 
+              @click.stop="downloadResults(analysis.id)" 
               class="btn btn-download-icon btn-download-results" 
               title="Скачать результаты"
             >
@@ -234,6 +278,19 @@
       @confirm="confirmDeleteAnalysis"
       @cancel="cancelDeleteAnalysis"
       @close="cancelDeleteAnalysis"
+    />
+    
+    <!-- Модальное окно подтверждения массового удаления -->
+    <ConfirmDialog
+      :show="showBulkDeleteModal"
+      title="Массовое удаление анализов"
+      :message="`Вы уверены, что хотите удалить ${selectedAnalyses.length} анализов? Это действие нельзя отменить.`"
+      confirm-text="Удалить все"
+      cancel-text="Отмена"
+      variant="danger"
+      @confirm="confirmBulkDelete"
+      @cancel="cancelBulkDelete"
+      @close="cancelBulkDelete"
     />
   </div>
 </template>
@@ -308,7 +365,10 @@ export default {
       },
       searchTimeout: null,
       showDeleteModal: false,
-      analysisIdToDelete: null
+      analysisIdToDelete: null,
+      selectedAnalyses: [],
+      showBulkDeleteModal: false,
+      isDeleting: false
     }
   },
   computed: {
@@ -449,7 +509,12 @@ export default {
         search: ''
       }
       this.ordering = '-created_at'
-      this.applyFilters()
+      this.pagination.current_page = 1
+      // Обновляем и анализы, и статистику
+      Promise.all([
+        this.loadAnalyses(),
+        this.loadStats()
+      ])
     },
     
     loadPage(page) {
@@ -528,6 +593,58 @@ export default {
     cancelDeleteAnalysis() {
       this.showDeleteModal = false
       this.analysisIdToDelete = null
+    },
+    
+    // Методы для массового удаления
+    toggleAnalysisSelection(analysisId) {
+      const index = this.selectedAnalyses.indexOf(analysisId)
+      if (index > -1) {
+        this.selectedAnalyses.splice(index, 1)
+      } else {
+        this.selectedAnalyses.push(analysisId)
+      }
+    },
+    
+    clearSelection() {
+      this.selectedAnalyses = []
+    },
+    
+    showBulkDeleteConfirm() {
+      if (this.selectedAnalyses.length === 0) {
+        toast.warning('Выберите анализы для удаления')
+        return
+      }
+      this.showBulkDeleteModal = true
+    },
+    
+    async confirmBulkDelete() {
+      if (this.selectedAnalyses.length === 0) return
+      
+      this.isDeleting = true
+      this.showBulkDeleteModal = false
+      
+      try {
+        const response = await impulsAnalysisAPI.bulkDeleteAnalyses(this.selectedAnalyses)
+        if (response && response.success) {
+          toast.success(`Удалено ${this.selectedAnalyses.length} анализов`)
+          this.clearSelection()
+          await Promise.all([
+            this.loadAnalyses(),
+            this.loadStats()
+          ])
+        } else {
+          toast.error(response?.message || 'Ошибка при массовом удалении анализов')
+        }
+      } catch (error) {
+        console.error('Error in bulk delete:', error)
+        toast.error('Ошибка при массовом удалении анализов')
+      } finally {
+        this.isDeleting = false
+      }
+    },
+    
+    cancelBulkDelete() {
+      this.showBulkDeleteModal = false
     },
     
     async downloadResults(analysisId) {
@@ -927,10 +1044,31 @@ export default {
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
   
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  &.selected {
+    border: 2px solid var(--bs-primary);
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.2);
+    transform: translateY(-2px);
+    
+    .analysis-header {
+      background: rgba(13, 110, 253, 0.05);
+    }
+  }
+  
+  &.selected:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(13, 110, 253, 0.25);
+  }
+  
+  &:active {
+    transform: translateY(-2px);
   }
 }
 
@@ -1203,6 +1341,124 @@ export default {
   to { transform: rotate(360deg); }
 }
 
+// Панель массовых действий
+.bulk-actions-panel {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--bs-danger);
+  
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+  
+  .btn-clear-selection {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 36px;
+    
+    &:hover {
+      background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    svg {
+      flex-shrink: 0;
+    }
+    
+    span {
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+  }
+  
+  .btn-bulk-delete {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 36px;
+    
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+    }
+    
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    svg {
+      flex-shrink: 0;
+    }
+    
+    span {
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+  }
+}
+
+// Чекбоксы для выбора анализов
+.analysis-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  
+  &:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+  }
+  
+  &:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  }
+}
+
 // Адаптивность
 @media (max-width: 768px) {
   .impuls-analysis-dashboard {
@@ -1222,6 +1478,14 @@ export default {
   
   .analyses-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .bulk-actions-panel {
+    .d-flex {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch !important;
+    }
   }
 }
 

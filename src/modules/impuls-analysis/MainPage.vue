@@ -226,14 +226,15 @@ export default {
           this.resetProtocolForm()
           this.$router.push(`/impuls-analysis/analysis/${response.data.id}`)
         } else {
-          toast.error(response?.message || 'Ошибка при создании анализа из протокола')
+          toast.error(`Протокол ${this.selectedProtocol}: ${response?.message || 'Неизвестная ошибка'}`)
         }
       } catch (error) {
+        console.error('Ошибка при создании анализа из протокола:', error)
         let errorMessage = 'Ошибка при создании анализа из протокола'
         if (error && typeof error === 'object') {
-          errorMessage = error.response?.data?.message || error.message || errorMessage
+          errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || errorMessage
         }
-        toast.error(errorMessage)
+        toast.error(`Протокол ${this.selectedProtocol}: ${errorMessage}`)
       } finally {
         this.isCreatingFromProtocol = false
       }

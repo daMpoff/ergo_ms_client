@@ -59,9 +59,9 @@
             </div>
           </div>
           
-          <!-- Формы создания -->
+          <!-- Создание анализа с массовой загрузкой -->
           <div class="row g-4">
-            <div class="col-lg-6">
+            <div class="col-12">
               <div class="card h-100 shadow-sm border-0">
                 <div class="card-header">
                   <div class="card-icon">
@@ -69,158 +69,154 @@
                   </div>
                   <div class="card-title">
                     <h3>Создать анализ</h3>
-                    <p>Название, параметры и загрузка исходного изображения</p>
+                    <p>Название, параметры и массовая загрузка исходных изображений</p>
                   </div>
                 </div>
                 <div class="card-body p-4">
-                  <form @submit.prevent="createAnalysis">
-                    <div class="mb-3">
-                      <label for="analysisName" class="form-label fw-bold">Название анализа</label>
-                      <input
-                        type="text"
-                        class="form-control form-control-lg"
-                        id="analysisName"
-                        v-model="newAnalysis.name"
-                        required
-                        placeholder="Введите название анализа"
-                      />
-                    </div>
-                    
-                    <div class="mb-3">
-                      <label for="analysisDescription" class="form-label fw-bold">Описание</label>
-                      <textarea
-                        class="form-control"
-                        id="analysisDescription"
-                        v-model="newAnalysis.description"
-                        rows="3"
-                        placeholder="Подробное описание анализа"
-                      ></textarea>
-                    </div>
-                    
-                    <div class="row g-3">
-                      <div class="col-md-6">
+                  <form @submit.prevent="createAnalyses">
+                    <div class="row g-4">
+                      <div class="col-lg-7">
                         <div class="mb-3">
-                          <label for="scaleValue" class="form-label fw-bold">Масштаб (мкм/пиксель)</label>
+                          <label for="analysisName" class="form-label fw-bold">Название анализа</label>
                           <input
-                            type="number"
-                            class="form-control"
-                            id="scaleValue"
-                            v-model="newAnalysis.scale_value"
-                            step="0.01"
-                            min="0"
-                            placeholder="100.0"
+                            type="text"
+                            class="form-control form-control-lg"
+                            id="analysisName"
+                            v-model="newAnalysis.name"
+                            required
+                            placeholder="Введите название анализа"
                           />
                         </div>
-                      </div>
-                      <div class="col-md-6">
+
                         <div class="mb-3">
-                          <label for="pixelsPerMicron" class="form-label fw-bold">Пикселей на микрон</label>
-                          <input
-                            type="number"
+                          <label for="analysisDescription" class="form-label fw-bold">Описание</label>
+                          <textarea
                             class="form-control"
-                            id="pixelsPerMicron"
-                            v-model="newAnalysis.pixels_per_micron"
-                            step="0.01"
-                            min="0"
-                            placeholder="1.0"
-                          />
+                            id="analysisDescription"
+                            v-model="newAnalysis.description"
+                            rows="4"
+                            placeholder="Подробное описание анализа"
+                          ></textarea>
+                        </div>
+
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label for="scaleValue" class="form-label fw-bold">Масштаб</label>
+                            <div class="input-group">
+                              <input
+                                type="number"
+                                class="form-control"
+                                id="scaleValue"
+                                v-model="newAnalysis.scale_value"
+                                step="0.01"
+                                min="0"
+                                placeholder="100.0"
+                              />
+                              <span class="input-group-text">мкм/пиксель</span>
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <label for="pixelsPerMicron" class="form-label fw-bold">Разрешение</label>
+                            <div class="input-group">
+                              <input
+                                type="number"
+                                class="form-control"
+                                id="pixelsPerMicron"
+                                v-model="newAnalysis.pixels_per_micron"
+                                step="0.01"
+                                min="0"
+                                placeholder="1.0"
+                              />
+                              <span class="input-group-text">пикс/мкм</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                      <label for="analysisImage" class="form-label fw-bold">Изображение для анализа</label>
-                      <input
-                        type="file"
-                        class="form-control"
-                        id="analysisImage"
-                        @change="handleAnalysisImageUpload"
-                        accept="image/*"
-                        required
-                        ref="analysisImageInput"
-                      />
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary btn-lg w-100" :disabled="isCreating || !selectedAnalysisImage">
-                      <Plus :size="16" />
-                      <span>{{ isCreating ? 'Создание...' : 'Создать анализ' }}</span>
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
-            
-            <div class="col-lg-6">
-              <div class="card h-100 shadow-sm border-0">
-                <div class="card-header">
-                  <div class="card-icon success">
-                    <Upload :size="20" />
-                  </div>
-                  <div class="card-title">
-                    <h3>Быстрая загрузка</h3>
-                    <p>Перетащите набор изображений и создайте несколько анализов</p>
-                  </div>
-                </div>
-                <div class="card-body p-4">
-                  <div class="mb-4">
-                    <label for="quickUpload" class="form-label fw-bold">Выберите изображения</label>
-                    <div 
-                      class="upload-area" 
-                      @click="$refs.quickUploadInput.click()" 
-                      @dragover.prevent="handleDragOver" 
-                      @dragleave.prevent="handleDragLeave"
-                      @drop.prevent="handleDrop"
-                      :class="{ 'dragover': isDragOver }"
-                    >
-                      <input
-                        type="file"
-                        class="d-none"
-                        id="quickUpload"
-                        @change="handleQuickUpload"
-                        multiple
-                        accept="image/*"
-                        ref="quickUploadInput"
-                      />
-                      <div class="text-center">
-                        <Upload :size="32" class="text-muted mb-2" />
-                        <p class="mb-2">Перетащите файлы сюда или нажмите для выбора</p>
-                        <p class="text-muted small">Поддерживаются форматы: PNG, JPG, JPEG</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div v-if="quickUploadFiles.length > 0" class="mb-4">
-                    <h6 class="fw-bold mb-3">Выбранные файлы:</h6>
-                    <div class="selected-files">
-                      <div
-                        v-for="(file, index) in quickUploadFiles"
-                        :key="index"
-                        class="file-item d-flex justify-content-between align-items-center p-2 border rounded mb-2"
-                      >
-                        <div class="d-flex align-items-center">
-                          <Image :size="16" class="text-primary me-2" />
-                          <span class="text-truncate">{{ file.name }}</span>
-                        </div>
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-outline-danger"
-                          @click="removeQuickUploadFile(index)"
+
+                      <div class="col-lg-5">
+                        <label class="form-label fw-bold d-block">Изображения для анализа</label>
+                        <div
+                          class="upload-area d-flex flex-column align-items-center justify-content-center"
+                          :class="{ dragover: dragActive }"
+                          @dragenter.prevent="onDragEnter"
+                          @dragover.prevent="onDragOver"
+                          @dragleave.prevent="onDragLeave"
+                          @drop.prevent="onDropFiles"
+                          @click="openFileDialog"
+                          role="button"
+                          tabindex="0"
                         >
-                          <X :size="14" />
+                          <div class="mb-2 d-flex align-items-center justify-content-center">
+                            <Upload :size="28" />
+                          </div>
+                          <div class="text-center">
+                            <div class="fw-semibold">Перетащите файлы сюда</div>
+                            <small class="text-muted">или</small>
+                            <div>
+                              <button type="button" class="btn btn-sm btn-outline-primary mt-2" @click.stop="openFileDialog">Выбрать файлы</button>
+                            </div>
+                            <small class="text-muted d-block mt-2">PNG, JPG, JPEG • можно несколько</small>
+                          </div>
+                          <input
+                            type="file"
+                            class="d-none"
+                            id="analysisImage"
+                            @change="handleAnalysisImageUpload"
+                            accept="image/*"
+                            multiple
+                            ref="analysisImageInput"
+                          />
+                        </div>
+
+                        <div v-if="selectedAnalysisImages.length > 0" class="mt-3">
+                          <h6 class="fw-bold mb-2">Выбрано файлов: {{ selectedAnalysisImages.length }}</h6>
+                          <div class="selected-files">
+                            <div
+                              v-for="(file, index) in selectedAnalysisImages"
+                              :key="index"
+                              class="file-item d-flex justify-content-between align-items-center p-2 border rounded mb-2"
+                            >
+                              <div class="d-flex align-items-center">
+                                <Image :size="16" class="text-primary me-2" />
+                                <span class="text-truncate">{{ file.name }}</span>
+                              </div>
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                @click="removeSelectedImage(index)"
+                                title="Удалить файл из списка"
+                              >
+                                <X :size="14" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-3" :disabled="isCreating || selectedAnalysisImages.length === 0">
+                          <Plus :size="16" />
+                          <span>
+                            {{ isCreating 
+                              ? 'Создание...'
+                              : (selectedAnalysisImages.length === 1 ? 'Создать анализ' : `Создать ${selectedAnalysisImages.length} анализов`) }}
+                          </span>
                         </button>
+
+                        <div v-if="isCreating" class="mt-3">
+                          <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Прогресс</small>
+                            <small class="text-muted">{{ bulkProgress.processed }} / {{ bulkProgress.total }}</small>
+                          </div>
+                          <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" :style="`width: ${bulkProgressPercent}%`"></div>
+                          </div>
+                          <div class="d-flex justify-content-between mt-2">
+                            <small class="text-success">Успешно: {{ bulkProgress.success }}</small>
+                            <small class="text-danger">Ошибки: {{ bulkProgress.failed }}</small>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <button
-                    type="button"
-                    class="btn btn-success btn-lg w-100"
-                    @click="createMultipleAnalyses"
-                    :disabled="quickUploadFiles.length === 0 || isCreatingMultiple"
-                  >
-                    <i class="fas fa-upload me-2"></i>
-                    {{ isCreatingMultiple ? 'Создание...' : `Создать ${quickUploadFiles.length} анализов` }}
-                  </button>
+                  </form>
                 </div>
               </div>
             </div>
@@ -257,11 +253,12 @@ export default {
         scale_value: 100,  // Стандартное значение шкалы 100 мкм
         pixels_per_micron: null
       },
-      selectedAnalysisImage: null,
-      quickUploadFiles: [],
+      selectedAnalysisImages: [],
       isCreating: false,
-      isCreatingMultiple: false,
-      isDragOver: false,
+      dragActive: false,
+      // Прогресс массовой загрузки
+      bulkProgress: { total: 0, processed: 0, success: 0, failed: 0 },
+      concurrencyLimit: 5,
       stats: {
         pending: 0,
         processing: 0,
@@ -274,147 +271,105 @@ export default {
     await this.loadStats()
   },
   methods: {
+    openFileDialog() {
+      if (this.$refs.analysisImageInput) {
+        this.$refs.analysisImageInput.click()
+      }
+    },
+    onDragEnter() {
+      this.dragActive = true
+    },
+    onDragOver() {
+      this.dragActive = true
+    },
+    onDragLeave() {
+      this.dragActive = false
+    },
+    onDropFiles(event) {
+      try {
+        const dt = event.dataTransfer
+        if (!dt || !dt.files || dt.files.length === 0) return
+        const eventLike = { target: { files: dt.files } }
+        this.handleAnalysisImageUpload(eventLike)
+      } finally {
+        this.dragActive = false
+      }
+    },
     handleAnalysisImageUpload(event) {
-      const file = event.target.files[0]
-      if (file) {
-        this.selectedAnalysisImage = file
+      const newFiles = Array.from(event.target.files || [])
+      const merged = [...this.selectedAnalysisImages, ...newFiles]
+      // Удаляем дубликаты по ключу (name + size + lastModified)
+      const seen = new Set()
+      const unique = []
+      for (const f of merged) {
+        const key = `${f.name}__${f.size}__${f.lastModified}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          unique.push(f)
+        }
+      }
+      this.selectedAnalysisImages = unique
+      // Сбрасываем значение инпута, чтобы можно было выбрать те же имена снова (если другие файлы)
+      if (this.$refs.analysisImageInput) {
+        this.$refs.analysisImageInput.value = ''
       }
     },
     
-    async createAnalysis() {
+    async createAnalyses() {
+      const files = this.selectedAnalysisImages
+      if (!files || files.length === 0) return
       this.isCreating = true
-      try {
-        // Создаем анализ
-        const response = await porosityAnalysisAPI.createAnalysis(this.newAnalysis)
-        
-        if (response && response.success) {
-          let analysisId = null
-          if (response.data && typeof response.data === 'object') {
-            analysisId = response.data.id
-          } else if (typeof response.data === 'number') {
-            analysisId = response.data
-          }
-          
+      this.bulkProgress = { total: files.length, processed: 0, success: 0, failed: 0 }
+      const concurrency = Math.max(1, this.concurrencyLimit)
 
-          
-          if (analysisId && this.selectedAnalysisImage) {
-            // Загружаем изображение для созданного анализа
-            const uploadResponse = await porosityAnalysisAPI.uploadImage(analysisId, this.selectedAnalysisImage)
-            if (uploadResponse && uploadResponse.success) {
-              toast.success('Анализ создан и изображение загружено успешно!')
-              this.resetForm()
-              this.$router.push(`/porosity-analysis/analysis/${analysisId}`)
-            } else {
-              toast.error(uploadResponse?.message || 'Ошибка при загрузке изображения')
+      const fileQueue = files.slice()
+
+      const worker = async () => {
+        while (fileQueue.length > 0) {
+          const file = fileQueue.shift()
+          try {
+            const analysisPayload = {
+              name: this.newAnalysis.name ? `${this.newAnalysis.name} — ${file.name.replace(/\.[^/.]+$/, '')}` : `Анализ ${file.name.replace(/\.[^/.]+$/, '')}`,
+              description: this.newAnalysis.description || `Автоматически созданный анализ для файла ${file.name}`,
+              scale_value: this.newAnalysis.scale_value,
+              pixels_per_micron: this.newAnalysis.pixels_per_micron
             }
-          } else {
-            toast.success('Анализ создан успешно!')
-            this.resetForm()
-            this.$router.push('/porosity-analysis/analyses')
+            const createResp = await porosityAnalysisAPI.createAnalysis(analysisPayload)
+            if (!(createResp && createResp.success)) throw new Error(createResp?.message || 'Не удалось создать анализ')
+            let analysisId = null
+            if (createResp.data && typeof createResp.data === 'object') analysisId = createResp.data.id
+            else if (typeof createResp.data === 'number') analysisId = createResp.data
+            if (!analysisId) throw new Error('ID анализа не получен')
+            const uploadResp = await porosityAnalysisAPI.uploadImage(analysisId, file)
+            if (!(uploadResp && uploadResp.success)) throw new Error(uploadResp?.message || 'Ошибка загрузки изображения')
+            this.bulkProgress.success += 1
+          } catch (e) {
+            this.bulkProgress.failed += 1
+          } finally {
+            this.bulkProgress.processed += 1
           }
-        } else {
-          toast.error(response?.message || 'Ошибка при создании анализа')
         }
-      } catch (error) {
-        let errorMessage = 'Ошибка при создании анализа'
-        if (error && typeof error === 'object') {
-          errorMessage = error.response?.data?.message || error.message || errorMessage
-        }
-        toast.error(errorMessage)
-      } finally {
-        this.isCreating = false
       }
+
+      const workers = Array.from({ length: Math.min(concurrency, files.length) }, () => worker())
+      await Promise.all(workers)
+
+      if (this.bulkProgress.success > 0 && this.bulkProgress.failed === 0) {
+        toast.success(`Создано ${this.bulkProgress.success} анализов`)
+      } else if (this.bulkProgress.success > 0 && this.bulkProgress.failed > 0) {
+        toast.warning(`Создано ${this.bulkProgress.success}, ошибок: ${this.bulkProgress.failed}`)
+      } else {
+        toast.error('Не удалось создать анализы')
+      }
+
+      this.resetForm()
+      this.$router.push('/porosity-analysis/analyses')
+      this.isCreating = false
     },
-    
-    handleQuickUpload(event) {
-      const files = Array.from(event.target.files)
-      this.quickUploadFiles = files
-    },
-    
-    handleDragOver(event) {
-      event.preventDefault()
-      this.isDragOver = true
-    },
-    
-    handleDragLeave(event) {
-      event.preventDefault()
-      this.isDragOver = false
-    },
-    
-    handleDrop(event) {
-      event.preventDefault()
-      this.isDragOver = false
-      const files = Array.from(event.dataTransfer.files)
-      this.quickUploadFiles = files
-    },
-    
-    removeQuickUploadFile(index) {
-      this.quickUploadFiles.splice(index, 1)
-    },
-    
-    async createMultipleAnalyses() {
-      this.isCreatingMultiple = true
-      try {
-        const results = await porosityAnalysisAPI.createMultipleAnalyses(this.quickUploadFiles, 100.0)
-        
-        console.log('Multiple analyses results:', results)
-        console.log('Results type:', typeof results)
-        console.log('Results is array:', Array.isArray(results))
-        
-        if (Array.isArray(results) && results.length > 0) {
-          const validResults = results.filter(r => r !== null && r !== undefined)
-          const successCount = validResults.filter(r => r && typeof r === 'object' && r.success === true).length
-          const failedCount = validResults.length - successCount
-          
-          console.log(`Valid results: ${validResults.length}, Success: ${successCount}, Failed: ${failedCount}`)
-          
-          if (successCount > 0) {
-            toast.success(`Создано ${successCount} из ${this.quickUploadFiles.length} анализов`)
-          }
-          
-          if (failedCount > 0) {
-            toast.warning(`${failedCount} анализов не удалось создать`)
-          }
-        } else if (results && typeof results === 'object') {
-          // Если API вернул одиночный результат
-          if (results.success === true) {
-            toast.success('Анализ создан успешно')
-          } else if (results.data) {
-            console.log('Results with data:', results)
-            toast.success('Анализ создан успешно')
-          } else {
-            console.warn('Unexpected single result format:', results)
-            toast.success('Анализ отправлен на обработку')
-          }
-        } else {
-          // Если результаты не в ожидаемом формате
-          console.warn('Unexpected results format:', results)
-          toast.success('Анализы отправлены на обработку')
-        }
-        
-        this.quickUploadFiles = []
-        if (this.$refs.quickUploadInput) {
-          this.$refs.quickUploadInput.value = ''
-        }
-        
-        // Переходим к списку анализов
-        this.$router.push('/porosity-analysis/analyses')
-        
-      } catch (error) {
-        let errorMessage = 'Ошибка при создании анализов'
-        if (error && typeof error === 'object') {
-          if (error.response && error.response.data) {
-            errorMessage = error.response.data.message || error.response.data.detail || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          }
-        } else if (error && typeof error === 'string') {
-          errorMessage = error
-        }
-        console.error('Error creating multiple analyses:', error)
-        toast.error(errorMessage)
-      } finally {
-        this.isCreatingMultiple = false
+
+    removeSelectedImage(index) {
+      if (index >= 0 && index < this.selectedAnalysisImages.length) {
+        this.selectedAnalysisImages.splice(index, 1)
       }
     },
     
@@ -425,7 +380,7 @@ export default {
         scale_value: 100,  // Стандартное значение шкалы 100 мкм
         pixels_per_micron: null
       }
-      this.selectedAnalysisImage = null
+      this.selectedAnalysisImages = []
       if (this.$refs.analysisImageInput) {
         this.$refs.analysisImageInput.value = ''
       }
@@ -450,6 +405,10 @@ export default {
   }
   ,
   computed: {
+    bulkProgressPercent() {
+      if (!this.bulkProgress.total) return 0
+      return Math.round((this.bulkProgress.processed / this.bulkProgress.total) * 100)
+    },
     totalAnalyses() {
       return (this.stats.pending || 0) + (this.stats.processing || 0) + (this.stats.completed || 0) + (this.stats.failed || 0)
     },

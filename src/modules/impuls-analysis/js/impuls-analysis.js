@@ -57,6 +57,25 @@ class ImpulsAnalysisAPI {
   }
 
   /**
+   * Массовое удаление анализов
+   */
+  async bulkDeleteAnalyses(analysisIds) {
+    try {
+      const response = await apiClient.post(`${this.baseEndpoint}bulk_delete/`, {
+        analysis_ids: analysisIds
+      })
+      return response
+    } catch (error) {
+      console.error('Error in bulk delete analyses:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при массовом удалении анализов',
+        data: null
+      }
+    }
+  }
+
+  /**
    * Загрузить файлы для импорта данных (без привязки к анализу)
    */
   async uploadFiles(forceFile, planFile) {
@@ -188,9 +207,23 @@ class ImpulsAnalysisAPI {
       return response
     } catch (error) {
       console.error('Error creating analysis from protocol:', error)
+      
+      // Извлекаем понятное сообщение об ошибке из ответа сервера
+      let errorMessage = 'Ошибка при создании анализа из протокола'
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       return {
         success: false,
-        message: error.message || 'Ошибка при создании анализа из протокола',
+        message: errorMessage,
         data: null
       }
     }

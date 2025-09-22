@@ -781,19 +781,32 @@ export default {
       const list = Array.from(this.selectedProtocols)
       if (!list.length) return
       this.isBulkCreating = true
+      let successCount = 0
+      let errorCount = 0
       try {
         for (const protocolNumber of list) {
           const title = `Анализ протокола ${protocolNumber}`
           const description = ''
           const response = await impulsAnalysisAPI.createFromProtocol(protocolNumber, title, description)
           if (!response || !response.success) {
-            toast.error(`Не удалось создать анализ для протокола ${protocolNumber}: ${response?.message || 'ошибка'}`)
+            errorCount++
+            toast.error(`Протокол ${protocolNumber}: ${response?.message || 'Неизвестная ошибка'}`)
+          } else {
+            successCount++
           }
         }
-        toast.success(`Создание анализов запущено для ${list.length} протокол(ов)`)
+        
+        if (successCount > 0) {
+          toast.success(`Успешно создано ${successCount} из ${list.length} анализов`)
+        }
+        if (errorCount > 0) {
+          toast.warning(`Не удалось создать ${errorCount} из ${list.length} анализов`)
+        }
+        
         this.clearSelection()
         await this.loadStats()
-      } catch {
+      } catch (error) {
+        console.error('Ошибка при массовом создании анализов:', error)
         toast.error('Ошибка при массовом создании анализов')
       } finally {
         this.isBulkCreating = false
@@ -803,19 +816,32 @@ export default {
       const list = this.parsedInputNumbers
       if (!list.length) return
       this.isBulkCreating = true
+      let successCount = 0
+      let errorCount = 0
       try {
         for (const protocolNumber of list) {
           const title = `Анализ протокола ${protocolNumber}`
           const description = ''
           const response = await impulsAnalysisAPI.createFromProtocol(protocolNumber, title, description)
           if (!response || !response.success) {
-            toast.error(`Не удалось создать анализ для протокола ${protocolNumber}: ${response?.message || 'ошибка'}`)
+            errorCount++
+            toast.error(`Протокол ${protocolNumber}: ${response?.message || 'Неизвестная ошибка'}`)
+          } else {
+            successCount++
           }
         }
-        toast.success(`Создание анализов запущено для ${list.length} протокол(ов)`)
+        
+        if (successCount > 0) {
+          toast.success(`Успешно создано ${successCount} из ${list.length} анализов`)
+        }
+        if (errorCount > 0) {
+          toast.warning(`Не удалось создать ${errorCount} из ${list.length} анализов`)
+        }
+        
         this.protocolsInput = ''
         await this.loadStats()
-      } catch {
+      } catch (error) {
+        console.error('Ошибка при создании по номерам:', error)
         toast.error('Ошибка при создании по номерам')
       } finally {
         this.isBulkCreating = false
@@ -846,14 +872,15 @@ export default {
           // Переходим к созданному анализу
           this.$router.push(`/impuls-analysis/analysis/${response.data.id}`)
         } else {
-          toast.error(response?.message || 'Ошибка при создании анализа из протокола')
+          toast.error(`Протокол ${this.selectedProtocol.protocol_number}: ${response?.message || 'Неизвестная ошибка'}`)
         }
       } catch (error) {
+        console.error('Ошибка при создании анализа из протокола:', error)
         let errorMessage = 'Ошибка при создании анализа из протокола'
         if (error && typeof error === 'object') {
-          errorMessage = error.response?.data?.message || error.message || errorMessage
+          errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || errorMessage
         }
-        toast.error(errorMessage)
+        toast.error(`Протокол ${this.selectedProtocol.protocol_number}: ${errorMessage}`)
       } finally {
         this.isCreating = false
       }
@@ -1882,3 +1909,5 @@ export default {
   }
 }
 </style>
+
+

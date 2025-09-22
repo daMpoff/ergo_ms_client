@@ -155,6 +155,11 @@
                             <small class="text-muted">Создан:</small>
                             <div>{{ formatDate(analysis.created_at) }}</div>
                           </div>
+                          <div class="info-item" v-if="analysis.duration_human">
+                            <Clock class="me-1" size="14" />
+                            <small class="text-muted">Длительность:</small>
+                            <div>{{ analysis.duration_human }}</div>
+                          </div>
                           <div class="info-item">
                             <Ruler class="me-1" size="14" />
                             <small class="text-muted">Шкала:</small>

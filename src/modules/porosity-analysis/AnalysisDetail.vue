@@ -187,6 +187,12 @@
                           <div>{{ analysis.scale_value }} мкм</div>
                         </div>
                       </div>
+                      <div class="row mt-2" v-if="analysis.duration_human">
+                        <div class="col-12">
+                          <small class="text-muted">Длительность анализа:</small>
+                          <div>{{ analysis.duration_human }}</div>
+                        </div>
+                      </div>
                       
                       <div v-if="analysis.pixels_per_micron" class="mt-3">
                         <small class="text-muted">Пикселей на микрометр:</small>
