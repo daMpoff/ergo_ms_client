@@ -20,12 +20,12 @@
                     <Settings :size="18" />
                     <span>Настройки</span>
                 </button>
-                <hr class="dropdown-divider" />
-                <button class="menu-item" type="button" @click="goToServicePage">
+                <hr v-if="isAdmin" class="dropdown-divider" />
+                <button v-if="isAdmin" class="menu-item" type="button" @click="goToServicePage">
                     <Wrench :size="18" />
                     <span>Служебная страница</span>
                 </button>
-                <hr class="dropdown-divider" />
+                <hr v-if="isAdmin" class="dropdown-divider" />
                 <button class="menu-item text-danger" type="button" @click="$emit('navigate', 'logout')">
                     <LogOut :size="18" />
                     <span>Выйти</span>
@@ -36,10 +36,14 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue'
+import { defineProps, defineEmits, computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserRound, Settings, LogOut, Wrench } from 'lucide-vue-next'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
+
+// Сервисы для проверки административных прав (как в router guard)
+import { authService } from '@/modules/cms/adp/js/authService'
+import { apiClient } from '@/js/api/manager.js'
 
 defineProps({
     visible: { type: Boolean, default: false }
@@ -68,6 +72,31 @@ const userFullName = computed(() => {
 
 const userEmail = computed(() => userStore.user?.email || '')
 const avatarUrl = computed(() => userStore.avatarUrl)
+
+// Админские права (унифицированная проверка)
+const isAdmin = ref(false)
+
+onMounted(async () => {
+    try {
+        let admin = await authService.isAdmin()
+        if (!admin) {
+            const currentUser = await authService.getCurrentUser()
+            if (currentUser && currentUser.id) {
+                try {
+                    const resp = await apiClient.get('/project_ed/user-profiles/', { user: currentUser.id })
+                    const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+                    const hasProjectEdAdmin = data.some(p => (p?.role_ref_name === 'Администратор') || (p?.role_name === 'Администратор') || (p?.role === 'Администратор') || (p?.role_ref?.name === 'Администратор'))
+                    if (hasProjectEdAdmin) admin = true
+                } catch (e) {
+                    // игнорируем ошибки запроса, оставим admin как есть
+                }
+            }
+        }
+        isAdmin.value = admin
+    } catch (e) {
+        isAdmin.value = false
+    }
+})
 
 function goToServicePage() {
     router.push({ name: 'ProjectEdTechnical' })

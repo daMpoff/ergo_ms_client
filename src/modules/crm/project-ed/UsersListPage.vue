@@ -1,0 +1,290 @@
+<template>
+    <div class="page-container">
+        <Breadcrumbs :items="breadcrumbItems" />
+        <div class="page-content">
+            <h3>Список пользователей</h3>
+            <div class="card p-3">
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <div class="input-group" style="max-width: 420px;">
+                            <span class="input-group-text bg-white"><Search class="lucide align-middle" :size="18" /></span>
+                            <input
+                                v-model.trim="searchTerm"
+                                @input="handleSearch"
+                                type="text"
+                                class="form-control"
+                                placeholder="Поиск по имени или роли"
+                            />
+                        </div>
+                        <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadUsers">
+                            <RefreshCw class="lucide align-middle me-1" :size="18" /> Обновить
+                        </button>
+                    </div>
+
+                    <div v-if="loading" class="d-flex align-items-center gap-2 text-muted">
+                        <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                        Загрузка пользователей...
+                    </div>
+
+                    <div v-else>
+                        <div v-if="users.length === 0" class="alert alert-light mb-0">
+                            Пользователи не найдены.
+                        </div>
+                        <div v-else class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 56px;">#</th>
+                                        <th>ФИО</th>
+                                        <th>Роль</th>
+                                        <th>Должность</th>
+                                        <th>Факультет</th>
+                                        <th>Кафедра</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(u, idx) in users" :key="u.id" class="table-row-click" @click="openEdit(u)">
+                                        <td class="text-muted">{{ idx + 1 }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img :src="u.avatar_url || placeholderAvatar" alt="avatar" class="rounded-circle align-middle me-2" style="width:28px;height:28px;object-fit:cover;" />
+                                                <span class="align-middle">{{ fullName(u) }}</span>
+                                            </div>
+                                        </td>
+                                        <td>{{ u.role || '—' }}</td>
+                                        <td>{{ u.position || '—' }}</td>
+                                        <td>{{ u.faculty || '—' }}</td>
+                                        <td>{{ u.department || '—' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <teleport to="body">
+            <div v-if="isModalOpen">
+                <div class="modal fade show d-block project-ed-modal" tabindex="-1" role="dialog" aria-modal="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Редактирование пользователя</h5>
+                                <button type="button" class="btn-close" aria-label="Close" @click="closeEdit"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Пользователь</label>
+                                    <div class="form-control bg-light">
+                                        {{ editModel.displayName }}
+                                    </div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Роль</label>
+                                        <select v-model="editModel.role_ref" class="form-select">
+                                            <option :value="null">— Не выбрано —</option>
+                                            <option v-for="r in roleOptions" :key="r.id" :value="r.id">{{ r.name }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Должность</label>
+                                        <select v-model="editModel.position_ref" class="form-select">
+                                            <option :value="null">— Не выбрано —</option>
+                                            <option v-for="p in positionOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Факультет</label>
+                                        <select v-model="editModel.faculty_ref" class="form-select">
+                                            <option :value="null">— Не выбрано —</option>
+                                            <option v-for="f in facultyOptions" :key="f.id" :value="f.id">{{ f.name }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Кафедра</label>
+                                        <select v-model="editModel.department_ref" class="form-select">
+                                            <option :value="null">— Не выбрано —</option>
+                                            <option v-for="d in departmentOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" @click="closeEdit">Отмена</button>
+                                <button type="button" class="btn btn-primary d-flex align-items-center" :disabled="saving" @click="saveEdit">
+                                    <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Сохранить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-backdrop fade show project-ed-backdrop" @click="closeEdit"></div>
+            </div>
+        </teleport>
+    </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { Home, Users, Wrench, Search, RefreshCw } from 'lucide-vue-next'
+import Breadcrumbs from './components/Breadcrumbs.vue'
+import { apiClient } from '@/js/api/manager'
+import { useToast } from 'vue-toastification'
+import placeholderAvatar from '@/assets/placeholder.svg'
+
+const breadcrumbItems = ref([
+    { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
+    { label: 'Служебная страница', icon: Wrench, to: { name: 'ProjectEdTechnical' } },
+    { label: 'Список пользователей', icon: Users }
+])
+
+const toast = useToast()
+const users = ref([])
+const loading = ref(false)
+const searchTerm = ref('')
+let searchTimer = null
+const isModalOpen = ref(false)
+const saving = ref(false)
+const editModel = ref({ id: null, displayName: '', role_ref: null, position_ref: null, faculty_ref: null, department_ref: null, profileId: null })
+
+const roleOptions = ref([])
+const positionOptions = ref([])
+const facultyOptions = ref([])
+const departmentOptions = ref([])
+const dictsLoading = ref(false)
+
+function fullName(u) {
+    if (u.displayName) return u.displayName
+    const name = `${u.first_name || ''} ${u.last_name || ''}`.trim()
+    return name || u.username || '—'
+}
+
+async function loadDicts() {
+    try {
+        dictsLoading.value = true
+        const [rolesResp, positionsResp, facultiesResp, departmentsResp] = await Promise.all([
+            apiClient.get('/project_ed/roles/'),
+            apiClient.get('/project_ed/positions/'),
+            apiClient.get('/project_ed/faculties/'),
+            apiClient.get('/project_ed/departments/')
+        ])
+        const norm = (resp) => Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+        roleOptions.value = norm(rolesResp)
+        positionOptions.value = norm(positionsResp)
+        facultyOptions.value = norm(facultiesResp)
+        departmentOptions.value = norm(departmentsResp)
+    } catch (e) {
+        toast.error('Не удалось загрузить справочники')
+    } finally {
+        dictsLoading.value = false
+    }
+}
+
+async function loadUsers() {
+    try {
+        loading.value = true
+        const params = {}
+        if (searchTerm.value) params.search = searchTerm.value
+        const [usersResp, profilesResp] = await Promise.all([
+            apiClient.get('/crm/users/', params),
+            apiClient.get('/project_ed/user-profiles/', params)
+        ])
+        const usersData = Array.isArray(usersResp.data) ? usersResp.data : (usersResp.data?.results || [])
+        const profilesData = Array.isArray(profilesResp.data) ? profilesResp.data : (profilesResp.data?.results || [])
+
+        const profileByUserId = new Map(profilesData.map(p => [p.user, p]))
+        users.value = usersData.map(u => {
+            const prof = profileByUserId.get(u.id)
+            return {
+                id: u.id,
+                username: u.username,
+                first_name: u.first_name,
+                last_name: u.last_name,
+                avatar_url: u.avatar_url || null,
+                displayName: prof?.user_full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+                role: prof?.role_name || prof?.role || null,
+                position: prof?.position_name || prof?.position || null,
+                faculty: prof?.faculty_name || prof?.faculty || null,
+                department: prof?.department_name || prof?.department || null,
+                profileId: prof?.id || null,
+                role_ref: prof?.role_ref ?? null,
+                position_ref: prof?.position_ref ?? null,
+                faculty_ref: prof?.faculty_ref ?? null,
+                department_ref: prof?.department_ref ?? null,
+            }
+        })
+    } catch (e) {
+        toast.error('Не удалось загрузить пользователей')
+    } finally {
+        loading.value = false
+    }
+}
+
+function handleSearch() {
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+        loadUsers()
+    }, 350)
+}
+
+// Первичная загрузка
+loadDicts()
+loadUsers()
+
+function openEdit(u) {
+    editModel.value = {
+        id: u.id,
+        displayName: fullName(u),
+        role_ref: u.role_ref ?? null,
+        position_ref: u.position_ref ?? null,
+        faculty_ref: u.faculty_ref ?? null,
+        department_ref: u.department_ref ?? null,
+        profileId: u.profileId || null
+    }
+    isModalOpen.value = true
+}
+
+function closeEdit() {
+    if (saving.value) return
+    isModalOpen.value = false
+}
+
+async function saveEdit() {
+    try {
+        saving.value = true
+        const payload = {
+            user: editModel.value.id,
+            role_ref: editModel.value.role_ref,
+            position_ref: editModel.value.position_ref,
+            faculty_ref: editModel.value.faculty_ref,
+            department_ref: editModel.value.department_ref
+        }
+        if (editModel.value.profileId) {
+            await apiClient.patch(`/project_ed/user-profiles/${editModel.value.profileId}/`, payload)
+        } else {
+            const created = await apiClient.post('/project_ed/user-profiles/', payload)
+            const newId = created?.data?.id
+            if (newId) editModel.value.profileId = newId
+        }
+        toast.success('Данные пользователя сохранены')
+        isModalOpen.value = false
+        await loadUsers()
+    } catch (e) {
+        toast.error('Не удалось сохранить данные пользователя')
+    } finally {
+        saving.value = false
+    }
+}
+</script>
+
+<style scoped lang="scss">
+.page-container { display: flex; flex-direction: column; height: 100%; }
+.page-content { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+.table-row-click { cursor: pointer; }
+.table-row-click:hover { background-color: rgba(0,0,0,0.03); }
+.project-ed-modal { z-index: 1060; }
+.project-ed-backdrop { z-index: 1055; position: fixed; inset: 0; }
+</style>

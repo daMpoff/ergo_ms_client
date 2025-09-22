@@ -181,6 +181,10 @@
               "name": "Целевые показатели"
             },
             {
+              "routeName": "ProjectEdUsersList",
+              "name": "Список пользователей"
+            },
+            {
               "routeName": "ProjectEdCreate",
               "name": "Создать проект"
             },

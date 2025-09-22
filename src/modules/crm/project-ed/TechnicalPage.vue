@@ -13,6 +13,9 @@
                         <router-link :to="{ name: 'ProjectEdTargetIndicators' }" class="btn btn-outline-primary align-self-start">
                             Перейти к целевым показателям
                         </router-link>
+                        <router-link :to="{ name: 'ProjectEdUsersList' }" class="btn btn-outline-primary align-self-start">
+                            Перейти к списку пользователей
+                        </router-link>
                     </div>
                 </div>
             </div>

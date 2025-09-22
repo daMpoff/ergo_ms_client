@@ -521,7 +521,8 @@
       "component": "@/modules/crm/project-ed/TechnicalPage.vue",
       "meta": {
         "title": "Служебная страница",
-        "requiresAuth": true
+        "requiresAuth": true,
+        "requiresAdmin": true
       }
     },
     "ProjectEdProgramDevelopment": {
@@ -529,7 +530,8 @@
       "component": "@/modules/crm/project-ed/ProgramDevelopmentPage.vue",
       "meta": {
         "title": "Программа развития БГТУ",
-        "requiresAuth": true
+        "requiresAuth": true,
+        "requiresAdmin": true
       }
     },
     "ProjectEdCreate": {
@@ -545,7 +547,17 @@
       "component": "@/modules/crm/project-ed/TargetIndicatorsPage.vue",
       "meta": {
         "title": "Целевые показатели",
-        "requiresAuth": true
+        "requiresAuth": true,
+        "requiresAdmin": true
+      }
+    },
+    "ProjectEdUsersList": {
+      "path": "/crm/project-ed/users",
+      "component": "@/modules/crm/project-ed/UsersListPage.vue",
+      "meta": {
+        "title": "Список пользователей",
+        "requiresAuth": true,
+        "requiresAdmin": true
       }
     },
     "ProjectEdCreateIndicator": {

@@ -218,15 +218,15 @@ async function loadBlocks() {
     isLoading.value = true
     try {
         // Попробуем загрузить блоки мероприятий
-        const url = endpoints.project_ed.event_blocks.list
-        const response = await apiClient.get(url)
+        const apiUrl = endpoints.project_ed.event_blocks.list
+        const response = await apiClient.get(apiUrl)
         blocks.value = response.data || []
     } catch (error) {
         // Временно показываем пустой массив, чтобы страница загрузилась
         blocks.value = []
         
         if (error.response?.status === 404) {
-            toast.error('API эндпоинт не найден. Эндпоинт: ' + url)
+            toast.error('API эндпоинт не найден. Эндпоинт: ' + (error?.config?.url || ''))
         } else if (error.response?.status === 500) {
             toast.error('Ошибка сервера. Проверьте логи API.')
         } else if (error.response?.status === 403) {
