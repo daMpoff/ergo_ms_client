@@ -73,19 +73,18 @@ const userFullName = computed(() => {
 const userRole = ref('Роль не определена')
 const avatarUrl = computed(() => userStore.avatarUrl)
 
-// Админские права (унифицированная проверка)
 const isAdmin = ref(false)
 
 async function loadRole(userId) {
     let admin = false
     try {
-        const resp = await apiClient.get('/project_ed/user-profiles/', { params: { user: userId } })
+        const resp = await apiClient.get(`/project_ed/user-profiles/?user=${userId}`)
         const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
         if (data && data.length > 0) {
-            const p = data[0]
-            const rn = p?.role_ref_name || p?.role_name || p?.role_ref?.name || p?.role
-            userRole.value = rn && rn.trim() ? rn : 'Роль не определена'
-            admin = (rn === 'Администратор') || (p?.role_ref?.name === 'Администратор') || (p?.role_name === 'Администратор')
+            const profile = data[0]
+            const roleName = profile?.role_name
+            userRole.value = roleName && roleName.trim() ? roleName : 'Роль не определена'
+            admin = roleName === 'Администратор'
         } else {
             userRole.value = 'Роль не определена'
         }
