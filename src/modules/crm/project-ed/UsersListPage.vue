@@ -58,7 +58,7 @@
                                         </td>
                                         <td>{{ u.role || 'N/A' }}</td>
                                         <td>{{ u.position || 'N/A' }}</td>
-                                        <td>{{ u.faculty || 'N/A' }}</td>
+                                        <td>{{ u.faculty_short_name || 'N/A' }}</td>
                                         <td>{{ u.department || 'N/A' }}</td>
                                     </tr>
                                 </tbody>
@@ -212,7 +212,8 @@ async function loadUsers() {
                 displayName: prof?.user_full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
                 role: prof?.role_name || prof?.role || null,
                 position: prof?.position_name || prof?.position || null,
-                faculty: prof?.faculty_name || prof?.faculty || null,
+                        faculty: prof?.faculty_name || prof?.faculty || null,
+                        faculty_short_name: prof?.faculty_short_name ?? prof?.faculty_short ?? null,
                 department: prof?.department_name || prof?.department || null,
                 profileId: prof?.id || null,
                 role_ref: prof?.role_ref ?? null,
