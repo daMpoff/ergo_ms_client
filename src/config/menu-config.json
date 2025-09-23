@@ -200,6 +200,14 @@
               "routeName": "ProjectEdTechnical",
               "name": "Служебная страница"
             },
+        {
+          "routeName": "ProjectEdProfile",
+          "name": "Профиль"
+        },
+        {
+          "routeName": "ProjectEdUserList",
+          "name": "Пользователи"
+        },
             {
               "routeName": "ProjectCalendar",
               "name": "Календарь задач"

@@ -234,12 +234,12 @@ async function loadUsers() {
         if (searchTerm.value) params.search = searchTerm.value
         const [usersResp, profilesResp] = await Promise.all([
             apiClient.get('/crm/users/', params),
-            apiClient.get('/project_ed/user-profiles/', params)
+            apiClient.get('/project_ed/profiles/profiles/', params)
         ])
         const usersData = Array.isArray(usersResp.data) ? usersResp.data : (usersResp.data?.results || [])
         const profilesData = Array.isArray(profilesResp.data) ? profilesResp.data : (profilesResp.data?.results || [])
 
-        const profileByUserId = new Map(profilesData.map(p => [p.user, p]))
+        const profileByUserId = new Map(profilesData.map(p => [p.id, p]))
         users.value = usersData.map(u => {
             const prof = profileByUserId.get(u.id)
             return {
@@ -248,14 +248,14 @@ async function loadUsers() {
                 first_name: u.first_name,
                 last_name: u.last_name,
                 avatar_url: u.avatar_url || null,
-                displayName: prof?.user_full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
-                role: prof?.role_name || prof?.role || null,
-                position: prof?.position_name || prof?.position || null,
-                        faculty: prof?.faculty_name || prof?.faculty || null,
-                        faculty_short_name: prof?.faculty_short_name ?? prof?.faculty_short ?? null,
-                department: prof?.department_name || prof?.department || null,
-                department_short_name: prof?.department_short_name ?? prof?.department_short ?? null,
-                profileId: prof?.id || null,
+                displayName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+                role: prof?.role_name || null,
+                position: prof?.position_name || null,
+                faculty: prof?.faculty_name || null,
+                faculty_short_name: prof?.faculty_short_name ?? null,
+                department: prof?.department_name || null,
+                department_short_name: prof?.department_short_name ?? null,
+                profileId: prof?.profile_id || null,
                 role_ref: prof?.role_ref ?? null,
                 position_ref: prof?.position_ref ?? null,
                 faculty_ref: prof?.faculty_ref ?? null,
@@ -311,9 +311,9 @@ async function saveEdit() {
             department_ref: editModel.value.department_ref
         }
         if (editModel.value.profileId) {
-            await apiClient.patch(`/project_ed/user-profiles/${editModel.value.profileId}/`, payload)
+            await apiClient.patch(`/project_ed/profiles/settings/${editModel.value.profileId}/`, payload)
         } else {
-            const created = await apiClient.post('/project_ed/user-profiles/', payload)
+            const created = await apiClient.post('/project_ed/profiles/settings/', payload)
             const newId = created?.data?.id
             if (newId) editModel.value.profileId = newId
         }

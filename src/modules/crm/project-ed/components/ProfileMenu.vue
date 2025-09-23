@@ -12,7 +12,7 @@
                 </div>
             </div>
             <div class="menu-list">
-                <button class="menu-item" type="button" @click="$emit('navigate', 'profile')">
+                <button class="menu-item" type="button" @click="goToProfile">
                     <UserRound :size="18" />
                     <span>Мой профиль</span>
                 </button>
@@ -78,10 +78,10 @@ const isAdmin = ref(false)
 async function loadRole(userId) {
     let admin = false
     try {
-        const resp = await apiClient.get(`/project_ed/user-profiles/?user=${userId}`)
-        const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
-        if (data && data.length > 0) {
-            const profile = data[0]
+        // Используем новый API endpoint для получения профиля пользователя
+        const resp = await apiClient.get(`/project_ed/profiles/profiles/${userId}/`)
+        const profile = resp.data
+        if (profile) {
             const roleName = profile?.role_name
             userRole.value = roleName && roleName.trim() ? roleName : 'Роль не определена'
             admin = roleName === 'Администратор'
@@ -89,6 +89,7 @@ async function loadRole(userId) {
             userRole.value = 'Роль не определена'
         }
     } catch (e) {
+        console.error('Ошибка загрузки роли пользователя:', e)
         userRole.value = 'Роль не определена'
     }
     isAdmin.value = admin
@@ -106,6 +107,11 @@ watch(() => userStore.user?.id, async (newId, oldId) => {
         await loadRole(newId)
     }
 }, { immediate: false })
+
+function goToProfile() {
+    const currentUserId = userStore.user?.id
+    router.push({ name: 'ProjectEdProfile', params: { userId: currentUserId } })
+}
 
 function goToServicePage() {
     router.push({ name: 'ProjectEdTechnical' })

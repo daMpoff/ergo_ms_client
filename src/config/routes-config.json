@@ -578,6 +578,22 @@
         "requiresAdmin": true
       }
     },
+        "ProjectEdProfile": {
+          "path": "/profile/:userId",
+          "component": "@/modules/crm/project-ed/Profile/ProfilePage.vue",
+          "meta": {
+            "title": "Профиль",
+            "requiresAuth": true
+          }
+        },
+        "ProjectEdUserList": {
+          "path": "/users",
+          "component": "@/modules/crm/project-ed/Profile/UserList.vue",
+          "meta": {
+            "title": "Пользователи",
+            "requiresAuth": true
+          }
+        },
     "ProjectEdCreateIndicator": {
       "path": "/crm/project-ed/target-indicators/create",
       "component": "@/modules/crm/project-ed/CreateIndicatorPage.vue",

@@ -69,30 +69,23 @@ router.beforeEach(async (to, from, next) => {
 
     // 2) requiresAdmin для страниц
     if (to.meta && to.meta.requiresAdmin) {
-      // Проверяем только ProjectEd-админа (без LMS и без auth сервисов)
       let isAdmin = false
       try {
         const { useUserStore } = await import('@/modules/cms/js/userStore.js')
         const userStore = useUserStore()
-
-        // Дожидаемся инициализации пользователя при прямой загрузке страницы
         if (!userStore.isInitialized) {
           try { await userStore.initializeUser() } catch (_) {}
         }
-
         const uid = userStore.user?.id
         if (uid) {
           const { apiClient } = await import('./api/manager')
-          const resp = await apiClient.get('/project_ed/user-profiles/', { params: { user: uid } })
-          const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
-          const hasProjectEdAdmin = data.some(p => (p?.role_ref_name === 'Администратор') || (p?.role_name === 'Администратор') || (p?.role === 'Администратор') || (p?.role_ref?.name === 'Администратор'))
-          if (hasProjectEdAdmin) isAdmin = true
+          const resp = await apiClient.get(`/project_ed/profiles/profiles/${uid}/`)
+          const data = resp.data || {}
+          const roleName = data.role_name || data.profile?.role_name
+          if (roleName === 'Администратор') isAdmin = true
         }
-      } catch (e) {
-        // игнорируем, обработаем ниже
-      }
+      } catch (_) {}
 
-      // Если подтверждённо НЕ админ — 404, иначе отправляем на стартовую, чтобы избежать ложного 404 при перезагрузке
       if (!isAdmin) {
         const { useUserStore } = await import('@/modules/cms/js/userStore.js')
         const userStore = useUserStore()
