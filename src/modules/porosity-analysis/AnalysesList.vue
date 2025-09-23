@@ -176,7 +176,7 @@
             </div>
             
             <div v-else>
-              <!-- Панель массовых действий -->
+              <!-- Панель удаления -->
               <div class="card mb-3 bulk-actions">
                 <div class="card-body">
                   <div class="row g-3 align-items-center">
@@ -213,10 +213,52 @@
 
                     <!-- Блок действий с выделением -->
                     <div class="col-12 col-md-6">
-                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
+                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center h-100">
                         <button class="btn btn-danger d-inline-flex align-items-center" :disabled="selectedIds.length === 0 || bulkDeleting" @click="requestBulkDeleteSelected">
                           <Trash2 class="me-1" size="16" /> Удалить выбранные ({{ selectedIds.length }})
                         </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Блок скачивания архива отчетов -->
+              <div class="card mb-3 download-actions">
+                <div class="card-body">
+                  <div class="row g-3 align-items-end">
+                    <div class="col-12">
+                      <label class="form-label d-flex align-items-center gap-2 mb-2">
+                        <Download :size="16" />
+                        <span class="fw-bold">Скачать архив отчетов</span>
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-text d-inline-flex align-items-center">
+                          <Hash size="16" />
+                        </span>
+                        <input
+                          v-model.trim="downloadInput"
+                          type="text"
+                          class="form-control"
+                          placeholder="Например: 1-100, 150, 200-300"
+                          aria-label="Номера анализов для скачивания"
+                        />
+                        <select v-model="reportType" class="form-select" style="max-width: 100px;">
+                          <option value="docx">DOCX</option>
+                          <option value="pdf">PDF</option>
+                        </select>
+                        <button
+                          class="btn btn-primary d-inline-flex align-items-center gap-1 lh-1"
+                          :disabled="!canDownloadByInput || downloadingReports"
+                          @click="downloadMultipleReports"
+                        >
+                          <Download size="16" />
+                          <span v-if="downloadingReports">Скачивание...</span>
+                          <span v-else>Скачать архив</span>
+                        </button>
+                      </div>
+                      <div class="form-text text-muted mt-1">
+                        Введите номера анализов через запятую или тире для диапазонов (например: 1-100, 150, 200-300). Ограничений по количеству нет.
                       </div>
                     </div>
                   </div>
@@ -299,13 +341,7 @@
                     </div>
                     <div class="card-footer">
                       <div class="action-buttons">
-                        <router-link
-                          :to="`/porosity-analysis/analysis/${analysis.id}`"
-                          class="action-btn primary"
-                        >
-                          <Eye class="me-1" size="16" />
-                          Просмотр
-                        </router-link>
+                        <!-- Удален переход на детальную страницу -->
                         
                         <button
                           v-if="analysis.status === 'failed'"
@@ -331,17 +367,6 @@
                           {{ restartingAnalysis === analysis.id ? 'Перезапуск...' : 'Перезапустить' }}
                         </button>
                         
-                        <button
-                          v-if="analysis.status === 'pending'"
-                          type="button"
-                          class="action-btn secondary"
-                          @click="restartAnalysis(analysis.id)"
-                          :disabled="restartingAnalysis === analysis.id"
-                          title="Перезапустить ожидающий анализ"
-                        >
-                          <RotateCcw class="me-1" size="16" />
-                          {{ restartingAnalysis === analysis.id ? 'Перезапуск...' : 'Перезапустить' }}
-                        </button>
                         
                         <div v-if="analysis.status === 'completed'" class="dropdown d-inline-block">
                           <button
@@ -355,12 +380,6 @@
                             {{ downloadingAnalysis === analysis.id ? 'Скачивание...' : 'Скачать' }}
                           </button>
                           <ul class="dropdown-menu">
-                            <li>
-                              <a class="dropdown-item" href="#" @click.prevent="downloadResults(analysis.id)">
-                                <Download class="me-2" size="16" />
-                                Архив результатов
-                              </a>
-                            </li>
                             <li>
                               <a class="dropdown-item" href="#" @click.prevent="downloadReport(analysis.id, 'pdf')">
                                 <FileText class="me-2" size="16" />
@@ -481,7 +500,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { 
   Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
   Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash
 } from 'lucide-vue-next'
 
 import { useToast } from 'vue-toastification'
@@ -494,8 +513,7 @@ export default {
     ConfirmDialog,
     Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
     Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
-    ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
-    , Search
+    ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash
   },
   data() {
     return {
@@ -517,6 +535,13 @@ export default {
       bulkDeleting: false,
       bulkMode: 'selected',
       bulkPreviewIds: [],
+      bulkPreviewExistingIds: [],
+      bulkPreviewNotFound: [],
+      bulkPreviewExistingCount: 0,
+      // Скачивание архива отчетов
+      downloadInput: '',
+      reportType: 'docx',
+      downloadingReports: false,
       // Данные для пагинации
       pagination: {
         current_page: 1,
@@ -642,7 +667,16 @@ export default {
     bulkDeleteMessage() {
       const ids = this.bulkPreviewIds || []
       if (!ids.length) return 'Не указаны корректные номера анализов.'
-      return `Будут удалены ${ids.length} анализ(а/ов). Действие необратимо.`
+      const existing = this.bulkPreviewExistingCount
+      const missing = Math.max(0, ids.length - existing)
+      if (existing === 0) return 'По указанным номерам анализы не найдены.'
+      if (missing > 0) {
+        return `Будут удалены ${existing} анализ(а/ов). ${missing} отсутствуют и удалены не будут. Действие необратимо.`
+      }
+      return `Будут удалены ${existing} анализ(а/ов). Действие необратимо.`
+    },
+    canDownloadByInput() {
+      return (this.downloadInput || '').trim().length > 0 && !this.downloadingReports
     }
   },
   async mounted() {
@@ -860,7 +894,7 @@ export default {
       if (this.selectedIds.length === 0) return
       this.bulkMode = 'selected'
       this.bulkPreviewIds = [...this.selectedIds]
-      this.showBulkDeleteConfirm = true
+      this.previewBulkDeletion()
     },
     requestBulkDeleteByInput() {
       const raw = String(this.bulkInput || '')
@@ -885,7 +919,30 @@ export default {
       } catch {}
       this.bulkMode = 'input'
       this.bulkPreviewIds = ids
-      this.showBulkDeleteConfirm = true
+      this.previewBulkDeletion()
+    },
+    async previewBulkDeletion() {
+      try {
+        const params = { analysis_ids: this.bulkPreviewIds, dry_run: true }
+        const response = await porosityAnalysisAPI.deleteMultipleAnalyses(params)
+        // Ответ в dry_run success: true, would_delete_count, existing_ids, not_found
+        if (response && response.success) {
+          const payload = response.data || response
+          this.bulkPreviewExistingCount = payload.would_delete_count || (payload.existing_ids ? payload.existing_ids.length : 0) || 0
+          this.bulkPreviewExistingIds = payload.existing_ids || []
+          this.bulkPreviewNotFound = payload.not_found || []
+        } else {
+          this.bulkPreviewExistingCount = this.bulkPreviewIds.length
+          this.bulkPreviewExistingIds = [...this.bulkPreviewIds]
+          this.bulkPreviewNotFound = []
+        }
+      } catch (e) {
+        this.bulkPreviewExistingCount = this.bulkPreviewIds.length
+        this.bulkPreviewExistingIds = [...this.bulkPreviewIds]
+        this.bulkPreviewNotFound = []
+      } finally {
+        this.showBulkDeleteConfirm = true
+      }
     },
     async confirmBulkDelete() {
       this.bulkDeleting = true
@@ -902,7 +959,7 @@ export default {
           const deletedCount = payload.deleted_count || payload.deleted || 0
           toast.success(`Удалено ${deletedCount} анализов`)
           // Удаляем из локального списка
-          const deletedIds = new Set((payload.deleted_ids || []).concat(this.bulkPreviewIds))
+          const deletedIds = new Set((payload.deleted_ids || this.bulkPreviewExistingIds || []).concat(this.bulkPreviewIds))
           this.analyses = this.analyses.filter(a => !deletedIds.has(a.id))
           // Сначала закрываем модалку, затем очищаем стейты предпросмотра/выделения
           this.showBulkDeleteConfirm = false
@@ -910,6 +967,9 @@ export default {
             this.clearSelection()
             this.bulkInput = ''
             this.bulkPreviewIds = []
+            this.bulkPreviewExistingIds = []
+            this.bulkPreviewNotFound = []
+            this.bulkPreviewExistingCount = 0
           })
           // Обновляем статистику и список в фоне
           try { await this.loadStats() } catch {}
@@ -1070,41 +1130,7 @@ export default {
       }
     },
     
-    async downloadResults(analysisId) {
-      this.downloadingAnalysis = analysisId
-      try {
-        const response = await porosityAnalysisAPI.getDownloadResults(analysisId)
-        if (response && response.success) {
-          // Создаем ссылку для скачивания ZIP архива
-          const url = window.URL.createObjectURL(response.data)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = `analysis_${analysisId}_results.zip`
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.URL.revokeObjectURL(url)
-          
-          toast.success('Архив с результатами скачивается')
-        } else {
-          toast.error((response && response.message) ? response.message : 'Ошибка при скачивании результатов')
-        }
-      } catch (error) {
-        let errorMessage = 'Ошибка при скачивании результатов'
-        if (error && typeof error === 'object') {
-          if (error.response && error.response.data) {
-            errorMessage = error.response.data.message || error.response.data.detail || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          }
-        }
-        if (toast && toast.error) {
-          toast.error(errorMessage)
-        }
-      } finally {
-        this.downloadingAnalysis = null
-      }
-    },
+    // Удален скачиваемый ZIP архив результатов
     
     deleteAnalysis(analysisId) {
       this.analysisToDelete = analysisId
@@ -1201,6 +1227,94 @@ export default {
         toast.error(error.message || 'Ошибка при скачивании отчета')
       } finally {
         this.downloadingAnalysis = null
+      }
+    },
+    async downloadMultipleReports() {
+      if (!this.canDownloadByInput) {
+        return
+      }
+
+      this.downloadingReports = true
+
+      try {
+        const params = {
+          input: this.downloadInput.trim(),
+          report_type: this.reportType
+        }
+
+        console.log('Downloading multiple reports with params:', params)
+
+        const response = await porosityAnalysisAPI.downloadMultipleReports(params)
+        console.log('Download response:', response)
+
+        if (response && response.success && response.data) {
+          // Получаем blob из ответа
+          const blob = response.data
+          
+          // Создаем ссылку для скачивания
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          
+          // Формируем имя файла
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+          link.download = `porosity_reports_${this.reportType}_${timestamp}.zip`
+          
+          // Добавляем ссылку в DOM, кликаем и удаляем
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          
+          // Освобождаем URL
+          window.URL.revokeObjectURL(url)
+          
+          // Показываем информацию о результате скачивания
+          const successCount = parseInt(response.headers?.['X-Reports-Count'] || '0')
+          const failedCount = parseInt(response.headers?.['X-Failed-Count'] || '0')
+          const notFound = response.headers?.['X-Not-Found']
+          
+          let message = ''
+          let toastType = 'success'
+          
+          if (successCount > 0) {
+            message = `Архив отчетов скачивается. Успешно создано отчетов: ${successCount}`
+            if (failedCount > 0) {
+              message += `, с ошибками: ${failedCount}`
+              toastType = 'warning'
+            }
+            if (notFound) {
+              message += `, не найдено анализов: ${notFound.split(',').length}`
+              toastType = 'warning'
+            }
+          } else {
+            // Если ни одного отчета не создано
+            if (notFound) {
+              message = `Архив скачивается с информацией. Не найдено анализов: ${notFound.split(',').length}`
+            } else {
+              message = 'Архив скачивается с информацией об ошибках'
+            }
+            toastType = 'info'
+          }
+          
+          // Показываем соответствующий тип уведомления
+          if (toastType === 'success') {
+            toast.success(message)
+          } else if (toastType === 'warning') {
+            toast.warning(message)
+          } else {
+            toast.info(message)
+          }
+          
+          // Очищаем поле ввода после успешного скачивания
+          this.downloadInput = ''
+        } else {
+          throw new Error((response && response.message) ? response.message : 'Ошибка при скачивании архива отчетов')
+        }
+      } catch (error) {
+        console.error('Download multiple reports error:', error)
+        toast.error(error.message || 'Ошибка при скачивании архива отчетов')
+      } finally {
+        this.downloadingReports = false
       }
     }
   }
@@ -1426,12 +1540,14 @@ export default {
   max-width: 480px;
   margin: 0 auto;
   position: relative;
+  overflow: visible;
 }
 
 .analysis-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   border-color: #007bff;
+  z-index: 1050;
 }
 .analysis-card.selected {
   border-color: #dc3545;
@@ -1657,6 +1773,20 @@ export default {
 .bulk-actions .btn { min-height: 38px; }
 .bulk-actions .d-flex.gap-2 > .btn { flex-shrink: 0; }
 .bulk-actions .ms-auto { margin-left: auto !important; }
+
+/* Стили для блока скачивания архива */
+.download-actions .card-body { padding: 1rem; }
+.download-actions .input-group-text { 
+  background-color: #e3f2fd; 
+  border-color: #1976d2;
+  color: #1976d2;
+}
+.download-actions .form-text { font-size: 0.8rem; }
+.download-actions .btn { min-height: 38px; }
+.download-actions .input-group .form-select {
+  border-left: 0;
+  border-right: 0;
+}
 
 .card-body {
   padding: 1rem;
@@ -1920,7 +2050,22 @@ export default {
 .analysis-card .dropdown-menu {
   min-width: 180px;
   margin-top: 0.25rem;
+  z-index: 2000;
+  background-color: #ffffff;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  opacity: 1;
+  backdrop-filter: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  will-change: opacity, transform;
 }
+
+/* Плавное появление/скрытие дропдауна */
+.analysis-card .dropdown .dropdown-menu { opacity: 0; transform: translateY(4px); }
+.analysis-card .dropdown .dropdown-menu.show { opacity: 1; transform: translateY(0); }
+
+/* Разделители между пунктами меню */
+.analysis-card .dropdown-menu .dropdown-item + .dropdown-item { border-top: 1px solid #e9ecef; }
 
 /* Дополнительные стили для grid-сетки кнопок */
 .action-buttons > * {

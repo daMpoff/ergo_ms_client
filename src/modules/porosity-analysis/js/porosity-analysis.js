@@ -145,10 +145,10 @@ class PorosityAnalysisAPI {
   }
 
   /**
-   * Получить список файлов результатов для скачивания
+   * Получить список файлов результатов для скачивания (отключено)
    */
   async getDownloadResults(analysisId) {
-    return await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_results/`)
+    return { success: false, message: 'Скачивание архива результатов отключено' }
   }
 
   /**
@@ -156,7 +156,7 @@ class PorosityAnalysisAPI {
    */
   async downloadFile(analysisId, filePath) {
     const params = { file: filePath }
-    return await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_file/`, params)
+    return await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_file/`, params, 'GET')
   }
 
   /**
@@ -351,7 +351,7 @@ class PorosityAnalysisAPI {
   async downloadReport(analysisId, reportType) {
     console.log(`API: Downloading report for analysis ${analysisId}, type: ${reportType}`)
     try {
-      const response = await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_report/`, { type: reportType })
+      const response = await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_report/`, { type: reportType }, 'GET')
       console.log('API: Download response:', response)
       return response
     } catch (error) {
@@ -360,6 +360,25 @@ class PorosityAnalysisAPI {
       return {
         success: false,
         message: error.message || 'Ошибка при скачивании отчета',
+        data: null
+      }
+    }
+  }
+
+  /**
+   * Скачать архив отчетов по нескольким анализам
+   */
+  async downloadMultipleReports(params) {
+    console.log('API: Downloading multiple reports with params:', params)
+    try {
+      const response = await apiClient.downloadFile(`${this.baseEndpoint}download_multiple_reports/`, params, 'POST')
+      console.log('API: Multiple reports download response:', response)
+      return response
+    } catch (error) {
+      console.error('API: Multiple reports download error:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании архива отчетов',
         data: null
       }
     }

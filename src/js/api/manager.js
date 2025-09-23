@@ -185,18 +185,27 @@ class ApiClient {
     }
 
     // Метод для скачивания файлов (бинарные данные)
-    async downloadFile(endpoint, params = {}, needToken = true) {
+    async downloadFile(endpoint, params = {}, method = 'GET', needToken = true) {
         try {
-            console.log('Скачивание файла:', endpoint, params);
+            console.log('Скачивание файла:', endpoint, params, 'Method:', method);
             const config = { 
-                params,
                 responseType: 'blob' // Важно для бинарных данных
             };
             if (needToken) {
                 this._addAuthToken(config);
             }
+            
+            let response;
+            if (method.toUpperCase() === 'POST') {
+                // Для POST запросов передаем параметры в теле запроса
+                response = await this.client.post(endpoint, params, config);
+            } else {
+                // Для GET запросов передаем параметры как query parameters
+                config.params = params;
+                response = await this.client.get(endpoint, config);
+            }
+            
             console.log('Конфигурация запроса:', config);
-            const response = await this.client.get(endpoint, config);
             
             // Для бинарных данных возвращаем специальный формат
             return {
