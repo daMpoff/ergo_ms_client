@@ -74,6 +74,12 @@ router.beforeEach(async (to, from, next) => {
       try {
         const { useUserStore } = await import('@/modules/cms/js/userStore.js')
         const userStore = useUserStore()
+
+        // Дожидаемся инициализации пользователя при прямой загрузке страницы
+        if (!userStore.isInitialized) {
+          try { await userStore.initializeUser() } catch (_) {}
+        }
+
         const uid = userStore.user?.id
         if (uid) {
           const { apiClient } = await import('./api/manager')
@@ -83,10 +89,17 @@ router.beforeEach(async (to, from, next) => {
           if (hasProjectEdAdmin) isAdmin = true
         }
       } catch (e) {
-        // игнорируем, редирект ниже
+        // игнорируем, обработаем ниже
       }
 
+      // Если подтверждённо НЕ админ — 404, иначе отправляем на стартовую, чтобы избежать ложного 404 при перезагрузке
       if (!isAdmin) {
+        const { useUserStore } = await import('@/modules/cms/js/userStore.js')
+        const userStore = useUserStore()
+        const uid = userStore.user?.id
+        if (uid === undefined || uid === null) {
+          return next({ name: 'StartPage' })
+        }
         return next({ name: 'NotFound' })
       }
     }
