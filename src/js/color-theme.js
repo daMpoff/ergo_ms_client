@@ -36,7 +36,11 @@
       return storedTheme
     }
 
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    // Берём значение по умолчанию из env (VITE_DEFAULT_THEME), иначе 'light'
+    const envDefault = (import.meta?.env?.VITE_DEFAULT_THEME || 'light').toString().toLowerCase()
+    const allowed = ['light', 'dark', 'auto']
+    const fallback = 'light'
+    return allowed.includes(envDefault) ? envDefault : fallback
   }
 
   const setTheme = (theme) => {
