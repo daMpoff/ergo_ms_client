@@ -46,7 +46,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(u, idx) in users" :key="u.id" class="table-row-click" @click="openEdit(u)">
+                                    <tr v-for="(u, idx) in filteredUsers" :key="u.id" class="table-row-click" @click="openEdit(u)">
                                         <td class="text-muted">{{ idx + 1 }}</td>
                                         <td>
                                             <div class="d-flex align-items-center">
@@ -151,9 +151,23 @@ const breadcrumbItems = ref([
 
 const toast = useToast()
 const users = ref([])
+const filteredUsers = computed(() => {
+    const term = (searchTerm.value || '').toString().trim().toLowerCase()
+    if (!term) return users.value
+    return users.value.filter(u => {
+        const values = [
+            u.displayName,
+            u.role,
+            u.faculty,
+            u.faculty_short_name,
+            u.department,
+            u.department_short_name
+        ].filter(Boolean).map(v => v.toString().toLowerCase())
+        return values.some(v => v.includes(term))
+    })
+})
 const loading = ref(false)
 const searchTerm = ref('')
-let searchTimer = null
 const isModalOpen = ref(false)
 const saving = ref(false)
 const editModel = ref({ id: null, displayName: '', role_ref: null, position_ref: null, faculty_ref: null, department_ref: null, profileId: null })
@@ -253,10 +267,7 @@ async function loadUsers() {
 }
 
 function handleSearch() {
-    if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-        loadUsers()
-    }, 350)
+    // Фильтрация выполняется на клиенте в computed: filteredUsers
 }
 
 // Первичная загрузка
