@@ -282,15 +282,57 @@
                             <label class="form-label required">
                                 Заказчик проекта
                             </label>
-                            <div class="customer-display">
+                            <div v-if="customerCandidates && customerCandidates.length > 1" class="curator-dropdown-wrapper" ref="customerDropdownRef">
+                                <div 
+                                    class="curator-select-trigger"
+                                    @click="toggleCustomerDropdown"
+                                    :class="{ 'is-open': isCustomerDropdownOpen }"
+                                >
+                                    <div v-if="getSelectedCustomer()" class="curator-selected">
+                                        <DefaultAvatar
+                                            :size="'medium'"
+                                            :title="getSelectedCustomer().name"
+                                        />
+                                        <div class="curator-info">
+                                            <div class="curator-name curator-name--selected">{{ getSelectedCustomer().name }}</div>
+                                            <div class="curator-position">{{ getSelectedCustomer().position }}</div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="curator-placeholder">
+                                        Выберите заказчика
+                                    </div>
+                                    <div class="select-arrow" :class="{ 'rotated': isCustomerDropdownOpen }">
+                                        <ChevronDown :size="16" />
+                                    </div>
+                                </div>
+                                
+                                <div v-if="isCustomerDropdownOpen" class="curator-dropdown-list">
+                                    <div 
+                                        v-for="person in customerCandidates" 
+                                        :key="person.id" 
+                                        class="curator-dropdown-item"
+                                        @click="selectCustomer(person)"
+                                    >
+                                        <DefaultAvatar
+                                            :size="'medium'"
+                                            :title="person.name"
+                                        />
+                                        <div class="curator-info">
+                                            <div class="curator-name">{{ person.name }}</div>
+                                            <div class="curator-position">{{ person.position }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-else class="customer-display">
                                 <div class="customer-avatar-container">
                                     <DefaultAvatar
                                         size="medium"
-                                        :title="rectorInfo.name"
+                                        :title="customerInfo.name"
                                     />
                                     <div class="customer-info">
-                                        <div class="customer-name">{{ rectorInfo.name }}</div>
-                                        <div class="customer-position">{{ rectorInfo.position }}</div>
+                                        <div class="customer-name">{{ customerInfo.name }}</div>
+                                        <div class="customer-position">{{ customerInfo.position }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -450,6 +492,7 @@ import { HelpCircle, ChevronDown } from 'lucide-vue-next'
 import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import ExecutorSelector from '@/modules/crm/project-ed/components/ExecutorSelector.vue'
+import { apiClient } from '@/js/api/manager.js'
 
 const props = defineProps({
     provisions: {
@@ -502,10 +545,17 @@ const shortNamePopoverElement = ref(null)
 const isCuratorDropdownOpen = ref(false)
 const curatorDropdownRef = ref(null)
 
+// Состояние для выпадающего списка заказчика
+const isCustomerDropdownOpen = ref(false)
+const customerDropdownRef = ref(null)
+
 // Глобальный обработчик клика вне выпадающего списка
 const handleClickOutside = (event) => {
     if (curatorDropdownRef.value && !curatorDropdownRef.value.contains(event.target)) {
         closeCuratorDropdown()
+    }
+    if (customerDropdownRef.value && !customerDropdownRef.value.contains(event.target)) {
+        isCustomerDropdownOpen.value = false
     }
 }
 
@@ -644,6 +694,72 @@ const availablePersons = ref([
     { id: 5, name: 'Глебов Глеб Владимирович', position: 'Проректор по АХР', initials: 'Г.Г.В.' },
     { id: 6, name: 'Геращенкова Татьяна Михайловна', position: 'Проректор по качеству и аккредитации', initials: 'Г.Т.М.' }
 ])
+
+// Данные пользователей/профилей для определения заказчика
+const usersForCustomer = ref([])
+const profilesForCustomer = ref([])
+const customerInfo = ref({ name: '—', position: 'Должность вакантна' })
+
+// Кандидаты и выбор заказчика
+const customerCandidates = ref([])
+const selectedCustomerId = ref(null)
+
+const toggleCustomerDropdown = () => {
+    isCustomerDropdownOpen.value = !isCustomerDropdownOpen.value
+}
+
+const selectCustomer = (person) => {
+    selectedCustomerId.value = person.id
+    customerInfo.value = { name: person.name, position: person.position || 'Ректор' }
+    localProvisions.value.customer = person.name
+    isCustomerDropdownOpen.value = false
+}
+
+const getSelectedCustomer = () => {
+    return customerCandidates.value.find(person => person.id === selectedCustomerId.value)
+}
+
+async function resolveCustomerFromApi() {
+    try {
+        const [usersResp, profilesResp] = await Promise.all([
+            apiClient.get('/crm/users/'),
+            apiClient.get('/project_ed/user-profiles/')
+        ])
+        const norm = (resp) => Array.isArray(resp?.data) ? resp.data : (resp?.data?.results || [])
+        usersForCustomer.value = norm(usersResp)
+        profilesForCustomer.value = norm(profilesResp)
+
+        const profileByUserId = new Map(profilesForCustomer.value.map(p => [p.user, p]))
+        const combined = usersForCustomer.value.map(u => {
+            const p = profileByUserId.get(u.id)
+            return {
+                id: u.id,
+                name: (p?.user_full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username).trim(),
+                role: p?.role_name || p?.role || null,
+                position: p?.position_name || p?.position || null
+            }
+        })
+
+        customerCandidates.value = combined.filter(person => {
+            const hasExpertGroupRole = (person.role || '').toLowerCase() === 'экспертная группа'
+            const isRector = typeof person.position === 'string' && person.position.toLowerCase().includes('ректор')
+            return hasExpertGroupRole && isRector
+        })
+
+        if (customerCandidates.value.length === 1) {
+            const only = customerCandidates.value[0]
+            selectedCustomerId.value = only.id
+            customerInfo.value = { name: only.name, position: only.position || 'Ректор' }
+            localProvisions.value.customer = only.name
+        } else if (customerCandidates.value.length === 0) {
+            customerInfo.value = { name: '—', position: 'Должность вакантна' }
+        } else {
+            customerInfo.value = { name: '—', position: 'Выберите заказчика' }
+        }
+    } catch (e) {
+        customerInfo.value = { name: '—', position: 'Должность вакантна' }
+    }
+}
 
 // Валидация формы
 const isFormValid = computed(() => {
@@ -881,7 +997,19 @@ onMounted(() => {
     
     // Обработчик клика вне выпадающего списка
     document.addEventListener('click', handleClickOutside)
+
+    // Подтягиваем заказчика из реальных данных
+    resolveCustomerFromApi()
 })
+
+// Синхронизация названия заказчика в локальном состоянии
+watch(customerInfo, (val) => {
+    if (val && typeof val.name === 'string') {
+        localProvisions.value.customer = val.name
+    } else {
+        localProvisions.value.customer = ''
+    }
+}, { immediate: true })
 
 // Функция инициализации popover
 const initializePopover = () => {
