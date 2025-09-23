@@ -1189,15 +1189,6 @@
         "requiresAuth": true
       }
     },
-    "PorosityAnalysisDetail": {
-      "path": "/porosity-analysis/analysis/:id",
-      "component": "@/modules/porosity-analysis/AnalysisDetail.vue",
-      "meta": {
-        "title": "Детали анализа",
-        "requiresAuth": true
-      }
-    }
-    ,
     "VideoAnalysis": {
       "path": "/video-analysis",
       "component": "@/modules/video-analysis/ParentLayout.vue",
