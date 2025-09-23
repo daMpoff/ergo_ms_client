@@ -38,6 +38,7 @@
                                     <th>Короткое имя</th>
                                     <th>Факультет</th>
                             <th class="text-center">Пользователи</th>
+                                    <th style="width: 56px;" class="text-end"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -50,6 +51,17 @@
                                         <span class="d-inline-flex align-items-center justify-content-end">
                                             <Users class="lucide align-middle me-1" :size="18" /> {{ deptCounts[d.id] || 0 }}
                                         </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button
+                                            class="btn btn-sm btn-outline-danger table-row-actions d-inline-flex align-items-center"
+                                            title="Удалить"
+                                            @click.stop="quickDelete(d)"
+                                            :disabled="saving || deletingId === d.id"
+                                        >
+                                            <span v-if="deletingId === d.id" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            <Trash2 v-else class="lucide align-middle" :size="16" />
+                                        </button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -85,17 +97,46 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary" @click="closeModal">Отмена</button>
-                                <button type="button" class="btn btn-primary" :disabled="saving" @click="saveDepartment">
-                                    <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Сохранить
+                            <div class="modal-footer d-flex align-items-center justify-content-between">
+                                <button v-if="editId" type="button" class="btn btn-outline-danger" @click="openDeleteConfirm(editId, form.name)" :disabled="saving || deletingId">
+                                    <span v-if="deletingId" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Удалить
                                 </button>
+                                <div class="ms-auto d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-outline-secondary" @click="closeModal" :disabled="saving || deletingId">Отмена</button>
+                                    <button type="button" class="btn btn-primary" :disabled="saving" @click="saveDepartment">
+                                        <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Сохранить
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-backdrop fade show project-ed-backdrop" @click="closeModal"></div>
+            </div>
+            <div v-if="confirmOpen">
+                <div class="modal fade show d-block project-ed-modal" tabindex="-1" role="dialog" aria-modal="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Удалить кафедру</h5>
+                                <button type="button" class="btn-close" aria-label="Close" @click="closeDeleteConfirm" :disabled="deletingId"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0">Вы действительно хотите удалить кафедру <strong>{{ confirmName }}</strong>? Это действие нельзя отменить.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" @click="closeDeleteConfirm" :disabled="deletingId">Отмена</button>
+                                <button type="button" class="btn btn-danger" @click="performDelete" :disabled="deletingId">
+                                    <span v-if="deletingId" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Удалить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-backdrop fade show project-ed-backdrop" @click="closeDeleteConfirm"></div>
             </div>
         </teleport>
     </div>
@@ -103,7 +144,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Home, Wrench, Building2, RefreshCw, Search, Users } from 'lucide-vue-next'
+import { Home, Wrench, Building2, RefreshCw, Search, Users, Trash2 } from 'lucide-vue-next'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 import { apiClient } from '@/js/api/manager'
 import { useToast } from 'vue-toastification'
@@ -126,6 +167,10 @@ const isModalOpen = ref(false)
 const saving = ref(false)
 const form = ref({ name: '', short_name: '', faculty_ref: null })
 const editId = ref(null)
+const deletingId = ref(null)
+const confirmOpen = ref(false)
+const confirmId = ref(null)
+const confirmName = ref('')
 
 const facultyOptions = ref([])
 const dictsLoading = ref(false)
@@ -236,6 +281,41 @@ async function saveDepartment() {
     }
 }
 
+function openDeleteConfirm(id, name) {
+    const targetId = typeof id === 'object' ? (id?.value ?? null) : id
+    const targetName = typeof name === 'object' ? (name?.value ?? '') : (name ?? '')
+    confirmId.value = targetId
+    confirmName.value = targetName
+    confirmOpen.value = true
+}
+
+function closeDeleteConfirm() {
+    if (deletingId.value) return
+    confirmOpen.value = false
+}
+
+async function performDelete() {
+    if (!confirmId.value) return
+    try {
+        deletingId.value = confirmId.value
+        await apiClient.delete(`/project_ed/departments/${confirmId.value}/`)
+        toast.success('Кафедра удалена')
+        confirmOpen.value = false
+        isModalOpen.value = false
+        await loadDepartments()
+    } catch (e) {
+        const msg = e?.response?.data?.detail || 'Не удалось удалить кафедру'
+        toast.error(msg)
+    } finally {
+        deletingId.value = null
+    }
+}
+
+function quickDelete(row) {
+    if (!row?.id) return
+    openDeleteConfirm(row.id, row.name)
+}
+
 loadFaculties()
 loadDepartments()
 
@@ -263,6 +343,9 @@ async function loadDeptCounts() {
 .page-content { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
 .project-ed-modal { z-index: 1060; }
 .project-ed-backdrop { z-index: 1055; position: fixed; inset: 0; }
+.table-row-click { cursor: pointer; }
+.table-row-actions { opacity: 0; visibility: hidden; transition: opacity .15s ease; }
+tr.table-row-click:hover .table-row-actions { opacity: 1; visibility: visible; }
 </style>
 
 

@@ -560,6 +560,15 @@
         "requiresAdmin": true
       }
     },
+    "ProjectEdPositionsStats": {
+      "path": "/crm/project-ed/positions",
+      "component": "@/modules/crm/project-ed/PositionsStatsPage.vue",
+      "meta": {
+        "title": "Статистика по должностям",
+        "requiresAuth": true,
+        "requiresAdmin": true
+      }
+    },
     "ProjectEdDepartments": {
       "path": "/crm/project-ed/departments",
       "component": "@/modules/crm/project-ed/DepartmentsPage.vue",

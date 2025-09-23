@@ -22,6 +22,9 @@
                         <router-link :to="{ name: 'ProjectEdDepartments' }" class="btn btn-outline-primary d-flex align-items-center">
                             Перейти к кафедрам
                         </router-link>
+                        <router-link :to="{ name: 'ProjectEdPositionsStats' }" class="btn btn-outline-primary d-flex align-items-center">
+                            Статистика по должностям
+                        </router-link>
                     </div>
 
                     <div v-if="loading" class="d-flex align-items-center gap-2 text-muted">
