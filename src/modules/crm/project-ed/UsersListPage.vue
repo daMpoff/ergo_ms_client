@@ -19,6 +19,9 @@
                         <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadUsers">
                             <RefreshCw class="lucide align-middle me-1" :size="18" /> Обновить
                         </button>
+                        <router-link :to="{ name: 'ProjectEdDepartments' }" class="btn btn-outline-primary d-flex align-items-center">
+                            Перейти к кафедрам
+                        </router-link>
                     </div>
 
                     <div v-if="loading" class="d-flex align-items-center gap-2 text-muted">
@@ -59,7 +62,7 @@
                                         <td>{{ u.role || 'N/A' }}</td>
                                         <td>{{ u.position || 'N/A' }}</td>
                                         <td>{{ u.faculty_short_name || 'N/A' }}</td>
-                                        <td>{{ u.department || 'N/A' }}</td>
+                                        <td>{{ departmentShort(u) || 'N/A' }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -111,7 +114,7 @@
                                         <label class="form-label">Кафедра</label>
                                         <select v-model="editModel.department_ref" class="form-select">
                                             <option :value="null">— Не выбрано —</option>
-                                            <option v-for="d in departmentOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
+                                            <option v-for="d in filteredDepartmentOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -133,7 +136,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Home, Users, Wrench, Search, RefreshCw } from 'lucide-vue-next'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 import { apiClient } from '@/js/api/manager'
@@ -159,12 +162,26 @@ const roleOptions = ref([])
 const positionOptions = ref([])
 const facultyOptions = ref([])
 const departmentOptions = ref([])
+const filteredDepartmentOptions = computed(() => {
+    const fid = editModel.value.faculty_ref
+    if (!fid) return departmentOptions.value
+    return departmentOptions.value.filter(d => (d.faculty ?? d.faculty_ref ?? null) === fid)
+})
 const dictsLoading = ref(false)
 
 function fullName(u) {
     if (u.displayName) return u.displayName
     const name = `${u.first_name || ''} ${u.last_name || ''}`.trim()
     return name || u.username || '—'
+}
+
+function departmentShort(u) {
+    // Если из профиля пришло короткое имя — используем его
+    if (u.department_short_name) return u.department_short_name
+    const deptId = u.department_ref
+    if (!deptId) return u.department || null
+    const dep = Array.isArray(departmentOptions.value) ? departmentOptions.value.find(d => d.id === deptId) : null
+    return dep?.short_name || u.department || null
 }
 
 async function loadDicts() {
@@ -180,7 +197,12 @@ async function loadDicts() {
         roleOptions.value = norm(rolesResp)
         positionOptions.value = norm(positionsResp)
         facultyOptions.value = norm(facultiesResp)
-        departmentOptions.value = norm(departmentsResp)
+        departmentOptions.value = norm(departmentsResp).map(d => ({
+            id: d.id,
+            name: d.name,
+            short_name: d.short_name ?? d.short ?? null,
+            faculty: d.faculty ?? d.faculty_ref ?? null
+        }))
     } catch (e) {
         toast.error('Не удалось загрузить справочники')
     } finally {
@@ -215,6 +237,7 @@ async function loadUsers() {
                         faculty: prof?.faculty_name || prof?.faculty || null,
                         faculty_short_name: prof?.faculty_short_name ?? prof?.faculty_short ?? null,
                 department: prof?.department_name || prof?.department || null,
+                department_short_name: prof?.department_short_name ?? prof?.department_short ?? null,
                 profileId: prof?.id || null,
                 role_ref: prof?.role_ref ?? null,
                 position_ref: prof?.position_ref ?? null,
@@ -249,6 +272,11 @@ function openEdit(u) {
         faculty_ref: u.faculty_ref ?? null,
         department_ref: u.department_ref ?? null,
         profileId: u.profileId || null
+    }
+    // Сбросить кафедру, если она не принадлежит выбранному факультету
+    if (editModel.value.department_ref) {
+        const exists = filteredDepartmentOptions.value.some(d => d.id === editModel.value.department_ref)
+        if (!exists) editModel.value.department_ref = null
     }
     isModalOpen.value = true
 }

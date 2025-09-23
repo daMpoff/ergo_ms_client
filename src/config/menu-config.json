@@ -185,6 +185,10 @@
               "name": "Список пользователей"
             },
             {
+              "routeName": "ProjectEdDepartments",
+              "name": "Справочник кафедр"
+            },
+            {
               "routeName": "ProjectEdCreate",
               "name": "Создать проект"
             },
