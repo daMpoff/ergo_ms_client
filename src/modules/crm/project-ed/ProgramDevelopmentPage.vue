@@ -36,11 +36,17 @@
                 </div>
             </div>
 
-            <div v-for="block in blocks" :key="block.id" class="card p-3 mb-3">
-                <div class="d-flex justify-content-between mb-2">
+            <div v-for="block in blocks" :key="block.id" class="card p-3 mb-3 block-card block-card-click position-relative" @click="goToBlock(block.id)" role="button" :aria-label="`Открыть блок ${block.code || ''}`.trim()">
+                <!-- Панель действий при наведении -->
+                <div class="block-actions-overlay">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-secondary btn-sm" @click.stop="editBlockById(block.id)">Редактировать</button>
+                        <button class="btn btn-danger btn-sm" @click.stop="removeBlockById(block.id)">Удалить</button>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
                     <div class="flex-grow-1">
-                        <h5 class="mb-0"><router-link :to="{ name: 'ProjectEdEventBlock', params: { id: block.id } }" class="text-decoration-none">{{ block.code ? `${block.code}. ${block.title}` : block.title }}</router-link></h5>
-                        <div v-if="block.category_name" class="text-muted small mt-1">
+                        <div v-if="block.category_name" class="text-muted small mb-1">
                             <div class="mb-0">
                                 <span 
                                     class="badge bg-primary category-badge" 
@@ -58,53 +64,12 @@
                                 </span>
                             </div>
                         </div>
+                        <h6 class="mb-0"><router-link :to="{ name: 'ProjectEdEventBlock', params: { id: block.id } }" class="text-decoration-none block-title-link">{{ block.code ? `${block.code}. ${block.title}` : block.title }}</router-link></h6>
                     </div>
-                    <div class="d-flex gap-2 align-items-start">
-                        <button class="btn btn-outline-primary btn-sm" style="display: flex; align-items: center;" @click="openCreateEventModal(block.id)">
-                            <Plus :size="14" class="me-1" />
-                            Добавить мероприятие
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" @click="editBlockById(block.id)">Редактировать</button>
-                        <button class="btn btn-outline-danger btn-sm" @click="removeBlockById(block.id)">Удалить</button>
-                    </div>
+                    <div class="d-flex gap-2 align-items-start"></div>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr>
-                                <th style="width: 140px;">Код блока</th>
-                                <th>Наименование мероприятия</th>
-                                <th>Основные результаты</th>
-                                <th style="width: 160px;">Срок реализации (годы)</th>
-                                <th style="width: 120px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="!block.events || block.events.length === 0">
-                                <td colspan="5" class="text-center text-muted py-4">
-                                    Здесь еще пока нет мероприятий
-                                </td>
-                            </tr>
-                            <tr v-for="(event, eIndex) in block.events" :key="event.id">
-                                <td>{{ event.code || '—' }}</td>
-                                <td>{{ event.name || '—' }}</td>
-                                <td>{{ event.results || '—' }}</td>
-                                <td>{{ event.years_display || '—' }}</td>
-                                <td class="text-end p-2">
-                                    <div class="d-flex gap-2 justify-content-end align-items-center h-100">
-                                        <button class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" @click="openEditEventModal(block.id, eIndex)" aria-label="Редактировать" title="Редактировать">
-                                            <Pencil :size="16" />
-                                        </button>
-                                        <button class="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" @click="removeEventById(block.id, eIndex)" aria-label="Удалить" title="Удалить">
-                                            <Trash2 :size="16" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                
             </div>
         </div>
     </div>
@@ -118,63 +83,20 @@
         @save="handleBlockSave"
     />
 
-    <!-- Модальное окно создания мероприятия -->
-    <div v-if="isCreateEventModalOpen" class="modal d-block" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ isEditEventMode ? 'Редактирование мероприятия' : 'Создание мероприятия' }}</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @click="closeCreateEventModal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Код мероприятия</label>
-                        <input v-model="generatedEventCode" type="text" class="form-control" readonly />
-                        <div class="form-text">Код генерируется автоматически на основе кода блока</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Наименование мероприятия</label>
-                        <input v-model="newEventName" type="text" class="form-control" placeholder="Название мероприятия" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Основные результаты</label>
-                        <textarea v-model="newEventResults" class="form-control" rows="3" placeholder="Ожидаемые результаты" style="resize: vertical;"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Срок реализации (годы)</label>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <select v-model="selectedStartYear" class="form-select">
-                                    <option v-for="year in yearsOptions" :key="`start-` + year" :value="year">{{ year }}</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <select v-model="selectedEndYear" class="form-select">
-                                    <option v-for="year in yearsOptions" :key="`end-` + year" :value="year">{{ year }}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-text">Выберите годы начала и окончания. Конечный год не раньше начального.</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" @click="closeCreateEventModal">Отмена</button>
-                    <button type="button" class="btn btn-primary" @click="createEventFromModal">{{ isEditEventMode ? 'Сохранить' : 'Создать' }}</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div v-if="isCreateEventModalOpen" class="modal-backdrop fade show"></div>
+    
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { Home, Target, Wrench, Inbox, Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import BlockModal from '@/modules/crm/project-ed/components/BlockModal.vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
+
+const router = useRouter()
 
 const breadcrumbItems = ref([
     { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
@@ -187,24 +109,23 @@ const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const editingBlockData = ref({})
 const isLoading = ref(false)
+// Сортировка блоков по коду (А-Я, 0-9) по возрастанию
+function normalizeCode(code) {
+    return (code ?? '').toString().trim()
+}
+
+function compareBlocksByCode(a, b) {
+    const aCode = normalizeCode(a?.code)
+    const bCode = normalizeCode(b?.code)
+    if (!aCode && !bCode) return 0
+    if (!aCode) return 1
+    if (!bCode) return -1
+    return aCode.localeCompare(bCode, ['ru', 'en'], { numeric: true, sensitivity: 'base' })
+}
+
 
 // Состояние модального окна создания мероприятия
-const isCreateEventModalOpen = ref(false)
-const creatingForBlockId = ref(null)
-const editingEventIndex = ref(-1)
-const isEditEventMode = ref(false)
-const newEventName = ref('')
-const newEventResults = ref('')
-const selectedStartYear = ref(new Date().getFullYear())
-const selectedEndYear = ref(new Date().getFullYear())
-const generatedEventCode = ref('')
-const yearsOptions = computed(() => {
-    const start = 2023
-    const end = new Date().getFullYear() + 10
-    const list = []
-    for (let y = start; y <= end; y++) list.push(y)
-    return list
-})
+// функционал добавления мероприятий перенесён на страницу блока
 
 const toast = useToast()
 
@@ -220,7 +141,7 @@ async function loadBlocks() {
         // Попробуем загрузить блоки мероприятий
         const apiUrl = endpoints.project_ed.event_blocks.list
         const response = await apiClient.get(apiUrl)
-        blocks.value = response.data || []
+        blocks.value = (response.data || []).slice().sort(compareBlocksByCode)
     } catch (error) {
         // Временно показываем пустой массив, чтобы страница загрузилась
         blocks.value = []
@@ -253,6 +174,7 @@ async function addBlock(blockData) {
         
         const response = await apiClient.post(endpoints.project_ed.event_blocks.create, apiData)
         blocks.value.push(response.data)
+        blocks.value.sort(compareBlocksByCode)
         toast.success('Блок мероприятий создан')
     } catch (error) {
         toast.error('Ошибка создания блока')
@@ -365,6 +287,7 @@ async function handleBlockSave(blockData) {
                 
                 const response = await apiClient.patch(endpoints.project_ed.event_blocks.patch(block.id), apiData)
                 blocks.value[blockIndex] = response.data
+                blocks.value.sort(compareBlocksByCode)
                 
                 // Перезагружаем данные для получения обновленных кодов мероприятий
                 await loadBlocks()
@@ -413,121 +336,18 @@ function generateEventCode(blockId) {
 }
 
 // Работа с модальным окном создания мероприятия
-function openCreateEventModal(blockId) {
-    creatingForBlockId.value = blockId
-    isCreateEventModalOpen.value = true
-    isEditEventMode.value = false
-    editingEventIndex.value = -1
-    newEventName.value = ''
-    newEventResults.value = ''
-    const nowYear = new Date().getFullYear()
-    selectedStartYear.value = nowYear
-    selectedEndYear.value = nowYear
-    
-    // Генерируем код мероприятия
-    generatedEventCode.value = generateEventCode(blockId)
+// openCreateEventModal перенесён на страницу блока
+
+// closeCreateEventModal перенесён на страницу блока
+
+// createEventFromModal перенесён на страницу блока
+
+// openEditEventModal перенесён на страницу блока
+
+function goToBlock(id) {
+    if (!id) return
+    router.push({ name: 'ProjectEdEventBlock', params: { id } })
 }
-
-function closeCreateEventModal() {
-    isCreateEventModalOpen.value = false
-    creatingForBlockId.value = null
-    isEditEventMode.value = false
-    editingEventIndex.value = -1
-    newEventName.value = ''
-    newEventResults.value = ''
-    generatedEventCode.value = ''
-}
-
-async function createEventFromModal() {
-    const blockIndex = findBlockIndexById(creatingForBlockId.value)
-    if (blockIndex === -1) {
-        toast.error('Не найден блок для создания мероприятия')
-        return
-    }
-    if (!newEventName.value.trim()) {
-        toast.warning('Введите наименование мероприятия')
-        return
-    }
-    if (selectedEndYear.value < selectedStartYear.value) {
-        toast.warning('Конечный год не может быть раньше начального')
-        return
-    }
-
-    const block = blocks.value[blockIndex]
-    
-    const eventData = {
-        block: block.id,
-        code: (generatedEventCode.value || '').trim(),
-        name: newEventName.value.trim(),
-        results: newEventResults.value.trim(),
-        start_year: Number(selectedStartYear.value),
-        end_year: Number(selectedEndYear.value)
-    }
-
-    try {
-        if (isEditEventMode.value && editingEventIndex.value > -1) {
-            // Режим редактирования
-            const event = block.events[editingEventIndex.value]
-            if (!event || !event.id) {
-                toast.error('Не найдено мероприятие для редактирования')
-                return
-            }
-            
-            // При редактировании сохраняем существующий код или генерируем новый, если его нет
-            if (!event.code) {
-                eventData.code = generateEventCode(creatingForBlockId.value)
-            } else {
-                eventData.code = event.code
-            }
-            
-            const response = await apiClient.patch(endpoints.project_ed.events.patch(event.id), eventData)
-            block.events[editingEventIndex.value] = response.data
-            toast.success('Мероприятие обновлено')
-        } else {
-            // Режим создания
-            const response = await apiClient.post(endpoints.project_ed.events.create, eventData)
-            block.events.push(response.data)
-            toast.success('Мероприятие создано')
-        }
-        closeCreateEventModal()
-    } catch (error) {
-        // Покажем подробности ошибки от API, чтобы понимать причину
-        const apiMsg = error?.response?.data?.detail
-            || (typeof error?.response?.data === 'string' ? error.response.data : null)
-            || (error?.response?.data && JSON.stringify(error.response.data))
-            || error?.message
-            || 'Неизвестная ошибка'
-        console.error('Ошибка сохранения мероприятия:', error)
-        toast.error(`Ошибка сохранения мероприятия: ${apiMsg}`)
-    }
-}
-
-function openEditEventModal(blockId, eventIndex) {
-    const blockIndex = findBlockIndexById(blockId)
-    if (blockIndex === -1) return
-    const event = blocks.value[blockIndex].events[eventIndex]
-    if (!event) return
-
-    creatingForBlockId.value = blockId
-    editingEventIndex.value = eventIndex
-    isEditEventMode.value = true
-    isCreateEventModalOpen.value = true
-
-    newEventName.value = event.name || ''
-    newEventResults.value = event.results || ''
-    generatedEventCode.value = event.code || ''
-
-    // Используем start_year и end_year из API
-    const nowYear = new Date().getFullYear()
-    if (event.start_year && event.end_year) {
-        selectedStartYear.value = event.start_year
-        selectedEndYear.value = event.end_year
-    } else {
-        selectedStartYear.value = nowYear
-        selectedEndYear.value = nowYear
-    }
-}
-
 </script>
 
 <style scoped lang="scss">
@@ -562,6 +382,29 @@ function openEditEventModal(blockId, eventIndex) {
 .subcategory-badge {
     white-space: nowrap;
     display: inline-block;
+}
+
+.block-card { transition: background-color .15s ease; }
+.block-card:hover { background-color: var(--color-hover-background, #f8f9fa); }
+.block-title-link { color: var(--color-primary-text, inherit); }
+.block-card-click { cursor: pointer; }
+
+/* Оверлей действий, показывается при наведении на карточку */
+.block-actions-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: .5rem .75rem;
+    background: rgba(255, 255, 255, 0.35); /* легкая вуаль для читаемости */
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    display: none;
+    z-index: 2;
+}
+
+.block-card:hover .block-actions-overlay {
+    display: block;
 }
 
 </style>
