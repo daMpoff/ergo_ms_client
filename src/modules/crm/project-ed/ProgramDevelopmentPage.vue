@@ -39,7 +39,7 @@
             <div v-for="block in blocks" :key="block.id" class="card p-3 mb-3">
                 <div class="d-flex justify-content-between mb-2">
                     <div class="flex-grow-1">
-                        <h5 class="mb-0">{{ block.code ? `${block.code}. ${block.title}` : block.title }}</h5>
+                        <h5 class="mb-0"><router-link :to="{ name: 'ProjectEdEventBlock', params: { id: block.id } }" class="text-decoration-none">{{ block.code ? `${block.code}. ${block.title}` : block.title }}</router-link></h5>
                         <div v-if="block.category_name" class="text-muted small mt-1">
                             <div class="mb-0">
                                 <span 
@@ -199,8 +199,8 @@ const selectedStartYear = ref(new Date().getFullYear())
 const selectedEndYear = ref(new Date().getFullYear())
 const generatedEventCode = ref('')
 const yearsOptions = computed(() => {
-    const start = new Date().getFullYear()
-    const end = start + 10
+    const start = 2023
+    const end = new Date().getFullYear() + 10
     const list = []
     for (let y = start; y <= end; y++) list.push(y)
     return list
@@ -457,11 +457,11 @@ async function createEventFromModal() {
     
     const eventData = {
         block: block.id,
-        code: generatedEventCode.value,
+        code: (generatedEventCode.value || '').trim(),
         name: newEventName.value.trim(),
         results: newEventResults.value.trim(),
-        start_year: selectedStartYear.value,
-        end_year: selectedEndYear.value
+        start_year: Number(selectedStartYear.value),
+        end_year: Number(selectedEndYear.value)
     }
 
     try {
@@ -491,7 +491,14 @@ async function createEventFromModal() {
         }
         closeCreateEventModal()
     } catch (error) {
-        toast.error('Ошибка сохранения мероприятия')
+        // Покажем подробности ошибки от API, чтобы понимать причину
+        const apiMsg = error?.response?.data?.detail
+            || (typeof error?.response?.data === 'string' ? error.response.data : null)
+            || (error?.response?.data && JSON.stringify(error.response.data))
+            || error?.message
+            || 'Неизвестная ошибка'
+        console.error('Ошибка сохранения мероприятия:', error)
+        toast.error(`Ошибка сохранения мероприятия: ${apiMsg}`)
     }
 }
 

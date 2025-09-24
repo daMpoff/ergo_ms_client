@@ -534,6 +534,24 @@
         "requiresAdmin": true
       }
     },
+    "ProjectEdEventBlock": {
+      "path": "/crm/project-ed/event-block/:id",
+      "component": "@/modules/crm/project-ed/Events/EventBlockPage.vue",
+      "meta": {
+        "title": "Блок мероприятий",
+        "requiresAuth": true,
+        "requiresAdmin": true
+      }
+    },
+    "ProjectEdEvent": {
+      "path": "/crm/project-ed/event/:id",
+      "component": "@/modules/crm/project-ed/Events/EventPage.vue",
+      "meta": {
+        "title": "Мероприятие",
+        "requiresAuth": true,
+        "requiresAdmin": true
+      }
+    },
     "ProjectEdCreate": {
       "path": "/crm/project-ed/create",
       "component": "@/modules/crm/project-ed/ProjectCreate.vue",
