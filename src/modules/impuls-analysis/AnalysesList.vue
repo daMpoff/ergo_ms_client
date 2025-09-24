@@ -54,11 +54,12 @@
               <option value="status">По статусу</option>
             </select>
           </div>
-          <div class="col-md-1 d-grid align-self-end">
+          <div class="col d-grid align-self-end">
             <button class="btn btn-reset-filters" @click="clearFilters" title="Сбросить фильтры и обновить список">
               <RotateCcw :size="16" />
             </button>
           </div>
+          
         </div>
       </div>
     </div>
@@ -105,6 +106,37 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Блок удаления по номерам -->
+    <div class="filters-card numbers-delete-card mb-4">
+      <div class="card-body">
+        <label class="form-label">Удалить мои анализы по номерам</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <Hash :size="16" />
+          </span>
+          <input
+            v-model.trim="numbersInput"
+            type="text"
+            class="form-control"
+            placeholder="Номера анализов, напр.: 1,2,5-10; 12 14-16"
+            :disabled="isDeletingByNumbers"
+          />
+          <button
+            class="btn btn-danger btn-delete-by-numbers"
+            type="button"
+            @click="deleteByNumbers"
+            :disabled="isDeletingByNumbers || !numbersInput"
+            title="Удалить анализы по номерам анализов"
+          >
+            <Trash2 :size="16" />
+            <span v-if="isDeletingByNumbers">Удаление...</span>
+            <span v-else>Удалить</span>
+          </button>
+        </div>
+        <div class="form-text mt-2 text-muted">Поддерживаются списки и диапазоны по номерам анализов</div>
       </div>
     </div>
 
@@ -157,7 +189,7 @@
       <div 
         class="analysis-card" 
         :class="{ 'selected': selectedAnalyses.includes(analysis.id) }"
-        v-for="analysis in analyses" 
+        v-for="(analysis, index) in analyses" 
         :key="analysis.id"
         @click="toggleAnalysisSelection(analysis.id)"
       >
@@ -192,11 +224,18 @@
         <div class="analysis-body">
           <!-- Информация об анализе -->
           <div class="analysis-info">
+            <div class="info-item">
+              <FileText :size="16" class="info-icon" />
+              <div class="info-content">
+                <span class="info-label">Номер анализа</span>
+                <span class="info-value">№{{ analysis.number || analysis.id }}</span>
+              </div>
+            </div>
             
             <div class="info-item" v-if="analysis.protocol_number">
               <FileText :size="16" class="info-icon" />
               <div class="info-content">
-                <span class="info-label">Протокол</span>
+                <span class="info-label">Номер протокола</span>
                 <span class="info-value">№{{ analysis.protocol_number }}</span>
               </div>
             </div>
@@ -306,7 +345,7 @@ import {
   X, FileX, Eye, Trash2, Loader2, Zap, 
   Search, RotateCcw, BarChart3, Clock, Hourglass, CheckCircle, 
   AlertTriangle, FileText, Calendar, Download, ChevronLeft, 
-  ChevronRight
+  ChevronRight,Hash
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -334,7 +373,8 @@ export default {
     Calendar,
     Download,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Hash
   },
   name: 'AnalysesList',
   data() {
@@ -369,6 +409,8 @@ export default {
       selectedAnalyses: [],
       showBulkDeleteModal: false,
       isDeleting: false
+      ,numbersInput: ''
+      ,isDeletingByNumbers: false
     }
   },
   computed: {
@@ -645,6 +687,33 @@ export default {
     
     cancelBulkDelete() {
       this.showBulkDeleteModal = false
+    },
+    
+    async deleteByNumbers() {
+      if (!this.numbersInput) {
+        toast.warning('Введите номера для удаления')
+        return
+      }
+      this.isDeletingByNumbers = true
+      try {
+        const resp = await impulsAnalysisAPI.bulkDeleteByNumbers(this.numbersInput)
+        if (resp && resp.success) {
+          const msg = resp.message || `Удаление выполнено: ${resp.deleted_count || ''}`
+          toast.success(msg)
+          this.numbersInput = ''
+          await Promise.all([
+            this.loadAnalyses(),
+            this.loadStats()
+          ])
+        } else {
+          const err = resp?.errors?.numbers?.[0] || resp?.message || 'Ошибка при удалении по номерам'
+          toast.error(err)
+        }
+      } catch (e) {
+        toast.error('Ошибка при удалении по номерам')
+      } finally {
+        this.isDeletingByNumbers = false
+      }
     },
     
     async downloadResults(analysisId) {
@@ -1273,6 +1342,19 @@ export default {
       transform: translateY(0);
     }
   }
+}
+
+/* Кнопка удаления по номерам: центрирование и увеличенный отступ между иконкой и текстом */
+.btn-delete-by-numbers {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* базовый отступ */
+}
+
+.btn-delete-by-numbers svg {
+  align-self: center;
+  margin-right: 0.25rem; /* дополнительный небольшой отступ от иконки до текста */
 }
 
 // Пагинация

@@ -668,7 +668,6 @@ export default {
       const ids = this.bulkPreviewIds || []
       if (!ids.length) return 'Не указаны корректные номера анализов.'
       const existing = this.bulkPreviewExistingCount
-      if (existing === 0) return 'По указанным номерам анализы не найдены.'
       return `Будут удалены ${existing} анализ(а/ов). Действие необратимо.`
     },
     canDownloadByInput() {
@@ -905,14 +904,6 @@ export default {
       if (invalid.length > 0) {
         toast.warning(`Некорректные элементы: ${invalid.join(', ')}`)
       }
-      // предупредим об отсутствующих в списке анализах
-      try {
-        const availableIds = new Set((this.analyses || []).map(a => a.id))
-        const missing = ids.filter(id => !availableIds.has(id))
-        if (missing.length > 0) {
-          toast.info(`Отсутствуют в списке: ${missing.join(', ')}`)
-        }
-      } catch {}
       this.bulkMode = 'input'
       this.bulkPreviewIds = ids
       this.previewBulkDeletion()
