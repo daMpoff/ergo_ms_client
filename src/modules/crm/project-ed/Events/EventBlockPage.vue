@@ -23,9 +23,25 @@
             </div>
 
             <template v-else>
-                <div class="d-flex align-items-center justify-content-end">
-                    <div class="btn-toolbar" role="toolbar" aria-label="Toolbar">
-                        <div class="btn-group" role="group" aria-label="Actions">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="btn-toolbar w-100" role="toolbar" aria-label="Toolbar">
+                        <div class="input-group input-group-sm me-2 flex-grow-1">
+                            <span class="input-group-text d-inline-flex align-items-center justify-content-center">
+                                <Search :size="14" />
+                            </span>
+                            <input type="text" class="form-control" v-model="searchQuery" placeholder="Код или наименование" />
+                        </div>
+                        <div class="d-flex align-items-center me-2 gap-2" aria-label="Year filters">
+                            <select class="form-select form-select-sm" v-model="filterStartYear">
+                                <option :value="null">с года</option>
+                                <option v-for="year in yearsOptions" :key="'f-start-' + year" :value="year">{{ year }}</option>
+                            </select>
+                            <select class="form-select form-select-sm" v-model="filterEndYear">
+                                <option :value="null">по год</option>
+                                <option v-for="year in yearsOptions" :key="'f-end-' + year" :value="year">{{ year }}</option>
+                            </select>
+                        </div>
+                        <div class="btn-group ms-auto" role="group" aria-label="Actions">
                             <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center" @click="openCreateEventModal()">
                                 <Plus :size="14" class="me-2" />
                                 Создать мероприятие
@@ -39,20 +55,23 @@
                         <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
-                                    <th style="width: 140px;">Код</th>
                                     <th>Наименование мероприятия</th>
-                                    <th style="width: 180px;">Срок реализации (годы)</th>
                                     <th style="width: 120px;" class="text-end"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-if="events.length === 0">
-                                    <td colspan="4" class="text-center text-muted py-4">Здесь еще пока нет мероприятий</td>
+                                    <td colspan="2" class="text-center text-muted py-4">Здесь еще пока нет мероприятий</td>
                                 </tr>
                                 <tr v-for="ev in sortedEvents" :key="ev.id || ev.code" class="table-row-link table-row-actions" @click="openEvent(ev)">
-                                    <td>{{ ev.code || '—' }}</td>
-                                    <td>{{ ev.name || '—' }}</td>
-                                    <td>{{ ev.years_display || formatYears(ev.start_year, ev.end_year) }}</td>
+                                    <td>
+                                        <div class="fw-semibold">{{ ev.name || '—' }}</div>
+                                        <div class="small" :style="{ color: 'var(--color-secondary-text, #6c757d)' }">
+                                            <span>{{ ev.code || '—' }}</span>
+                                            <span v-if="ev.code && (ev.start_year || ev.end_year || ev.years_display)"> · </span>
+                                            <span>{{ ev.years_display || formatYears(ev.start_year, ev.end_year) }}</span>
+                                        </div>
+                                    </td>
                                     <td class="text-end">
                                         <div class="row-actions d-inline-flex gap-2">
                                             <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center" @click.stop="openEditEventModal(ev)" :title="'Редактировать'" aria-label="Редактировать">
@@ -174,7 +193,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
-import { Home, Wrench, Target, Plus, Pencil, Trash2 } from 'lucide-vue-next'
+import { Home, Wrench, Target, Plus, Pencil, Trash2, Search } from 'lucide-vue-next'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import { apiClient } from '@/js/api/manager'
@@ -210,9 +229,61 @@ const yearsOptions = computed(() => {
     return list
 })
 
+// Поиск и фильтры
+const searchQuery = ref('')
+const filterStartYear = ref(null)
+const filterEndYear = ref(null)
+
+const filteredEvents = computed(() => {
+    const list = Array.isArray(events.value) ? events.value : []
+    const q = String(searchQuery.value || '').trim().toLowerCase()
+    const fs = filterStartYear.value ? Number(filterStartYear.value) : null
+    const fe = filterEndYear.value ? Number(filterEndYear.value) : null
+
+    return list.filter(ev => {
+        const name = String(ev?.name || '').toLowerCase()
+        const code = String(ev?.code || '').toLowerCase()
+        const matchesQuery = q ? (name.includes(q) || code.includes(q)) : true
+
+        const es = Number(ev?.start_year) || null
+        const ee = Number(ev?.end_year) || null
+        // условие пересечения интервалов [es, ee] и [fs, fe]
+        let matchesYears = true
+        if (fs !== null && fe !== null) {
+            if (es !== null && ee !== null) {
+                matchesYears = es <= fe && ee >= fs
+            } else if (es !== null && ee === null) {
+                matchesYears = es <= fe
+            } else if (es === null && ee !== null) {
+                matchesYears = ee >= fs
+            } else {
+                matchesYears = true
+            }
+        } else if (fs !== null && fe === null) {
+            if (ee !== null) {
+                matchesYears = ee >= fs
+            } else if (es !== null) {
+                matchesYears = es >= fs
+            } else {
+                matchesYears = true
+            }
+        } else if (fs === null && fe !== null) {
+            if (es !== null) {
+                matchesYears = es <= fe
+            } else if (ee !== null) {
+                matchesYears = ee <= fe
+            } else {
+                matchesYears = true
+            }
+        }
+
+        return matchesQuery && matchesYears
+    })
+})
+
 // Отсортированный список мероприятий по возрастанию номера (П1.1, П1.2, ...)
 const sortedEvents = computed(() => {
-    const list = Array.isArray(events.value) ? [...events.value] : []
+    const list = [...filteredEvents.value]
     const blockCode = blockData.value?.code || ''
     return list.sort((a, b) => {
         const na = extractEventOrder(a?.code, blockCode)
