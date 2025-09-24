@@ -30,7 +30,7 @@
           <div class="card-body text-center">
             <div class="profile-avatar mb-3">
               <img v-if="avatarUrl" :src="avatarUrl" alt="Аватар" class="avatar-img" />
-              <UserRound v-else :size="48" class="avatar-placeholder" />
+              <DefaultAvatar v-else size="large" class="avatar-placeholder" />
             </div>
             <h4 class="profile-name">{{ userFullName }}</h4>
             <p class="text-muted mb-3">{{ userPosition }}</p>
@@ -282,6 +282,7 @@ import {
 } from 'lucide-vue-next'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
 import { apiClient } from '@/js/api/manager.js'
+import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -342,7 +343,30 @@ const userFullName = computed(() => {
   return 'Гость'
 })
 
-const avatarUrl = computed(() => userStore.avatarUrl)
+const isOwnProfile = computed(() => {
+  const routeUserId = route.params.userId
+  const currentUserId = userStore.user?.id
+  // Если нет userId в маршруте — считаем, что это свой профиль
+  if (!routeUserId) return true
+  return String(routeUserId) === String(currentUserId)
+})
+
+const avatarUrl = computed(() => {
+  const user = profileUser.value
+  if (user) {
+    // Пытаемся взять аватар из данных просматриваемого пользователя
+    const fromProfile = user.avatar_url || user.avatar || user.photo || user.image
+    if (fromProfile && String(fromProfile).trim().length > 0) {
+      return fromProfile
+    }
+  }
+  // Если это собственный профиль — можно падать на аватар из стора
+  if (isOwnProfile.value) {
+    return userStore.avatarUrl || null
+  }
+  // Для чужого профиля при отсутствии аватара возвращаем null, чтобы показать DefaultAvatar
+  return null
+})
 
 // Данные пользователя
 const profileUser = ref(null)
@@ -841,6 +865,9 @@ onMounted(async () => {
     overflow: hidden;
     border: 1.5px solid var(--color-border);
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     
     @media (min-width: 576px) {
       max-width: 90%;
@@ -872,10 +899,17 @@ onMounted(async () => {
     .avatar-placeholder {
       width: 100%;
       height: 100%;
-      display: block;
-      background-color: #f8f9fa;
-      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
       color: #6c757d;
+    }
+    /* Растягиваем DefaultAvatar на всю область аватара */
+    .avatar-placeholder.default-avatar {
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 50% !important;
     }
   }
   
