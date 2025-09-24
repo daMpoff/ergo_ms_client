@@ -808,22 +808,72 @@ onMounted(async () => {
 }
 
 .profile-card {
+  max-width: clamp(260px, 90vw, 520px);
+  margin: 0 auto;
+  
+  @media (min-width: 576px) {
+    max-width: clamp(280px, 75vw, 540px);
+  }
+  
+  @media (min-width: 768px) {
+    max-width: clamp(300px, 60vw, 560px);
+  }
+  
+  @media (min-width: 992px) {
+    max-width: clamp(320px, 45vw, 580px);
+  }
+  
+  @media (min-width: 1200px) {
+    max-width: clamp(340px, 40vw, 600px);
+  }
+  
+  @media (min-width: 1400px) {
+    max-width: clamp(360px, 36vw, 620px);
+  }
+  
   .profile-avatar {
+    width: 100%;
+    max-width: 95%;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    position: relative;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1.5px solid var(--color-border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    
+    @media (min-width: 576px) {
+      max-width: 90%;
+    }
+    
+    @media (min-width: 768px) {
+      max-width: 85%;
+    }
+    
+    @media (min-width: 992px) {
+      max-width: 80%;
+    }
+    
+    @media (min-width: 1200px) {
+      max-width: 100%;
+    }
+    
+    @media (min-width: 1400px) {
+      max-width: 100%;
+    }
+    
     .avatar-img {
-      width: 320px;
-      height: 320px;
-      border-radius: 50%;
+      width: 100%;
+      height: 100%;
+      display: block;
       object-fit: cover;
-      border: 1.5px solid var(--color-border);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
     .avatar-placeholder {
-      width: 320px;
-      height: 320px;
-      border-radius: 50%;
+      width: 100%;
+      height: 100%;
+      display: block;
       background-color: #f8f9fa;
-      border: 1.5px solid var(--color-border);
       padding: 16px;
       color: #6c757d;
     }
