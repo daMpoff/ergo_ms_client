@@ -19,6 +19,66 @@
                 </div>
             </div>
 
+            <!-- Панель фильтров -->
+            <div v-if="blocks.length > 0" class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-6">
+                        <label for="searchQuery" class="form-label mb-1">Поиск</label>
+                        <div class="input-group">
+                            <span class="input-group-text" id="search-addon" aria-hidden="true">
+                                <Search :size="18" />
+                            </span>
+                            <input
+                                id="searchQuery"
+                                type="text"
+                                class="form-control"
+                                v-model.trim="searchQuery"
+                                placeholder="Поиск по коду, названию, описанию"
+                                aria-label="Строка поиска по коду, названию и описанию"
+                                aria-describedby="search-addon"
+                            />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label for="categorySelect" class="form-label mb-1">Категория</label>
+                        <select
+                            id="categorySelect"
+                            class="form-select"
+                            v-model="selectedCategoryId"
+                            aria-label="Фильтр по категории"
+                        >
+                            <option :value="null">Все категории</option>
+                            <option
+                                v-for="cat in availableCategories"
+                                :key="cat.id ?? 'null'"
+                                :value="cat.id"
+                            >
+                                {{ cat.name || 'Без категории' }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label for="subcategorySelect" class="form-label mb-1">Подкатегория</label>
+                        <select
+                            id="subcategorySelect"
+                            class="form-select"
+                            v-model="selectedSubcategoryId"
+                            :disabled="availableSubcategories.length === 0"
+                            aria-label="Фильтр по подкатегории"
+                        >
+                            <option :value="null">Все подкатегории</option>
+                            <option
+                                v-for="sub in availableSubcategories"
+                                :key="sub.id ?? 'null'"
+                                :value="sub.id"
+                            >
+                                {{ sub.name || 'Без подкатегории' }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <div v-else-if="isLoading" class="card p-4 text-center">
                 <div class="d-flex flex-column align-items-center justify-content-center my-2">
                     <div class="spinner-border text-primary mb-3" role="status">
@@ -36,7 +96,7 @@
                 </div>
             </div>
 
-            <div v-for="block in blocks" :key="block.id" class="card p-3 mb-3 block-card block-card-click position-relative" @click="goToBlock(block.id)" role="button" :aria-label="`Открыть блок ${block.code || ''}`.trim()">
+            <div v-for="block in filteredBlocks" :key="block.id" class="card p-3 mb-3 block-card block-card-click position-relative" @click="goToBlock(block.id)" role="button" :aria-label="`Открыть блок ${block.code || ''}`.trim()">
                 <!-- Панель действий при наведении -->
                 <div class="block-actions-overlay">
                     <div class="d-flex justify-content-end gap-2">
@@ -46,23 +106,21 @@
                 </div>
                 <div class="d-flex justify-content-between">
                     <div class="flex-grow-1">
-                        <div v-if="block.category_name" class="text-muted small mb-1">
-                            <div class="mb-0">
-                                <span 
-                                    class="badge bg-primary category-badge" 
-                                    :title="block.category_name"
-                                >
-                                    {{ block.category_name }}
-                                </span>
-                            </div>
-                            <div v-if="block.subcategory_name" class="mt-1">
-                                <span 
-                                    class="badge bg-secondary subcategory-badge" 
-                                    :title="block.subcategory_name"
-                                >
-                                    {{ block.subcategory_name }}
-                                </span>
-                            </div>
+                        <div class="text-muted small mb-1">
+                            <span 
+                                v-if="block.category_name"
+                                class="badge bg-primary category-badge me-1" 
+                                :title="block.category_name"
+                            >
+                                {{ block.category_name }}
+                            </span>
+                            <span 
+                                v-if="block.subcategory_name"
+                                class="badge bg-secondary subcategory-badge" 
+                                :title="block.subcategory_name"
+                            >
+                                {{ block.subcategory_name }}
+                            </span>
                         </div>
                         <h6 class="mb-0"><router-link :to="{ name: 'ProjectEdEventBlock', params: { id: block.id } }" class="text-decoration-none block-title-link">{{ block.code ? `${block.code}. ${block.title}` : block.title }}</router-link></h6>
                     </div>
@@ -90,7 +148,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
-import { Home, Target, Wrench, Inbox, Plus, Pencil, Trash2 } from 'lucide-vue-next'
+import { Home, Target, Wrench, Inbox, Plus, Pencil, Trash2, Search } from 'lucide-vue-next'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import BlockModal from '@/modules/crm/project-ed/components/BlockModal.vue'
 import { apiClient } from '@/js/api/manager'
@@ -105,6 +163,9 @@ const breadcrumbItems = ref([
 ])
 
 const blocks = ref([])
+const searchQuery = ref('')
+const selectedCategoryId = ref(null)
+const selectedSubcategoryId = ref(null)
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const editingBlockData = ref({})
@@ -159,6 +220,53 @@ async function loadBlocks() {
         isLoading.value = false
     }
 }
+
+// Доступные категории для фильтра
+const availableCategories = computed(() => {
+    const map = new Map()
+    blocks.value.forEach(b => {
+        const id = b?.category ?? null
+        const name = b?.category_name ?? (id === null ? 'Без категории' : '')
+        const key = id === null ? 'null' : String(id)
+        if (!map.has(key)) {
+            map.set(key, { id, name })
+        }
+    })
+    // Убираем вариант null, если его не должно быть в списке — но оставим, чтобы пользователь мог видеть «Без категории»
+    return Array.from(map.values()).filter(Boolean)
+})
+
+// Доступные подкатегории зависят от выбранной категории
+const availableSubcategories = computed(() => {
+    const filteredByCategory = selectedCategoryId.value == null
+        ? blocks.value
+        : blocks.value.filter(b => b?.category === selectedCategoryId.value)
+    const map = new Map()
+    filteredByCategory.forEach(b => {
+        const id = b?.subcategory ?? null
+        const name = b?.subcategory_name ?? (id === null ? 'Без подкатегории' : '')
+        const key = id === null ? 'null' : String(id)
+        if (!map.has(key)) {
+            map.set(key, { id, name })
+        }
+    })
+    return Array.from(map.values()).filter(Boolean)
+})
+
+// Отфильтрованные блоки
+const filteredBlocks = computed(() => {
+    const q = (searchQuery.value || '').toString().trim().toLowerCase()
+    const byCategory = selectedCategoryId.value
+    const bySubcategory = selectedSubcategoryId.value
+
+    return blocks.value.filter(b => {
+        const matchesCategory = byCategory == null ? true : b?.category === byCategory
+        const matchesSubcategory = bySubcategory == null ? true : b?.subcategory === bySubcategory
+        const hay = [b?.code, b?.title, b?.description].filter(Boolean).join(' ').toLowerCase()
+        const matchesQuery = q === '' ? true : hay.includes(q)
+        return matchesCategory && matchesSubcategory && matchesQuery
+    })
+})
 
 // Создание блока мероприятий
 async function addBlock(blockData) {
@@ -376,12 +484,16 @@ function goToBlock(id) {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
 }
 
 .subcategory-badge {
     white-space: nowrap;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
 }
 
 .block-card { transition: background-color .15s ease; }
