@@ -289,7 +289,7 @@ export default {
       dragActive: false,
       // Прогресс массовой загрузки
       bulkProgress: { total: 0, processed: 0, success: 0, failed: 0 },
-      concurrencyLimit: 5,
+      concurrencyLimit: 8,
       stats: {
         pending: 0,
         processing: 0,
@@ -299,7 +299,10 @@ export default {
     }
   },
   async mounted() {
-    await this.loadStats()
+    await Promise.all([
+      this.loadStats(),
+      this.loadUploadConfig()
+    ])
   },
   methods: {
     openFileDialog() {
@@ -358,6 +361,7 @@ export default {
       const worker = async () => {
         while (fileQueue.length > 0) {
           const file = fileQueue.shift()
+          if (!file) break
           try {
             const analysisPayload = {
               name: this.newAnalysis.name ? `${this.newAnalysis.name} — ${file.name.replace(/\.[^/.]+$/, '')}` : '',
@@ -431,6 +435,19 @@ export default {
           completed: 0,
           failed: 0
         }
+      }
+    },
+
+    async loadUploadConfig() {
+      try {
+        const response = await porosityAnalysisAPI.getUploadConfig()
+        if (response && response.success && response.data) {
+          this.concurrencyLimit = response.data.upload_threads || 8
+          console.log(`Установлено количество потоков загрузки: ${this.concurrencyLimit}`)
+        }
+      } catch (error) {
+        console.warn('Не удалось загрузить конфигурацию загрузки, используется значение по умолчанию:', error)
+        this.concurrencyLimit = 8
       }
     },
     
@@ -940,6 +957,7 @@ export default {
   border-radius: 12px;
   padding: 1.25rem;
 }
+
 
 .progress-header {
   display: flex;

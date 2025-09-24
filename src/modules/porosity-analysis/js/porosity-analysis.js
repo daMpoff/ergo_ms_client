@@ -195,6 +195,26 @@ class PorosityAnalysisAPI {
   }
 
   /**
+   * Получить конфигурацию загрузки файлов
+   */
+  async getUploadConfig() {
+    try {
+      const response = await apiClient.get(`${this.baseEndpoint}upload_config/`)
+      return response
+    } catch (error) {
+      console.error('Error getting upload config:', error)
+      // Возвращаем значения по умолчанию при ошибке
+      return {
+        success: true,
+        data: {
+          upload_threads: 8,
+          max_concurrent_uploads: 8
+        }
+      }
+    }
+  }
+
+  /**
    * Создать несколько анализов для множественных файлов
    */
   async createMultipleAnalyses(files, defaultScale = 100.0) {

@@ -668,11 +668,7 @@ export default {
       const ids = this.bulkPreviewIds || []
       if (!ids.length) return 'Не указаны корректные номера анализов.'
       const existing = this.bulkPreviewExistingCount
-      const missing = Math.max(0, ids.length - existing)
       if (existing === 0) return 'По указанным номерам анализы не найдены.'
-      if (missing > 0) {
-        return `Будут удалены ${existing} анализ(а/ов). ${missing} отсутствуют и удалены не будут. Действие необратимо.`
-      }
       return `Будут удалены ${existing} анализ(а/ов). Действие необратимо.`
     },
     canDownloadByInput() {
@@ -1777,9 +1773,9 @@ export default {
 /* Стили для блока скачивания архива */
 .download-actions .card-body { padding: 1rem; }
 .download-actions .input-group-text { 
-  background-color: #e3f2fd; 
-  border-color: #1976d2;
-  color: #1976d2;
+  background-color: #f8f9fa; 
+  border-color: #dee2e6;
+  color: #6c757d;
 }
 .download-actions .form-text { font-size: 0.8rem; }
 .download-actions .btn { min-height: 38px; }
