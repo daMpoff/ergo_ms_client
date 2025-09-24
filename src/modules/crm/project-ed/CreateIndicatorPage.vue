@@ -193,6 +193,7 @@
 import { ref, onMounted, onUnmounted, defineProps, defineEmits } from 'vue'
 import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 import { ChevronDown } from 'lucide-vue-next'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
@@ -248,7 +249,7 @@ const initializeValues = () => {
 // Загрузка категорий
 const loadCategories = async () => {
     try {
-        const response = await apiClient.get('project_ed/project-ed/categories/')
+        const response = await apiClient.get(endpoints.project_ed.categories.list)
         if (response.success) {
             categories.value = response.data
         } else {
@@ -269,7 +270,7 @@ const loadSubcategories = async (categoryId) => {
     }
     
     try {
-        const response = await apiClient.get(`project_ed/project-ed/categories/${categoryId}/subcategories/`)
+        const response = await apiClient.get(endpoints.project_ed.subcategories.list, { category_id: categoryId })
         if (response.success) {
             subcategories.value = response.data
         } else {
@@ -294,7 +295,7 @@ const loadEventBlocks = async (categoryId, subcategoryId = null) => {
             params.subcategory_id = subcategoryId
         }
         
-        const response = await apiClient.get('project_ed/project-ed/event-blocks/', params)
+        const response = await apiClient.get(endpoints.project_ed.event_blocks.list, params)
         if (response.success) {
             eventBlocks.value = response.data
             console.log('Загружены блоки мероприятий:', response.data)
@@ -375,8 +376,8 @@ const saveIndicator = async () => {
         }
 
         const endpoint = props.editingIndicator 
-            ? `project_ed/project-ed/target-indicators/${props.editingIndicator.id}/`
-            : 'project_ed/project-ed/target-indicators/'
+            ? endpoints.project_ed.target_indicators.update(props.editingIndicator.id)
+            : endpoints.project_ed.target_indicators.create
         
         const response = props.editingIndicator 
             ? await apiClient.put(endpoint, data)
