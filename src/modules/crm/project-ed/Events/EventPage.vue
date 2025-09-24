@@ -186,7 +186,7 @@ const yearsDisplay = computed(() => {
     const s = eventData.value?.start_year
     const e = eventData.value?.end_year
     if (!s && !e) return '—'
-    if (s && e) return `${s} — ${e}`
+    if (s && e) return s === e ? `${s}` : `${s} — ${e}`
     return s || e || '—'
 })
 
