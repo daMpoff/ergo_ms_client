@@ -491,7 +491,6 @@ tr.clickable-row:hover .row-actions { opacity: 1; }
     left: 0;
     background: white;
     z-index: 5;
-    border-right: 2px solid #dee2e6;
     min-width: 220px;
     max-width: 220px;
 }
