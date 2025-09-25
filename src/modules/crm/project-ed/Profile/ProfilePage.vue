@@ -1,5 +1,11 @@
 <template>
-  <div class="container py-4">
+  <div>
+    <!-- Header Bar -->
+    <HeaderBar />
+    
+    <!-- Breadcrumbs -->
+    <Breadcrumbs :items="breadcrumbItems" class="mt-3"/>
+    
     <!-- Навигация с вкладками -->
     <div class="profile-navigation">
       <nav class="nav-tabs-container">
@@ -278,11 +284,15 @@ import {
   GraduationCap,
   Building,
   Contact,
-  Briefcase
+  Briefcase,
+  Home,
+  Users
 } from 'lucide-vue-next'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
 import { apiClient } from '@/js/api/manager.js'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import Breadcrumbs from '../components/Breadcrumbs.vue'
+import HeaderBar from '../components/HeaderBar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -297,6 +307,25 @@ const allProjects = ref([])
 const achievements = ref([])
 const activities = ref([])
 const activeTab = ref('overview')
+
+// Breadcrumbs
+const breadcrumbItems = computed(() => {
+  const items = [
+    {
+      label: 'Главная',
+      icon: Home,
+      to: { name: 'ProjectEdMain' }
+    }
+  ]
+
+  // Добавляем имя профиля
+  items.push({
+    label: userFullName.value,
+    icon: UserRound
+  })
+
+  return items
+})
 
 // Конфигурация вкладок
 const tabs = ref([

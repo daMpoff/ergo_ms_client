@@ -177,10 +177,6 @@
               "name": "Создать проект"
             },
         {
-          "routeName": "ProjectEdProfile",
-          "name": "Профиль"
-        },
-        {
           "routeName": "ProjectEdUserList",
           "name": "Пользователи"
         },
