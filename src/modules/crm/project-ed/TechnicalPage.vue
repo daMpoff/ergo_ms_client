@@ -1,6 +1,7 @@
 <template>
     <div class="page-container">
-        <Breadcrumbs :items="breadcrumbItems" />
+        <HeaderBar />
+        <Breadcrumbs :items="breadcrumbItems" class="mt-3" />
         <div class="page-content">
             <h3>Служебная страница</h3>
             <div class="card p-3">
@@ -13,8 +14,8 @@
                         <router-link :to="{ name: 'ProjectEdTargetIndicators' }" class="btn btn-outline-primary align-self-start">
                             Перейти к целевым показателям
                         </router-link>
-                        <router-link :to="{ name: 'ProjectEdUsersList' }" class="btn btn-outline-primary align-self-start">
-                            Перейти к списку пользователей
+                        <router-link :to="{ name: 'ProjectEdSchemas' }" class="btn btn-outline-primary align-self-start">
+                            Перейти к таблицам
                         </router-link>
                     </div>
                 </div>
@@ -26,7 +27,8 @@
 <script setup>
 import { ref } from 'vue'
 import { Home, Wrench } from 'lucide-vue-next'
-import Breadcrumbs from './components/Breadcrumbs.vue'
+import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
+import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 
 const breadcrumbItems = ref([
     { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },

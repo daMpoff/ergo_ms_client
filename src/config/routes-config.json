@@ -569,29 +569,11 @@
         "requiresAdmin": true
       }
     },
-    "ProjectEdUsersList": {
-      "path": "/crm/project-ed/users",
-      "component": "@/modules/crm/project-ed/UsersListPage.vue",
+    "ProjectEdSchemas": {
+      "path": "/crm/project-ed/schemas",
+      "component": "@/modules/crm/project-ed/Technical/Schemas/SchemasPage.vue",
       "meta": {
-        "title": "Список пользователей",
-        "requiresAuth": true,
-        "requiresAdmin": true
-      }
-    },
-    "ProjectEdPositionsStats": {
-      "path": "/crm/project-ed/positions",
-      "component": "@/modules/crm/project-ed/PositionsStatsPage.vue",
-      "meta": {
-        "title": "Статистика по должностям",
-        "requiresAuth": true,
-        "requiresAdmin": true
-      }
-    },
-    "ProjectEdDepartments": {
-      "path": "/crm/project-ed/departments",
-      "component": "@/modules/crm/project-ed/DepartmentsPage.vue",
-      "meta": {
-        "title": "Справочник кафедр",
+        "title": "Таблицы",
         "requiresAuth": true,
         "requiresAdmin": true
       }

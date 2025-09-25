@@ -1,9 +1,5 @@
 <template>
-    <div class="page-container">
-        <Breadcrumbs :items="breadcrumbItems" />
-        <div class="page-content">
-            <h3>Список пользователей</h3>
-            <div class="card p-3">
+    <div class="card p-3">
                 <div class="d-flex flex-column gap-3">
                     <div class="d-flex flex-wrap gap-2 align-items-center">
                         <div class="input-group" style="max-width: 420px;">
@@ -19,12 +15,6 @@
                         <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadUsers">
                             <RefreshCw class="lucide align-middle me-1" :size="18" /> Обновить
                         </button>
-                        <router-link :to="{ name: 'ProjectEdDepartments' }" class="btn btn-outline-primary d-flex align-items-center">
-                            Перейти к кафедрам
-                        </router-link>
-                        <router-link :to="{ name: 'ProjectEdPositionsStats' }" class="btn btn-outline-primary d-flex align-items-center">
-                            Статистика по должностям
-                        </router-link>
                     </div>
 
                     <div v-if="loading" class="d-flex align-items-center gap-2 text-muted">
@@ -73,12 +63,10 @@
                     </div>
                 </div>
             </div>
-        </div>
-        
         <teleport to="body">
             <div v-if="isModalOpen">
                 <div class="modal fade show d-block project-ed-modal" tabindex="-1" role="dialog" aria-modal="true">
-                    <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">Редактирование пользователя</h5>
@@ -135,22 +123,14 @@
                 <div class="modal-backdrop fade show project-ed-backdrop" @click="closeEdit"></div>
             </div>
         </teleport>
-    </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { Home, Users, Wrench, Search, RefreshCw } from 'lucide-vue-next'
-import Breadcrumbs from './components/Breadcrumbs.vue'
+import { ref, computed } from 'vue'
+import { Search, RefreshCw } from 'lucide-vue-next'
 import { apiClient } from '@/js/api/manager'
 import { useToast } from 'vue-toastification'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
-
-const breadcrumbItems = ref([
-    { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
-    { label: 'Служебная страница', icon: Wrench, to: { name: 'ProjectEdTechnical' } },
-    { label: 'Список пользователей', icon: Users }
-])
 
 const toast = useToast()
 const users = ref([])
@@ -330,9 +310,48 @@ async function saveEdit() {
 
 <style scoped lang="scss">
 .page-container { display: flex; flex-direction: column; height: 100%; }
-.page-content { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+.page-content { flex: 1; display: flex; flex-direction: column; }
 .table-row-click { cursor: pointer; }
 .table-row-click:hover { background-color: rgba(0,0,0,0.03); }
 .project-ed-modal { z-index: 1060; }
 .project-ed-backdrop { z-index: 1055; position: fixed; inset: 0; }
+
+/* Вкладки: только нижняя граница, активная — с цветным подчёркиванием */
+.tabs-underline { border-bottom: 1px solid var(--bs-border-color); }
+.tabs-underline .nav-link {
+  border: none !important;
+  background: transparent !important;
+  margin-bottom: -1px;
+  padding-bottom: 0.5rem;
+  color: #0d6efd !important;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.tabs-underline .nav-link:hover { 
+  color: #0a58ca !important;
+}
+.tabs-underline .nav-link.active {
+  border: none !important;
+  color: #0d6efd !important;
+  background: transparent !important;
+  border-bottom: 3px solid #0d6efd !important;
+  font-weight: 600;
+}
+
+/* Стили для кнопок-вкладок */
+.tabs-underline .nav-link {
+  border: none !important;
+  background: transparent !important;
+  margin-bottom: -1px;
+  padding-bottom: 0.5rem;
+  color: #0d6efd !important;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+  cursor: pointer;
+}
+.tabs-underline .nav-link:hover { 
+  color: #0a58ca !important;
+}
 </style>

@@ -1,6 +1,7 @@
 <template>
     <div class="page-container">
-        <Breadcrumbs :items="breadcrumbItems" />
+        <HeaderBar />
+        <Breadcrumbs :items="breadcrumbItems" class="mt-3" />
         <div class="page-content">
             <div class="d-flex align-items-center justify-content-between">
                 <h3 class="mb-0">Программа развития БГТУ</h3>
@@ -149,6 +150,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { Home, Target, Wrench, Inbox, Plus, Pencil, Trash2, Search } from 'lucide-vue-next'
+import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import BlockModal from '@/modules/crm/project-ed/components/BlockModal.vue'
 import { apiClient } from '@/js/api/manager'

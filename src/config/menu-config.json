@@ -173,32 +173,8 @@
               "name": "Мои проекты"
             },
             {
-              "routeName": "ProjectEdUsersList",
-              "name": "Список пользователей"
-            },
-            {
-              "routeName": "ProjectEdPositionsStats",
-              "name": "Должности"
-            },
-            {
-              "routeName": "ProjectEdProgramDevelopment",
-              "name": "Программа развития БГТУ"
-            },
-            {
-              "routeName": "ProjectEdTargetIndicators",
-              "name": "Целевые показатели"
-            },
-            {
-              "routeName": "ProjectEdDepartments",
-              "name": "Справочник кафедр"
-            },
-            {
               "routeName": "ProjectEdCreate",
               "name": "Создать проект"
-            },
-            {
-              "routeName": "ProjectEdTechnical",
-              "name": "Служебная страница"
             },
         {
           "routeName": "ProjectEdProfile",

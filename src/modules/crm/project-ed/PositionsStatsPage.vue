@@ -1,26 +1,20 @@
 <template>
     <div class="page-container">
-        <Breadcrumbs :items="breadcrumbItems" />
         <div class="page-content">
-            <div class="d-flex align-items-center justify-content-between gap-2">
-                <h3 class="mb-0">Статистика по должностям</h3>
-                <button class="btn btn-primary d-flex align-items-center" @click="openCreateModal">
-                    <span class="me-1">Добавить должность</span>
-                </button>
-            </div>
-
-            <div class="card p-3 mt-3">
-                <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-                    <div class="input-group" style="max-width: 420px;">
-                        <span class="input-group-text bg-white"><Search class="lucide align-middle" :size="18" /></span>
-                        <input v-model.trim="searchTerm" @input="handleSearch" type="text" class="form-control" placeholder="Поиск по названию должности" />
+            <div class="card p-3">
+                <div class="d-flex gap-2 align-items-center justify-content-between mb-3">
+                    <div class="d-flex gap-2 align-items-center flex-grow-1">
+                        <div class="input-group" style="max-width: 420px; flex-grow: 1;">
+                            <span class="input-group-text bg-white"><Search class="lucide align-middle" :size="18" /></span>
+                            <input v-model.trim="searchTerm" @input="handleSearch" type="text" class="form-control" placeholder="Поиск по названию должности" />
+                        </div>
+                        <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadData">
+                            <RefreshCw class="lucide align-middle me-1" :size="18" /> Обновить
+                        </button>
                     </div>
-                    <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadData">
-                        <RefreshCw class="lucide align-middle me-1" :size="18" /> Обновить
+                    <button class="btn btn-primary d-flex align-items-center" @click="openCreateModal">
+                        <Plus class="lucide align-middle me-1" :size="18" />Добавить должность
                     </button>
-                    <router-link :to="{ name: 'ProjectEdUsersList' }" class="btn btn-outline-primary d-flex align-items-center">
-                        Перейти к пользователям
-                    </router-link>
                 </div>
 
                 <div v-if="loading" class="d-flex align-items-center gap-2 text-muted">
@@ -126,19 +120,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Home, Wrench, Briefcase, RefreshCw, Plus, Save, Search, Users, Trash2 } from 'lucide-vue-next'
-import Breadcrumbs from './components/Breadcrumbs.vue'
+import { RefreshCw, Save, Search, Users, Trash2, Plus } from 'lucide-vue-next'
 import { apiClient } from '@/js/api/manager'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
-
-const breadcrumbItems = ref([
-    { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
-    { label: 'Служебная страница', icon: Wrench, to: { name: 'ProjectEdTechnical' } },
-    { label: 'Список пользователей', icon: Users, to: { name: 'ProjectEdUsersList' } },
-    { label: 'Должности', icon: Briefcase }
-])
 
 const loading = ref(false)
 const stats = ref([])

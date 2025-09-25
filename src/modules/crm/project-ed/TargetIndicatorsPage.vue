@@ -1,6 +1,7 @@
 <template>
     <div class="page-container">
-        <Breadcrumbs :items="breadcrumbItems" />
+        <HeaderBar />
+        <Breadcrumbs :items="breadcrumbItems" class="mt-3" />
         <div class="page-content">
             <div class="d-flex align-items-center justify-content-between">
                 <h3 class="mb-0">Целевые показатели</h3>
@@ -234,6 +235,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { Home, Target, Plus, Edit, Trash2, Wrench, Layers2 } from 'lucide-vue-next'
+import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 import CategoriesIndicators from './components/CategoriesIndicators.vue'
 import CreateIndicatorPage from './CreateIndicatorPage.vue'

@@ -1,22 +1,19 @@
 <template>
     <div class="page-container">
-        <Breadcrumbs :items="breadcrumbItems" />
         <div class="page-content">
-            <div class="d-flex align-items-center justify-content-between gap-2">
-                <h3 class="mb-0">Справочник кафедр</h3>
-                <button class="btn btn-primary d-flex align-items-center" @click="openCreate">
-                    <span>Добавить кафедру</span>
-                </button>
-            </div>
-
-            <div class="card p-3 mt-3">
-                <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-                    <div class="input-group" style="max-width: 420px;">
-                        <span class="input-group-text bg-white"><Search class="lucide align-middle" :size="18" /></span>
-                        <input v-model.trim="searchTerm" @input="handleSearch" type="text" class="form-control" placeholder="Поиск по названию или короткому имени" />
+            <div class="card p-3">
+                <div class="d-flex gap-2 align-items-center justify-content-between mb-3">
+                    <div class="d-flex gap-2 align-items-center flex-grow-1">
+                        <div class="input-group" style="max-width: 420px; flex-grow: 1;">
+                            <span class="input-group-text bg-white"><Search class="lucide align-middle" :size="18" /></span>
+                            <input v-model.trim="searchTerm" @input="handleSearch" type="text" class="form-control" placeholder="Поиск по названию или короткому имени" />
+                        </div>
+                        <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadDepartments">
+                            <RefreshCw class="lucide align-middle me-1" :size="18" /> Обновить
+                        </button>
                     </div>
-                    <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadDepartments">
-                        <RefreshCw class="lucide align-middle me-1" :size="18" /> Обновить
+                    <button class="btn btn-primary d-flex align-items-center" @click="openCreate">
+                        <Plus class="lucide align-middle me-1" :size="18" />Добавить кафедру
                     </button>
                 </div>
 
@@ -35,8 +32,8 @@
                                 <tr>
                                     <th style="width: 56px;">#</th>
                                     <th>Название</th>
-                                    <th>Короткое имя</th>
-                                    <th>Факультет</th>
+                                    <th class="text-center">Короткое имя</th>
+                                    <th class="text-center">Факультет</th>
                             <th class="text-center">Пользователи</th>
                                     <th style="width: 56px;" class="text-end"></th>
                                 </tr>
@@ -45,8 +42,8 @@
                                 <tr v-for="(d, idx) in departments" :key="d.id" class="table-row-click" @click="openEdit(d)">
                                     <td class="text-muted">{{ idx + 1 }}</td>
                                     <td>{{ d.name }}</td>
-                                    <td>{{ d.short_name || '—' }}</td>
-                                    <td>{{ facultyShort(d) || '—' }}</td>
+                                    <td class="text-center">{{ d.short_name || '—' }}</td>
+                                    <td class="text-center" :title="facultyFullName(d)">{{ facultyShort(d) || '—' }}</td>
                                     <td class="text-center">
                                         <span class="d-inline-flex align-items-center justify-content-end">
                                             <Users class="lucide align-middle me-1" :size="18" /> {{ deptCounts[d.id] || 0 }}
@@ -144,19 +141,11 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Home, Wrench, Building2, RefreshCw, Search, Users, Trash2 } from 'lucide-vue-next'
-import Breadcrumbs from './components/Breadcrumbs.vue'
+import { RefreshCw, Search, Users, Trash2, Plus } from 'lucide-vue-next'
 import { apiClient } from '@/js/api/manager'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
-
-const breadcrumbItems = ref([
-    { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
-    { label: 'Служебная страница', icon: Wrench, to: { name: 'ProjectEdTechnical' } },
-    { label: 'Список пользователей', icon: Users, to: { name: 'ProjectEdUsersList' } },
-    { label: 'Справочник кафедр', icon: Building2 }
-])
 
 const loading = ref(false)
 const departments = ref([])
@@ -183,6 +172,16 @@ function facultyShort(row) {
     if (id && Array.isArray(facultyOptions.value) && facultyOptions.value.length) {
         const f = facultyOptions.value.find(item => item.id === id)
         if (f) return f.short_name || f.name || null
+    }
+    return row.faculty_name || null
+}
+
+function facultyFullName(row) {
+    // Возвращаем полное название факультета для подсказки
+    const id = row.faculty_ref ?? row.faculty ?? null
+    if (id && Array.isArray(facultyOptions.value) && facultyOptions.value.length) {
+        const f = facultyOptions.value.find(item => item.id === id)
+        if (f) return f.name || null
     }
     return row.faculty_name || null
 }
