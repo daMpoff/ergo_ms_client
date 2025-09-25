@@ -4,32 +4,44 @@
         <div class="filters card p-3 mb-3">
             <div class="row g-2 align-items-end">
                 <div class="col-12 col-lg-3">
-                    <label class="form-label mb-1">Категория политики/проекта</label>
-                    <select class="form-select" v-model="filters.category">
-                        <option :value="null">Все</option>
-                        <option v-for="c in projectCategories" :key="c" :value="c">{{ c }}</option>
-                    </select>
+                    <SelectBox
+                        label="Категория политики/проекта"
+                        v-model="filters.category"
+                        :options="projectCategories"
+                        :includeAllOption="true"
+                        allLabel="Все"
+                    />
                 </div>
                 <div class="col-12 col-lg-3">
-                    <label class="form-label mb-1">Подкатегория</label>
-                    <select class="form-select" v-model="filters.subcategory">
-                        <option :value="null">Все</option>
-                        <option v-for="s in projectSubcategories" :key="s" :value="s">{{ s }}</option>
-                    </select>
+                    <SelectBox
+                        label="Подкатегория"
+                        v-model="filters.subcategory"
+                        :options="projectSubcategories"
+                        :includeAllOption="true"
+                        allLabel="Все"
+                    />
                 </div>
                 <div class="col-12 col-lg-3">
-                    <label class="form-label mb-1">Блок мероприятий</label>
-                    <select class="form-select" v-model="filters.blockId">
-                        <option :value="null">Все</option>
-                        <option v-for="b in blockOptions" :key="b.id" :value="b.id">{{ b.name }}</option>
-                    </select>
+                    <SelectBox
+                        label="Блок мероприятий"
+                        v-model="filters.blockId"
+                        :options="blockOptions"
+                        :valueKey="'id'"
+                        :labelKey="'name'"
+                        :includeAllOption="true"
+                        allLabel="Все"
+                        :castToNumber="true"
+                    />
                 </div>
                 <div class="col-12 col-lg-3">
-                    <label class="form-label mb-1">Срок реализации (год)</label>
-                    <select class="form-select" v-model.number="filters.year">
-                        <option :value="null">Все</option>
-                        <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
-                    </select>
+                    <SelectBox
+                        label="Срок реализации (год)"
+                        v-model="filters.year"
+                        :options="yearOptions"
+                        :includeAllOption="true"
+                        allLabel="Все"
+                        :castToNumber="true"
+                    />
                 </div>
             </div>
         </div>
@@ -116,6 +128,7 @@ import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import { useToast } from 'vue-toastification'
 import { ChevronDown, ChevronUp, Eye, EyeOff, FileText, Users, ListChecks, Calendar } from 'lucide-vue-next'
+import SelectBox from '@/components/SelectBox.vue'
 
 const props = defineProps({
     projects: { type: Array, default: () => [] },
