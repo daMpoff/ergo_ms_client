@@ -24,9 +24,9 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { isDatasetSidebarOpen, currentSidebarPage } from '@/modules/bi/MainPage/Sidebar/components/js/useSidebarStore'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
 import MenuList from '@/components/menu/MenuList.vue'
-import TheHeader from '@/components/header/TheHeader.vue'
 
 import StorageSidebar from '@/modules/bi/MainPage/Sidebar/StorageSidebar.vue'
+import { Menu as IconMenu } from 'lucide-vue-next'
 
 const userStore = useUserStore()
 const leftPadding = ref('300px') // Увеличиваем начальное значение для адаптивной ширины
@@ -82,6 +82,10 @@ function closeSidebar() {
   currentSidebarPage.value = ''
 }
 
+function onHamburgerClick() {
+  toggleMenu(!isMenuVisible.value)
+}
+
 onMounted(async () => {
   updateMenuVisibility()
   window.addEventListener('resize', updateMenuVisibility)
@@ -96,6 +100,22 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <Teleport to="body">
+    <div class="mobile-header d-xl-none">
+      <button
+        class="btn btn-link d-flex align-items-center justify-content-center mobile-header__btn"
+        type="button"
+        :aria-label="isMenuVisible ? 'Закрыть меню' : 'Открыть меню'"
+        :title="isMenuVisible ? 'Закрыть меню' : 'Открыть меню'"
+        @click="onHamburgerClick"
+      >
+        <IconMenu :size="24" />
+      </button>
+      <RouterLink to="/" class="mobile-header__brand text-decoration-none">
+        <span class="fw-semibold">ERGO&nbsp;MS</span>
+      </RouterLink>
+    </div>
+  </Teleport>
   <div class="layout-container">
     <MenuList
       :current-page="currentSidebarPage"
@@ -123,6 +143,33 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  z-index: 1100;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  width: 100%;
+
+  &__btn {
+    width: 40px;
+    height: 40px;
+    margin-right: 8px;
+    color: #0d6efd;
+  }
+
+  &__brand {
+    display: inline-flex;
+    align-items: center;
+    color: inherit;
+  }
+}
 .layout-page {
   padding-inline-start: v-bind(leftPadding);
   transition: padding-inline-start 0.3s ease;
@@ -131,8 +178,19 @@ onBeforeUnmount(() => {
   z-index: 1004;
 }
 @media (width < 1200px) {
+  .layout-container {
+    height: 100dvh;
+    overflow: hidden;
+  }
   .layout-page {
     padding-inline-start: 0;
+    padding-top: 0;
+    height: calc(100dvh - 56px);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  :deep(.side-menu__toggle) {
+    display: none !important;
   }
 }
 </style>
