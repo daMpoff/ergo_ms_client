@@ -1,7 +1,11 @@
 <template>
     <div class="modal-form-container">
-        <div class="p-4">
-            <form @submit.prevent="saveIndicator">
+        <div class="p-4 position-relative">
+            <div v-if="initLoading" class="init-loading d-flex flex-column align-items-center justify-content-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status" aria-label="Загрузка"></div>
+                <div class="text-muted">Загрузка данных...</div>
+            </div>
+            <form v-else @submit.prevent="saveIndicator">
                 <div class="row">
                             <!-- Категория (обязательно) -->
                             <div class="col-md-6 mb-3">
@@ -12,6 +16,7 @@
                                     :allLabel="'Выберите категорию'"
                                     :includeAllOption="true"
                                     :castToNumber="true"
+                                    :disabled="loading"
                                     @change="onCategoryChange"
                                 />
                                 <div v-if="errors.categoryId" class="error-message">
@@ -28,7 +33,7 @@
                                     :allLabel="'Не указана'"
                                     :includeAllOption="true"
                                     :castToNumber="true"
-                                    :disabled="!formData.categoryId"
+                                    :disabled="!formData.categoryId || loading"
                                     @change="onSubcategoryChange"
                                 />
                             </div>
@@ -75,7 +80,7 @@
                                     :allLabel="'Выберите блок мероприятий'"
                                     :includeAllOption="true"
                                     :castToNumber="true"
-                                    :disabled="!formData.categoryId"
+                                    :disabled="!formData.categoryId || loading"
                                 />
                                 <div v-if="errors.eventBlockId" class="error-message">
                                     {{ errors.eventBlockId }}
@@ -147,7 +152,8 @@
                                             class="form-control form-control-sm" 
                                             v-model="formData.values[year]"
                                             step="0.0001"
-                                            :placeholder="year"
+                                        :placeholder="year"
+                                        :disabled="loading"
                                         >
                                     </div>
                                 </div>
@@ -158,7 +164,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4">
-                    <button type="button" class="btn btn-secondary" @click="cancel">
+                    <button type="button" class="btn btn-secondary" @click="cancel" :disabled="loading">
                         Отмена
                     </button>
                     <button type="submit" class="btn btn-primary" :disabled="loading">
@@ -192,6 +198,7 @@ const emit = defineEmits(['saved', 'cancelled'])
 const toast = useToast()
 
 const loading = ref(false)
+const initLoading = ref(true)
 
 // Состояние для выпадающего списка ответственного
 const isResponsibleDropdownOpen = ref(false)
@@ -365,8 +372,12 @@ const saveIndicator = async () => {
     
     try {
         const data = {
-            ...formData.value,
-            project_id: 1, // Временное решение
+            name: formData.value.name,
+            unit: formData.value.unit,
+            category: formData.value.categoryId || null,
+            subcategory: formData.value.subcategoryId || null,
+            event_block: formData.value.eventBlockId || null,
+            responsible: formData.value.responsibleId || null,
             values_by_year: formData.value.values
         }
 
@@ -434,20 +445,28 @@ const cancel = () => {
 const loadIndicatorForEdit = async (indicator) => {
     if (!indicator) return
     
+    const getId = (val) => {
+        if (val == null || val === '') return ''
+        if (typeof val === 'object') {
+            return val.id ?? ''
+        }
+        return val
+    }
+
     formData.value = {
-        categoryId: indicator.category?.id || '',
-        subcategoryId: indicator.subcategory?.id || '',
+        categoryId: getId(indicator.category),
+        subcategoryId: getId(indicator.subcategory),
         name: indicator.name,
         unit: indicator.unit,
-        eventBlockId: indicator.event_block?.id || '',
-        responsibleId: indicator.responsible?.id || '',
+        eventBlockId: getId(indicator.event_block),
+        responsibleId: getId(indicator.responsible),
         values: indicator.values_by_year || {}
     }
     
     // Загружаем связанные данные
-    if (indicator.category) {
-        await loadSubcategories(indicator.category.id)
-        await loadEventBlocks(indicator.category.id, indicator.subcategory?.id)
+    if (formData.value.categoryId) {
+        await loadSubcategories(formData.value.categoryId)
+        await loadEventBlocks(formData.value.categoryId, formData.value.subcategoryId || null)
     }
 }
 
@@ -456,8 +475,14 @@ onMounted(async () => {
     document.body.style.overflow = 'hidden'
     
     initializeValues()
-    await loadCategories()
-    await loadUsers()
+    try {
+        await Promise.all([
+            loadCategories(),
+            loadUsers()
+        ])
+    } finally {
+        initLoading.value = false
+    }
     
     // Если это редактирование, загружаем данные показателя
     if (props.editingIndicator) {
@@ -480,6 +505,10 @@ onUnmounted(() => {
 .modal-form-container {
     max-height: 80vh;
     overflow-y: auto;
+}
+
+.init-loading {
+    min-height: 300px;
 }
 
 .form-label.small {

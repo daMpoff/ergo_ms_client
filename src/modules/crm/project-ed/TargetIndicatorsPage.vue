@@ -75,38 +75,43 @@
                                     <tr>
                                         <th style="width: 50px;">№</th>
                                         <th style="width: 250px;">Наименование показателя</th>
-                                        <th style="width: 100px;">Единица измерения</th>
-                                        <th style="width: 120px;">Блок мероприятий</th>
-                                        <th style="width: 200px;">Ответственный</th>
+                                        <th class="text-center" style="width: 100px;">Единица измерения</th>
+                                        <th class="text-center" style="width: 120px;">Блок мероприятий</th>
+                                        <th class="text-center" style="width: 200px;">Ответственный</th>
                                         <th style="width: 80px;">Действия</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(indicator, index) in indicators" :key="indicator.id">
+                                    <tr 
+                                        v-for="(indicator, index) in indicators" 
+                                        :key="indicator.id"
+                                        class="clickable-row"
+                                        @click="editIndicator(indicator)"
+                                    >
                                         <td class="text-muted">{{ index + 1 }}</td>
                                         <td>
                                             <div class="fw-medium">{{ indicator.name }}</div>
-                                            <small class="text-muted">{{ indicator.description }}</small>
                                         </td>
-                                        <td>{{ indicator.unit }}</td>
-                                        <td>
-                                            <div v-if="indicator.event_block" class="text-truncate" :title="indicator.event_block.code">
-                                                {{ indicator.event_block.code }}
+                                        <td class="text-center">{{ indicator.unit }}</td>
+                                        <td class="text-center">
+                                            <div v-if="indicator.event_block_short_name" class="text-truncate" :title="indicator.event_block_short_name">
+                                                {{ indicator.event_block_short_name }}
                                             </div>
                                             <div v-else class="text-muted">Не указан</div>
                                         </td>
-                                        <td>
-                                            <div v-if="indicator.responsible" class="text-truncate" :title="getResponsibleDisplayText(indicator.responsible)">
-                                                {{ getResponsibleDisplayText(indicator.responsible) }}
+                                        <td class="text-center">
+                                            <div class="d-inline-flex align-items-center justify-content-center gap-2">
+                                                <DefaultAvatar v-if="indicator.responsible_name" :size="'small'" :title="indicator.responsible_name" />
+                                                <span v-if="indicator.responsible_name" class="text-truncate" :title="indicator.responsible_name">{{ indicator.responsible_name }}</span>
+                                                <span v-else class="text-muted">Не указан</span>
                                             </div>
-                                            <div v-else class="text-muted">Не указан</div>
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-primary" @click="editIndicator(indicator)">
+                                                <button class="btn btn-outline-primary" @click.stop="editIndicator(indicator)">
                                                     <Edit :size="14" />
                                                 </button>
-                                                <button class="btn btn-outline-danger" @click="deleteIndicator(indicator.id)">
+                                                <button class="btn btn-outline-danger" @click.stop="deleteIndicator(indicator.id)">
                                                     <Trash2 :size="14" />
                                                 </button>
                                             </div>
@@ -186,11 +191,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Home, Target, Plus, Edit, Trash2, Wrench, Layers2 } from 'lucide-vue-next'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 import CategoriesIndicators from './components/CategoriesIndicators.vue'
 import CreateIndicatorPage from './CreateIndicatorPage.vue'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
+import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const breadcrumbItems = ref([
     { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
@@ -207,6 +215,19 @@ const categoriesComponent = ref(null)
 const years = ref([2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032])
 
 const indicators = ref([])
+async function loadIndicators() {
+    try {
+        const resp = await apiClient.get(endpoints.project_ed.target_indicators.list)
+        indicators.value = Array.isArray(resp?.data) ? resp.data : (resp?.results || [])
+    } catch (e) {
+        indicators.value = []
+    }
+}
+
+onMounted(async () => {
+    await loadIndicators()
+})
+
 
 
 
@@ -273,16 +294,8 @@ const closeModal = () => {
 
 // Обработка сохранения показателя
 const onIndicatorSaved = (indicator) => {
-    if (editingIndicator.value) {
-        // Обновление существующего показателя
-        const index = indicators.value.findIndex(i => i.id === editingIndicator.value.id)
-        if (index !== -1) {
-            indicators.value[index] = { ...indicator }
-        }
-    } else {
-        // Добавление нового показателя
-        indicators.value.push(indicator)
-    }
+    // После сохранения перезагружаем список с сервера (API возвращает нормализованные поля)
+    loadIndicators()
     closeModal()
 }
 
@@ -328,8 +341,22 @@ const deleteIndicator = (id) => {
     color: #495057;
 }
 
+/* Вертикальное выравнивание по центру для ячеек таблиц */
+.table th,
+.table td {
+    vertical-align: middle;
+}
+
 .btn-group-sm > .btn {
     padding: 0.25rem 0.5rem;
+}
+
+/* Кликабельные строки в таблице показателей */
+.clickable-row {
+    cursor: pointer;
+}
+.clickable-row:hover {
+    background-color: var(--color-hover-background, #f8f9fa);
 }
 
 .text-success {
@@ -376,7 +403,8 @@ const deleteIndicator = (id) => {
 
 .years-table {
     min-width: 800px; /* Минимальная ширина для корректного отображения */
-    width: max-content;
+    width: 100%;
+    table-layout: fixed;
 }
 
 .sticky-header {
@@ -387,7 +415,7 @@ const deleteIndicator = (id) => {
 }
 
 .year-column {
-    min-width: 80px;
+    min-width: 90px;
     text-align: center;
     font-size: 0.875rem;
     font-weight: 600;
@@ -400,8 +428,9 @@ const deleteIndicator = (id) => {
     text-align: center;
     padding: 0.5rem;
     border-left: 1px solid #dee2e6;
-    min-width: 80px;
+    min-width: 90px;
     font-size: 0.875rem;
+    vertical-align: middle;
 }
 
 .indicator-name-cell {
@@ -410,8 +439,8 @@ const deleteIndicator = (id) => {
     background: white;
     z-index: 5;
     border-right: 2px solid #dee2e6;
-    min-width: 200px;
-    max-width: 200px;
+    min-width: 220px;
+    max-width: 220px;
 }
 
 /* Стили для прокрутки */
