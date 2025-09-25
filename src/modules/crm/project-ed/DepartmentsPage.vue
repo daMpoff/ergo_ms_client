@@ -321,16 +321,9 @@ loadDepartments()
 
 async function loadDeptCounts() {
     try {
-        // Берём профили и агрегируем по department_ref
-        const resp = await apiClient.get('/project_ed/user-profiles/')
-        const profiles = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
-        const counts = {}
-        for (const p of profiles) {
-            const depId = p?.department_ref ?? null
-            if (!depId) continue
-            counts[depId] = (counts[depId] || 0) + 1
-        }
-        deptCounts.value = counts
+        // Используем специальный эндпоинт для подсчета пользователей по кафедрам
+        const resp = await apiClient.get('/project_ed/departments/user_counts/')
+        deptCounts.value = resp.data || {}
     } catch (e) {
         // не блокируем страницу, просто тихо игнорируем
         deptCounts.value = {}
