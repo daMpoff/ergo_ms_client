@@ -12,6 +12,11 @@
                     </button>
                 </li>
                 <li class="nav-item">
+                    <button class="nav-link" :class="{ active: activeTab === 'faculties' }" @click="switchTab('faculties')">
+                        Факультеты
+                    </button>
+                </li>
+                <li class="nav-item">
                     <button class="nav-link" :class="{ active: activeTab === 'departments' }" @click="switchTab('departments')">
                         Кафедры
                     </button>
@@ -25,6 +30,9 @@
 
             <template v-if="activeTab === 'users'">
                 <UsersListPage />
+            </template>
+            <template v-else-if="activeTab === 'faculties'">
+                <FacultiesPage />
             </template>
             <template v-else-if="activeTab === 'departments'">
                 <DepartmentsPage />
@@ -40,12 +48,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Home, Users, Wrench, Building2, Briefcase } from 'lucide-vue-next'
+import { Home, Users, Wrench, Building2, Briefcase, GraduationCap } from 'lucide-vue-next'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
-import UsersListPage from '@/modules/crm/project-ed/UsersListPage.vue'
-import DepartmentsPage from '@/modules/crm/project-ed/DepartmentsPage.vue'
-import PositionsStatsPage from '@/modules/crm/project-ed/PositionsStatsPage.vue'
+import UsersListPage from '@/modules/crm/project-ed/Technical/Schemas/UsersListPage.vue'
+import FacultiesPage from '@/modules/crm/project-ed/Technical/Schemas/FacultiesPage.vue'
+import DepartmentsPage from '@/modules/crm/project-ed/Technical/Schemas/DepartmentsPage.vue'
+import PositionsStatsPage from '@/modules/crm/project-ed/Technical/Schemas/PositionsStatsPage.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,6 +64,8 @@ const pageTitle = computed(() => {
     switch (activeTab.value) {
         case 'users':
             return 'Список пользователей'
+        case 'faculties':
+            return 'Список факультетов'
         case 'departments':
             return 'Список кафедр'
         case 'positions':
@@ -73,6 +84,8 @@ const breadcrumbItems = computed(() => {
     switch (activeTab.value) {
         case 'users':
             return [...baseItems, { label: 'Список пользователей', icon: Users }]
+        case 'faculties':
+            return [...baseItems, { label: 'Список факультетов', icon: GraduationCap }]
         case 'departments':
             return [...baseItems, { label: 'Список кафедр', icon: Building2 }]
         case 'positions':
@@ -88,7 +101,7 @@ function switchTab(tab) {
     router.push({ query })
 }
 
-if (route.query.tab && ['users', 'departments', 'positions'].includes(route.query.tab)) {
+if (route.query.tab && ['users', 'faculties', 'departments', 'positions'].includes(route.query.tab)) {
     activeTab.value = route.query.tab
 } else if (route.query.tab === 'positions') {
     activeTab.value = 'positions'

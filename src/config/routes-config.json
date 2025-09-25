@@ -518,7 +518,7 @@
     },
     "ProjectEdTechnical": {
       "path": "/crm/project-ed/technical",
-      "component": "@/modules/crm/project-ed/TechnicalPage.vue",
+      "component": "@/modules/crm/project-ed/Technical/TechnicalPage.vue",
       "meta": {
         "title": "Служебная страница",
         "requiresAuth": true,
