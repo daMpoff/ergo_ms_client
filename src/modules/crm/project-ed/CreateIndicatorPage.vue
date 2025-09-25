@@ -6,21 +6,14 @@
                             <!-- Категория (обязательно) -->
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Категория показателя <span class="text-danger">*</span></label>
-                                <select 
-                                    class="form-select" 
+                                <SelectBox
                                     v-model="formData.categoryId"
+                                    :options="categories"
+                                    :allLabel="'Выберите категорию'"
+                                    :includeAllOption="true"
+                                    :castToNumber="true"
                                     @change="onCategoryChange"
-                                    required
-                                >
-                                    <option value="">Выберите категорию</option>
-                                    <option 
-                                        v-for="category in categories" 
-                                        :key="category.id" 
-                                        :value="category.id"
-                                    >
-                                        {{ category.name }}
-                                    </option>
-                                </select>
+                                />
                                 <div v-if="errors.categoryId" class="error-message">
                                     {{ errors.categoryId }}
                                 </div>
@@ -29,21 +22,15 @@
                             <!-- Подкатегория (необязательно) -->
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Подкатегория показателя</label>
-                                <select 
-                                    class="form-select" 
+                                <SelectBox
                                     v-model="formData.subcategoryId"
-                                    @change="onSubcategoryChange"
+                                    :options="subcategories"
+                                    :allLabel="'Не указана'"
+                                    :includeAllOption="true"
+                                    :castToNumber="true"
                                     :disabled="!formData.categoryId"
-                                >
-                                    <option value="">Не указана</option>
-                                    <option 
-                                        v-for="subcategory in subcategories" 
-                                        :key="subcategory.id" 
-                                        :value="subcategory.id"
-                                    >
-                                        {{ subcategory.name }}
-                                    </option>
-                                </select>
+                                    @change="onSubcategoryChange"
+                                />
                             </div>
 
                             <!-- Название показателя -->
@@ -80,21 +67,16 @@
                             <!-- Блок мероприятий -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Блок мероприятий <span class="text-danger">*</span></label>
-                                <select 
-                                    class="form-select" 
+                                <SelectBox
                                     v-model="formData.eventBlockId"
-                                    required
+                                    :options="eventBlocks"
+                                    :valueKey="'id'"
+                                    :labelKey="'code'"
+                                    :allLabel="'Выберите блок мероприятий'"
+                                    :includeAllOption="true"
+                                    :castToNumber="true"
                                     :disabled="!formData.categoryId"
-                                >
-                                    <option value="">Выберите блок мероприятий</option>
-                                    <option 
-                                        v-for="block in eventBlocks" 
-                                        :key="block.id" 
-                                        :value="block.id"
-                                    >
-                                        {{ block.code }}
-                                    </option>
-                                </select>
+                                />
                                 <div v-if="errors.eventBlockId" class="error-message">
                                     {{ errors.eventBlockId }}
                                 </div>
@@ -195,6 +177,7 @@ import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import { ChevronDown } from 'lucide-vue-next'
+import SelectBox from '@/components/SelectBox.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const props = defineProps({
