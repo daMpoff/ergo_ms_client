@@ -13,50 +13,68 @@
             </div>
         </div>
 
-        <!-- Список блоков мероприятий со спойлерами -->
-        <div class="table-card">
-            <div v-if="isLoading" class="p-3 text-center">Загрузка...</div>
+        <!-- Карточки блоков мероприятий -->
+        <div class="block-list">
+            <div v-if="isLoading" class="p-4 text-center">Загрузка...</div>
             <template v-else>
-                <div v-for="block in visibleBlocks" :key="block.id" class="mb-2">
-                    <!-- Заголовок блока -->
-                    <div class="row g-2 px-2 pb-2 align-items-stretch header-sub">
-                        <div class="col-2 col-lg-2">
-                            <div class="cell text-center">{{ block.code || block.short_code || '—' }}</div>
+                <div v-for="block in visibleBlocks" :key="block.id" class="card block-card mb-3">
+                    <div class="card-header d-flex align-items-center justify-content-between gap-2 header-toggle" role="button" @click="toggleBlock(block)">
+                        <div class="d-flex flex-column">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge text-bg-secondary rounded-pill code-badge">{{ block.code || block.short_code || '—' }}</span>
+                                <div class="title-text">{{ block.name || block.title || 'Без названия' }}</div>
+                            </div>
+                            <div class="small text-secondary-custom mt-1 d-flex align-items-center gap-3 flex-wrap">
+                                    <span class="d-inline-flex align-items-center gap-1">
+                                        <Users class="icon-center" />
+                                        <span>{{ getLeadersCount(block) }} руководителей</span>
+                                    </span>
+                                    <span class="d-inline-flex align-items-center gap-1">
+                                        <ListChecks class="icon-center" />
+                                        <span>{{ getEventsCount(block) }} {{ pluralizeEvents(getEventsCount(block)) }}</span>
+                                    </span>
+                            </div>
                         </div>
-                        <div class="col-8 col-lg-8">
-                            <div class="cell">{{ block.name || block.title || 'Без названия' }}</div>
-                        </div>
-                        <div class="col-2 col-lg-2">
-                            <button class="btn btn-outline-secondary w-100" @click="toggleBlock(block)">
-                                {{ block._expanded ? 'Свернуть' : 'Показать мероприятия' }}
-                            </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <component :is="block._expanded ? ChevronUp : ChevronDown" class="icon-center" />
                         </div>
                     </div>
 
-                    <!-- Тело блока: список мероприятий -->
-                    <div v-if="block._expanded" class="px-2 pb-3">
+                    <div v-if="block._expanded" class="card-body pt-3 pb-3">
                         <div v-if="block._loading" class="p-2 text-center">Загрузка мероприятий...</div>
                         <div v-else>
                             <div v-if="(block.events || []).length === 0" class="empty-hint">Мероприятий нет</div>
-                            <div v-for="ev in block.events" :key="ev.id" class="table-row row g-2 align-items-stretch">
-                                <div class="col-2 col-lg-2">
-                                    <div class="cell text-center">{{ ev.code ?? ev.id ?? '-' }}</div>
-                                </div>
-                                <div class="col-8 col-lg-8">
-                                    <div class="cell" :title="ev.name || ev.kpiName">
-                                        <div class="fw-semibold">{{ ev.name || ev.kpiName || 'Без названия' }}</div>
-                                        <div v-if="ev._showResults" class="mt-2 small text-muted">
-                                            <span class="years-th">Основные результаты:</span>
-                                            <div class="mt-1">{{ ev.results || ev.description || '—' }}</div>
+
+                            <div class="list-group">
+                                <div v-for="ev in block.events" :key="ev.id" class="list-group-item event-item px-0">
+                                    <!-- Заголовок мероприятия -->
+                                    <div :class="['event-item-header','d-flex','align-items-center','justify-content-between', { 'is-open': ev._showResults }]" role="button" @click="ev._showResults = !ev._showResults">
+                                        <div class="d-flex flex-column flex-grow-1 event-item-main">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <span class="badge text-bg-secondary rounded-pill code-badge">{{ ev.code ?? ev.id ?? '-' }}</span>
+                                                <div class="event-title-link">{{ ev.name || ev.kpiName || 'Без названия' }}</div>
+                                            </div>
+                                            <div v-if="ev.start_year || ev.end_year" class="event-item-meta text-muted small d-flex align-items-center gap-1 mt-1">
+                                                <Calendar class="icon-center" />
+                                                <span>
+                                                    {{ ev.start_year && ev.end_year ? (ev.start_year === ev.end_year ? ev.start_year : (ev.start_year + ' — ' + ev.end_year)) : (ev.start_year || ev.end_year) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <component :is="ev._showResults ? ChevronUp : ChevronDown" class="icon-center chevron" />
                                         </div>
                                     </div>
-                                </div>
-                                <div class="col-2 col-lg-2">
-                                    <div class="d-flex flex-column gap-2 w-100">
-                                        <button class="btn btn-outline-primary" @click.stop="ev._showResults = !ev._showResults">
-                                            {{ ev._showResults ? 'Скрыть результаты' : 'Показать результаты' }}
-                                        </button>
-                                        <button class="btn btn-outline-secondary" @click.stop="$emit('rowClick', ev)">Открыть</button>
+
+                                    <!-- Спойлер с результатами -->
+                                    <div v-if="ev._showResults" class="mt-2 ps-3 pe-2 pb-2">
+                                        <div class="text-muted mb-1 years-th">Основные результаты:</div>
+                                        <template v-if="splitResults(ev.results || ev.description).length <= 1">
+                                            <div class="cell text-prewrap px-3 py-2">{{ splitResults(ev.results || ev.description)[0] ?? (ev.results || ev.description || '—') }}</div>
+                                        </template>
+                                        <ol v-else class="mb-0 ps-3">
+                                            <li v-for="(item, idx) in splitResults(ev.results || ev.description)" :key="idx">{{ item }}</li>
+                                        </ol>
                                     </div>
                                 </div>
                             </div>
@@ -76,6 +94,7 @@ import { computed, ref, onMounted } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import { useToast } from 'vue-toastification'
+import { ChevronDown, ChevronUp, Eye, EyeOff, FileText, Users, ListChecks, Calendar } from 'lucide-vue-next'
 
 const props = defineProps({
     projects: { type: Array, default: () => [] },
@@ -138,35 +157,64 @@ async function toggleBlock(block) {
     }
 }
 
+function splitResults(text) {
+    if (!text) return []
+    return String(text)
+        .split(/\r?\n/)
+        .map(s => s.trim())
+        .filter(Boolean)
+}
+
+function getLeadersCount(block) {
+    const leaders = block.leaders || block.managers || block.heads || []
+    if (Array.isArray(leaders)) return leaders.length
+    if (typeof leaders === 'number') return leaders
+    if (typeof leaders === 'string') {
+        const n = Number(leaders)
+        return Number.isFinite(n) ? n : 0
+    }
+    return Number(block.leaders_count || block.managers_count || block.heads_count) || 0
+}
+
+function getEventsCount(block) {
+    // показываем уже загруженное число, иначе пробуем из возможных полей
+    const loaded = (block.events || []).length
+    if (loaded > 0) return loaded
+    const candidates = [block.events_count, block.count, block.total_events]
+    for (const v of candidates) {
+        const n = Number(v)
+        if (Number.isFinite(n) && n > 0) return n
+    }
+    return 0
+}
+
+function pluralizeEvents(n) {
+    const num = Math.abs(Number(n)) || 0
+    const mod10 = num % 10
+    const mod100 = num % 100
+    if (mod10 === 1 && mod100 !== 11) return 'мероприятие'
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'мероприятия'
+    return 'мероприятий'
+}
+
 onMounted(fetchBlocks)
 </script>
 
 <style scoped lang="scss">
-.table-card {
+.block-list { display: block; }
+.block-card {
     border: 1px solid var(--bs-border-color, #dee2e6);
     border-radius: .75rem;
     background-color: var(--color-primary-background);
+    overflow: hidden;
 }
-.table-header { padding: .5rem; }
-.th {
-    width: 100%;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: .5rem .75rem;
-    border-radius: .5rem;
-    background-color: var(--color-primary-background);
-    border: 1px solid var(--bs-border-color, #dee2e6);
-    font-weight: 600;
-}
-.table-row { padding: .25rem .5rem .75rem .5rem; }
-.table-row { cursor: pointer; }
-.table-row > div { display: flex; }
+.block-card .card-header { background-color: var(--color-primary-background); }
+.block-card .card-header.header-toggle { cursor: pointer; user-select: none; }
+.code-badge { font-variant-numeric: tabular-nums; }
+.title-text { font-weight: 600; }
 .cell {
     width: 100%;
-    min-height: 44px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     height: 100%;
@@ -178,16 +226,37 @@ onMounted(fetchBlocks)
     white-space: normal;
     word-break: break-word;
 }
-.cell.align-top { align-items: center; }
-
-/* Многострочное красивое обрезание */
-.clamp-6 { display: -webkit-box; -webkit-line-clamp: 6; line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
-.clamp-8 { display: -webkit-box; -webkit-line-clamp: 8; line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
 .cell.text-center { justify-content: center; text-align: center; }
 .empty-hint { padding: 1rem; text-align: center; color: var(--color-secondary-text); }
 .filters.card { background-color: var(--color-primary-background); border-color: var(--bs-border-color, #dee2e6); }
-.years-th span { font-weight: 600; }
-.table-row:hover .cell { background-color: var(--color-hover-background, #f1f3f5); }
+.years-th { font-weight: 600; }
+.icon-center {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+.list-group-item { background: transparent; }
+.event-item {
+    background: var(--color-primary-background);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: .5rem;
+    overflow: hidden;
+    padding: 0; /* убираем внутренний отступ list-group-item */
+    margin-bottom: .5rem; /* добавляем зазор для видимости нижней границы */
+}
+.list-group .event-item:last-child { margin-bottom: .5rem; }
+.block-card .card-body { padding-bottom: 1rem; }
+.event-item-header { padding: .75rem .75rem .5rem .75rem; }
+.event-item-header:hover { background-color: var(--color-hover-background, #f1f3f5); }
+.event-item-header.is-open { background-color: var(--bs-secondary-bg, #f8f9fa); border-bottom-color: var(--color-border); }
+.event-item-meta { padding: 0 .75rem .5rem 0; }
+/* hover только на шапке элемента */
+.chevron { transition: transform .15s ease-in-out; }
+.event-title-link { text-decoration: none; cursor: pointer; font-weight: 400; }
+.text-secondary-custom { color: var(--color-secondary-text); }
 </style>
 
 
