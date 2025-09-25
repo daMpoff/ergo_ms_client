@@ -32,7 +32,7 @@
                                 <tr>
                                     <th style="width: 56px;">#</th>
                                     <th>Должность</th>
-                                    <th class="text-center">Количество пользователей</th>
+                                    <th class="text-center">Пользователи</th>
                                     <th style="width: 56px;" class="text-end"></th>
                                 </tr>
                             </thead>
