@@ -3,11 +3,32 @@
         <!-- Панель фильтров (минимум, оставим фильтр по проекту при наличии пропсов) -->
         <div class="filters card p-3 mb-3">
             <div class="row g-2 align-items-end">
-                <div class="col-12 col-lg-6">
-                    <label class="form-label mb-1">Наименование политики/стратегического проекта</label>
-                    <select class="form-select" v-model="filters.projectId">
+                <div class="col-12 col-lg-3">
+                    <label class="form-label mb-1">Категория политики/проекта</label>
+                    <select class="form-select" v-model="filters.category">
                         <option :value="null">Все</option>
-                        <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+                        <option v-for="c in projectCategories" :key="c" :value="c">{{ c }}</option>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label mb-1">Подкатегория</label>
+                    <select class="form-select" v-model="filters.subcategory">
+                        <option :value="null">Все</option>
+                        <option v-for="s in projectSubcategories" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label mb-1">Блок мероприятий</label>
+                    <select class="form-select" v-model="filters.blockId">
+                        <option :value="null">Все</option>
+                        <option v-for="b in blockOptions" :key="b.id" :value="b.id">{{ b.name }}</option>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label mb-1">Срок реализации (год)</label>
+                    <select class="form-select" v-model.number="filters.year">
+                        <option :value="null">Все</option>
+                        <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
                     </select>
                 </div>
             </div>
@@ -103,18 +124,104 @@ const props = defineProps({
 const toast = useToast()
 
 const projects = computed(() => props.projects)
-const filters = ref({ projectId: null })
+const filters = ref({ projectId: null, category: null, subcategory: null, blockId: null, year: null })
 
 const isLoading = ref(false)
 const blocksData = ref([])
 
+function getCategoryLabel(block) {
+    const c = block.category ?? block.project_category ?? block.project?.category
+    const cName = block.category_name ?? block.project?.category_name
+    if (typeof c === 'object' && c) {
+        return c.name ?? c.title ?? c.label ?? String(c.id ?? '')
+    }
+    return cName ?? (typeof c === 'number' ? String(c) : c)
+}
+
+function getSubcategoryLabel(block) {
+    const s = block.subcategory ?? block.project_subcategory ?? block.project?.subcategory
+    const sName = block.subcategory_name ?? block.project?.subcategory_name
+    if (typeof s === 'object' && s) {
+        return s.name ?? s.title ?? s.label ?? String(s.id ?? '')
+    }
+    return sName ?? (typeof s === 'number' ? String(s) : s)
+}
+
+const projectCategories = computed(() => {
+    const set = new Set()
+    for (const b of blocksData.value) {
+        const label = getCategoryLabel(b)
+        if (label) set.add(label)
+    }
+    return Array.from(set)
+})
+
+const projectSubcategories = computed(() => {
+    const set = new Set()
+    for (const b of blocksData.value) {
+        const catOk = !filters.value.category || getCategoryLabel(b) === filters.value.category
+        const label = getSubcategoryLabel(b)
+        if (label && catOk) set.add(label)
+    }
+    return Array.from(set)
+})
+
+const blockOptions = computed(() => {
+    return blocksData.value.map(b => ({ id: b.id, name: b.name || b.title || (b.code || b.short_code || 'Без названия') }))
+})
+
+const yearOptions = computed(() => {
+    const current = new Date().getFullYear()
+    const start = current - 5
+    const end = current + 10
+    const arr = []
+    for (let y = start; y <= end; y++) arr.push(y)
+    return arr
+})
+
 const visibleBlocks = computed(() => {
-    if (!filters.value.projectId) return blocksData.value
-    return blocksData.value.filter((b) => {
-        // если блоки привязаны к проектам, попытаемся учесть common поля
-        const pid = b.project_id || b.projectId || b.project?.id
-        return !pid || pid === filters.value.projectId
-    })
+    let list = blocksData.value
+
+    // фильтр по проекту
+    if (filters.value.projectId) {
+        list = list.filter((b) => {
+            const pid = b.project_id || b.projectId || b.project?.id
+            return !pid || pid === filters.value.projectId
+        })
+    }
+
+    // фильтр по категории/подкатегории
+    if (filters.value.category) {
+        list = list.filter((b) => getCategoryLabel(b) === filters.value.category)
+    }
+    if (filters.value.subcategory) {
+        list = list.filter((b) => getSubcategoryLabel(b) === filters.value.subcategory)
+    }
+
+    // фильтр по блоку
+    if (filters.value.blockId) {
+        list = list.filter((b) => b.id === filters.value.blockId)
+    }
+
+    // фильтр по году: блок отображается, если год попадает в диапазон хотя бы одного мероприятия блока,
+    // либо попадает в диапазон полей самого блока (если указано)
+    if (filters.value.year !== null && filters.value.year !== undefined) {
+        const year = Number(filters.value.year)
+        list = list.filter((b) => {
+            const bStart = Number(b.start_year || b.startYear)
+            const bEnd = Number(b.end_year || b.endYear)
+            const inBlock = (Number.isFinite(bStart) && Number.isFinite(bEnd) && bStart <= year && year <= bEnd)
+            if (inBlock) return true
+            const events = Array.isArray(b.events) ? b.events : []
+            return events.some((ev) => {
+                const s = Number(ev.start_year || ev.startYear)
+                const e = Number(ev.end_year || ev.endYear)
+                return Number.isFinite(s) && Number.isFinite(e) && s <= year && year <= e
+            })
+        })
+    }
+
+    return list
 })
 
 function normalizeArray(data) {
@@ -143,6 +250,15 @@ async function fetchBlockEvents(block) {
         const resp = await apiClient.get(endpoints.project_ed.event_blocks.events(block.id))
         const list = normalizeArray(resp.data)
         block.events = list.map((ev) => ({ ...ev, _showResults: false }))
+        // если выбран год, сразу скроем несоответствующие мероприятия
+        const year = Number(filters.value.year)
+        if (filters.value.year !== null && filters.value.year !== undefined && Number.isFinite(year)) {
+            block.events = block.events.filter((ev) => {
+                const s = Number(ev.start_year || ev.startYear)
+                const e = Number(ev.end_year || ev.endYear)
+                return Number.isFinite(s) && Number.isFinite(e) && s <= year && year <= e
+            })
+        }
     } catch {
         toast.error('Не удалось загрузить мероприятия блока')
     } finally {
