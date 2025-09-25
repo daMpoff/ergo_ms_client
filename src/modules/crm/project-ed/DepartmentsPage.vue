@@ -5,7 +5,7 @@
             <div class="d-flex align-items-center justify-content-between gap-2">
                 <h3 class="mb-0">Справочник кафедр</h3>
                 <button class="btn btn-primary d-flex align-items-center" @click="openCreate">
-                    <span class="me-1">Добавить кафедру</span>
+                    <span>Добавить кафедру</span>
                 </button>
             </div>
 
@@ -74,7 +74,7 @@
         <teleport to="body">
             <div v-if="isModalOpen">
                 <div class="modal fade show d-block project-ed-modal" tabindex="-1" role="dialog" aria-modal="true">
-                    <div class="modal-dialog" role="document">
+                    <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">{{ editId ? 'Редактирование кафедры' : 'Создание кафедры' }}</h5>
@@ -117,7 +117,7 @@
             </div>
             <div v-if="confirmOpen">
                 <div class="modal fade show d-block project-ed-modal" tabindex="-1" role="dialog" aria-modal="true">
-                    <div class="modal-dialog" role="document">
+                    <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">Удалить кафедру</h5>
