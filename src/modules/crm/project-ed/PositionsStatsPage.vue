@@ -163,26 +163,18 @@ const confirmName = ref('')
 async function loadData() {
     try {
         loading.value = true
-        // Загружаем словарь должностей и профили пользователей параллельно
-        const [positionsResp, profilesResp] = await Promise.all([
+        // Загружаем словарь должностей и агрегированные счётчики параллельно
+        const [positionsResp, countsResp] = await Promise.all([
             apiClient.get('/project_ed/positions/'),
-            apiClient.get('/project_ed/user-profiles/')
+            apiClient.get('/project_ed/positions/user_counts/')
         ])
         const positions = Array.isArray(positionsResp.data) ? positionsResp.data : (positionsResp.data?.results || [])
-        const profiles = Array.isArray(profilesResp.data) ? profilesResp.data : (profilesResp.data?.results || [])
-
-        // Считаем количество пользователей по position_ref
-        const countsById = new Map()
-        profiles.forEach(p => {
-            const id = p?.position_ref || null
-            if (!id) return
-            countsById.set(id, (countsById.get(id) || 0) + 1)
-        })
+        const countsObj = countsResp.data || {}
 
         // Формируем итоговый список: все должности из справочника + их количество пользователей
         const rows = positions
             .filter(pos => !!pos?.name)
-            .map(pos => ({ id: pos.id, name: pos.name, count: countsById.get(pos.id) || 0 }))
+            .map(pos => ({ id: pos.id, name: pos.name, count: countsObj[pos.id] || 0 }))
 
         // Сортируем по убыванию количества, затем по названию
         rows.sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name))
