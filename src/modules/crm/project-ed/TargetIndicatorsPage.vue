@@ -58,7 +58,18 @@
 
             <!-- Вкладка "Показатели" -->
             <div v-if="activeTab === 'indicators'">
-                <div v-if="indicators.length === 0" class="card p-4 text-center">
+                <!-- Скелетон/спиннер при загрузке списка показателей -->
+                <div v-if="isLoading" class="card p-4 text-center">
+                    <div class="d-flex flex-column align-items-center justify-content-center my-2">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <h6 class="mb-1">Загрузка показателей...</h6>
+                        <p class="text-muted mb-0">Пожалуйста, подождите</p>
+                    </div>
+                </div>
+
+                <div v-else-if="indicators.length === 0" class="card p-4 text-center">
                     <div class="d-flex flex-column align-items-center justify-content-center my-2">
                         <Target :size="48" class="mb-2 text-muted" />
                         <h5 class="mb-1">Пока нет целевых показателей</h5>
@@ -78,7 +89,7 @@
                                         <th class="text-center" style="width: 100px;">Единица измерения</th>
                                         <th class="text-center" style="width: 120px;">Блок мероприятий</th>
                                         <th class="text-center" style="width: 200px;">Ответственный</th>
-                                        <th style="width: 80px;">Действия</th>
+                                        <th style="width: 80px;"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -90,11 +101,15 @@
                                     >
                                         <td class="text-muted">{{ index + 1 }}</td>
                                         <td>
-                                            <div class="fw-medium">{{ indicator.name }}</div>
+                                            <div>{{ indicator.name }}</div>
                                         </td>
                                         <td class="text-center">{{ indicator.unit }}</td>
                                         <td class="text-center">
-                                            <div v-if="indicator.event_block_short_name" class="text-truncate" :title="indicator.event_block_short_name">
+                                            <div 
+                                                v-if="indicator.event_block_short_name"
+                                                class="text-truncate"
+                                                :title="indicator.event_block_title || indicator.event_block_short_name"
+                                            >
                                                 {{ indicator.event_block_short_name }}
                                             </div>
                                             <div v-else class="text-muted">Не указан</div>
@@ -107,11 +122,8 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-primary" @click.stop="editIndicator(indicator)">
-                                                    <Edit :size="14" />
-                                                </button>
-                                                <button class="btn btn-outline-danger" @click.stop="deleteIndicator(indicator.id)">
+                                            <div class="btn-group btn-group-sm row-actions">
+                                                <button class="btn btn-outline-danger" @click.stop="openDeleteConfirm(indicator.id)">
                                                     <Trash2 :size="14" />
                                                 </button>
                                             </div>
@@ -124,7 +136,16 @@
                 </div>
 
                 <!-- Отдельная таблица для значений по годам -->
-                <div v-if="indicators.length > 0" class="card mt-3">
+                <div v-if="isLoading" class="card mt-3 p-4 text-center">
+                    <div class="d-flex flex-column align-items-center justify-content-center my-2">
+                        <div class="spinner-border text-primary mb-2" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <div class="text-muted">Загрузка значений по годам...</div>
+                    </div>
+                </div>
+
+                <div v-else-if="indicators.length > 0" class="card mt-3">
                     <div class="card-header">
                         <h6 class="mb-0">Значения показателей по годам</h6>
                     </div>
@@ -142,7 +163,7 @@
                                 <tbody>
                                     <tr v-for="indicator in indicators" :key="`values-${indicator.id}`">
                                         <td class="indicator-name-cell">
-                                            <div class="fw-medium">{{ indicator.name }}</div>
+                                            <div>{{ indicator.name }}</div>
                                             <small class="text-muted">{{ indicator.unit }}</small>
                                         </td>
                                         <td v-for="year in years" :key="`${indicator.id}-${year}`" class="year-value-cell">
@@ -187,6 +208,26 @@
         </div>
         <div class="modal-backdrop fade" :class="{ 'show': showModal }" v-if="showModal"></div>
 
+        <!-- Модальное окно подтверждения удаления показателя -->
+        <div class="modal fade" :class="{ 'show d-block': deleteId !== null }" tabindex="-1" v-if="deleteId !== null">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Подтверждение удаления</h5>
+                        <button type="button" class="btn-close" @click="closeDeleteConfirm"></button>
+                    </div>
+                    <div class="modal-body">
+                        Вы уверены, что хотите удалить этот целевой показатель?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="closeDeleteConfirm">Отмена</button>
+                        <button type="button" class="btn btn-danger" @click="confirmDelete">Удалить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade" :class="{ 'show': deleteId !== null }" v-if="deleteId !== null"></div>
+
     </div>
 </template>
 
@@ -215,12 +256,16 @@ const categoriesComponent = ref(null)
 const years = ref([2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032])
 
 const indicators = ref([])
+const isLoading = ref(false)
 async function loadIndicators() {
     try {
+        isLoading.value = true
         const resp = await apiClient.get(endpoints.project_ed.target_indicators.list)
         indicators.value = Array.isArray(resp?.data) ? resp.data : (resp?.results || [])
     } catch (e) {
         indicators.value = []
+    } finally {
+        isLoading.value = false
     }
 }
 
@@ -299,11 +344,15 @@ const onIndicatorSaved = (indicator) => {
     closeModal()
 }
 
-// Удаление показателя
-const deleteIndicator = (id) => {
-    if (confirm('Вы уверены, что хотите удалить этот показатель?')) {
-        indicators.value = indicators.value.filter(i => i.id !== id)
-    }
+// Удаление показателя с подтверждением
+const deleteId = ref(null)
+function openDeleteConfirm(id) { deleteId.value = id }
+function closeDeleteConfirm() { deleteId.value = null }
+async function confirmDelete() {
+    if (!deleteId.value) return
+    // TODO: вызвать API удаления при необходимости
+    indicators.value = indicators.value.filter(i => i.id !== deleteId.value)
+    deleteId.value = null
 }
 
 </script>
@@ -358,6 +407,10 @@ const deleteIndicator = (id) => {
 .clickable-row:hover {
     background-color: var(--color-hover-background, #f8f9fa);
 }
+
+/* Кнопка удаления показывается только при наведении */
+.row-actions { opacity: 0; transition: opacity .15s ease-in-out; }
+tr.clickable-row:hover .row-actions { opacity: 1; }
 
 .text-success {
     color: #198754 !important;
