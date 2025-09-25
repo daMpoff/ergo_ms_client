@@ -6,7 +6,7 @@
                     <div class="d-flex gap-2 align-items-center flex-grow-1">
                         <div class="input-group" style="max-width: 420px; flex-grow: 1;">
                             <span class="input-group-text bg-white"><Search class="lucide align-middle" :size="18" /></span>
-                            <input v-model.trim="searchTerm" @input="handleSearch" type="text" class="form-control" placeholder="Поиск по названию или короткому имени" />
+                            <input v-model.trim="searchTerm" @input="handleSearch" type="text" class="form-control" placeholder="Поиск по названию факультета, короткому имени, названию кафедры" />
                         </div>
                         <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadFaculties">
                             <RefreshCw class="lucide align-middle me-1" :size="18" /> Обновить

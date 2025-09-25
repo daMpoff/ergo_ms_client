@@ -9,7 +9,7 @@
                                 @input="handleSearch"
                                 type="text"
                                 class="form-control"
-                                placeholder="Поиск по имени или роли"
+                                placeholder="Поиск по имени, роли или должности"
                             />
                         </div>
                         <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadUsers">
@@ -32,10 +32,10 @@
                                     <tr>
                                         <th style="width: 56px;">#</th>
                                         <th>ФИО</th>
-                                        <th>Роль</th>
-                                        <th>Должность</th>
-                                        <th>Факультет</th>
-                                        <th>Кафедра</th>
+                                        <th class="text-center">Роль</th>
+                                        <th class="text-center">Должность</th>
+                                        <th class="text-center">Факультет</th>
+                                        <th class="text-center">Кафедра</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -52,10 +52,26 @@
                                                 <span class="align-middle">{{ fullName(u) }}</span>
                                             </div>
                                         </td>
-                                        <td>{{ u.role || 'N/A' }}</td>
-                                        <td>{{ u.position || 'N/A' }}</td>
-                                        <td>{{ u.faculty_short_name || 'N/A' }}</td>
-                                        <td>{{ departmentShort(u) || 'N/A' }}</td>
+                                        <td class="text-center">{{ u.role || 'N/A' }}</td>
+                                        <td class="text-center">{{ u.position || 'N/A' }}</td>
+                                        <td class="text-center">
+                                            <span 
+                                                v-if="u.faculty_short_name" 
+                                                :title="u.faculty || u.faculty_short_name"
+                                            >
+                                                {{ u.faculty_short_name }}
+                                            </span>
+                                            <span v-else>N/A</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span 
+                                                v-if="departmentShort(u)" 
+                                                :title="u.department || departmentShort(u)"
+                                            >
+                                                {{ departmentShort(u) }}
+                                            </span>
+                                            <span v-else>N/A</span>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -141,6 +157,7 @@ const filteredUsers = computed(() => {
         const values = [
             u.displayName,
             u.role,
+            u.position,
             u.faculty,
             u.faculty_short_name,
             u.department,
