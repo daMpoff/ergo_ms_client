@@ -6,7 +6,6 @@
       { 'default-avatar--clickable': clickable }
     ]"
     :title="title"
-    ref="rootEl"
   >
     <User :size="iconSize" />
   </div>
@@ -32,42 +31,14 @@ const props = defineProps({
   }
 })
 
-// Адаптивный размер иконки: доля от диаметра круга
-const rootEl = ref(null)
-const observedIconSize = ref(null)
-
-const computeIconSizeFromBox = (box) => {
-  if (!box) return null
-  const diameter = Math.min(box.width, box.height)
-  // Коэффициент подбираем визуально (45% диаметра — крупнее)
-  return Math.round(diameter * 0.45)
-}
-
-let resizeObserver = null
-onMounted(() => {
-  if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const box = entry.contentRect
-        observedIconSize.value = computeIconSizeFromBox(box)
-      }
-    })
-    if (rootEl.value) {
-      resizeObserver.observe(rootEl.value)
-    }
+const iconSize = computed(() => {
+  const sizes = {
+    small: 16,
+    medium: 20,
+    large: 48
   }
+  return sizes[props.size]
 })
-
-onBeforeUnmount(() => {
-  if (resizeObserver && rootEl.value) {
-    resizeObserver.unobserve(rootEl.value)
-  }
-  resizeObserver = null
-})
-
-// Фолбэк на предустановленные размеры, если ResizeObserver недоступен
-const fallbackSizes = { small: 24, medium: 32, large: 96 }
-const iconSize = computed(() => observedIconSize.value || fallbackSizes[props.size])
 </script>
 
 <style scoped lang="scss">
@@ -84,11 +55,23 @@ const iconSize = computed(() => observedIconSize.value || fallbackSizes[props.si
   width: 100%;
   height: 100%;
   
-  // Ширина/высота могут быть переопределены снаружи (например, 100%)
-  // Эти модификаторы оставляем только для толщины рамки по умолчанию
-  &--small { border-width: 1px; }
-  &--medium { border-width: 2px; }
-  &--large { border-width: 3px; }
+ 
+  &--small {
+    width: 32px;
+    height: 32px;
+    border-width: 1px;
+  }
+  
+  &--medium {
+    width: 40px;
+    height: 40px;
+  }
+  
+  &--large {
+    width: 120px;
+    height: 120px;
+    border-width: 3px;
+  }
   
   &--clickable {
     cursor: pointer;

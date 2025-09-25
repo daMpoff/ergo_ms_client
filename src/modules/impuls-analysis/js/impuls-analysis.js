@@ -76,6 +76,26 @@ class ImpulsAnalysisAPI {
   }
 
   /**
+   * Массовое удаление анализов по номерам (строка: диапазоны и списки)
+   * Пример: "1,2,5-10; 12 14-16"
+   */
+  async bulkDeleteByNumbers(numbersString) {
+    try {
+      const response = await apiClient.post(`${this.baseEndpoint}bulk_delete_by_numbers/`, {
+        numbers: numbersString
+      })
+      return response
+    } catch (error) {
+      console.error('Error in bulk delete by numbers:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при массовом удалении по номерам',
+        data: null
+      }
+    }
+  }
+
+  /**
    * Загрузить файлы для импорта данных (без привязки к анализу)
    */
   async uploadFiles(forceFile, planFile) {

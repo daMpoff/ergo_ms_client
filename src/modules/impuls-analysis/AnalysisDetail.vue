@@ -76,6 +76,15 @@
               </div>
               <div class="card-body">
                 <div class="meta-grid mb-3">
+                  <div class="meta-item" v-if="analysis.number || analysis.id">
+                    <div class="meta-icon">
+                      <Hash :size="16" />
+                    </div>
+                    <div class="meta-content">
+                      <span class="meta-label">Номер анализа</span>
+                      <span class="meta-value">№{{ analysis.number || analysis.id }}</span>
+                    </div>
+                  </div>
                   <div class="meta-item">
                     <div class="meta-icon">
                       <Calendar :size="16" />
@@ -210,7 +219,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { 
   RefreshCw, Trash2, FileX, Loader2, Download, FileText, 
   File, FileCheck, CheckCircle, Zap, Info, Calendar, 
-  Play, Activity, ArrowLeft, Hourglass, AlertTriangle
+  Play, Activity, ArrowLeft, Hourglass, AlertTriangle, Hash
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -235,7 +244,8 @@ export default {
     Activity,
     ArrowLeft,
     Hourglass,
-    AlertTriangle
+    AlertTriangle,
+    Hash
   },
   name: 'AnalysisDetail',
   data() {

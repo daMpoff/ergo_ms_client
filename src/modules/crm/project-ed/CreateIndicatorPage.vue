@@ -193,6 +193,7 @@
 import { ref, onMounted, onUnmounted, defineProps, defineEmits } from 'vue'
 import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 import { ChevronDown } from 'lucide-vue-next'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
@@ -248,7 +249,7 @@ const initializeValues = () => {
 // Загрузка категорий
 const loadCategories = async () => {
     try {
-        const response = await apiClient.get('project_ed/project-ed/categories/')
+        const response = await apiClient.get(endpoints.project_ed.categories.list)
         if (response.success) {
             categories.value = response.data
         } else {
@@ -269,7 +270,7 @@ const loadSubcategories = async (categoryId) => {
     }
     
     try {
-        const response = await apiClient.get(`project_ed/project-ed/categories/${categoryId}/subcategories/`)
+        const response = await apiClient.get(endpoints.project_ed.subcategories.list, { category_id: categoryId })
         if (response.success) {
             subcategories.value = response.data
         } else {
@@ -294,7 +295,7 @@ const loadEventBlocks = async (categoryId, subcategoryId = null) => {
             params.subcategory_id = subcategoryId
         }
         
-        const response = await apiClient.get('project_ed/project-ed/event-blocks/', params)
+        const response = await apiClient.get(endpoints.project_ed.event_blocks.list, params)
         if (response.success) {
             eventBlocks.value = response.data
             console.log('Загружены блоки мероприятий:', response.data)
@@ -308,17 +309,29 @@ const loadEventBlocks = async (categoryId, subcategoryId = null) => {
     }
 }
 
-// Загрузка пользователей (тестовые данные)
+// Загрузка пользователей с должностью "Проректор"
 const loadUsers = async () => {
-    // Используем тот же список, что и в BasicProvisions
-    users.value = [
-        { id: 1, name: 'Сканцев Виталий Михайлович', position: 'Первый проректор', initials: 'Сканцев В.М.' },
-        { id: 2, name: 'Шкаберин Виталий Александрович', position: 'Первый проректор по учебной работе и цифровизации', initials: 'Шкаберин В.А.' },
-        { id: 3, name: 'Киричек Андрей Викторович', position: 'Проректор по перспективному развитию', initials: 'Киричек А.В.' },
-        { id: 4, name: 'Симкин Альберт Зямович', position: 'Проректор по молодежной политике и воспитательной работе', initials: 'Симкин А.З.' },
-        { id: 5, name: 'Глебов Глеб Владимирович', position: 'Проректор по АХР', initials: 'Глебов Г.В.' },
-        { id: 6, name: 'Геращенкова Татьяна Михайловна', position: 'Проректор по качеству и аккредитации', initials: 'Геращенкова Т.М.' }
-    ]
+    try {
+        const resp = await apiClient.get('project_ed/profiles/profiles/', { position: 'Проректор' })
+        if (resp && resp.success) {
+            users.value = (resp.data || []).map(u => ({
+                id: u.id,
+                name: [u.last_name, u.first_name].filter(Boolean).join(' ') || u.username,
+                position: u.position_name || 'Должность не указана'
+            }))
+        } else if (resp && Array.isArray(resp)) { // на случай, если apiClient возвращает массив напрямую
+            users.value = resp.map(u => ({
+                id: u.id,
+                name: [u.last_name, u.first_name].filter(Boolean).join(' ') || u.username,
+                position: u.position_name || 'Должность не указана'
+            }))
+        } else {
+            users.value = []
+        }
+    } catch (e) {
+        console.error('Ошибка загрузки пользователей-проректоров', e)
+        users.value = []
+    }
 }
 
 // Обработчики изменений
@@ -375,8 +388,8 @@ const saveIndicator = async () => {
         }
 
         const endpoint = props.editingIndicator 
-            ? `project_ed/project-ed/target-indicators/${props.editingIndicator.id}/`
-            : 'project_ed/project-ed/target-indicators/'
+            ? endpoints.project_ed.target_indicators.update(props.editingIndicator.id)
+            : endpoints.project_ed.target_indicators.create
         
         const response = props.editingIndicator 
             ? await apiClient.put(endpoint, data)

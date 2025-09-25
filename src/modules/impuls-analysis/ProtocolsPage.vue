@@ -15,21 +15,6 @@
       </div>
       
     </div>
-    <!-- Информационная панель -->
-    <div class="info-panel">
-      <div class="info-content">
-        <div class="info-icon">
-          <Info size="24" />
-        </div>
-        <div class="info-text">
-          <h6 class="info-title">Информация о протоколах</h6>
-          <p class="info-description">
-            Протоколы становятся доступными для создания анализа после загрузки и обработки файлов 
-            "Расчет силы" и "План эксперимента". Протокол должен быть заполнен в обеих таблицах.
-          </p>
-        </div>
-      </div>
-    </div>
     
     <!-- Статистика протоколов -->
     <div class="stats-section">
@@ -104,7 +89,10 @@
         <div class="bulk-actions mt-3">
           <div class="bulk-card">
             <div class="bulk-header">
-              <div class="bulk-title">Групповое создание анализов</div>
+              <label class="bulk-title d-flex align-items-center gap-2 mb-0">
+                <Plus size="18" />
+                <span>Групповое создание анализов</span>
+              </label>
               <div class="bulk-counters">
                 <span class="badge bg-primary-subtle text-primary">
                   Введено: {{ parsedInputNumbers.length }}
@@ -117,45 +105,60 @@
 
             <div class="row g-3 align-items-start">
               <div class="col-12 col-lg-6">
-                <label class="form-label mb-2">Создание по номерам</label>
+                <label class="form-label d-flex align-items-center gap-2 mb-2">
+                  <Hash size="16" />
+                  <span class="fw-bold">Создание по номерам</span>
+                </label>
                 <div class="input-group mb-2">
-                  <span class="input-group-text">Номера протоколов</span>
+                  <span class="input-group-text d-inline-flex align-items-center">
+                    <Hash size="16" />
+                  </span>
                   <input
                     type="text"
                     class="form-control"
                     v-model="protocolsInput"
-                    placeholder="Например: 1, 2 3; 10-12"
+                    placeholder="Например: 1,2,5-10; 12 14-16"
+                    :disabled="isBulkCreating"
+                    aria-label="Номера протоколов"
                   />
                   <button
-                    class="btn btn-primary"
+                    class="btn btn-primary d-inline-flex align-items-center gap-1 lh-1"
                     :disabled="isBulkCreating || !parsedInputNumbers.length"
                     @click="createAnalysesFromInput"
                   >
                     <Plus size="16" />
-                    {{ isBulkCreating ? 'Создание...' : `Создать по номерам (${parsedInputNumbers.length})` }}
+                    <span class="d-inline-flex align-items-center">{{ isBulkCreating ? 'Создание...' : `Создать (${parsedInputNumbers.length})` }}</span>
                   </button>
                 </div>
-                <div v-if="parsedInputNumbers.length" class="chips">
+                <div class="form-text text-muted mt-1">
+                  Указывайте номера через запятую, пробел или точку с запятой. Диапазоны — через тире (например: 12-15).
+                </div>
+                <div v-if="parsedInputNumbers.length" class="chips mt-2">
                   <span v-for="n in parsedInputNumbers" :key="`chip-${n}`" class="chip">{{ n }}</span>
                 </div>
               </div>
               <div class="col-12 col-lg-6">
-                <label class="form-label mb-2">Создание по выбранным</label>
+                <label class="form-label d-flex align-items-center gap-2 mb-2">
+                  <FileCheck size="16" />
+                  <span class="fw-bold">Создание по выбранным</span>
+                </label>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                   <button
-                    class="btn btn-success"
+                    class="btn btn-success d-inline-flex align-items-center gap-1 lh-1"
                     :disabled="isBulkCreating || selectedCount === 0"
                     @click="createAnalysesForSelected"
                   >
                     <Plus size="16" />
-                    {{ isBulkCreating ? 'Создание...' : `Создать для выбранных (${selectedCount})` }}
+                    <span class="d-inline-flex align-items-center">{{ isBulkCreating ? 'Создание...' : `Создать (${selectedCount})` }}</span>
                   </button>
                   <button
-                    class="btn btn-outline-secondary"
+                    class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 lh-1"
                     :disabled="isBulkCreating || selectedCount === 0"
                     @click="clearSelection"
+                    title="Снять выделение"
                   >
-                    Очистить выбор
+                    <X size="16" />
+                    <span>Очистить выбор</span>
                   </button>
                 </div>
                 <small class="text-secondary d-block mt-2">Выбрано протоколов: {{ selectedCount }}</small>
