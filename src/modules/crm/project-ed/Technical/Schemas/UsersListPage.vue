@@ -97,32 +97,45 @@
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Роль</label>
-                                        <select v-model="editModel.role_ref" class="form-select">
-                                            <option :value="null">— Не выбрано —</option>
-                                            <option v-for="r in roleOptions" :key="r.id" :value="r.id">{{ r.name }}</option>
-                                        </select>
+                                        <SelectBox
+                                            v-model="editModel.role_ref"
+                                            :options="roleOptions"
+                                            label="Роль"
+                                            value-key="id"
+                                            label-key="name"
+                                            all-label="— Не выбрано —"
+                                        />
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Должность</label>
-                                        <select v-model="editModel.position_ref" class="form-select">
-                                            <option :value="null">— Не выбрано —</option>
-                                            <option v-for="p in positionOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
-                                        </select>
+                                        <SelectBox
+                                            v-model="editModel.position_ref"
+                                            :options="positionOptions"
+                                            label="Должность"
+                                            value-key="id"
+                                            label-key="name"
+                                            all-label="— Не выбрано —"
+                                        />
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Факультет</label>
-                                        <select v-model="editModel.faculty_ref" class="form-select">
-                                            <option :value="null">— Не выбрано —</option>
-                                            <option v-for="f in facultyOptions" :key="f.id" :value="f.id">{{ f.name }}</option>
-                                        </select>
+                                        <SelectBox
+                                            v-model="editModel.faculty_ref"
+                                            :options="facultyOptions"
+                                            label="Факультет"
+                                            value-key="id"
+                                            label-key="name"
+                                            all-label="— Не выбрано —"
+                                        />
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Кафедра</label>
-                                        <select v-model="editModel.department_ref" class="form-select">
-                                            <option :value="null">— Не выбрано —</option>
-                                            <option v-for="d in filteredDepartmentOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
-                                        </select>
+                                        <SelectBox
+                                            v-model="editModel.department_ref"
+                                            :options="filteredDepartmentOptions"
+                                            label="Кафедра"
+                                            value-key="id"
+                                            label-key="name"
+                                            all-label="— Не выбрано —"
+                                            :disabled="!editModel.faculty_ref"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -142,11 +155,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Search, RefreshCw } from 'lucide-vue-next'
 import { apiClient } from '@/js/api/manager'
 import { useToast } from 'vue-toastification'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import SelectBox from '@/components/SelectBox.vue'
 
 const toast = useToast()
 const users = ref([])
@@ -291,6 +305,14 @@ function openEdit(u) {
     }
     isModalOpen.value = true
 }
+
+// Отслеживание изменений факультета для сброса кафедры
+watch(() => editModel.value.faculty_ref, (newFacultyRef, oldFacultyRef) => {
+    // Если факультет изменился или был сброшен, сбрасываем кафедру
+    if (newFacultyRef !== oldFacultyRef && (!newFacultyRef || !filteredDepartmentOptions.value.some(d => d.id === editModel.value.department_ref))) {
+        editModel.value.department_ref = null
+    }
+})
 
 function closeEdit() {
     if (saving.value) return
