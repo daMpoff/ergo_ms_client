@@ -459,7 +459,7 @@ const subtitleSettings = ref({
   fontSize: 24,
   fontColor: '#FFFFFF',
   backgroundColor: '#000000',
-  backgroundTransparent: false,
+  backgroundTransparent: true,
   alignment: '2',
   marginVertical: 20,
   marginHorizontal: 0
@@ -517,11 +517,6 @@ function processFiles(files) {
   const videoFiles = files.filter(file => {
     if (!file.type.startsWith('video/')) {
       toast.warning(`Файл ${file.name} не является видео файлом`)
-      return false
-    }
-    
-    if (file.size > props.maxFileSize) {
-      toast.warning(`Файл ${file.name} слишком большой (максимум ${formatFileSize(props.maxFileSize)})`)
       return false
     }
     

@@ -20,6 +20,9 @@ class VideoAnalysisAPI {
     if (title) form.append('title', title)
     
     // Добавляем настройки субтитров
+    if (subtitleOptions.subtitle_background_transparent === undefined) {
+      form.append('subtitle_background_transparent', true)
+    }
     if (subtitleOptions.subtitle_lines_count !== undefined) {
       form.append('subtitle_lines_count', subtitleOptions.subtitle_lines_count)
     }
@@ -61,12 +64,15 @@ class VideoAnalysisAPI {
     return apiClient.post(this.base.create, form)
   }
 
-  // Пофайловая загрузка с прогрессом
+    // Пофайловая загрузка с прогрессом
   async createWithProgress(file, title = '', subtitleOptions = {}, onProgress) {
     const form = new FormData()
     form.append('video', file)
     if (title) form.append('title', title)
 
+    if (subtitleOptions.subtitle_background_transparent === undefined) {
+      form.append('subtitle_background_transparent', true)
+    }
     if (subtitleOptions.subtitle_lines_count !== undefined) {
       form.append('subtitle_lines_count', subtitleOptions.subtitle_lines_count)
     }
@@ -122,6 +128,10 @@ class VideoAnalysisAPI {
     
     // Добавляем настройки субтитров
     console.log('Добавляем настройки в FormData:', subtitleOptions)
+    if (subtitleOptions.subtitle_background_transparent === undefined) {
+      form.append('subtitle_background_transparent', true)
+      console.log('Добавлено subtitle_background_transparent по умолчанию: true')
+    }
     
     if (subtitleOptions.subtitle_lines_count !== undefined) {
       form.append('subtitle_lines_count', subtitleOptions.subtitle_lines_count)
