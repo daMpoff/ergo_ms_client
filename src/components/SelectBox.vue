@@ -54,6 +54,7 @@ const props = defineProps({
     labelKey: { type: String, default: 'name' },
     size: { type: String, default: 'md' }, // sm | md | lg
     castToNumber: { type: Boolean, default: false },
+    currentLabelFormatter: { type: Function, default: null },
 })
 
 const emit = defineEmits(['update:modelValue', 'change', 'blur'])
@@ -71,7 +72,7 @@ const normalizedOptions = computed(() => {
         const isObject = typeof raw === 'object' && raw !== null
         const value = isObject ? raw[props.valueKey] : raw
         const label = isObject ? (raw[props.labelKey] ?? String(value ?? '')) : String(raw ?? '')
-        result.push({ key: toKey(value), value, label })
+        result.push({ key: toKey(value), value, label, raw })
     }
     return result
 })
@@ -132,7 +133,11 @@ const currentLabel = computed(() => {
         }
         return String(o.value) === String(props.modelValue)
     })
-    return found?.label ?? props.allLabel
+    if (!found) return props.allLabel
+    if (typeof props.currentLabelFormatter === 'function') {
+        try { return props.currentLabelFormatter({ option: found.raw, value: found.value, label: found.label }) } catch { /* noop */ }
+    }
+    return found.label
 })
 
 function valuesAreEqual(a, b) {

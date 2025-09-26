@@ -35,6 +35,7 @@
                             :castToNumber="true"
                             :includeAllOption="true"
                             allLabel="Выберите блок мероприятий"
+                            :currentLabelFormatter="({ option, label }) => (option?.code ? option.code : label)"
                             @change="onBlockChange"
                         />
                     </div>
@@ -72,7 +73,7 @@
                     class="event-section"
                     :class="{ 'active': activeSectionId === section.id }"
                 >
-                    <h2 class="section-title">МП{{ section.id }}. {{ section.title }}</h2>
+                    <h2 class="section-title">{{ section.code ? (section.code + '. ') : '' }}{{ section.title }}</h2>
                     <div class="events-grid">
                         <div
                             v-for="event in section.events"
@@ -156,6 +157,7 @@ import SimpleTooltip from '../SimpleTooltip.vue'
 import LeadersList from '../LeadersList.vue'
 import LeadersModal from '../LeadersModal.vue'
 import SelectBox from '@/components/SelectBox.vue'
+import { apiClient } from '@/js/api/manager.js'
 
 const props = defineProps({
     event: {
@@ -183,9 +185,12 @@ const periods = ref([])
 
 // Вычисляемые свойства для фильтров
 const availableBlocks = computed(() => {
-    if (!selectedPolicy.value) return []
-    const policy = policies.value.find(p => p.id === selectedPolicy.value)
-    return policy ? policy.blocks : []
+    // Если выбрана политика — берем её блоки, иначе все блоки
+    if (selectedPolicy.value) {
+        const policy = policies.value.find(p => p.id === selectedPolicy.value)
+        return policy ? policy.blocks : []
+    }
+    return blocks.value
 })
 
 const availablePeriods = computed(() => {
@@ -357,196 +362,75 @@ const closeLeadersModal = () => {
 }
 
 // Загрузка данных
-onMounted(() => {
-    // Загружаем справочные данные
-    policies.value = [
-        {
-            id: 1,
-            title: 'Программа развития университета на 2023-2032 годы',
-            blocks: [
-                { id: 1, title: 'МП3. Создание условий для воспитания', periods: ['2023', '2025-2032', '2023-2032'] }
-            ]
-        },
-        {
-            id: 2,
-            title: 'Стратегический проект "Приоритет 2030"',
-            blocks: [
-                { id: 2, title: 'МП1. Образовательная деятельность', periods: ['2023-2025', '2025-2030'] },
-                { id: 3, title: 'МП2. Научно-исследовательская деятельность', periods: ['2023-2027', '2027-2032'] }
-            ]
+onMounted(async () => {
+    try {
+        // Загружаем блоки мероприятий вместе с вложенными мероприятиями
+        const resp = await apiClient.get('/project_ed/event-blocks/')
+        const list = Array.isArray(resp?.data) ? resp.data : (resp?.data?.results || [])
+
+        // Строим справочник категорий (политик) из блоков
+        const uniquePoliciesMap = new Map()
+        const blocksForSelect = []
+        const allPeriods = new Set()
+        const sections = []
+
+        for (const b of list) {
+            // Политика/категория
+            if (b.category) {
+                if (!uniquePoliciesMap.has(b.category)) {
+                    uniquePoliciesMap.set(b.category, { id: b.category, title: b.category_name || `Категория ${b.category}`, blocks: [] })
+                }
+            }
+
+            // Периоды из мероприятий
+            const periodsOfBlock = new Set()
+            const events = Array.isArray(b.events) ? b.events : []
+            const mappedEvents = events.map(e => {
+                if (e.years_display) { periodsOfBlock.add(e.years_display); allPeriods.add(e.years_display) }
+                return {
+                    id: e.id,
+                    code: e.code,
+                    title: e.name,
+                    keyResults: e.results,
+                    period: e.years_display || `${e.start_year || ''}${e.end_year ? '-' + e.end_year : ''}`,
+                    highlighted: false,
+                    leaders: []
+                }
+            })
+
+            // Секция = блок мероприятий
+            sections.push({
+                id: b.id,
+                policyId: b.category || null,
+                blockId: b.id,
+                code: b.code || null,
+                title: b.title,
+                shortTitle: b.code || b.title,
+                events: mappedEvents
+            })
+
+            // Элемент для селекта блоков
+            blocksForSelect.push({ id: b.id, title: b.title, code: b.code || null, periods: Array.from(periodsOfBlock) })
+
+            // Привяжем блок к политике
+            const policyRec = uniquePoliciesMap.get(b.category)
+            if (policyRec) policyRec.blocks.push({ id: b.id, title: b.title, code: b.code || null, periods: Array.from(periodsOfBlock) })
         }
-    ]
-    
-    blocks.value = [
-        { id: 1, title: 'МП3. Создание условий для воспитания', periods: ['2023', '2025-2032', '2023-2032'] },
-        { id: 2, title: 'МП1. Образовательная деятельность', periods: ['2023-2025', '2025-2030'] },
-        { id: 3, title: 'МП2. Научно-исследовательская деятельность', periods: ['2023-2027', '2027-2032'] }
-    ]
-    
-    periods.value = ['2023', '2025-2032', '2023-2032', '2023-2025', '2025-2030', '2023-2027', '2027-2032']
-    
-    // Имитация загрузки мероприятий согласно скриншоту
-    eventSections.value = [
-        {
-            id: 3,
-            policyId: 1,
-            blockId: 1,
-            title: 'Создание условий для воспитания у обучающихся активной гражданской позиции и ответственности, основанных на традиционных культурных, духовных и нравственных ценностях общества',
-            shortTitle: 'МП3',
-            events: [
-                {
-                    id: 1,
-                    code: 'МП3.1',
-                    title: 'Развитие воспитательной деятельности в рамках реализации образовательных программ',
-                    keyResults: 'В рамках каждой образовательной программы разработана программа воспитания и календарный план воспитательной работы',
-                    period: '2023',
-                    highlighted: false,
-                    leaders: [
-                        { 
-                            id: 1, 
-                            name: 'Иванов Иван Иванович', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Заместитель директора'
-                        },
-                        { 
-                            id: 2, 
-                            name: 'Петрова Анна Сергеевна', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Руководитель отдела'
-                        }
-                    ]
-                },
-                {
-                    id: 2,
-                    code: 'МП3.2',
-                    title: 'Формирование студенческих сообществ, деятельность которых направлена на развитие социокультурной и спортивной и др. инфраструктуры',
-                    keyResults: 'Создана система соучастного проектирования Университета через систему внутренних грантов на студенческие проекты по социокультурному преобразованию вуза. Созданы коммуникационные лаборатории и цифровой сервис обратной связи',
-                    period: '2025-2032',
-                    highlighted: true,
-                    leaders: [
-                        { 
-                            id: 3, 
-                            name: 'Сидоров Петр Александрович', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Директор центра'
-                        },
-                        { 
-                            id: 4, 
-                            name: 'Козлова Мария Владимировна', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Начальник управления'
-                        },
-                        { 
-                            id: 5, 
-                            name: 'Новиков Алексей Дмитриевич', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Главный специалист'
-                        },
-                        { 
-                            id: 6, 
-                            name: 'Петров Владимир Сергеевич', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Заместитель директора'
-                        },
-                        { 
-                            id: 7, 
-                            name: 'Смирнова Анна Петровна', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Руководитель отдела'
-                        },
-                        { 
-                            id: 8, 
-                            name: 'Кузнецов Игорь Михайлович', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Ведущий специалист'
-                        },
-                        { 
-                            id: 9, 
-                            name: 'Васильева Елена Александровна', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Старший менеджер'
-                        }
-                    ]
-                },
-                {
-                    id: 3,
-                    code: 'МП3.3',
-                    title: 'Развитие гражданского соучастия через поддержку продуктивной общественно-полезной деятельности и политики «малых дел»',
-                    keyResults: 'Создана и реализуется программа, направленная на формирование у обучающихся навыков самоорганизации, умений брать на себя ответственность, оценивать и уважать значимость собственного вклада и вклада других людей в общее дело для воспитания активной гражданственности и патриотизма',
-                    period: '2023-2032',
-                    highlighted: false,
-                    leaders: [
-                        { 
-                            id: 6, 
-                            name: 'Морозова Елена Сергеевна', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Заместитель декана'
-                        },
-                        { 
-                            id: 7, 
-                            name: 'Волков Дмитрий Игоревич', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Старший преподаватель'
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            id: 1,
-            policyId: 2,
-            blockId: 2,
-            title: 'Образовательная деятельность',
-            shortTitle: 'МП1',
-            events: [
-                {
-                    id: 4,
-                    code: 'МП1.1',
-                    title: 'Развитие образовательных программ',
-                    keyResults: 'Созданы новые образовательные программы по приоритетным направлениям',
-                    period: '2023-2025',
-                    highlighted: false,
-                    leaders: [
-                        { 
-                            id: 10, 
-                            name: 'Алексеев Сергей Владимирович', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Проректор по учебной работе'
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            id: 2,
-            policyId: 2,
-            blockId: 3,
-            title: 'Научно-исследовательская деятельность',
-            shortTitle: 'МП2',
-            events: [
-                {
-                    id: 5,
-                    code: 'МП2.1',
-                    title: 'Развитие научных исследований',
-                    keyResults: 'Созданы новые научные лаборатории и центры',
-                    period: '2023-2027',
-                    highlighted: false,
-                    leaders: [
-                        { 
-                            id: 11, 
-                            name: 'Николаев Андрей Петрович', 
-                            avatar: '/src/assets/avatars/placeholder.svg',
-                            position: 'Проректор по научной работе'
-                        }
-                    ]
-                }
-            ]
+
+        policies.value = Array.from(uniquePoliciesMap.values())
+        blocks.value = blocksForSelect
+        periods.value = Array.from(allPeriods)
+        eventSections.value = sections
+
+        if (eventSections.value.length > 0) {
+            activeSectionId.value = eventSections.value[0].id
         }
-    ]
-    
-    // Устанавливаем первую секцию как активную
-    if (eventSections.value.length > 0) {
-        activeSectionId.value = eventSections.value[0].id
+    } catch (e) {
+        // В случае ошибки пусть интерфейс остаётся пустым
+        policies.value = []
+        blocks.value = []
+        periods.value = []
+        eventSections.value = []
     }
 })
 </script>
