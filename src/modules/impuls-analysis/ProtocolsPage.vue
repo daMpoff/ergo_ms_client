@@ -93,22 +93,19 @@
                 <Plus size="18" />
                 <span>Групповое создание анализов</span>
               </label>
-              <div class="bulk-counters">
-                <span class="badge bg-primary-subtle text-primary">
-                  Введено: {{ parsedInputNumbers.length }}
-                </span>
-                <span class="badge bg-success-subtle text-success">
-                  Выбрано: {{ selectedCount }}
-                </span>
-              </div>
+              <button
+                class="btn btn-primary d-inline-flex align-items-center gap-2 lh-1 bulk-action-btn"
+                :disabled="isBulkCreating || selectedCount === 0"
+                @click="createAnalysesForSelected"
+                title="Создать анализы по выбранным протоколам"
+              >
+                <Plus size="16" />
+                <span>{{ isBulkCreating ? 'Создание...' : 'Создать выбранные' }}</span>
+              </button>
             </div>
 
             <div class="row g-3 align-items-start">
-              <div class="col-12 col-lg-6">
-                <label class="form-label d-flex align-items-center gap-2 mb-2">
-                  <Hash size="16" />
-                  <span class="fw-bold">Создание по номерам</span>
-                </label>
+              <div class="col-12">
                 <div class="input-group mb-2">
                   <span class="input-group-text d-inline-flex align-items-center">
                     <Hash size="16" />
@@ -122,12 +119,12 @@
                     aria-label="Номера протоколов"
                   />
                   <button
-                    class="btn btn-primary d-inline-flex align-items-center gap-1 lh-1"
+                    class="btn btn-outline-primary d-inline-flex align-items-center gap-2 lh-1 bulk-action-btn"
                     :disabled="isBulkCreating || !parsedInputNumbers.length"
                     @click="createAnalysesFromInput"
                   >
                     <Plus size="16" />
-                    <span class="d-inline-flex align-items-center">{{ isBulkCreating ? 'Создание...' : `Создать (${parsedInputNumbers.length})` }}</span>
+                    <span>{{ isBulkCreating ? 'Создание...' : 'Создать введенные' }}</span>
                   </button>
                 </div>
                 <div class="form-text text-muted mt-1">
@@ -136,32 +133,6 @@
                 <div v-if="parsedInputNumbers.length" class="chips mt-2">
                   <span v-for="n in parsedInputNumbers" :key="`chip-${n}`" class="chip">{{ n }}</span>
                 </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <label class="form-label d-flex align-items-center gap-2 mb-2">
-                  <FileCheck size="16" />
-                  <span class="fw-bold">Создание по выбранным</span>
-                </label>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                  <button
-                    class="btn btn-success d-inline-flex align-items-center gap-1 lh-1"
-                    :disabled="isBulkCreating || selectedCount === 0"
-                    @click="createAnalysesForSelected"
-                  >
-                    <Plus size="16" />
-                    <span class="d-inline-flex align-items-center">{{ isBulkCreating ? 'Создание...' : `Создать (${selectedCount})` }}</span>
-                  </button>
-                  <button
-                    class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 lh-1"
-                    :disabled="isBulkCreating || selectedCount === 0"
-                    @click="clearSelection"
-                    title="Снять выделение"
-                  >
-                    <X size="16" />
-                    <span>Очистить выбор</span>
-                  </button>
-                </div>
-                <small class="text-secondary d-block mt-2">Выбрано протоколов: {{ selectedCount }}</small>
               </div>
             </div>
           </div>
@@ -543,7 +514,7 @@ import SortComponent from './components/SortComponent.vue'
 import { useToast } from 'vue-toastification'
 import { Modal } from 'bootstrap'
 import { 
-  Plus, FileCheck, CheckCircle, Loader2, Clock, 
+  Plus, FileCheck, CheckCircle, Loader2, Clock, Hash,
   FileX, Eye, Info, Zap, Target, X, BarChart3 
 } from 'lucide-vue-next'
 
@@ -564,6 +535,7 @@ export default {
     Zap,
     Target,
     X,
+    Hash,
     BarChart3
   },
   name: 'ProtocolsPage',
@@ -1509,6 +1481,30 @@ export default {
       justify-content: center;
       flex-shrink: 0;
     }
+  }
+}
+
+// Единый класс для центрирования контента кнопок групповых действий
+.bulk-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  line-height: 1;
+  min-width: 200px;
+  height: 38px;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  svg {
+    display: block;
+    transform: translateY(1px);
+  }
+  span {
+    display: inline-block;
+    line-height: 1;
+    transform: translateY(-1px);
   }
 }
 
