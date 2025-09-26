@@ -13,65 +13,41 @@
                 <div class="filters-row">
                     <div class="filter-group">
                         <label class="filter-label">Наименование политики/ стратегического проекта</label>
-                        <div class="combobox-container">
-                            <select 
-                                v-model="selectedPolicy" 
-                                class="combobox"
-                                @change="onPolicyChange"
-                            >
-                                <option value="">Выберите политику/проект</option>
-                                <option 
-                                    v-for="policy in policies" 
-                                    :key="policy.id" 
-                                    :value="policy.id"
-                                >
-                                    {{ policy.title }}
-                                </option>
-                            </select>
-                            <ChevronDown class="combobox-icon" :size="16" />
-                        </div>
+                        <SelectBox
+                            v-model="selectedPolicy"
+                            :options="policies"
+                            :valueKey="'id'"
+                            :labelKey="'title'"
+                            :castToNumber="true"
+                            :includeAllOption="true"
+                            allLabel="Выберите политику/проект"
+                            @change="onPolicyChange"
+                        />
                     </div>
                     
                     <div class="filter-group">
                         <label class="filter-label">Наименование блока мероприятий</label>
-                        <div class="combobox-container">
-                            <select 
-                                v-model="selectedBlock" 
-                                class="combobox"
-                                @change="onBlockChange"
-                            >
-                                <option value="">Выберите блок мероприятий</option>
-                                <option 
-                                    v-for="block in availableBlocks" 
-                                    :key="block.id" 
-                                    :value="block.id"
-                                >
-                                    {{ block.title }}
-                                </option>
-                            </select>
-                            <ChevronDown class="combobox-icon" :size="16" />
-                        </div>
+                        <SelectBox
+                            v-model="selectedBlock"
+                            :options="availableBlocks"
+                            :valueKey="'id'"
+                            :labelKey="'title'"
+                            :castToNumber="true"
+                            :includeAllOption="true"
+                            allLabel="Выберите блок мероприятий"
+                            @change="onBlockChange"
+                        />
                     </div>
                     
                     <div class="filter-group">
                         <label class="filter-label">Срок реализации</label>
-                        <div class="combobox-container">
-                            <select 
-                                v-model="selectedPeriod" 
-                                class="combobox"
-                                @change="onPeriodChange"
-                            >
-                                <option value="">Выберите срок</option>
-                                <option 
-                                    v-for="period in availablePeriods" 
-                                    :key="period" 
-                                    :value="period"
-                                >
-                                    {{ period }}
-                                </option>
-                            </select>
-                            <ChevronDown class="combobox-icon" :size="16" />
-                        </div>
+                        <SelectBox
+                            v-model="selectedPeriod"
+                            :options="availablePeriods"
+                            :includeAllOption="true"
+                            allLabel="Выберите срок"
+                            @change="onPeriodChange"
+                        />
                     </div>
                 </div>
             </div>
@@ -174,12 +150,12 @@ import { ref, computed, onMounted } from 'vue'
 import { 
     Calendar, 
     MapPin, 
-    Users, 
-    ChevronDown
+    Users 
 } from 'lucide-vue-next'
 import SimpleTooltip from '../SimpleTooltip.vue'
 import LeadersList from '../LeadersList.vue'
 import LeadersModal from '../LeadersModal.vue'
+import SelectBox from '@/components/SelectBox.vue'
 
 const props = defineProps({
     event: {
@@ -614,7 +590,7 @@ onMounted(() => {
 
 .filters-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
     gap: 1.5rem;
     margin-bottom: 1rem;
     align-items: end; // выравниваем группы по низу, чтобы инпуты были на одной линии
@@ -624,6 +600,19 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    min-width: 0; // критично, чтобы контент мог сжиматься внутри грид-колонки
+}
+
+/* Гарантируем, что SelectBox занимает всю ширину колонки и текст не растягивает кнопку */
+.filter-group :deep(.select-box) { width: 100%; max-width: 100%; }
+.filter-group :deep(.select-trigger) { width: 100%; }
+.filter-group :deep(.select-trigger .value-text) {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0; /* критично для обрезки во flex-контейнере */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .filter-label {
@@ -900,6 +889,13 @@ onMounted(() => {
 
 
 // Адаптивность
+@media (max-width: 1200px) {
+    .filters-row {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+}
+
 @media (max-width: 768px) {
     .filters-row {
         grid-template-columns: 1fr;

@@ -222,48 +222,15 @@
                             <label for="curator" class="form-label required">
                                 Куратор проекта
                             </label>
-                            <div class="curator-dropdown-wrapper" ref="curatorDropdownRef">
-                                <div 
-                                    class="curator-select-trigger"
-                                    @click="toggleCuratorDropdown"
-                                    :class="{ 'is-open': isCuratorDropdownOpen }"
-                                >
-                                    <div v-if="getSelectedCurator()" class="curator-selected">
-                                        <DefaultAvatar
-                                            :size="'medium'"
-                                            :title="getSelectedCurator().name"
-                                        />
-                                        <div class="curator-info">
-                                            <div class="curator-name curator-name--selected">{{ getSelectedCurator().name }}</div>
-                                            <div class="curator-position">{{ getSelectedCurator().position }}</div>
-                                        </div>
-                                    </div>
-                                    <div v-else class="curator-placeholder">
-                                        Выберите куратора
-                                    </div>
-                                    <div class="select-arrow" :class="{ 'rotated': isCuratorDropdownOpen }">
-                                        <ChevronDown :size="16" />
-                                    </div>
-                                </div>
-                                
-                                <div v-if="isCuratorDropdownOpen" class="curator-dropdown-list">
-                                    <div 
-                                        v-for="person in availablePersons" 
-                                        :key="person.id" 
-                                        class="curator-dropdown-item"
-                                        @click="selectCurator(person)"
-                                    >
-                                        <DefaultAvatar
-                                            :size="'medium'"
-                                            :title="person.name"
-                                        />
-                                        <div class="curator-info">
-                                            <div class="curator-name">{{ person.name }}</div>
-                                            <div class="curator-position">{{ person.position }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <SelectBox
+                                v-model="localProvisions.curator"
+                                :options="availablePersons"
+                                :valueKey="'id'"
+                                :labelKey="'name'"
+                                :includeAllOption="false"
+                                :disabled="!availablePersons || availablePersons.length === 0"
+                                allLabel="Выберите куратора"
+                            />
                             <div v-if="errors.curator" class="error-message">
                                 {{ errors.curator }}
                             </div>
@@ -282,47 +249,16 @@
                             <label class="form-label required">
                                 Заказчик проекта
                             </label>
-                            <div v-if="customerCandidates && customerCandidates.length > 1" class="curator-dropdown-wrapper" ref="customerDropdownRef">
-                                <div 
-                                    class="curator-select-trigger"
-                                    @click="toggleCustomerDropdown"
-                                    :class="{ 'is-open': isCustomerDropdownOpen }"
-                                >
-                                    <div v-if="getSelectedCustomer()" class="curator-selected">
-                                        <DefaultAvatar
-                                            :size="'medium'"
-                                            :title="getSelectedCustomer().name"
-                                        />
-                                        <div class="curator-info">
-                                            <div class="curator-name curator-name--selected">{{ getSelectedCustomer().name }}</div>
-                                            <div class="curator-position">{{ getSelectedCustomer().position }}</div>
-                                        </div>
-                                    </div>
-                                    <div v-else class="curator-placeholder">
-                                        Выберите заказчика
-                                    </div>
-                                    <div class="select-arrow" :class="{ 'rotated': isCustomerDropdownOpen }">
-                                        <ChevronDown :size="16" />
-                                    </div>
-                                </div>
-                                
-                                <div v-if="isCustomerDropdownOpen" class="curator-dropdown-list">
-                                    <div 
-                                        v-for="person in customerCandidates" 
-                                        :key="person.id" 
-                                        class="curator-dropdown-item"
-                                        @click="selectCustomer(person)"
-                                    >
-                                        <DefaultAvatar
-                                            :size="'medium'"
-                                            :title="person.name"
-                                        />
-                                        <div class="curator-info">
-                                            <div class="curator-name">{{ person.name }}</div>
-                                            <div class="curator-position">{{ person.position }}</div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div v-if="customerCandidates && customerCandidates.length > 1">
+                                <SelectBox
+                                    v-model="selectedCustomerId"
+                                    :options="customerCandidates"
+                                    :valueKey="'id'"
+                                    :labelKey="'name'"
+                                    :includeAllOption="false"
+                                    :disabled="!customerCandidates || customerCandidates.length === 0"
+                                    allLabel="Выберите заказчика"
+                                />
                             </div>
                             <div v-else class="customer-display">
                                 <div class="customer-avatar-container">
@@ -488,11 +424,12 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { generateInitials, generateProjectName, generateShortProjectName } from '@/modules/crm/project-ed/components/steps/js/initialsGenerator.js'
-import { HelpCircle, ChevronDown } from 'lucide-vue-next'
+import { HelpCircle } from 'lucide-vue-next'
 import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import ExecutorSelector from '@/modules/crm/project-ed/components/ExecutorSelector.vue'
 import { apiClient } from '@/js/api/manager.js'
+import SelectBox from '@/components/SelectBox.vue'
 
 const props = defineProps({
     provisions: {
@@ -541,23 +478,7 @@ const shortNameInfoIconRef = ref(null)
 const popoverElement = ref(null)
 const shortNamePopoverElement = ref(null)
 
-// Состояние для выпадающего списка куратора
-const isCuratorDropdownOpen = ref(false)
-const curatorDropdownRef = ref(null)
-
-// Состояние для выпадающего списка заказчика
-const isCustomerDropdownOpen = ref(false)
-const customerDropdownRef = ref(null)
-
-// Глобальный обработчик клика вне выпадающего списка
-const handleClickOutside = (event) => {
-    if (curatorDropdownRef.value && !curatorDropdownRef.value.contains(event.target)) {
-        closeCuratorDropdown()
-    }
-    if (customerDropdownRef.value && !customerDropdownRef.value.contains(event.target)) {
-        isCustomerDropdownOpen.value = false
-    }
-}
+// Выпадающие заменены на SelectBox — локальное состояние открытости и глобальные обработчики не требуются
 
 // Функция для автоматического изменения высоты textarea
 const autoResizeTextarea = (textarea) => {
@@ -704,20 +625,7 @@ const customerInfo = ref({ name: '—', position: 'Должность вакан
 const customerCandidates = ref([])
 const selectedCustomerId = ref(null)
 
-const toggleCustomerDropdown = () => {
-    isCustomerDropdownOpen.value = !isCustomerDropdownOpen.value
-}
-
-const selectCustomer = (person) => {
-    selectedCustomerId.value = person.id
-    customerInfo.value = { name: person.name, position: person.position || 'Ректор' }
-    localProvisions.value.customer = person.name
-    isCustomerDropdownOpen.value = false
-}
-
-const getSelectedCustomer = () => {
-    return customerCandidates.value.find(person => person.id === selectedCustomerId.value)
-}
+// Куратор выбирается напрямую через v-model в SelectBox
 
 async function resolveCustomerFromApi() {
     try {
@@ -916,23 +824,14 @@ const openCalendar = (inputRef) => {
     }
 }
 
-// Функции для управления выпадающим списком куратора
-const toggleCuratorDropdown = () => {
-    isCuratorDropdownOpen.value = !isCuratorDropdownOpen.value
-}
-
-const selectCurator = (person) => {
-    localProvisions.value.curator = person.id
-    isCuratorDropdownOpen.value = false
-}
-
-const getSelectedCurator = () => {
-    return availablePersons.value.find(person => person.id === localProvisions.value.curator)
-}
-
-const closeCuratorDropdown = () => {
-    isCuratorDropdownOpen.value = false
-}
+// Следим за выбором заказчика в SelectBox
+watch(selectedCustomerId, (newId) => {
+    const found = customerCandidates.value.find(p => p.id === newId)
+    if (found) {
+        customerInfo.value = { name: found.name, position: found.position || 'Ректор' }
+        localProvisions.value.customer = found.name
+    }
+})
 
 // Следим за изменениями выбранного мероприятия и обновляем наименование проекта
 watch(() => props.selectedEvent, (newEvent) => {
@@ -995,9 +894,6 @@ onMounted(() => {
         })
     })
     
-    // Обработчик клика вне выпадающего списка
-    document.addEventListener('click', handleClickOutside)
-
     // Подтягиваем заказчика из реальных данных
     resolveCustomerFromApi()
 })
@@ -1182,9 +1078,6 @@ onUnmounted(() => {
         shortNamePopoverElement.value.remove()
         shortNamePopoverElement.value = null
     }
-    
-    // Удаляем обработчик клика вне выпадающего списка
-    document.removeEventListener('click', handleClickOutside)
 })
 
 </script>
