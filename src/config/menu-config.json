@@ -122,7 +122,7 @@
           "name": "Стратегические проекты",
           "children": [
             {
-              "routeName": "StrategicProjectsMain",
+              "routeName": "StrategicProjectsDashboard",
               "name": "Главная"
             },
             {
@@ -161,8 +161,37 @@
         },
         {
           "icon": "FolderKanban",
-          "routeName": "ProjectEd",
+          "routeName": "ProjectManagement",
           "name": "Управление проектами",
+          "children": [
+            {
+              "routeName": "MyProjectsList",
+              "name": "Мои проекты"
+            },
+            {
+              "routeName": "ProjectCalendar",
+              "name": "Календарь задач"
+            },
+            {
+              "routeName": "KanbanBoard",
+              "name": "Доска задач"
+            },
+            {
+              "routeName": "ProjectsAndTasksManagement",
+              "name": "Проекты и задачи"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "icon": "FolderKanban",
+      "routeName": "ProjectEd",
+      "title": "Управление проектами",
+      "children": [
+        {
+          "name": "Проекты",
           "children": [
             {
               "routeName": "ProjectEdMain",
@@ -175,22 +204,6 @@
             {
               "routeName": "ProjectEdCreate",
               "name": "Создать проект"
-            },
-        {
-          "routeName": "ProjectEdUserList",
-          "name": "Пользователи"
-        },
-            {
-              "routeName": "ProjectCalendar",
-              "name": "Календарь задач"
-            },
-            {
-              "routeName": "KanbanBoard",
-              "name": "Доска задач"
-            },
-            {
-              "routeName": "ProjectsAndTasksManagement",
-              "name": "Проекты и задачи"
             }
           ]
         }

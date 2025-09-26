@@ -51,6 +51,7 @@ import {
   Database,
   Plug,
   LayoutDashboard,
+  FolderKanban,
 } from 'lucide-vue-next'
 
 /**
@@ -99,6 +100,7 @@ export const iconMapping = {
   Database,
   Plug,
   LayoutDashboard,
+  FolderKanban,
 }
 
 /**

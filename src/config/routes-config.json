@@ -183,7 +183,7 @@
       }
     },
     "ShortcodeEditor": {
-      "path": "/shortcodes/editor",
+      "path": "/shortcodes/editor/:id?",
       "component": "@/modules/shortcodes/editor/ShortcodeEditor.vue",
       "meta": {
         "title": "Редактор страниц",
@@ -626,6 +626,14 @@
         "requiresAuth": true
       }
     },
+    "ProjectManagement": {
+      "path": "/crm/project-management",
+      "component": "@/modules/crm/project-management/ParentLayout.vue",
+      "redirect": "MyProjectsList",
+      "meta": {
+        "requiresAuth": true
+      }
+    },
     "MyProjectsList": {
       "path": "/crm/project-management/my-projects",
       "component": "@/modules/crm/project-management/ProjectsList.vue",
@@ -781,22 +789,7 @@
       }
     },
 
-    "NotFound": {
-      "path": "/:pathMatch(.*)*",
-      "component": "@/components/NotFound.vue",
-      "meta": {
-        "public": true,
-        "title": "Страница не найдена",
-        "requiresAuth": true
-      }
-    },
-    "Logout": {
-      "path": "/logout",
-      "component": "@/components/header/Logout.vue",
-      "meta": {
-        "title": "-"
-      }
-    },
+    
 
     "Dashboard": {
       "path": "/dashboard",
@@ -1190,7 +1183,7 @@
       }
     },
     "PorosityAnalysisMain": {
-      "path": "/porosity-analysis",
+      "path": "/porosity-analysis/create",
       "component": "@/modules/porosity-analysis/MainPage.vue",
       "meta": {
         "title": "Создать анализ",
