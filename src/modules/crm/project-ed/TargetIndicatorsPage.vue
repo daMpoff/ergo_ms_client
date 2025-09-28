@@ -4,7 +4,9 @@
         <Breadcrumbs :items="breadcrumbItems" class="mt-3" />
         <div class="page-content">
             <div class="d-flex align-items-center justify-content-between">
-                <h3 class="mb-0">Целевые показатели</h3>
+                <h3 class="mb-0">
+                    {{ activeTab === 'categories' ? 'Категории целевых показателей' : 'Целевые показатели' }}
+                </h3>
                 <div class="d-flex gap-2">
                     <!-- Кнопка для добавления показателя (только на вкладке показателей) -->
                     <button 
@@ -233,7 +235,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { Home, Target, Plus, Edit, Trash2, Wrench, Layers2 } from 'lucide-vue-next'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from './components/Breadcrumbs.vue'
@@ -243,16 +246,47 @@ import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
-const breadcrumbItems = ref([
+// Router для управления URL
+const router = useRouter()
+const route = useRoute()
+
+// Вычисляемое свойство для breadcrumbs
+const breadcrumbItems = computed(() => [
     { label: 'Главная', icon: Home, to: { name: 'ProjectEdMain' } },
     { label: 'Служебная страница', icon: Wrench, to: { name: 'ProjectEdTechnical' } },
-    { label: 'Целевые показатели', icon: Target }
+    { 
+        label: activeTab.value === 'categories' ? 'Категории целевых показателей' : 'Целевые показатели', 
+        icon: activeTab.value === 'categories' ? Layers2 : Target 
+    }
 ])
 
 const showModal = ref(false)
 const editingIndicator = ref(null)
 const activeTab = ref('indicators')
 const categoriesComponent = ref(null)
+
+// Функция для обновления URL с параметром tab
+const updateUrlWithTab = (tab) => {
+    const query = { ...route.query, tab }
+    router.replace({ 
+        path: route.path, 
+        query 
+    })
+}
+
+// Инициализация активной вкладки из URL
+const initializeActiveTab = () => {
+    const tabFromUrl = route.query.tab
+    if (tabFromUrl === 'categories') {
+        activeTab.value = 'categories'
+    } else {
+        activeTab.value = 'indicators'
+        // Обновляем URL для показателей
+        if (tabFromUrl !== 'indicators') {
+            updateUrlWithTab('indicators')
+        }
+    }
+}
 
 // Годы с 2023 по 2032
 const years = ref([2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032])
@@ -271,7 +305,14 @@ async function loadIndicators() {
     }
 }
 
+// Следим за изменениями activeTab и обновляем URL
+watch(activeTab, (newTab) => {
+    updateUrlWithTab(newTab)
+})
+
 onMounted(async () => {
+    // Инициализируем активную вкладку из URL
+    initializeActiveTab()
     await loadIndicators()
 })
 

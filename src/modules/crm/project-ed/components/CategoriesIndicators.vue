@@ -2,7 +2,7 @@
     <div>
         <div v-if="!isLoading && categories.length === 0" class="card p-4 text-center">
             <div class="d-flex flex-column align-items-center justify-content-center my-2">
-                <Target :size="48" class="mb-2 text-muted" />
+                <Layers2 :size="48" class="mb-2 text-muted" />
                 <h5 class="mb-1">Пока нет категорий показателей</h5>
                 <p class="text-muted mb-3">Создайте первую категорию для группировки показателей.</p>
                 <button class="btn btn-primary" @click="openCreateCategoryModal">Создать категорию</button>
@@ -258,7 +258,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { Target, Plus, Edit, Trash2, BarChart3, AlertTriangle } from 'lucide-vue-next'
+import { Target, Plus, Edit, Trash2, BarChart3, AlertTriangle, Layers2 } from 'lucide-vue-next'
 import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
