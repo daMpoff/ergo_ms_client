@@ -534,6 +534,15 @@
         "requiresAdmin": true
       }
     },
+    "ProjectEdImport": {
+      "path": "/crm/project-ed/import",
+      "component": "@/modules/crm/project-ed/ImportPage.vue",
+      "meta": {
+        "title": "Импорт блоков мероприятий",
+        "requiresAuth": true,
+        "requiresAdmin": true
+      }
+    },
     "ProjectEdEventBlock": {
       "path": "/crm/project-ed/event-block/:id",
       "component": "@/modules/crm/project-ed/Events/EventBlockPage.vue",

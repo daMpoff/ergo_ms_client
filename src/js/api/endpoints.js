@@ -437,5 +437,8 @@ export const endpoints = {
             delete: (id) => `project_ed/events/${id}/safe_delete/`,
             updateOrder: (id) => `project_ed/events/${id}/update_order/`,
         },
+        import: {
+            excel: 'project_ed/import/excel/',
+        },
     },
 };

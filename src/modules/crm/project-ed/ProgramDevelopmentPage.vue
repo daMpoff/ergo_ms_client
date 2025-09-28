@@ -9,18 +9,19 @@
 
             <div class="d-flex align-items-center mb-3" v-if="blocks.length > 0">
                 <h5 class="mb-0 me-3">Блоки мероприятий</h5>
-                <div 
-                    class="button-create" 
-                    role="button" 
-                    aria-label="Добавить блок"
-                    @click="openCreateModal"
-                >
-                    <Plus :size="18" />
-                    <span>Добавить блок</span>
+                <div class="d-flex gap-2">
+                    <div 
+                        class="button-create" 
+                        role="button" 
+                        aria-label="Добавить блок"
+                        @click="openCreateModal"
+                    >
+                        <Plus :size="18" />
+                        <span>Добавить блок</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Панель фильтров -->
             <div v-if="blocks.length > 0" class="card p-3">
                 <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-6">
@@ -93,12 +94,14 @@
                     <Inbox :size="48" class="mb-2" />
                     <h5 class="mb-1">Пока нет блоков мероприятий</h5>
                     <p class="text-muted mb-3">Создайте первый блок МП, чтобы начать работу.</p>
-                    <button class="btn btn-primary" @click="openCreateModal">Создать блок</button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" @click="openCreateModal">Создать блок</button>
+                        <button class="btn btn-outline-primary" @click="goToImport">Импортировать</button>
+                    </div>
                 </div>
             </div>
 
             <div v-for="block in filteredBlocks" :key="block.id" class="card p-3 mb-3 block-card block-card-click position-relative" @click="goToBlock(block.id)" role="button" :aria-label="`Открыть блок ${block.code || ''}`.trim()">
-                <!-- Панель действий при наведении -->
                 <div class="block-actions-overlay">
                     <div class="d-flex justify-content-end gap-2">
                         <button class="btn btn-secondary btn-sm" @click.stop="editBlockById(block.id)">Редактировать</button>
@@ -133,7 +136,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно создания/редактирования блока -->
     <BlockModal
         :is-open="isCreateModalOpen || isEditModalOpen"
         :is-edit-mode="isEditModalOpen"
@@ -457,6 +459,10 @@ function generateEventCode(blockId) {
 function goToBlock(id) {
     if (!id) return
     router.push({ name: 'ProjectEdEventBlock', params: { id } })
+}
+
+function goToImport() {
+    router.push({ name: 'ProjectEdImport' })
 }
 </script>
 
