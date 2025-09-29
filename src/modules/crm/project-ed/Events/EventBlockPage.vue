@@ -6,9 +6,8 @@
             <div class="d-flex align-items-start justify-content-between mb-1">
                 <div>
                     <h3 class="mb-1">{{ blockTitle || 'Блок мероприятий' }}</h3>
-                    <div v-if="blockData?.category_name || blockData?.subcategory_name" class="mt-1">
-                        <span v-if="blockData?.category_name" class="badge bg-primary me-2">{{ blockData.category_name }}</span>
-                        <span v-if="blockData?.subcategory_name" class="badge bg-secondary">{{ blockData.subcategory_name }}</span>
+                    <div v-if="blockData?.subcategory_name" class="mt-1">
+                        <span class="badge subcategory-badge breadcrumb-link-color">{{ blockData.subcategory_name }}</span>
                     </div>
                 </div>
             </div>
@@ -532,4 +531,18 @@ async function createEventFromModal() {
 /* Кнопки действий в строке показываются только при наведении */
 .table-row-actions .row-actions { visibility: hidden; opacity: 0; transition: opacity .15s ease; }
 .table-row-actions:hover .row-actions { visibility: visible; opacity: 1; }
+
+/* Стили баджа подкатегории в одном стиле с ProgramDevelopmentPage.vue */
+.subcategory-badge {
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
+.breadcrumb-link-color {
+    color: var(--color-primary-text, var(--bs-body-color, #212529)) !important;
+    background-color: rgba(13, 110, 253, 0.12);
+    border: 1px solid rgba(13, 110, 253, 0.25);
+}
 </style>

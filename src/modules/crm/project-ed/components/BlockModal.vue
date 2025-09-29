@@ -17,24 +17,9 @@
                         <textarea v-model="formData.title" class="form-control" rows="3" placeholder="Воспитательная деятельность (например)" style="resize: vertical;" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Категория целевых показателей <span class="text-danger">*</span></label>
-                        <select v-model="formData.categoryId" class="form-select" required>
-                            <option value="" disabled>Выберите категорию</option>
-                            <option v-for="category in categories" :key="category.id" :value="category.id">
-                                {{ category.name }}
-                            </option>
-                        </select>
-                        <div v-if="categories.length === 0" class="form-text">
-                            <span class="text-muted">Категории целевых показателей не найдены. </span>
-                            <router-link to="/crm/project-ed/target-indicators" class="text-primary text-decoration-underline">
-                                Создать категорию
-                            </router-link>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Подкатегория целевых показателей</label>
-                        <select v-model="formData.subcategoryId" class="form-select" :disabled="!formData.categoryId">
-                            <option value="">Не указана</option>
+                        <label class="form-label">Наименование политики <span class="text-danger">*</span></label>
+                        <select v-model="formData.subcategoryId" class="form-select" required>
+                            <option v-if="!formData.subcategoryId" value="" disabled>Не указана</option>
                             <option v-for="subcategory in availableSubcategories" :key="subcategory.id" :value="subcategory.id">
                                 {{ subcategory.name }}
                             </option>
@@ -85,36 +70,29 @@ const formData = ref({
     subcategoryId: ''
 })
 
-const categories = ref([])
+const allSubcategories = ref([])
 
-// Загрузка категорий
-const loadCategories = async () => {
+// Загрузка всех подкатегорий
+const loadSubcategories = async () => {
     try {
-        const response = await apiClient.get(endpoints.project_ed.categories.list)
-        if (response.success) {
-            categories.value = response.data
-        } else {
-            throw new Error(response.message || 'Ошибка загрузки категорий')
-        }
+        const response = await apiClient.get(endpoints.project_ed.subcategories.list)
+        const data = Array.isArray(response?.data) ? response.data : (response?.results || [])
+        allSubcategories.value = data
     } catch (error) {
-        console.error('Ошибка загрузки категорий:', error)
-        toast.error('Ошибка при загрузке категорий: ' + error.message)
-        categories.value = []
+        console.error('Ошибка загрузки подкатегорий:', error)
+        toast.error('Ошибка при загрузке подкатегорий: ' + (error.message || ''))
+        allSubcategories.value = []
     }
 }
 
-// Доступные подкатегории
+// Доступные подкатегории (все)
 const availableSubcategories = computed(() => {
-    if (!formData.value.categoryId) return []
-    const category = categories.value.find(cat => cat.id === formData.value.categoryId)
-    const subcategories = category?.subcategories || []
-    console.log('Available subcategories computed:', subcategories)
-    return subcategories
+    return allSubcategories.value
 })
 
 // Функция для восстановления подкатегории
 const restoreSubcategory = () => {
-    if (props.isEditMode && props.blockData && formData.value.categoryId) {
+    if (props.isEditMode && props.blockData) {
         const savedSubcategoryId = props.blockData.subcategoryId || props.blockData.subcategory || ''
         console.log('Trying to restore subcategory:', savedSubcategoryId)
         console.log('Available subcategories:', availableSubcategories.value)
@@ -137,31 +115,20 @@ watch(() => availableSubcategories.value, (newSubcategories) => {
     }
 })
 
-// Следим за изменением категории и сбрасываем подкатегорию
-watch(() => formData.value.categoryId, (newCategoryId, oldCategoryId) => {
-    // Сбрасываем подкатегорию только если категория действительно изменилась
-    // и мы не в режиме инициализации при редактировании
-    if (newCategoryId !== oldCategoryId && oldCategoryId !== undefined) {
-        formData.value.subcategoryId = ''
-    }
-})
-
 // Инициализация формы при открытии модального окна
 watch(() => props.isOpen, (isOpen) => {
     if (isOpen) {
         if (props.isEditMode && props.blockData) {
             // Режим редактирования
-            const categoryId = props.blockData.categoryId || props.blockData.category || ''
             const subcategoryId = props.blockData.subcategoryId || props.blockData.subcategory || ''
             
             console.log('Edit mode - blockData:', props.blockData)
-            console.log('Edit mode - categoryId:', categoryId)
             console.log('Edit mode - subcategoryId:', subcategoryId)
             
             formData.value = {
                 code: props.blockData.code || '',
                 title: props.blockData.title || '',
-                categoryId: categoryId,
+                categoryId: '',
                 subcategoryId: subcategoryId
             }
             
@@ -178,10 +145,10 @@ watch(() => props.isOpen, (isOpen) => {
     }
 })
 
-// Следим за загрузкой категорий и восстанавливаем подкатегорию при редактировании
-watch(() => categories.value.length, (newLength) => {
-    if (newLength > 0 && props.isEditMode && props.blockData && formData.value.categoryId) {
-        console.log('Categories loaded, trying to restore subcategory')
+// Следим за загрузкой подкатегорий и восстанавливаем подкатегорию при редактировании
+watch(() => allSubcategories.value.length, (newLength) => {
+    if (newLength > 0 && props.isEditMode && props.blockData) {
+        console.log('Subcategories loaded, trying to restore subcategory')
         nextTick(() => {
             if (!restoreSubcategory()) {
                 // Если не удалось восстановить сразу, пробуем через небольшую задержку
@@ -195,14 +162,13 @@ watch(() => categories.value.length, (newLength) => {
 
 // Сохранение блока
 const saveBlock = () => {
-    if (!formData.value.title.trim() || !formData.value.code.trim() || !formData.value.categoryId) {
+    if (!formData.value.title.trim() || !formData.value.code.trim() || !formData.value.subcategoryId) {
         toast.warning('Заполните все обязательные поля')
         return
     }
 
-    // Находим выбранную категорию и подкатегорию
-    const selectedCategory = categories.value.find(cat => cat.id === formData.value.categoryId)
-    const selectedSubcategory = formData.value.subcategoryId 
+    // Находим выбранную подкатегорию
+    const selectedSubcategory = formData.value.subcategoryId
         ? availableSubcategories.value.find(sub => sub.id === formData.value.subcategoryId)
         : null
 
@@ -210,8 +176,8 @@ const saveBlock = () => {
         code: formData.value.code.trim(),
         title: formData.value.title.trim(),
         description: '',
-        categoryId: formData.value.categoryId,
-        categoryName: selectedCategory?.name || '',
+        categoryId: '',
+        categoryName: '',
         subcategoryId: formData.value.subcategoryId || null,
         subcategoryName: selectedSubcategory?.name || null,
         ...(props.isEditMode && props.blockData ? { id: props.blockData.id } : {})
@@ -225,9 +191,9 @@ const closeModal = () => {
     emit('close')
 }
 
-// Загружаем категории при инициализации компонента
+// Загружаем подкатегории при инициализации компонента
 onMounted(() => {
-    loadCategories()
+    loadSubcategories()
 })
 </script>
 

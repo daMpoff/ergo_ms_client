@@ -23,10 +23,10 @@
             </div>
 
             <div v-if="blocks.length > 0" class="card p-3">
-                <div class="row g-2 align-items-center">
+                <div class="row g-2 align-items-center w-100">
                     <div class="col-12 col-md-6">
                         <label for="searchQuery" class="form-label mb-1">Поиск</label>
-                        <div class="input-group">
+                        <div class="input-group w-100">
                             <span class="input-group-text" id="search-addon" aria-hidden="true">
                                 <Search :size="18" />
                             </span>
@@ -41,41 +41,47 @@
                             />
                         </div>
                     </div>
-                    <div class="col-12 col-md-3">
-                        <label for="categorySelect" class="form-label mb-1">Категория</label>
-                        <select
-                            id="categorySelect"
-                            class="form-select"
-                            v-model="selectedCategoryId"
-                            aria-label="Фильтр по категории"
-                        >
-                            <option :value="null">Все категории</option>
-                            <option
-                                v-for="cat in availableCategories"
-                                :key="cat.id ?? 'null'"
-                                :value="cat.id"
-                            >
-                                {{ cat.name || 'Без категории' }}
-                            </option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <label for="subcategorySelect" class="form-label mb-1">Подкатегория</label>
+                    <div class="col-12 col-md-4">
+                        <label for="subcategorySelect" class="form-label mb-1">Наименование политики/стратегического проекта</label>
                         <select
                             id="subcategorySelect"
-                            class="form-select"
+                            class="form-select policy-select"
                             v-model="selectedSubcategoryId"
                             :disabled="availableSubcategories.length === 0"
-                            aria-label="Фильтр по подкатегории"
+                            aria-label="Фильтр по наименованию политики/стратегического проекта"
                         >
-                            <option :value="null">Все подкатегории</option>
+                            <option :value="null">Все политики</option>
                             <option
                                 v-for="sub in availableSubcategories"
                                 :key="sub.id ?? 'null'"
                                 :value="sub.id"
                             >
-                                {{ sub.name || 'Без подкатегории' }}
+                                {{ sub.name || 'Без политики' }}
                             </option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-1">
+                        <label for="startYearSelect" class="form-label mb-1">Срок с</label>
+                        <select
+                            id="startYearSelect"
+                            class="form-select"
+                            v-model.number="filterStartYear"
+                            aria-label="Фильтр по году начала"
+                        >
+                            <option :value="null">—</option>
+                            <option v-for="year in yearsOptions" :key="'s-' + year" :value="year">{{ year }}</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-1">
+                        <label for="endYearSelect" class="form-label mb-1">Срок по</label>
+                        <select
+                            id="endYearSelect"
+                            class="form-select"
+                            v-model.number="filterEndYear"
+                            aria-label="Фильтр по году окончания"
+                        >
+                            <option :value="null">—</option>
+                            <option v-for="year in yearsOptions" :key="'e-' + year" :value="year">{{ year }}</option>
                         </select>
                     </div>
                 </div>
@@ -112,15 +118,8 @@
                     <div class="flex-grow-1">
                         <div class="text-muted small mb-1">
                             <span 
-                                v-if="block.category_name"
-                                class="badge bg-primary category-badge me-1" 
-                                :title="block.category_name"
-                            >
-                                {{ block.category_name }}
-                            </span>
-                            <span 
                                 v-if="block.subcategory_name"
-                                class="badge bg-secondary subcategory-badge" 
+                                class="badge subcategory-badge breadcrumb-link-color" 
                                 :title="block.subcategory_name"
                             >
                                 {{ block.subcategory_name }}
@@ -170,6 +169,8 @@ const blocks = ref([])
 const searchQuery = ref('')
 const selectedCategoryId = ref(null)
 const selectedSubcategoryId = ref(null)
+const filterStartYear = ref(null)
+const filterEndYear = ref(null)
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const editingBlockData = ref({})
@@ -207,6 +208,18 @@ async function loadBlocks() {
         const apiUrl = endpoints.project_ed.event_blocks.list
         const response = await apiClient.get(apiUrl)
         blocks.value = (response.data || []).slice().sort(compareBlocksByCode)
+        // Подгружаем мероприятия для каждого блока, чтобы работала фильтрация по срокам
+        const tasks = blocks.value.map(async (b) => {
+            if (!b?.id) { b.events = []; return }
+            try {
+                const evResp = await apiClient.get(endpoints.project_ed.event_blocks.events(b.id))
+                const evs = Array.isArray(evResp?.data) ? evResp.data : (evResp?.data?.results || [])
+                b.events = evs
+            } catch (_) {
+                b.events = []
+            }
+        })
+        if (tasks.length) await Promise.allSettled(tasks)
     } catch (error) {
         // Временно показываем пустой массив, чтобы страница загрузилась
         blocks.value = []
@@ -262,14 +275,62 @@ const filteredBlocks = computed(() => {
     const q = (searchQuery.value || '').toString().trim().toLowerCase()
     const byCategory = selectedCategoryId.value
     const bySubcategory = selectedSubcategoryId.value
+    const fyStart = filterStartYear.value != null ? Number(filterStartYear.value) : null
+    const fyEnd = filterEndYear.value != null ? Number(filterEndYear.value) : null
 
     return blocks.value.filter(b => {
         const matchesCategory = byCategory == null ? true : b?.category === byCategory
         const matchesSubcategory = bySubcategory == null ? true : b?.subcategory === bySubcategory
         const hay = [b?.code, b?.title, b?.description].filter(Boolean).join(' ').toLowerCase()
         const matchesQuery = q === '' ? true : hay.includes(q)
-        return matchesCategory && matchesSubcategory && matchesQuery
+        // Проверка по годам: оставляем блок, если ХОТЯ БЫ ОДНО мероприятие пересекается по срокам с фильтром
+        let matchesYears = true
+        if (fyStart !== null || fyEnd !== null) {
+            const fs = fyStart ?? Number.NEGATIVE_INFINITY
+            const fe = fyEnd ?? Number.POSITIVE_INFINITY
+            const events = Array.isArray(b?.events) ? b.events : []
+            if (events.length === 0) {
+                matchesYears = false
+            } else {
+                matchesYears = events.some(ev => {
+                    const es = Number(ev?.start_year)
+                    const ee = Number(ev?.end_year)
+                    if (Number.isFinite(es) && Number.isFinite(ee)) {
+                        return es <= fe && ee >= fs
+                    }
+                    if (Number.isFinite(es) && !Number.isFinite(ee)) {
+                        // если нет конца, считаем событие действующим с es и далее
+                        return es <= fe
+                    }
+                    if (!Number.isFinite(es) && Number.isFinite(ee)) {
+                        // если нет начала, считаем событие действующим до ee
+                        return ee >= fs
+                    }
+                    // если нет обоих, попробуем распарсить years_display вида "2024 — 2026"
+                    const txt = String(ev?.years_display || '').trim()
+                    const m = txt.match(/(\d{4}).*?(\d{4})/)
+                    if (m) {
+                        const ts = Number(m[1])
+                        const te = Number(m[2])
+                        if (Number.isFinite(ts) && Number.isFinite(te)) {
+                            return ts <= fe && te >= fs
+                        }
+                    }
+                    return false
+                })
+            }
+        }
+        return matchesCategory && matchesSubcategory && matchesQuery && matchesYears
     })
+})
+
+// Опции лет: с 2023 по текущий + 10
+const yearsOptions = computed(() => {
+    const start = 2023
+    const end = new Date().getFullYear() + 10
+    const arr = []
+    for (let y = start; y <= end; y++) arr.push(y)
+    return arr
 })
 
 // Создание блока мероприятий
@@ -525,6 +586,17 @@ function goToImport() {
 
 .block-card:hover .block-actions-overlay {
     display: block;
+}
+
+.policy-select {
+    min-width: 260px;
+}
+
+/* Цвет как у ссылок в breadcrumbs */
+.breadcrumb-link-color {
+    color: var(--color-primary-text, var(--bs-body-color, #212529)) !important;
+    background-color: rgba(13, 110, 253, 0.12);
+    border: 1px solid rgba(13, 110, 253, 0.25);
 }
 
 </style>
