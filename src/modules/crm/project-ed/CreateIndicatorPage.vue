@@ -7,7 +7,6 @@
             </div>
             <form v-else @submit.prevent="saveIndicator">
                 <div class="row">
-                            <!-- Категория (обязательно) -->
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Категория показателя <span class="text-danger">*</span></label>
                                 <SelectBox
@@ -24,21 +23,19 @@
                                 </div>
                             </div>
 
-                            <!-- Подкатегория (необязательно) -->
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Подкатегория показателя</label>
+                                <label class="form-label">Наименование политики</label>
                                 <SelectBox
                                     v-model="formData.subcategoryId"
                                     :options="subcategories"
                                     :allLabel="'Не указана'"
                                     :includeAllOption="true"
                                     :castToNumber="true"
-                                    :disabled="!formData.categoryId || loading"
+                                    :disabled="loading"
                                     @change="onSubcategoryChange"
                                 />
                             </div>
 
-                            <!-- Название показателя -->
                             <div class="col-12 mb-3">
                                 <label class="form-label">Название показателя <span class="text-danger">*</span></label>
                                 <textarea 
@@ -54,7 +51,6 @@
                                 </div>
                             </div>
 
-                            <!-- Единица измерения -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Единица измерения <span class="text-danger">*</span></label>
                                 <input 
@@ -69,7 +65,6 @@
                                 </div>
                             </div>
 
-                            <!-- Блок мероприятий -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Блок мероприятий <span class="text-danger">*</span></label>
                                 <SelectBox
@@ -80,14 +75,13 @@
                                     :allLabel="'Выберите блок мероприятий'"
                                     :includeAllOption="true"
                                     :castToNumber="true"
-                                    :disabled="!formData.categoryId || loading"
+                                    :disabled="loading"
                                 />
                                 <div v-if="errors.eventBlockId" class="error-message">
                                     {{ errors.eventBlockId }}
                                 </div>
                             </div>
 
-                            <!-- Ответственный -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Ответственный <span class="text-danger">*</span></label>
                                 <div class="responsible-dropdown-wrapper" ref="responsibleDropdownRef">
@@ -152,8 +146,7 @@
                                     {{ errors.responsible }}
                                 </div>
                             </div>
-
-                            <!-- Значения по годам -->
+                            
                             <div class="col-12 mb-3">
                                 <label class="form-label">Значения показателя по годам <span class="text-danger">*</span></label>
                                 <div class="row">
@@ -268,40 +261,26 @@ const loadCategories = async () => {
     }
 }
 
-// Загрузка подкатегорий
-const loadSubcategories = async (categoryId) => {
-    if (!categoryId) {
-        subcategories.value = []
-        return
-    }
-    
+// Загрузка подкатегорий (политик)
+const loadSubcategories = async () => {
     try {
-        const response = await apiClient.get(endpoints.project_ed.subcategories.list, { category_id: categoryId })
+        const response = await apiClient.get(endpoints.project_ed.subcategories.list)
         if (response.success) {
             subcategories.value = response.data
         } else {
-            console.error('Ошибка загрузки подкатегорий:', response.message)
-            toast.error('Ошибка загрузки подкатегорий')
+            console.error('Ошибка загрузки политик:', response.message)
+            toast.error('Ошибка загрузки политик')
         }
     } catch (error) {
-        console.error('Ошибка загрузки подкатегорий:', error)
-        toast.error('Ошибка загрузки подкатегорий')
+        console.error('Ошибка загрузки политик:', error)
+        toast.error('Ошибка загрузки политик')
     }
 }
 
 // Загрузка блоков мероприятий
-const loadEventBlocks = async (categoryId, subcategoryId = null) => {
+const loadEventBlocks = async () => {
     try {
-        const params = {}
-        
-        if (categoryId) {
-            params.category_id = categoryId
-        }
-        if (subcategoryId) {
-            params.subcategory_id = subcategoryId
-        }
-        
-        const response = await apiClient.get(endpoints.project_ed.event_blocks.list, params)
+        const response = await apiClient.get(endpoints.project_ed.event_blocks.list)
         if (response.success) {
             eventBlocks.value = response.data
             console.log('Загружены блоки мероприятий:', response.data)
@@ -347,15 +326,11 @@ const loadUsers = async () => {
 
 // Обработчики изменений
 const onCategoryChange = () => {
-    formData.value.subcategoryId = ''
-    formData.value.eventBlockId = ''
-    loadSubcategories(formData.value.categoryId)
-    loadEventBlocks(formData.value.categoryId)
+    // Категория больше не влияет на блоки мероприятий
 }
 
 const onSubcategoryChange = () => {
-    formData.value.eventBlockId = ''
-    loadEventBlocks(formData.value.categoryId, formData.value.subcategoryId)
+    // Политика больше не влияет на блоки мероприятий
 }
 
 // Функции для управления выпадающим списком ответственного
@@ -484,11 +459,7 @@ const loadIndicatorForEdit = async (indicator) => {
         values: indicator.values_by_year || {}
     }
     
-    // Загружаем связанные данные
-    if (formData.value.categoryId) {
-        await loadSubcategories(formData.value.categoryId)
-        await loadEventBlocks(formData.value.categoryId, formData.value.subcategoryId || null)
-    }
+    // Блоки мероприятий загружаются независимо при инициализации
 }
 
 onMounted(async () => {
@@ -499,6 +470,8 @@ onMounted(async () => {
     try {
         await Promise.all([
             loadCategories(),
+            loadSubcategories(),
+            loadEventBlocks(),
             loadUsers()
         ])
     } finally {
