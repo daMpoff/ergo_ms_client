@@ -986,7 +986,7 @@ export default {
   margin-bottom: 0.75rem;
 }
 
-.progress-bar {
+.progress-section .progress-bar {
   background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
   height: 100%;
   border-radius: 8px;

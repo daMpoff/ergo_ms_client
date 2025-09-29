@@ -176,10 +176,60 @@
             </div>
             
             <div v-else>
+              <!-- Панель перезапуска -->
+              <div class="card mb-3 restart-actions">
+                <div class="card-body">
+                  <div class="row g-3 align-items-start">
+                    <!-- Блок перезапуска по номерам -->
+                    <div class="col-12 col-md-6">
+                      <label class="form-label d-flex align-items-center gap-2 mb-2">
+                        <RotateCcw :size="16" />
+                        <span class="fw-bold">Перезапустить по номерам</span>
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-text d-inline-flex align-items-center">
+                          <Hash size="16" />
+                        </span>
+                        <input
+                          v-model.trim="restartInput"
+                          type="text"
+                          class="form-control"
+                          placeholder="Например: 12-15, 18; 20"
+                          aria-label="Номера анализов"
+                        />
+                        <button
+                          class="btn btn-primary d-inline-flex align-items-center gap-1 lh-1"
+                          :disabled="!canRestartByInput || restartingMultiple"
+                          @click="restartByInput"
+                        >
+                          <RotateCcw size="16" />
+                          <span class="d-inline-flex align-items-center">
+                            {{ restartingMultiple ? 'Перезапуск...' : 'Перезапустить' }}
+                          </span>
+                        </button>
+                      </div>
+                      <div class="form-text text-muted mt-1">
+                        Указывайте номера через запятую, пробел или точку с запятой. Диапазоны — через тире (например: 12-15).
+                      </div>
+                    </div>
+                    
+                    <!-- Блок перезапуска по выбранным карточкам -->
+                    <div class="col-12 col-md-6">
+                      <label class="form-label d-flex align-items-center gap-2 mb-2 invisible">&nbsp;</label>
+                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
+                        <button class="btn btn-primary d-inline-flex align-items-center" :disabled="selectedIds.length === 0 || restartingMultiple" @click="restartSelected">
+                          <RotateCcw class="me-1" size="16" /> Перезапустить выбранные ({{ selectedIds.length }})
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Панель удаления -->
               <div class="card mb-3 bulk-actions">
                 <div class="card-body">
-                  <div class="row g-3 align-items-center">
+                  <div class="row g-3 align-items-start">
                     <!-- Блок удаления по номерам -->
                     <div class="col-12 col-md-6">
                       <label class="form-label d-flex align-items-center gap-2 mb-2">
@@ -206,14 +256,12 @@
                           <span class="d-inline-flex align-items-center">Удалить</span>
                         </button>
                       </div>
-                      <div class="form-text text-muted mt-1">
-                        Указывайте номера через запятую, пробел или точку с запятой. Диапазоны — через тире (например: 12-15).
-                      </div>
                     </div>
 
                     <!-- Блок действий с выделением -->
                     <div class="col-12 col-md-6">
-                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center h-100">
+                      <label class="form-label d-flex align-items-center gap-2 mb-2 invisible">&nbsp;</label>
+                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
                         <button class="btn btn-danger d-inline-flex align-items-center" :disabled="selectedIds.length === 0 || bulkDeleting" @click="requestBulkDeleteSelected">
                           <Trash2 class="me-1" size="16" /> Удалить выбранные ({{ selectedIds.length }})
                         </button>
@@ -346,7 +394,7 @@
                         <button
                           v-if="analysis.status === 'failed'"
                           type="button"
-                          class="action-btn warning"
+                          class="action-btn primary"
                           @click="restartAnalysis(analysis.id)"
                           :disabled="restartingAnalysis === analysis.id"
                           title="Перезапустить анализ с ошибкой"
@@ -358,10 +406,34 @@
                         <button
                           v-if="analysis.status === 'completed'"
                           type="button"
-                          class="action-btn info"
+                          class="action-btn primary"
                           @click="restartAnalysis(analysis.id)"
                           :disabled="restartingAnalysis === analysis.id"
                           title="Перезапустить завершенный анализ"
+                        >
+                          <RotateCcw class="me-1" size="16" />
+                          {{ restartingAnalysis === analysis.id ? 'Перезапуск...' : 'Перезапустить' }}
+                        </button>
+
+                        <button
+                          v-if="analysis.status === 'pending'"
+                          type="button"
+                          class="action-btn primary"
+                          @click="restartAnalysis(analysis.id)"
+                          :disabled="restartingAnalysis === analysis.id"
+                          title="Перезапустить ожидающий анализ"
+                        >
+                          <RotateCcw class="me-1" size="16" />
+                          {{ restartingAnalysis === analysis.id ? 'Перезапуск...' : 'Перезапустить' }}
+                        </button>
+
+                        <button
+                          v-if="analysis.status === 'processing'"
+                          type="button"
+                          class="action-btn primary"
+                          @click="restartAnalysis(analysis.id)"
+                          :disabled="restartingAnalysis === analysis.id"
+                          title="Перезапустить обрабатываемый анализ"
                         >
                           <RotateCcw class="me-1" size="16" />
                           {{ restartingAnalysis === analysis.id ? 'Перезапуск...' : 'Перезапустить' }}
@@ -530,6 +602,8 @@ export default {
       restartingMultiple: false,
       // Массовое удаление
       selectedIds: [],
+      // Массовый перезапуск
+      restartInput: '',
       bulkInput: '',
       showBulkDeleteConfirm: false,
       bulkDeleting: false,
@@ -672,6 +746,9 @@ export default {
     },
     canDownloadByInput() {
       return (this.downloadInput || '').trim().length > 0 && !this.downloadingReports
+    },
+    canRestartByInput() {
+      return (this.restartInput || '').trim().length > 0
     }
   },
   async mounted() {
@@ -884,6 +961,67 @@ export default {
         // игнорируем некорректные токены, уведомим отдельно
       }
       return Array.from(new Set(ids)).sort((a, b) => a - b)
+    },
+    async restartSelected() {
+      if (this.selectedIds.length === 0) return
+      this.restartingMultiple = true
+      try {
+        const response = await porosityAnalysisAPI.restartMultipleAnalyses({ analysis_ids: this.selectedIds })
+        if (response && response.success) {
+          const restarted = response.restarted_count || this.selectedIds.length
+          toast.success(`Перезапущено ${restarted} анализов`)
+          // Обновляем статусы локально
+          const idSet = new Set(this.selectedIds)
+          this.analyses = this.analyses.map(a => idSet.has(a.id) ? { ...a, status: 'pending', start_time: new Date().toISOString(), updated_at: new Date().toISOString() } : a)
+          this.clearSelection()
+          // Обновляем список и статистику в фоне
+          try { await this.loadStats() } catch {}
+          this.loadAnalyses(this.pagination.current_page).catch(() => {})
+        } else {
+          toast.error(response?.message || 'Ошибка при массовом перезапуске')
+        }
+      } catch (error) {
+        const msg = error?.response?.data?.message || error?.message || 'Ошибка при массовом перезапуске'
+        toast.error(msg)
+      } finally {
+        this.restartingMultiple = false
+      }
+    },
+    async restartByInput() {
+      const raw = String(this.restartInput || '')
+      const tokens = raw.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean)
+      const ids = this.parseIdsFromInput(raw)
+      if (ids.length === 0) {
+        toast.warning('Укажите корректные номера анализов')
+        return
+      }
+      const validTokenRe = /^(\d+)|(\d+)-(\d+)$/
+      const invalid = tokens.filter(t => !validTokenRe.test(t))
+      if (invalid.length > 0) {
+        toast.warning(`Некорректные элементы: ${invalid.join(', ')}`)
+      }
+      this.restartingMultiple = true
+      try {
+        const response = await porosityAnalysisAPI.restartMultipleAnalyses({ analysis_ids: ids })
+        if (response && response.success) {
+          const restarted = response.restarted_count || ids.length
+          toast.success(`Перезапущено ${restarted} анализов`)
+          // Обновляем статусы локально
+          const idSet = new Set(ids)
+          this.analyses = this.analyses.map(a => idSet.has(a.id) ? { ...a, status: 'pending', start_time: new Date().toISOString(), updated_at: new Date().toISOString() } : a)
+          this.restartInput = ''
+          // Обновляем список и статистику в фоне
+          try { await this.loadStats() } catch {}
+          this.loadAnalyses(this.pagination.current_page).catch(() => {})
+        } else {
+          toast.error(response?.message || 'Ошибка при массовом перезапуске')
+        }
+      } catch (error) {
+        const msg = error?.response?.data?.message || error?.message || 'Ошибка при массовом перезапуске'
+        toast.error(msg)
+      } finally {
+        this.restartingMultiple = false
+      }
     },
     requestBulkDeleteSelected() {
       if (this.selectedIds.length === 0) return
@@ -2200,5 +2338,32 @@ export default {
     width: 14px;
     height: 14px;
   }
+}
+
+.restart-actions .card-body { padding: 1rem; }
+.restart-actions .input-group-text {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+  color: #6c757d;
+}
+.restart-actions .btn { min-height: 38px; }
+.restart-actions .form-text { font-size: 0.8rem; }
+.restart-actions .btn.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: #fff;
+}
+.restart-actions .btn.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+  color: #fff;
+}
+.restart-actions .btn.btn-primary:disabled {
+  opacity: 0.65;
+  background-color: #007bff;
+  border-color: #007bff;
+}
+.restart-actions .btn.btn-primary svg {
+  color: #fff;
 }
 </style> 
