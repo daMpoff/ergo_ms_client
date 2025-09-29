@@ -82,7 +82,7 @@
                                     <span class="meta-link" :title="'Категория целевых показателей'" @click.stop="onClickCategory(it)" role="button">{{ it.description || it.categoryName || it.subcategoryName || '—' }}</span>
                                 </span>
                                 <span class="d-inline-flex align-items-center gap-1">
-                                    <RulerDimensionLine class="icon-center" :title="'Единица измерения'" />
+                                    <Ruler class="icon-center" :title="'Единица измерения'" />
                                     <span class="meta-link" :title="'Единица измерения'" @click.stop="onClickUnit(it)" role="button">{{ it.unit || '—' }}</span>
                                 </span>
                                 <span class="d-inline-flex align-items-center gap-2">
@@ -130,7 +130,7 @@ import { onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
-import { ChevronDown, ChevronUp, Calendar, Target, RulerDimensionLine, Bookmark } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, Calendar, Target, Ruler, Bookmark } from 'lucide-vue-next'
 import SelectBox from '@/components/SelectBox.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import { getUserAvatar } from '@/js/userAvatar'
