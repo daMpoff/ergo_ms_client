@@ -1195,7 +1195,28 @@ export default {
           const url = window.URL.createObjectURL(blob)
           const link = document.createElement('a')
           link.href = url
-          link.download = `porosity_analysis_${analysisId}_${new Date().toISOString().split('T')[0]}.${reportType}`
+
+          // Пытаемся получить имя файла из заголовка Content-Disposition
+          let filename = null
+          try {
+            const cd = response.headers && (response.headers['content-disposition'] || response.headers['Content-Disposition'])
+            if (cd && typeof cd === 'string') {
+              const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i)
+              if (match) {
+                filename = decodeURIComponent(match[1] || match[2] || '')
+              }
+            }
+          } catch (_) { /* ignore */ }
+
+          // Фолбек: используем название анализа
+          if (!filename) {
+            const a = this.analyses.find(x => x.id === analysisId)
+            const baseName = (a && a.name ? a.name : `analysis_${analysisId}`)
+            const safeName = String(baseName).replace(/[^\w\s\-]/g, '').trim() || `analysis_${analysisId}`
+            filename = `${safeName}.${reportType}`
+          }
+
+          link.download = filename
           
           // Добавляем ссылку в DOM, кликаем и удаляем
           document.body.appendChild(link)
@@ -1574,6 +1595,20 @@ export default {
   border-left: 4px solid;
   border-bottom: 1px solid #e9ecef;
   border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Чтобы длинное название не выталкивало статус за карточку */
+.analysis-header .d-flex > .card-title {
+  flex: 1;
+  min-width: 0; /* позволяет работать text-overflow в flex-контейнере */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analysis-header .d-flex > .badge {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .analysis-header.header-secondary { border-color: var(--bs-secondary); }
