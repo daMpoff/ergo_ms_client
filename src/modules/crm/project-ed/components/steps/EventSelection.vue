@@ -58,6 +58,7 @@
                 <button
                     type="button"
                     class="scroll-btn scroll-btn--left btn btn-outline-secondary btn-sm"
+                    v-if="tabsOverflowing"
                     :disabled="!canScrollLeft"
                     @click="scrollTabs('left')"
                     aria-label="Прокрутить влево"
@@ -82,6 +83,7 @@
                 <button
                     type="button"
                     class="scroll-btn scroll-btn--right btn btn-outline-secondary btn-sm"
+                    v-if="tabsOverflowing"
                     :disabled="!canScrollRight"
                     @click="scrollTabs('right')"
                     aria-label="Прокрутить вправо"
@@ -197,7 +199,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { 
     Calendar, 
     MapPin, 
@@ -239,11 +241,24 @@ const activeSectionId = ref(null)
 const tabsViewport = ref(null)
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
+const tabsOverflowing = ref(false)
 
 const updateScrollButtons = () => {
     const el = tabsViewport.value
-    if (!el) { canScrollLeft.value = false; canScrollRight.value = false; return }
+    if (!el) { 
+        tabsOverflowing.value = false
+        canScrollLeft.value = false
+        canScrollRight.value = false
+        return 
+    }
+    const epsilon = 1
     const maxScrollLeft = el.scrollWidth - el.clientWidth
+    tabsOverflowing.value = el.scrollWidth > (el.clientWidth + epsilon)
+    if (!tabsOverflowing.value) {
+        canScrollLeft.value = false
+        canScrollRight.value = false
+        return
+    }
     canScrollLeft.value = el.scrollLeft > 0
     canScrollRight.value = el.scrollLeft < (maxScrollLeft - 1)
 }
@@ -318,6 +333,7 @@ const onPolicyChange = () => {
     if (filteredEventSections.value.length > 0) {
         activeSectionId.value = filteredEventSections.value[0].id
     }
+    nextTick(() => updateScrollButtons())
 }
 
 const onBlockChange = () => {
@@ -326,6 +342,7 @@ const onBlockChange = () => {
     if (filteredEventSections.value.length > 0) {
         activeSectionId.value = filteredEventSections.value[0].id
     }
+    nextTick(() => updateScrollButtons())
 }
 
 const onPeriodChange = () => {
@@ -333,6 +350,7 @@ const onPeriodChange = () => {
     if (filteredEventSections.value.length > 0) {
         activeSectionId.value = filteredEventSections.value[0].id
     }
+    nextTick(() => updateScrollButtons())
 }
 
 const setActiveSection = (sectionId) => {
@@ -450,17 +468,19 @@ onMounted(async () => {
         const resp = await apiClient.get('/project_ed/event-blocks/')
         const list = Array.isArray(resp?.data) ? resp.data : (resp?.data?.results || [])
 
-        // Строим справочник категорий (политик) из блоков
+        // Строим справочник подкатегорий (политик/стратегических проектов) из блоков
         const uniquePoliciesMap = new Map()
         const blocksForSelect = []
         const allPeriods = new Set()
         const sections = []
 
         for (const b of list) {
-            // Политика/категория
-            if (b.category) {
-                if (!uniquePoliciesMap.has(b.category)) {
-                    uniquePoliciesMap.set(b.category, { id: b.category, title: b.category_name || `Категория ${b.category}`, blocks: [] })
+            // Политика/подкатегория (используем subcategory, при отсутствии — category)
+            const policyId = (b.subcategory ?? b.category) || null
+            const policyTitle = b.subcategory_name || b.category_name || (policyId ? `Категория ${policyId}` : 'Без категории')
+            if (policyId) {
+                if (!uniquePoliciesMap.has(policyId)) {
+                    uniquePoliciesMap.set(policyId, { id: policyId, title: policyTitle, blocks: [] })
                 }
             }
 
@@ -483,7 +503,7 @@ onMounted(async () => {
             // Секция = блок мероприятий
             sections.push({
                 id: b.id,
-                policyId: b.category || null,
+                policyId: (b.subcategory ?? b.category) || null,
                 blockId: b.id,
                 code: b.code || null,
                 title: b.title,
@@ -494,8 +514,8 @@ onMounted(async () => {
             // Элемент для селекта блоков
             blocksForSelect.push({ id: b.id, title: b.title, code: b.code || null, periods: Array.from(periodsOfBlock) })
 
-            // Привяжем блок к политике
-            const policyRec = uniquePoliciesMap.get(b.category)
+            // Привяжем блок к политике/подкатегории
+            const policyRec = uniquePoliciesMap.get((b.subcategory ?? b.category) || null)
             if (policyRec) policyRec.blocks.push({ id: b.id, title: b.title, code: b.code || null, periods: Array.from(periodsOfBlock) })
         }
 
@@ -530,6 +550,12 @@ onUnmounted(() => {
     const handlers = onMounted._handlers || []
     handlers.forEach((h) => window.removeEventListener('resize', h))
     if (tabsViewport.value) tabsViewport.value.removeEventListener('scroll', updateScrollButtons)
+})
+
+// Пересчитываем переполнение и кнопки при изменении отфильтрованных секций
+watch(filteredEventSections, async () => {
+    await nextTick()
+    updateScrollButtons()
 })
 </script>
 
