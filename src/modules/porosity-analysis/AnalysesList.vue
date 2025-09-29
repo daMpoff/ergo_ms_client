@@ -7,13 +7,56 @@
           <div class="page-icon">
             <Microscope :size="28" color="white" />
           </div>
-          <div class="page-title">
-            <h1>Мои анализы пористости</h1>
-            <p class="page-subtitle">Управление, перезапуск, скачивание результатов и отчетов</p>
+          <div class="page-title d-flex align-items-center gap-2">
+            <div>
+              <h1>Мои анализы пористости</h1>
+              <p class="page-subtitle">Управление, перезапуск, скачивание результатов и отчетов</p>
+            </div>
           </div>
         </div>
       </div>
-      
+      <div class="header-actions">
+        <div class="dropdown d-inline-block">
+          <button
+            type="button"
+            class="btn btn-danger d-inline-flex align-items-center dropdown-toggle"
+            data-bs-toggle="dropdown"
+            data-bs-display="static"
+            aria-expanded="false"
+            title="Выделить карточки по статусу"
+          >
+            <Clock class="me-1" size="16" /> Выделить по статусу
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" :class="{ 'status-selected': selectedStatus === 'pending' }" href="#" @click.prevent="selectByStatus('pending')">
+                <Clock class="me-2" size="16" /> Ожидает
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" :class="{ 'status-selected': selectedStatus === 'processing' }" href="#" @click.prevent="selectByStatus('processing')">
+                <Loader2 class="me-2" size="16" /> Обрабатывается
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" :class="{ 'status-selected': selectedStatus === 'completed' }" href="#" @click.prevent="selectByStatus('completed')">
+                <CheckCircle class="me-2" size="16" /> Завершен
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" :class="{ 'status-selected': selectedStatus === 'failed' }" href="#" @click.prevent="selectByStatus('failed')">
+                <AlertTriangle class="me-2" size="16" /> Ошибка
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item" href="#" @click.prevent="clearSelection()">
+                <Trash2 class="me-2" size="16" /> Снять выделение
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
     <!-- Модальное окно подтверждения удаления -->
     <ConfirmDialog
@@ -609,6 +652,7 @@ export default {
       bulkDeleting: false,
       bulkMode: 'selected',
       bulkPreviewIds: [],
+      selectedStatus: null, // для отслеживания выбранного статуса в dropdown
       bulkPreviewExistingIds: [],
       bulkPreviewNotFound: [],
       bulkPreviewExistingCount: 0,
@@ -920,6 +964,17 @@ export default {
       if (idx === -1) this.selectedIds.push(id)
       else this.selectedIds.splice(idx, 1)
     },
+    selectByStatus(status) {
+      // Выделяем все карточки текущего списка, соответствующие статусу и текущим фильтрам/поиску
+      const ids = this.filteredAnalyses
+        .filter(a => a.status === status)
+        .map(a => a.id)
+      this.selectedIds = Array.from(new Set(ids))
+      this.selectedStatus = status // сохраняем выбранный статус
+      if (this.selectedIds.length === 0) {
+        toast.info('Нет карточек с выбранным статусом в текущем списке')
+      }
+    },
     onCardClick(id, event) {
       // Не переключаем выделение при клике по интерактивным элементам внутри карточки
       const interactiveSelectors = 'a, button, input, select, textarea, .dropdown-menu, .dropdown-toggle'
@@ -937,6 +992,7 @@ export default {
     },
     clearSelection() {
       this.selectedIds = []
+      this.selectedStatus = null // сбрасываем выбранный статус
     },
     parseIdsFromInput(text) {
       if (!text) return []
@@ -1486,6 +1542,86 @@ export default {
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
 }
 
+.header-center-actions {
+  display: none;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: center;
+}
+
+/* Улучшенный стиль выпадающего меню в шапке */
+.header-actions .dropdown-menu {
+  /* Приводим к стилям, как у .analysis-card .dropdown-menu */
+  background-color: #ffffff !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 12px !important;
+  padding: 0.5rem 0 !important;
+  min-width: 240px; /* еще шире, чтобы фраза "Снять выделение" точно влезала */
+  width: auto; /* не ограничиваем шириной кнопки */
+  margin-top: 0.25rem; /* как у карточек */
+  z-index: 2050;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important; /* как у карточек */
+  opacity: 1 !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important; /* как у карточек */
+}
+
+.header-actions .dropdown-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  width: 100%;
+  white-space: nowrap; /* держим в одну строку, меню расширится по содержимому */
+}
+
+.header-actions .dropdown-menu .dropdown-item svg {
+  color: #6c757d;
+  margin-right: 0.25rem;
+}
+
+.header-actions .dropdown-menu .dropdown-item:hover {
+  background-color: #e3f2fd !important; /* более яркий голубой фон */
+  color: #1976d2 !important; /* темно-синий текст */
+  transform: translateX(2px); /* легкий сдвиг вправо */
+  transition: all 0.2s ease;
+}
+
+/* Выделение выбранного статуса в dropdown */
+.header-actions .dropdown-menu .dropdown-item.status-selected {
+  background-color: #e3f2fd !important; /* голубой фон для выбранного */
+  color: #1976d2 !important; /* темно-синий текст */
+  font-weight: 500; /* легкое выделение жирным */
+}
+
+.header-actions .dropdown-menu .dropdown-item.status-selected svg {
+  color: #1976d2 !important; /* темно-синий цвет иконок */
+}
+
+.header-actions .dropdown-menu .dropdown-divider { margin: 0.25rem 0; }
+
+/* Анимация появления как у карточек */
+.header-actions .dropdown .dropdown-menu { opacity: 0; transform: translateY(4px); }
+.header-actions .dropdown .dropdown-menu.show { opacity: 1; transform: translateY(0); }
+
+/* Переопределяем глобальные ограничения для header dropdown */
+.header-actions .dropdown .dropdown-menu {
+  max-height: none !important; /* убираем ограничение высоты */
+  overflow: visible !important; /* убираем скрытие переполнения */
+}
+
+.header-actions .dropdown .dropdown-menu.show {
+  max-height: none !important; /* убираем ограничение высоты */
+  overflow: visible !important; /* убираем скрытие переполнения */
+}
+
+/* Разделители между пунктами меню как у карточек */
+.header-actions .dropdown-menu .dropdown-item + .dropdown-item { border-top: 1px solid #e9ecef; }
+
 .page-title-section {
   display: flex;
   align-items: center;
@@ -1693,7 +1829,7 @@ export default {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   border-color: #007bff;
-  z-index: 1050;
+  z-index: 2000; /* увеличиваем z-index чтобы карточка всегда была поверх соседних */
 }
 .analysis-card.selected {
   border-color: #dc3545;
@@ -2209,20 +2345,30 @@ export default {
 
 .analysis-card .dropdown-menu {
   min-width: 180px;
-  margin-top: 0.25rem;
-  z-index: 2000;
+  margin-top: 0.5rem; /* увеличиваем отступ сверху */
+  z-index: 3000; /* увеличиваем z-index чтобы не перекрывался другими карточками */
   background-color: #ffffff;
   border: 1px solid #e9ecef;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  opacity: 1;
-  backdrop-filter: none;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
   transition: opacity 0.2s ease, transform 0.2s ease;
   will-change: opacity, transform;
+  position: absolute !important; /* абсолютное позиционирование */
+  top: 100% !important; /* позиционируем ниже кнопки */
+  left: 0 !important; /* выравниваем по левому краю кнопки */
+  transform: translateY(0) !important; /* убираем компенсацию, так как используем top: 100% */
 }
 
 /* Плавное появление/скрытие дропдауна */
-.analysis-card .dropdown .dropdown-menu { opacity: 0; transform: translateY(4px); }
-.analysis-card .dropdown .dropdown-menu.show { opacity: 1; transform: translateY(0); }
+.analysis-card .dropdown .dropdown-menu { opacity: 0; transform: translateY(-4px) !important; }
+.analysis-card .dropdown .dropdown-menu.show { opacity: 1; transform: translateY(0) !important; }
+
+/* Убираем прозрачность для главного выпадающего списка в шапке */
+.header-actions .dropdown .dropdown-menu { opacity: 1 !important; transform: translateY(0) !important; }
+
+/* На всякий случай переопределим Bootstrap fade для dropdown в шапке */
+.header-actions .dropdown-menu { background-color: #ffffff !important; }
 
 /* Разделители между пунктами меню */
 .analysis-card .dropdown-menu .dropdown-item + .dropdown-item { border-top: 1px solid #e9ecef; }
@@ -2246,11 +2392,14 @@ export default {
 }
 
 .analysis-card .dropdown-item:hover {
-  background-color: #f8f9fa;
+  background-color: #e3f2fd !important; /* более яркий голубой фон */
+  color: #1976d2 !important; /* темно-синий текст */
+  transform: translateX(2px); /* легкий сдвиг вправо */
+  transition: all 0.2s ease;
 }
 
 .analysis-card .dropdown-item:hover svg {
-  color: #495057;
+  color: #1976d2 !important; /* темно-синий цвет иконок при наведении */
 }
 
 /* Стиль для кнопки с dropdown */
