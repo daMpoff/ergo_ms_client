@@ -97,7 +97,15 @@
                                         :class="{ 'is-open': isResponsibleDropdownOpen }"
                                     >
                                         <div v-if="getSelectedResponsible()" class="responsible-selected">
+                                            <template v-if="getSelectedResponsible().avatar_url">
+                                                <img 
+                                                    :src="getSelectedResponsible().avatar_url"
+                                                    :alt="getSelectedResponsible().name"
+                                                    class="rounded-circle avatar-img-small"
+                                                />
+                                            </template>
                                             <DefaultAvatar
+                                                v-else
                                                 :size="'small'"
                                                 :title="getSelectedResponsible().name"
                                             />
@@ -121,7 +129,15 @@
                                             :class="{ 'selected': person.id === formData.responsibleId }"
                                             @click="selectResponsible(person)"
                                         >
+                                            <template v-if="person.avatar_url">
+                                                <img 
+                                                    :src="person.avatar_url"
+                                                    :alt="person.name"
+                                                    class="rounded-circle avatar-img-medium"
+                                                />
+                                            </template>
                                             <DefaultAvatar
+                                                v-else
                                                 :size="'medium'"
                                                 :title="person.name"
                                             />
@@ -302,22 +318,27 @@ const loadEventBlocks = async (categoryId, subcategoryId = null) => {
 // Загрузка пользователей с должностью "Проректор"
 const loadUsers = async () => {
     try {
-        const resp = await apiClient.get('project_ed/profiles/profiles/', { position: 'Проректор' })
-        if (resp && resp.success) {
-            users.value = (resp.data || []).map(u => ({
-                id: u.id,
-                name: [u.last_name, u.first_name].filter(Boolean).join(' ') || u.username,
-                position: u.position_name || 'Должность не указана'
-            }))
-        } else if (resp && Array.isArray(resp)) { // на случай, если apiClient возвращает массив напрямую
-            users.value = resp.map(u => ({
-                id: u.id,
-                name: [u.last_name, u.first_name].filter(Boolean).join(' ') || u.username,
-                position: u.position_name || 'Должность не указана'
-            }))
-        } else {
-            users.value = []
-        }
+        // Получаем пользователей и профили, чтобы собрать avatar_url
+        const [usersResp, profilesResp] = await Promise.all([
+            apiClient.get('/crm/users/', { position: 'Проректор' }),
+            apiClient.get('project_ed/profiles/profiles/', { position: 'Проректор' })
+        ])
+
+        const usersData = Array.isArray(usersResp?.data) ? usersResp.data : (usersResp?.data?.results || [])
+        const profilesData = Array.isArray(profilesResp?.data) ? profilesResp.data : (profilesResp?.data?.results || [])
+
+        // Ключ по user.id
+        const userById = new Map(usersData.map(u => [u.id, u]))
+
+        users.value = profilesData.map(p => {
+            const u = userById.get(p.id) || {}
+            return {
+                id: p.id,
+                name: [p.last_name, p.first_name].filter(Boolean).join(' ') || p.username,
+                position: p.position_name || 'Должность не указана',
+                avatar_url: u.avatar_url || null
+            }
+        })
     } catch (e) {
         console.error('Ошибка загрузки пользователей-проректоров', e)
         users.value = []
@@ -641,6 +662,18 @@ onUnmounted(() => {
         line-height: 1.2;
         margin-top: 0.125rem;
     }
+}
+
+.avatar-img-small {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+}
+
+.avatar-img-medium {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
 }
 
 

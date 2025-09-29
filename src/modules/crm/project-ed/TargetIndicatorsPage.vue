@@ -119,7 +119,22 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-inline-flex align-items-center justify-content-center gap-2">
-                                                <DefaultAvatar v-if="indicator.responsible_name" :size="'small'" :title="indicator.responsible_name" />
+                                                <template v-if="indicator.responsible">
+                                                    <img 
+                                                        v-if="indicator.responsible_avatar_url"
+                                                        :src="indicator.responsible_avatar_url"
+                                                        :alt="indicator.responsible_name || 'Аватар'"
+                                                        class="rounded-circle avatar-img"
+                                                    />
+                                                    <DefaultAvatar 
+                                                        v-else 
+                                                        :size="'small'" 
+                                                        :title="indicator.responsible_name || 'Пользователь'" 
+                                                    />
+                                                </template>
+                                                <template v-else>
+                                                    <DefaultAvatar :size="'small'" :title="'Не указан'" />
+                                                </template>
                                                 <span v-if="indicator.responsible_name" class="text-truncate" :title="indicator.responsible_name">{{ indicator.responsible_name }}</span>
                                                 <span v-else class="text-muted">Не указан</span>
                                             </div>
@@ -245,6 +260,7 @@ import CreateIndicatorPage from './CreateIndicatorPage.vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import { getUserAvatar } from '@/js/userAvatar'
 
 // Router для управления URL
 const router = useRouter()
@@ -293,11 +309,35 @@ const years = ref([2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032])
 
 const indicators = ref([])
 const isLoading = ref(false)
+async function loadResponsibleAvatar(userId) {
+    return getUserAvatar(userId)
+}
+
+async function enrichIndicatorsWithAvatars(items) {
+    const tasks = []
+    for (const it of items) {
+        const responsibleId = typeof it.responsible === 'object' ? it.responsible?.id : it.responsible
+        if (responsibleId) {
+            tasks.push(
+                loadResponsibleAvatar(responsibleId).then(url => {
+                    it.responsible_avatar_url = url || null
+                })
+            )
+        } else {
+            it.responsible_avatar_url = null
+        }
+    }
+    if (tasks.length) {
+        await Promise.allSettled(tasks)
+    }
+}
+
 async function loadIndicators() {
     try {
         isLoading.value = true
         const resp = await apiClient.get(endpoints.project_ed.target_indicators.list)
         indicators.value = Array.isArray(resp?.data) ? resp.data : (resp?.results || [])
+        await enrichIndicatorsWithAvatars(indicators.value)
     } catch (e) {
         indicators.value = []
     } finally {
@@ -305,55 +345,14 @@ async function loadIndicators() {
     }
 }
 
-// Следим за изменениями activeTab и обновляем URL
 watch(activeTab, (newTab) => {
     updateUrlWithTab(newTab)
 })
 
 onMounted(async () => {
-    // Инициализируем активную вкладку из URL
     initializeActiveTab()
     await loadIndicators()
 })
-
-
-
-
-// Вычисляемое свойство для определения класса отклонения
-const getDeviationClass = (deviation) => {
-    if (deviation > 0) return 'text-success'
-    if (deviation < 0) return 'text-danger'
-    return 'text-muted'
-}
-
-// Функция для отображения ответственного
-const getResponsibleDisplayText = (responsible) => {
-    if (!responsible) return 'Не указан'
-    
-    // Если это объект с полями name и position
-    if (typeof responsible === 'object' && responsible.name) {
-        return `${responsible.name}, ${responsible.position}`
-    }
-    
-    // Если это ID, нужно найти соответствующего пользователя
-    if (typeof responsible === 'number') {
-        // Список пользователей (должен совпадать с CreateIndicatorPage.vue)
-        const users = [
-            { id: 1, name: 'Сканцев Виталий Михайлович', position: 'Первый проректор', initials: 'Сканцев В.М.' },
-            { id: 2, name: 'Шкаберин Виталий Александрович', position: 'Первый проректор по учебной работе и цифровизации', initials: 'Шкаберин В.А.' },
-            { id: 3, name: 'Киричек Андрей Викторович', position: 'Проректор по перспективному развитию', initials: 'Киричек А.В.' },
-            { id: 4, name: 'Симкин Альберт Зямович', position: 'Проректор по молодежной политике и воспитательной работе', initials: 'Симкин А.З.' },
-            { id: 5, name: 'Глебов Глеб Владимирович', position: 'Проректор по АХР', initials: 'Глебов Г.В.' },
-            { id: 6, name: 'Геращенкова Татьяна Михайловна', position: 'Проректор по качеству и аккредитации', initials: 'Геращенкова Т.М.' }
-        ]
-        
-        const user = users.find(u => u.id === responsible)
-        return user ? `${user.initials}, ${user.position}` : 'Не указан'
-    }
-    
-    // Если это уже строка, возвращаем как есть
-    return responsible
-}
 
 // Открытие модального окна для создания категории
 const openCreateCategoryModal = () => {
@@ -393,7 +392,6 @@ function openDeleteConfirm(id) { deleteId.value = id }
 function closeDeleteConfirm() { deleteId.value = null }
 async function confirmDelete() {
     if (!deleteId.value) return
-    // TODO: вызвать API удаления при необходимости
     indicators.value = indicators.value.filter(i => i.id !== deleteId.value)
     deleteId.value = null
 }
@@ -454,6 +452,13 @@ async function confirmDelete() {
 /* Кнопка удаления показывается только при наведении */
 .row-actions { opacity: 0; transition: opacity .15s ease-in-out; }
 tr.clickable-row:hover .row-actions { opacity: 1; }
+
+.avatar-img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
 
 .text-success {
     color: #198754 !important;
