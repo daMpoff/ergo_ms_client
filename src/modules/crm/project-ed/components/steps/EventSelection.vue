@@ -41,14 +41,25 @@
                     </div>
                     
                     <div class="filter-group">
-                        <label class="filter-label">Срок реализации</label>
-                        <SelectBox
-                            v-model="selectedPeriod"
-                            :options="availablePeriods"
-                            :includeAllOption="true"
-                            allLabel="Выберите срок"
-                            @change="onPeriodChange"
-                        />
+                        <label class="filter-label">Годы реализации</label>
+                        <div class="years-selects">
+                            <SelectBox
+                                v-model="selectedStartYear"
+                                :options="availableStartYears"
+                                :castToNumber="true"
+                                :includeAllOption="true"
+                                allLabel="Начало"
+                                @change="onYearsChange"
+                            />
+                            <SelectBox
+                                v-model="selectedEndYear"
+                                :options="availableEndYears"
+                                :castToNumber="true"
+                                :includeAllOption="true"
+                                allLabel="Окончание"
+                                @change="onYearsChange"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,7 +245,8 @@ const viewMode = ref('grid')
 // Фильтры
 const selectedPolicy = ref('')
 const selectedBlock = ref('')
-const selectedPeriod = ref('')
+const selectedStartYear = ref('')
+const selectedEndYear = ref('')
 const activeSectionId = ref(null)
 
 // Прокрутка вкладок
@@ -275,6 +287,7 @@ const scrollTabs = (direction) => {
 const policies = ref([])
 const blocks = ref([])
 const periods = ref([])
+const availableYears = ref([])
 
 // Вычисляемые свойства для фильтров
 const availableBlocks = computed(() => {
@@ -286,10 +299,27 @@ const availableBlocks = computed(() => {
     return blocks.value
 })
 
-const availablePeriods = computed(() => {
-    if (!selectedBlock.value) return []
-    const block = blocks.value.find(b => b.id === selectedBlock.value)
-    return block ? block.periods : []
+const defaultYearsRange = computed(() => {
+    // 2023..2032 включительно
+    const from = 2023
+    const to = 2032
+    return Array.from({ length: to - from + 1 }, (_, i) => from + i)
+})
+
+const baseYears = computed(() => {
+    // Если не выбрана ни политика, ни блок — показываем фиксированный диапазон
+    if (!selectedPolicy.value && !selectedBlock.value) {
+        return defaultYearsRange.value
+    }
+    return availableYears.value
+})
+
+const availableStartYears = computed(() => baseYears.value)
+
+const availableEndYears = computed(() => {
+    if (!selectedStartYear.value) return baseYears.value
+    const start = Number(selectedStartYear.value)
+    return baseYears.value.filter(y => Number(y) >= start)
 })
 
 // Фильтрация мероприятий
@@ -306,10 +336,28 @@ const filteredEventSections = computed(() => {
         sections = sections.filter(section => section.blockId === selectedBlock.value)
     }
     
-    // Фильтр по периоду
-    if (selectedPeriod.value) {
+    // Фильтр по диапазону лет
+    if (selectedStartYear.value || selectedEndYear.value) {
+        const start = selectedStartYear.value ? Number(selectedStartYear.value) : -Infinity
+        const end = selectedEndYear.value ? Number(selectedEndYear.value) : Infinity
         sections = sections.filter(section => 
-            section.events.some(event => event.period === selectedPeriod.value)
+            section.events.some(event => {
+                // event.period в формате "YYYY-YYYY" или "YYYY"; запасной вариант — пустая строка
+                const p = String(event.period || '').trim()
+                let evStart = null
+                let evEnd = null
+                if (/^\d{4}\s*-\s*\d{4}$/.test(p)) {
+                    const [s, e] = p.split('-').map(v => Number(v.trim()))
+                    evStart = s
+                    evEnd = e
+                } else if (/^\d{4}$/.test(p)) {
+                    evStart = Number(p)
+                    evEnd = Number(p)
+                }
+                if (evStart == null || evEnd == null) return false
+                // Пересечение интервалов [evStart, evEnd] и [start, end]
+                return !(evEnd < start || evStart > end)
+            })
         )
     }
     
@@ -328,7 +376,8 @@ const selectEvent = (event) => {
 // Методы для работы с фильтрами
 const onPolicyChange = () => {
     selectedBlock.value = ''
-    selectedPeriod.value = ''
+    selectedStartYear.value = ''
+    selectedEndYear.value = ''
     // Устанавливаем первую доступную секцию
     if (filteredEventSections.value.length > 0) {
         activeSectionId.value = filteredEventSections.value[0].id
@@ -337,7 +386,8 @@ const onPolicyChange = () => {
 }
 
 const onBlockChange = () => {
-    selectedPeriod.value = ''
+    selectedStartYear.value = ''
+    selectedEndYear.value = ''
     // Устанавливаем первую доступную секцию
     if (filteredEventSections.value.length > 0) {
         activeSectionId.value = filteredEventSections.value[0].id
@@ -345,7 +395,7 @@ const onBlockChange = () => {
     nextTick(() => updateScrollButtons())
 }
 
-const onPeriodChange = () => {
+const onYearsChange = () => {
     // Устанавливаем первую доступную секцию
     if (filteredEventSections.value.length > 0) {
         activeSectionId.value = filteredEventSections.value[0].id
@@ -522,6 +572,22 @@ onMounted(async () => {
         policies.value = Array.from(uniquePoliciesMap.values())
         blocks.value = blocksForSelect
         periods.value = Array.from(allPeriods)
+        // Строим плоский список лет для мини-селектов
+        const years = new Set()
+        for (const sec of sections) {
+            for (const ev of sec.events) {
+                const p = String(ev.period || '').trim()
+                if (/^\d{4}\s*-\s*\d{4}$/.test(p)) {
+                    const [s, e] = p.split('-').map(v => Number(v.trim()))
+                    if (!Number.isNaN(s)) years.add(s)
+                    if (!Number.isNaN(e)) years.add(e)
+                } else if (/^\d{4}$/.test(p)) {
+                    const y = Number(p)
+                    if (!Number.isNaN(y)) years.add(y)
+                }
+            }
+        }
+        availableYears.value = Array.from(years).sort((a, b) => a - b)
         eventSections.value = sections
 
         if (eventSections.value.length > 0) {
@@ -631,6 +697,12 @@ watch(filteredEventSections, async () => {
     min-height: 2.25rem; // обеспечиваем одинаковую высоту области подписи
     display: flex;
     align-items: flex-end; // текст подписи прижат к низу области
+}
+
+.years-selects {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
 }
 
 .combobox-container {
