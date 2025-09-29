@@ -429,6 +429,7 @@ import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import ExecutorSelector from '@/modules/crm/project-ed/components/ExecutorSelector.vue'
 import { apiClient } from '@/js/api/manager.js'
+import { endpoints } from '@/js/api/endpoints.js'
 import SelectBox from '@/components/SelectBox.vue'
 
 const props = defineProps({
@@ -769,14 +770,41 @@ const validateForm = () => {
     return Object.keys(errors.value).length === 0
 }
 
-// Функция для автоматического формирования наименования проекта
-const generateProjectNameLocal = () => {
-    return generateProjectName(props.selectedEvent, props.userInfo)
+// Порядковый номер проекта в рамках того же мероприятия и года для текущего руководителя
+const sequenceNumber = ref(null)
+
+async function fetchSequenceNumber() {
+    try {
+        if (!props.selectedEvent || !props.userInfo?.name) {
+            sequenceNumber.value = 1
+            return
+        }
+        const currentYear = new Date().getFullYear()
+        // Получаем все проекты текущего пользователя и считаем совпадающие по коду мероприятия и году
+        const resp = await apiClient.get(endpoints.project_ed.projects.list)
+        const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+        const eventCode = props.selectedEvent.code || ''
+        const sameKey = (p) => {
+            const code = p.event_code || p.eventCode || p.event?.code || p.code || ''
+            const year = Number(p.year || p.project_year || p.start_year || p.startYear || (p.created_at ? new Date(p.created_at).getFullYear() : currentYear))
+            const manager = (p.manager_name || p.manager || p.owner_name || '').toLowerCase()
+            const my = String(props.userInfo.name || '').toLowerCase()
+            return code === eventCode && year === currentYear && manager && my && manager.includes(my.split(' ')[0])
+        }
+        const count = data.filter(sameKey).length
+        sequenceNumber.value = count + 1
+    } catch (e) {
+        sequenceNumber.value = 1
+    }
 }
 
-// Функция для автоматического формирования краткого наименования проекта
+// Функции генерации названий с учетом порядкового номера
+const generateProjectNameLocal = () => {
+    return generateProjectName(props.selectedEvent, props.userInfo, sequenceNumber.value)
+}
+
 const generateShortProjectNameLocal = () => {
-    return generateShortProjectName(props.selectedEvent, props.userInfo)
+    return generateShortProjectName(props.selectedEvent, props.userInfo, sequenceNumber.value)
 }
 
 // Функция для валидации диапазона дат
@@ -834,11 +862,11 @@ watch(selectedCustomerId, (newId) => {
 })
 
 // Следим за изменениями выбранного мероприятия и обновляем наименование проекта
-watch(() => props.selectedEvent, (newEvent) => {
+watch(() => props.selectedEvent, async (newEvent) => {
     if (newEvent) {
+        await fetchSequenceNumber()
         localProvisions.value.projectName = generateProjectNameLocal()
         localProvisions.value.shortName = generateShortProjectNameLocal()
-        // Автоматически изменяем высоту textarea после обновления содержимого
         nextTick(() => {
             autoResizeTextarea(projectNameTextarea.value)
         })

@@ -103,7 +103,7 @@ export const generateInitials = (fullName) => {
  * @param {Object} userInfo - Информация о пользователе (может быть computed из userStore)
  * @returns {string} - Сгенерированное наименование проекта
  */
-export const generateProjectName = (selectedEvent, userInfo) => {
+export const generateProjectName = (selectedEvent, userInfo, sequenceNumber) => {
     if (!selectedEvent) {
         return ''
     }
@@ -123,7 +123,8 @@ export const generateProjectName = (selectedEvent, userInfo) => {
         }
     }
     
-    return `${eventCode}-${currentYear}-${userInitials}-${eventTitle}`
+    const seq = sequenceNumber ? `-${String(sequenceNumber).padStart(2, '0')}` : ''
+    return `${eventCode}-${currentYear}${seq}-${userInitials}-${eventTitle}`
 }
 
 /**
@@ -144,7 +145,7 @@ export const validateFullName = (fullName) => {
  * @param {Object} userInfo - Информация о пользователе (может быть computed из userStore)
  * @returns {string} - Сгенерированное краткое наименование проекта
  */
-export const generateShortProjectName = (selectedEvent, userInfo) => {
+export const generateShortProjectName = (selectedEvent, userInfo, sequenceNumber) => {
     if (!selectedEvent) {
         return ''
     }
@@ -163,7 +164,8 @@ export const generateShortProjectName = (selectedEvent, userInfo) => {
         }
     }
     
-    return `${eventCode}-${currentYear}-${userInitials}`
+    const seq = sequenceNumber ? `-${String(sequenceNumber).padStart(2, '0')}` : ''
+    return `${eventCode}-${currentYear}${seq}-${userInitials}`
 }
 
 /**
