@@ -222,15 +222,46 @@
                             <label for="curator" class="form-label required">
                                 Куратор проекта
                             </label>
-                            <SelectBox
-                                v-model="localProvisions.curator"
-                                :options="availablePersons"
-                                :valueKey="'id'"
-                                :labelKey="'name'"
-                                :includeAllOption="false"
-                                :disabled="!availablePersons || availablePersons.length === 0"
-                                allLabel="Выберите куратора"
-                            />
+                            <template v-if="prorectorCandidates && prorectorCandidates.length > 0">
+                                <SelectBox
+                                    class="curator-select"
+                                    v-model="localProvisions.curator"
+                                    :options="prorectorCandidates"
+                                    :valueKey="'id'"
+                                    :labelKey="'name'"
+                                    :includeAllOption="false"
+                                    :disabled="!prorectorCandidates || prorectorCandidates.length === 0"
+                                    allLabel="Выберите куратора"
+                                >
+                                    <template #selected="{ option, label }">
+                                        <div class="d-flex align-items-center gap-2 w-100">
+                                            <DefaultAvatar size="medium" :title="option?.name || label" />
+                                            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+                                                <div class="text-truncate">{{ option?.name || label }}</div>
+                                                <div class="text-muted text-truncate" v-if="option?.position">{{ option.position }}</div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template #option="{ option }">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <DefaultAvatar size="medium" :title="option.name" />
+                                            <div class="d-flex flex-column">
+                                                <div>{{ option.name }}</div>
+                                                <div class="text-muted" v-if="option.position">{{ option.position }}</div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </SelectBox>
+                            </template>
+                            <template v-else>
+                                <div class="customer-avatar-container">
+                                    <DefaultAvatar size="medium" :title="'Нет пользователей'" />
+                                    <div class="customer-info">
+                                        <div class="customer-name">—</div>
+                                        <div class="customer-position">Должность вакантна</div>
+                                    </div>
+                                </div>
+                            </template>
                             <div v-if="errors.curator" class="error-message">
                                 {{ errors.curator }}
                             </div>
@@ -249,8 +280,9 @@
                             <label class="form-label required">
                                 Заказчик проекта
                             </label>
-                            <div v-if="customerCandidates && customerCandidates.length > 1">
+                            <template v-if="customerCandidates && customerCandidates.length > 0">
                                 <SelectBox
+                                    class="curator-select"
                                     v-model="selectedCustomerId"
                                     :options="customerCandidates"
                                     :valueKey="'id'"
@@ -258,20 +290,36 @@
                                     :includeAllOption="false"
                                     :disabled="!customerCandidates || customerCandidates.length === 0"
                                     allLabel="Выберите заказчика"
-                                />
-                            </div>
-                            <div v-else class="customer-display">
+                                >
+                                    <template #selected="{ option, label }">
+                                        <div class="d-flex align-items-center gap-2 w-100">
+                                            <DefaultAvatar size="medium" :title="option?.name || label" />
+                                            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+                                                <div class="text-truncate">{{ option?.name || label }}</div>
+                                                <div class="text-muted text-truncate" v-if="option?.position">{{ option.position }}</div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template #option="{ option }">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <DefaultAvatar size="medium" :title="option.name" />
+                                            <div class="d-flex flex-column">
+                                                <div>{{ option.name }}</div>
+                                                <div class="text-muted" v-if="option.position">{{ option.position }}</div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </SelectBox>
+                            </template>
+                            <template v-else>
                                 <div class="customer-avatar-container">
-                                    <DefaultAvatar
-                                        size="medium"
-                                        :title="customerInfo.name"
-                                    />
+                                    <DefaultAvatar size="medium" :title="'Нет пользователей'" />
                                     <div class="customer-info">
-                                        <div class="customer-name">{{ customerInfo.name }}</div>
-                                        <div class="customer-position">{{ customerInfo.position }}</div>
+                                        <div class="customer-name">—</div>
+                                        <div class="customer-position">Нет пользователей с ролью «Ректор»</div>
                                     </div>
                                 </div>
-                            </div>
+                            </template>
                             <!-- Комментарий для экспертов -->
                             <div v-if="showComments" class="comment-section">
                                 <textarea
@@ -384,38 +432,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Бюджет проекта -->
-                <div class="form-section">
-                    <div class="form-group">
-                        <label for="budget" class="form-label">
-                            Бюджет проекта
-                        </label>
-                        <div class="budget-input-wrapper">
-                            <input
-                                id="budget"
-                                v-model="localProvisions.budget"
-                                type="number"
-                                class="form-input budget-input"
-                                placeholder="0"
-                                readonly
-                            />
-                            <span class="currency-label">руб.</span>
-                        </div>
-                        <div class="budget-note">
-                            ← Заполняется автоматически из раздела 4
-                        </div>
-                        <!-- Комментарий для экспертов -->
-                        <div v-if="showComments" class="comment-section">
-                            <textarea
-                                v-model="localProvisions.comments.budget"
-                                class="comment-input"
-                                placeholder="Комментарий эксперта..."
-                                rows="2"
-                            ></textarea>
-                        </div>
-                    </div>
-                </div>
             </form>
         </div>
     </div>
@@ -439,7 +455,7 @@ const props = defineProps({
     },
     userRole: {
         type: String,
-        default: 'user'
+        default: null
     },
     selectedEvent: {
         type: Object,
@@ -447,18 +463,11 @@ const props = defineProps({
     },
     userInfo: {
         type: Object,
-        default: () => ({
-            name: 'Иванов А.И.',
-            initials: 'И.А.'
-        })
+        default: null
     },
     rectorInfo: {
         type: Object,
-        default: () => ({
-            name: 'Федонин Олег Николаевич',
-            position: 'Ректор университета',
-            initials: 'Ф.О.Н.'
-        })
+        default: null
     }
 })
 
@@ -583,11 +592,11 @@ const localProvisions = ref({
     startDate: props.provisions.startDate || convertToDateString(props.provisions.startDate) || '',
     endDate: props.provisions.endDate || convertToDateString(props.provisions.endDate) || '',
     curator: props.provisions.curator || null,
-    customer: props.provisions.customer || props.rectorInfo.name || '', // Автоматически устанавливаем ректора
+    customer: props.provisions.customer || (props.rectorInfo?.name ?? ''), // Автоматически устанавливаем ректора (если есть)
     manager: props.provisions.manager || props.userInfo.name || '', // Автоматически устанавливаем создателя проекта
     executors: props.provisions.executors || [],
     plannedResults: props.provisions.plannedResults || ['', ''],
-    budget: props.provisions.budget || 0,
+    
     
     // Комментарии экспертов
     comments: {
@@ -600,8 +609,7 @@ const localProvisions = ref({
         customer: props.provisions.comments?.customer || '',
         manager: props.provisions.comments?.manager || '',
         executors: props.provisions.comments?.executors || '',
-        plannedResults: props.provisions.comments?.plannedResults || '',
-        budget: props.provisions.comments?.budget || ''
+        plannedResults: props.provisions.comments?.plannedResults || ''
     }
 })
 
@@ -626,34 +634,22 @@ const customerInfo = ref({ name: '—', position: 'Должность вакан
 const customerCandidates = ref([])
 const selectedCustomerId = ref(null)
 
+// Кандидаты в кураторы (Проректоры)
+const prorectorCandidates = ref([])
+
 // Куратор выбирается напрямую через v-model в SelectBox
 
 async function resolveCustomerFromApi() {
     try {
-        const [usersResp, profilesResp] = await Promise.all([
-            apiClient.get('/crm/users/'),
-            apiClient.get('/project_ed/user-profiles/')
-        ])
-        const norm = (resp) => Array.isArray(resp?.data) ? resp.data : (resp?.data?.results || [])
-        usersForCustomer.value = norm(usersResp)
-        profilesForCustomer.value = norm(profilesResp)
-
-        const profileByUserId = new Map(profilesForCustomer.value.map(p => [p.user, p]))
-        const combined = usersForCustomer.value.map(u => {
-            const p = profileByUserId.get(u.id)
-            return {
-                id: u.id,
-                name: (p?.user_full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username).trim(),
-                role: p?.role_name || p?.role || null,
-                position: p?.position_name || p?.position || null
-            }
-        })
-
-        customerCandidates.value = combined.filter(person => {
-            const hasExpertGroupRole = (person.role || '').toLowerCase() === 'экспертная группа'
-            const isRector = typeof person.position === 'string' && person.position.toLowerCase().includes('ректор')
-            return hasExpertGroupRole && isRector
-        })
+        const resp = await apiClient.get('/project_ed/profiles/profiles/leadership/', { position_exact: 'Ректор' })
+        const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
+        const list = norm(resp)
+        const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
+        customerCandidates.value = list.map(u => ({
+            id: u.id,
+            name: toName(u),
+            position: u.position_name || null,
+        }))
 
         if (customerCandidates.value.length === 1) {
             const only = customerCandidates.value[0]
@@ -661,12 +657,34 @@ async function resolveCustomerFromApi() {
             customerInfo.value = { name: only.name, position: only.position || 'Ректор' }
             localProvisions.value.customer = only.name
         } else if (customerCandidates.value.length === 0) {
-            customerInfo.value = { name: '—', position: 'Должность вакантна' }
+            customerInfo.value = { name: '—', position: 'Нет пользователей с ролью «Ректор»' }
         } else {
             customerInfo.value = { name: '—', position: 'Выберите заказчика' }
         }
     } catch (e) {
-        customerInfo.value = { name: '—', position: 'Должность вакантна' }
+        customerInfo.value = { name: '—', position: 'Нет пользователей с ролью «Ректор»' }
+    }
+}
+
+// Подгружаем из БД пользователей с ролью «Проректор» для селекта куратора
+async function resolveCuratorsFromApi() {
+    try {
+        const resp = await apiClient.get('/project_ed/profiles/profiles/leadership/', { position: 'проректор' })
+        const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
+        const list = norm(resp)
+        const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
+        prorectorCandidates.value = list.map(u => ({
+            id: u.id,
+            name: toName(u),
+            position: u.position_name || null,
+        }))
+
+        if (!prorectorCandidates.value.some(p => String(p.id) === String(localProvisions.value.curator))) {
+            localProvisions.value.curator = null
+        }
+    } catch (e) {
+        prorectorCandidates.value = []
+        if (localProvisions.value.curator) localProvisions.value.curator = null
     }
 }
 
@@ -922,8 +940,9 @@ onMounted(() => {
         })
     })
     
-    // Подтягиваем заказчика из реальных данных
+    // Подтягиваем заказчика и кураторов из реальных данных
     resolveCustomerFromApi()
+    resolveCuratorsFromApi()
 })
 
 // Синхронизация названия заказчика в локальном состоянии
@@ -1349,19 +1368,34 @@ onUnmounted(() => {
     gap: 1rem;
 }
 
-// Стили для отображения руководителя проекта
-.manager-display {
-    margin-bottom: 0.5rem;
-}
-
 .manager-avatar-container {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
     background: #f8f9fa;
     border-radius: 8px;
     border: 1px solid #e9ecef;
+}
+
+/* Визуальное выравнивание селекта куратора под блок заказчика */
+.curator-select:deep(.select-trigger) {
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 8px !important;
+    min-height: 56px; /* как у блока с аватаром */
+    padding: 0.5rem 0.75rem;
+}
+.curator-select:deep(.select-trigger:hover),
+.curator-select:deep(.select-trigger:focus) {
+    background: #fff !important;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
+}
+.curator-select:deep(.dropdown-item) {
+    padding: 0.5rem 0.75rem;
+}
+.curator-select:deep(.value-text) {
+    white-space: normal;
 }
 
 .manager-info {
@@ -1370,13 +1404,26 @@ onUnmounted(() => {
 }
 
 .manager-name {
-    font-weight: 600;
-    color: #212529;
+    color: var(--color-primary-text);
     font-size: 0.95rem;
     line-height: 1.2;
 }
 
 .manager-position {
+    font-size: 0.8rem;
+    color: var(--color-secondary-text);
+    margin-top: 0.125rem;
+    line-height: 1.2;
+}
+
+// Стили для текста в селектах (аналогично manager)
+.curator-select:deep(.text-truncate) {
+    color: var(--color-primary-text);
+    font-size: 0.95rem;
+    line-height: 1.2;
+}
+
+.curator-select:deep(.text-muted) {
     font-size: 0.8rem;
     color: #6c757d;
     margin-top: 0.125rem;
@@ -1645,21 +1692,6 @@ onUnmounted(() => {
 }
 
 // Стили для бюджета
-.budget-input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    max-width: 300px;
-}
-
-.budget-input {
-    text-align: right;
-    font-weight: 600;
-    font-size: 1.125rem;
-    background: #e9ecef !important;
-    cursor: not-allowed;
-}
-
 .readonly-input {
     background: #e9ecef !important;
     cursor: not-allowed;
@@ -1681,19 +1713,6 @@ onUnmounted(() => {
     line-height: 1.4;
     padding-top: 0.875rem;
     padding-bottom: 0.875rem;
-}
-
-.currency-label {
-    font-weight: 600;
-    color: #6c757d;
-    font-size: 1rem;
-}
-
-.budget-note {
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
-    color: #6c757d;
-    font-style: italic;
 }
 
 .field-note {

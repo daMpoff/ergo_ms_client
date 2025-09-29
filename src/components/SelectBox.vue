@@ -9,10 +9,12 @@
                 @click="toggle"
                 @blur="$emit('blur')"
             >
-                <span ref="valueTextEl" class="value-text me-2" :style="{ fontSize: currentFontSize }">{{ currentLabel }}</span>
-                <span class="d-inline-flex align-items-center">
-                    <ChevronDown class="icon-center" />
+                <span class="d-flex align-items-center flex-grow-1 me-2">
+                    <slot name="selected" :option="selectedOption" :label="currentLabel">
+                        <span ref="valueTextEl" class="value-text" :style="{ fontSize: currentFontSize }">{{ currentLabel }}</span>
+                    </slot>
                 </span>
+                <span class="d-inline-flex align-items-center"><ChevronDown class="icon-center" /></span>
             </button>
             <!-- Портал выпадающего списка в body с позиционированием fixed -->
             <teleport to="body">
@@ -35,7 +37,11 @@
                             :class="{ active: isSelected(opt.value) }"
                             href="#"
                             @click.prevent="choose(opt.value)"
-                        >{{ opt.label }}</a>
+                        >
+                            <slot name="option" :option="opt.raw" :label="opt.label" :value="opt.value" :active="isSelected(opt.value)">
+                                {{ opt.label }}
+                            </slot>
+                        </a>
                     </li>
                 </ul>
             </teleport>
@@ -172,6 +178,11 @@ const currentLabel = computed(() => {
         try { return props.currentLabelFormatter({ option: found.raw, value: found.value, label: found.label }) } catch { /* noop */ }
     }
     return found.label
+})
+
+const selectedOption = computed(() => {
+    const found = normalizedOptions.value.find(o => valuesAreEqual(o.value, props.modelValue))
+    return found ? found.raw : null
 })
 
 function valuesAreEqual(a, b) {
