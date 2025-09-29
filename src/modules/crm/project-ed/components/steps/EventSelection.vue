@@ -97,13 +97,39 @@
                     class="event-section"
                     :class="{ 'active': activeSectionId === section.id }"
                 >
-                    <h2 class="section-title">{{ section.code ? (section.code + '. ') : '' }}{{ section.title }}</h2>
-                    <div class="events-grid">
+                    <div class="section-header">
+                        <h2 class="section-title">{{ section.code ? (section.code + '. ') : '' }}{{ section.title }}</h2>
+                        <div class="view-toggle-row">
+                            <div class="view-toggle btn-group" role="group" aria-label="Переключение вида">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    :class="{ active: viewMode === 'grid' }"
+                                    @click="viewMode = 'grid'"
+                                    title="Плитками"
+                                    aria-label="Показать плитками"
+                                >
+                                    <LayoutGrid class="btn-icon" :size="16" />
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    :class="{ active: viewMode === 'list' }"
+                                    @click="viewMode = 'list'"
+                                    title="Строчками"
+                                    aria-label="Показать строчками"
+                                >
+                                    <List class="btn-icon" :size="16" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="events-grid" :class="{ 'list-view': viewMode === 'list' }">
                         <div
                             v-for="event in section.events"
                             :key="event.id"
                             class="event-card"
-                            :class="{ 'selected': selectedEvent?.id === event.id, 'highlighted': event.highlighted }"
+                            :class="{ 'selected': selectedEvent?.id === event.id, 'highlighted': event.highlighted, 'list': viewMode === 'list' }"
                             @click="selectEvent(event)"
                         >
                             <div class="event-header">
@@ -177,7 +203,9 @@ import {
     MapPin, 
     Users, 
     ChevronLeft, 
-    ChevronRight 
+    ChevronRight, 
+    LayoutGrid,
+    List
 } from 'lucide-vue-next'
 import SimpleTooltip from '../SimpleTooltip.vue'
 import LeadersList from '../LeadersList.vue'
@@ -197,6 +225,9 @@ const emit = defineEmits(['update:event'])
 // Данные
 const selectedEvent = ref(props.event)
 const eventSections = ref([])
+
+// Вид отображения: 'grid' | 'list'
+const viewMode = ref('grid')
 
 // Фильтры
 const selectedPolicy = ref('')
@@ -353,6 +384,10 @@ const setLeaderButtonRef = (eventId, el) => {
 }
 
 const showLeadersTooltip = (event, mouseEvent) => {
+    // Не показываем тултип, если руководителей нет
+    if (!event?.leaders || event.leaders.length === 0) {
+        return
+    }
     // Отменяем предыдущий таймер скрытия
     if (hideTimeout) {
         clearTimeout(hideTimeout)
@@ -673,15 +708,36 @@ onUnmounted(() => {
         display: block;
     }
     
+    .section-header {
+        display: block;
+        margin: 0 0 1.5rem 0;
+    }
+
     .section-title {
         font-size: 1.25rem;
         font-weight: 600;
         color: #212529;
-        margin: 0 0 1.5rem 0;
+        margin: 0;
         padding: 1rem;
         background: #f8f9fa;
         border-radius: 8px;
         border-left: 4px solid #0d6efd;
+        flex: 1 1 auto;
+    }
+
+    .view-toggle-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+    }
+
+    .view-toggle .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
     }
 }
 
@@ -689,6 +745,10 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
     gap: 1.5rem;
+
+    &.list-view {
+        grid-template-columns: 1fr;
+    }
 }
 
 .event-card {
@@ -714,10 +774,27 @@ onUnmounted(() => {
         box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
     }
 
+    &.list {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        grid-template-areas:
+            "code code code"
+            "title title title"
+            "results results results"
+            "period leaders .";
+        row-gap: 0.5rem;
+        column-gap: 0.75rem;
+    }
 }
 
 .event-header {
     margin-bottom: 0.75rem;
+
+    .list & {
+        margin: 0;
+        grid-area: code;
+        align-self: start;
+    }
 }
 
 .event-code {
@@ -736,6 +813,12 @@ onUnmounted(() => {
     color: #212529;
     margin: 0 0 1rem 0;
     line-height: 1.4;
+
+    .list & {
+        grid-area: title;
+        margin: 0;
+        align-self: start;
+    }
 }
 
 .event-status {
@@ -771,6 +854,12 @@ onUnmounted(() => {
     flex-direction: column;
     gap: 0.5rem;
     margin-bottom: 1rem;
+
+    .list & {
+        margin: 0;
+        grid-area: period;
+        align-self: center;
+    }
 }
 
 .event-period {
@@ -778,10 +867,14 @@ onUnmounted(() => {
     align-items: center;
     gap: 0.5rem;
     color: #6c757d;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
 
     .icon {
         flex-shrink: 0;
+    }
+
+    .list & {
+        font-size: 0.75rem;
     }
 }
 
@@ -789,6 +882,11 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     flex: 1;
+
+    .list & {
+        /* делаем детей элементами grid-контейнера карточки */
+        display: contents;
+    }
 }
 
 .event-key-results {
@@ -802,6 +900,13 @@ onUnmounted(() => {
     -webkit-box-orient: vertical;
     overflow: hidden;
     flex: 1;
+
+    .list & {
+        grid-area: results;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        margin-bottom: 0.25rem;
+    }
 }
 
 .event-footer {
@@ -810,6 +915,13 @@ onUnmounted(() => {
     align-items: center;
     position: relative;
     margin-top: auto;
+
+    .list & {
+        grid-area: leaders;
+        margin-top: 0;
+        justify-content: flex-start;
+        justify-self: start;
+    }
 }
 
 .event-leaders {
