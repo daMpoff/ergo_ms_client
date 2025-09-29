@@ -192,6 +192,10 @@ function rangesOverlap(s, e, from, to) {
     return s <= right && left <= e
 }
 
+function toNumberOrNaN(value) {
+    return (value === null || value === undefined || value === '') ? NaN : Number(value)
+}
+
 const visibleBlocks = computed(() => {
     let list = blocksData.value
 
@@ -217,8 +221,8 @@ const visibleBlocks = computed(() => {
     // диапазон которых пересекается с выбранным
     if (filters.value.yearFrom !== null && filters.value.yearFrom !== undefined ||
         filters.value.yearTo !== null && filters.value.yearTo !== undefined) {
-        const from = Number(filters.value.yearFrom)
-        const to = Number(filters.value.yearTo)
+        const from = toNumberOrNaN(filters.value.yearFrom)
+        const to = toNumberOrNaN(filters.value.yearTo)
         list = list.filter((b) => {
             const events = Array.isArray(b._allEvents) ? b._allEvents : Array.isArray(b.events) ? b.events : []
             return events.some((ev) => rangesOverlap(Number(ev.start_year || ev.startYear), Number(ev.end_year || ev.endYear), from, to))
@@ -264,16 +268,30 @@ async function fetchBlockEvents(block) {
 
 async function toggleBlock(block) {
     block._expanded = !block._expanded
-    if (block._expanded && (block.events || []).length === 0) {
-        await fetchBlockEvents(block)
+    if (block._expanded) {
+        if ((block.events || []).length === 0) {
+            if (Array.isArray(block._allEvents)) {
+                // если фильтра нет, восстановим список мероприятий
+                if (filters.value.yearFrom == null && filters.value.yearTo == null) {
+                    block.events = block._allEvents
+                } else {
+                    applyEventFilterToBlock(block)
+                }
+            } else {
+                await fetchBlockEvents(block)
+            }
+        } else {
+            // синхронизируем с текущим фильтром
+            applyEventFilterToBlock(block)
+        }
     }
 }
 
 function applyEventFilterToBlock(block) {
     const all = Array.isArray(block._allEvents) ? block._allEvents : []
-    const from = Number(filters.value.yearFrom)
-    const to = Number(filters.value.yearTo)
-    const hasPeriod = Number.isFinite(from) || Number.isFinite(to)
+    const from = toNumberOrNaN(filters.value.yearFrom)
+    const to = toNumberOrNaN(filters.value.yearTo)
+    const hasPeriod = (filters.value.yearFrom !== null && filters.value.yearFrom !== undefined) || (filters.value.yearTo !== null && filters.value.yearTo !== undefined)
     block.events = hasPeriod
         ? all.filter(ev => rangesOverlap(Number(ev.start_year || ev.startYear), Number(ev.end_year || ev.endYear), from, to))
         : all
