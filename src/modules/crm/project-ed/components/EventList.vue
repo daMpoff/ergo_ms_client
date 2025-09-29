@@ -5,18 +5,9 @@
             <div class="row g-2 align-items-end">
                 <div class="col-12 col-lg-3">
                     <SelectBox
-                        label="Категория политики/проекта"
-                        v-model="filters.category"
-                        :options="projectCategories"
-                        :includeAllOption="true"
-                        allLabel="Все"
-                    />
-                </div>
-                <div class="col-12 col-lg-3">
-                    <SelectBox
-                        label="Подкатегория"
-                        v-model="filters.subcategory"
-                        :options="projectSubcategories"
+                        label="Наименование политики/проекта"
+                        v-model="filters.name"
+                        :options="nameOptions"
                         :includeAllOption="true"
                         allLabel="Все"
                     />
@@ -33,10 +24,20 @@
                         :castToNumber="true"
                     />
                 </div>
-                <div class="col-12 col-lg-3">
+                <div class="col-6 col-lg-3">
                     <SelectBox
-                        label="Срок реализации (год)"
-                        v-model="filters.year"
+                        label="Срок реализации: с"
+                        v-model="filters.yearFrom"
+                        :options="yearOptions"
+                        :includeAllOption="true"
+                        allLabel="Все"
+                        :castToNumber="true"
+                    />
+                </div>
+                <div class="col-6 col-lg-3">
+                    <SelectBox
+                        label="по"
+                        v-model="filters.yearTo"
                         :options="yearOptions"
                         :includeAllOption="true"
                         allLabel="Все"
@@ -123,7 +124,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import { useToast } from 'vue-toastification'
@@ -137,7 +138,7 @@ const props = defineProps({
 const toast = useToast()
 
 const projects = computed(() => props.projects)
-const filters = ref({ projectId: null, category: null, subcategory: null, blockId: null, year: null })
+const filters = ref({ projectId: null, name: null, blockId: null, yearFrom: null, yearTo: null })
 
 const isLoading = ref(false)
 const blocksData = ref([])
@@ -160,21 +161,11 @@ function getSubcategoryLabel(block) {
     return sName ?? (typeof s === 'number' ? String(s) : s)
 }
 
-const projectCategories = computed(() => {
+const nameOptions = computed(() => {
     const set = new Set()
     for (const b of blocksData.value) {
-        const label = getCategoryLabel(b)
-        if (label) set.add(label)
-    }
-    return Array.from(set)
-})
-
-const projectSubcategories = computed(() => {
-    const set = new Set()
-    for (const b of blocksData.value) {
-        const catOk = !filters.value.category || getCategoryLabel(b) === filters.value.category
         const label = getSubcategoryLabel(b)
-        if (label && catOk) set.add(label)
+        if (label) set.add(label)
     }
     return Array.from(set)
 })
@@ -192,6 +183,15 @@ const yearOptions = computed(() => {
     return arr
 })
 
+function rangesOverlap(s, e, from, to) {
+    if (!Number.isFinite(s) || !Number.isFinite(e)) return false
+    const hasFrom = Number.isFinite(from)
+    const hasTo = Number.isFinite(to)
+    const left = hasFrom ? from : s
+    const right = hasTo ? to : e
+    return s <= right && left <= e
+}
+
 const visibleBlocks = computed(() => {
     let list = blocksData.value
 
@@ -203,12 +203,9 @@ const visibleBlocks = computed(() => {
         })
     }
 
-    // фильтр по категории/подкатегории
-    if (filters.value.category) {
-        list = list.filter((b) => getCategoryLabel(b) === filters.value.category)
-    }
-    if (filters.value.subcategory) {
-        list = list.filter((b) => getSubcategoryLabel(b) === filters.value.subcategory)
+    // фильтр по наименованию (ранее подкатегория)
+    if (filters.value.name) {
+        list = list.filter((b) => getSubcategoryLabel(b) === filters.value.name)
     }
 
     // фильтр по блоку
@@ -216,21 +213,15 @@ const visibleBlocks = computed(() => {
         list = list.filter((b) => b.id === filters.value.blockId)
     }
 
-    // фильтр по году: блок отображается, если год попадает в диапазон хотя бы одного мероприятия блока,
-    // либо попадает в диапазон полей самого блока (если указано)
-    if (filters.value.year !== null && filters.value.year !== undefined) {
-        const year = Number(filters.value.year)
+    // фильтр по периоду: показываем только те блоки, у которых есть мероприятия,
+    // диапазон которых пересекается с выбранным
+    if (filters.value.yearFrom !== null && filters.value.yearFrom !== undefined ||
+        filters.value.yearTo !== null && filters.value.yearTo !== undefined) {
+        const from = Number(filters.value.yearFrom)
+        const to = Number(filters.value.yearTo)
         list = list.filter((b) => {
-            const bStart = Number(b.start_year || b.startYear)
-            const bEnd = Number(b.end_year || b.endYear)
-            const inBlock = (Number.isFinite(bStart) && Number.isFinite(bEnd) && bStart <= year && year <= bEnd)
-            if (inBlock) return true
-            const events = Array.isArray(b.events) ? b.events : []
-            return events.some((ev) => {
-                const s = Number(ev.start_year || ev.startYear)
-                const e = Number(ev.end_year || ev.endYear)
-                return Number.isFinite(s) && Number.isFinite(e) && s <= year && year <= e
-            })
+            const events = Array.isArray(b._allEvents) ? b._allEvents : Array.isArray(b.events) ? b.events : []
+            return events.some((ev) => rangesOverlap(Number(ev.start_year || ev.startYear), Number(ev.end_year || ev.endYear), from, to))
         })
     }
 
@@ -262,16 +253,8 @@ async function fetchBlockEvents(block) {
         block._loading = true
         const resp = await apiClient.get(endpoints.project_ed.event_blocks.events(block.id))
         const list = normalizeArray(resp.data)
-        block.events = list.map((ev) => ({ ...ev, _showResults: false }))
-        // если выбран год, сразу скроем несоответствующие мероприятия
-        const year = Number(filters.value.year)
-        if (filters.value.year !== null && filters.value.year !== undefined && Number.isFinite(year)) {
-            block.events = block.events.filter((ev) => {
-                const s = Number(ev.start_year || ev.startYear)
-                const e = Number(ev.end_year || ev.endYear)
-                return Number.isFinite(s) && Number.isFinite(e) && s <= year && year <= e
-            })
-        }
+        block._allEvents = list.map((ev) => ({ ...ev, _showResults: false }))
+        applyEventFilterToBlock(block)
     } catch {
         toast.error('Не удалось загрузить мероприятия блока')
     } finally {
@@ -283,6 +266,32 @@ async function toggleBlock(block) {
     block._expanded = !block._expanded
     if (block._expanded && (block.events || []).length === 0) {
         await fetchBlockEvents(block)
+    }
+}
+
+function applyEventFilterToBlock(block) {
+    const all = Array.isArray(block._allEvents) ? block._allEvents : []
+    const from = Number(filters.value.yearFrom)
+    const to = Number(filters.value.yearTo)
+    const hasPeriod = Number.isFinite(from) || Number.isFinite(to)
+    block.events = hasPeriod
+        ? all.filter(ev => rangesOverlap(Number(ev.start_year || ev.startYear), Number(ev.end_year || ev.endYear), from, to))
+        : all
+}
+
+async function ensureEventsLoadedForAllBlocks() {
+    const promises = []
+    for (const b of blocksData.value) {
+        if (!Array.isArray(b._allEvents)) {
+            promises.push(fetchBlockEvents(b))
+        } else {
+            applyEventFilterToBlock(b)
+        }
+    }
+    if (promises.length) {
+        await Promise.allSettled(promises)
+        // после загрузки применим фильтр ещё раз
+        for (const b of blocksData.value) applyEventFilterToBlock(b)
     }
 }
 
@@ -327,6 +336,10 @@ function pluralizeEvents(n) {
 }
 
 onMounted(fetchBlocks)
+// Подписка на смену периода: загружаем мероприятия для всех блоков и фильтруем
+watch(() => [filters.value.yearFrom, filters.value.yearTo], async () => {
+    await ensureEventsLoadedForAllBlocks()
+})
 </script>
 
 <style scoped lang="scss">

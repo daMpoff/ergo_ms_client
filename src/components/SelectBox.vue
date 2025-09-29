@@ -14,24 +14,31 @@
                     <ChevronDown class="icon-center" />
                 </span>
             </button>
-            <ul class="dropdown-menu w-100 show" v-if="isOpen">
-                <li v-if="includeAllOption">
-                    <a
-                        class="dropdown-item"
-                        :class="{ active: isSelected(null) }"
-                        href="#"
-                        @click.prevent="choose(null)"
-                    >{{ allLabel }}</a>
-                </li>
-                <li v-for="opt in normalizedOptions" :key="opt.key">
-                    <a
-                        class="dropdown-item multi-line"
-                        :class="{ active: isSelected(opt.value) }"
-                        href="#"
-                        @click.prevent="choose(opt.value)"
-                    >{{ opt.label }}</a>
-                </li>
-            </ul>
+            <!-- Портал выпадающего списка в body с позиционированием fixed -->
+            <teleport to="body">
+                <ul
+                    v-if="isOpen"
+                    class="dropdown-menu show fixed-menu"
+                    :style="fixedMenuStyle"
+                >
+                    <li v-if="includeAllOption">
+                        <a
+                            class="dropdown-item"
+                            :class="{ active: isSelected(null) }"
+                            href="#"
+                            @click.prevent="choose(null)"
+                        >{{ allLabel }}</a>
+                    </li>
+                    <li v-for="opt in normalizedOptions" :key="opt.key">
+                        <a
+                            class="dropdown-item multi-line"
+                            :class="{ active: isSelected(opt.value) }"
+                            href="#"
+                            @click.prevent="choose(opt.value)"
+                        >{{ opt.label }}</a>
+                    </li>
+                </ul>
+            </teleport>
         </div>
     </div>
 </template>
@@ -89,9 +96,36 @@ const keyToValueMap = computed(() => {
 const internalValue = computed(() => toKey(props.modelValue))
 
 const isOpen = ref(false)
+const fixedMenuStyle = ref({ top: '0px', left: '0px', width: '0px' })
+function updateMenuPosition() {
+    const root = rootEl.value
+    if (!root) return
+    const trigger = root.querySelector('.select-trigger')
+    if (!trigger) return
+    const rect = trigger.getBoundingClientRect()
+    const viewportPadding = 8
+    const maxWidth = Math.max(0, window.innerWidth - viewportPadding * 2)
+    const width = Math.min(rect.width, maxWidth)
+    const left = Math.min(
+        rect.left,
+        window.innerWidth - viewportPadding - width
+    )
+    fixedMenuStyle.value = {
+        top: `${rect.bottom + 4}px`,
+        left: `${left}px`,
+        width: `${width}px`,
+        maxWidth: `${maxWidth}px`,
+        boxSizing: 'border-box',
+    }
+}
 function toggle() {
     if (props.disabled) return
     isOpen.value = !isOpen.value
+    if (isOpen.value) {
+        updateMenuPosition()
+        // на следующем кадре пересчитать ещё раз, если раскладка изменилась
+        requestAnimationFrame(() => updateMenuPosition())
+    }
 }
 function close() { isOpen.value = false }
 
@@ -189,11 +223,13 @@ function adjustFontSize() {
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     nextTick(adjustFontSize)
-    window.addEventListener('resize', adjustFontSize)
+    window.addEventListener('resize', () => { adjustFontSize(); updateMenuPosition() })
+    window.addEventListener('scroll', updateMenuPosition, true)
 })
 onBeforeUnmount(() => {
     document.removeEventListener('click', handleClickOutside)
     window.removeEventListener('resize', adjustFontSize)
+    window.removeEventListener('scroll', updateMenuPosition, true)
 })
 
 watch(() => props.modelValue, async () => {
@@ -235,6 +271,13 @@ watch(() => props.modelValue, async () => {
     border: 1px solid var(--bs-border-color, #dee2e6);
     border-radius: .375rem;
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+}
+.fixed-menu {
+    position: fixed;
+    left: auto; /* задаётся inline */
+    right: auto; /* сбрасываем наследование */
+    top: auto;  /* задаётся inline */
+    min-width: unset;
 }
 .select-box { max-width: 100%; }
 .select-box .dropdown { position: relative; max-width: 100%; }
