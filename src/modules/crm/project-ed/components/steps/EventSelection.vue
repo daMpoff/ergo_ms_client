@@ -53,16 +53,40 @@
                 </div>
             </div>
 
-            <!-- Переключатель секций -->
+            <!-- Переключатель секций с горизонтальной прокруткой -->
             <div v-if="filteredEventSections.length > 1" class="sections-tabs">
                 <button
-                    v-for="section in filteredEventSections"
-                    :key="section.id"
-                    class="section-tab"
-                    :class="{ 'active': activeSectionId === section.id }"
-                    @click="setActiveSection(section.id)"
+                    type="button"
+                    class="scroll-btn scroll-btn--left btn btn-outline-secondary btn-sm"
+                    :disabled="!canScrollLeft"
+                    @click="scrollTabs('left')"
+                    aria-label="Прокрутить влево"
                 >
-                    {{ section.shortTitle || `МП${section.id}` }}
+                    <ChevronLeft class="btn-icon" :size="16" />
+                </button>
+
+                <div class="sections-tabs__viewport" ref="tabsViewport" @scroll="updateScrollButtons">
+                    <div class="sections-tabs__inner">
+                        <button
+                            v-for="section in filteredEventSections"
+                            :key="section.id"
+                            class="section-tab"
+                            :class="{ 'active': activeSectionId === section.id }"
+                            @click="setActiveSection(section.id)"
+                        >
+                            {{ section.shortTitle || `МП${section.id}` }}
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="scroll-btn scroll-btn--right btn btn-outline-secondary btn-sm"
+                    :disabled="!canScrollRight"
+                    @click="scrollTabs('right')"
+                    aria-label="Прокрутить вправо"
+                >
+                    <ChevronRight class="btn-icon" :size="16" />
                 </button>
             </div>
 
@@ -147,11 +171,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { 
     Calendar, 
     MapPin, 
-    Users 
+    Users, 
+    ChevronLeft, 
+    ChevronRight 
 } from 'lucide-vue-next'
 import SimpleTooltip from '../SimpleTooltip.vue'
 import LeadersList from '../LeadersList.vue'
@@ -177,6 +203,27 @@ const selectedPolicy = ref('')
 const selectedBlock = ref('')
 const selectedPeriod = ref('')
 const activeSectionId = ref(null)
+
+// Прокрутка вкладок
+const tabsViewport = ref(null)
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
+
+const updateScrollButtons = () => {
+    const el = tabsViewport.value
+    if (!el) { canScrollLeft.value = false; canScrollRight.value = false; return }
+    const maxScrollLeft = el.scrollWidth - el.clientWidth
+    canScrollLeft.value = el.scrollLeft > 0
+    canScrollRight.value = el.scrollLeft < (maxScrollLeft - 1)
+}
+
+const scrollTabs = (direction) => {
+    const el = tabsViewport.value
+    if (!el) return
+    const amount = Math.max(200, Math.floor(el.clientWidth * 0.75))
+    const delta = direction === 'left' ? -amount : amount
+    el.scrollBy({ left: delta, behavior: 'smooth' })
+}
 
 // Справочные данные
 const policies = ref([])
@@ -432,6 +479,22 @@ onMounted(async () => {
         periods.value = []
         eventSections.value = []
     }
+    // Инициализируем состояние кнопок прокрутки после рендера
+    await nextTick()
+    updateScrollButtons()
+
+    const onResize = () => updateScrollButtons()
+    window.addEventListener('resize', onResize)
+    // Сохраним обработчик для снятия
+    tabsViewport.value && tabsViewport.value.addEventListener('scroll', updateScrollButtons)
+    ;(onMounted._handlers ||= []).push(onResize)
+})
+
+onUnmounted(() => {
+    // Снимаем навешанные события
+    const handlers = onMounted._handlers || []
+    handlers.forEach((h) => window.removeEventListener('resize', h))
+    if (tabsViewport.value) tabsViewport.value.removeEventListener('scroll', updateScrollButtons)
 })
 </script>
 
@@ -546,11 +609,31 @@ onMounted(async () => {
 
 
 .sections-tabs {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
     gap: 0.5rem;
     margin-bottom: 1rem;
     padding: 0 0.5rem;
     border-bottom: 1px solid #dee2e6;
+}
+
+.sections-tabs__viewport {
+    overflow: hidden;
+}
+
+.sections-tabs__inner {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.scroll-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
 }
 
 .section-tab {
