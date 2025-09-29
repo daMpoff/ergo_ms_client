@@ -7,16 +7,13 @@
                 <h3 class="mb-0">Импорт блоков мероприятий</h3>
             </div>
 
-            <!-- Основной контент: Контейнер с импортом, Логи импорта + Инструкция -->
             <div class="row mb-4">
                 <div class="col-12 col-lg-8">
-                     <!-- Контейнер с импортом -->
                      <div class="card mb-4 upload-card">
                         <div class="card-header">
                             <h5 class="mb-0">Загрузка Excel файла</h5>
                         </div>
                         <div class="card-body">
-                            <!-- Область загрузки файла -->
                             <div 
                                 class="upload-area"
                                 :class="{ 'is-dragover': isDragOver, 'has-file': selectedFile }"
@@ -57,9 +54,7 @@
                                 </div>
                             </div>
 
-                            <!-- Кнопки импорта -->
                             <div class="import-controls mt-4" v-if="selectedFile">
-                                <!-- Полоса прогресса (показывается во время и после импорта) -->
                                 <div v-if="isImporting || importResults" class="progress-container">
                                     <div class="progress mb-3" style="height: 40px;">
                                         <div 
@@ -79,7 +74,6 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Кнопка импорта (скрывается во время и после импорта) -->
                                 <button 
                                     v-if="!isImporting && !importResults"
                                     class="btn btn-primary btn-lg w-100 import-button"
@@ -94,7 +88,6 @@
                         </div>
                     </div>
 
-                    <!-- Контейнер с логами импорта -->
                     <div v-if="isImporting || importLogs.length > 0" class="card logs-card">
                         <div class="card-header">
                             <h5 class="mb-0">Логи импорта</h5>
@@ -119,7 +112,6 @@
                     </div>
                 </div>
 
-                <!-- Контейнер с инструкцией (высота = высота двух контейнеров слева) -->
                 <div class="col-12 col-lg-4">
                     <div class="card instruction-card">
                         <div class="card-header">
@@ -134,7 +126,8 @@
 
                                 <h6 class="mt-4">Структура таблицы:</h6>
                                 <div class="small text-muted">
-                                    <table class="table table-sm table-bordered">
+                                    <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>№ п/п</th>
@@ -145,25 +138,27 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td></td>
-                                                <td><strong>П1. Стратегический проект №1 «...»</strong></td>
-                                                <td></td>
-                                                <td></td>
+                                                <td colspan="4"><strong>Стратегический проект №1 «...»</strong></td>
                                             </tr>
                                             <tr>
-                                                <td>1</td>
-                                                <td>П1.1. Разработка и освоение технологии...</td>
-                                                <td>1. Разработана конструкция...<br>2. Разработаны КД и ТД...<br>3. Разработаны технологии...</td>
+                                                <td>П1</td>
+                                                <td colspan="3">Стратегический проект №1 «...»</td>
+                                            </tr>
+                                            <tr>
+                                                <td>П1.1</td>
+                                                <td>Разработка и освоение технологии...</td>
+                                                <td>Разработана конструкция...<br>Разработаны КД и ТД...<br>Разработаны технологии...</td>
                                                 <td>2023-2025 гг.</td>
                                             </tr>
                                             <tr>
-                                                <td>2</td>
-                                                <td>П1.2. Исследование и разработка...</td>
-                                                <td>1. Результаты экспериментальных исследований...<br>2. Результаты реверс-инжиниринга...</td>
+                                                <td>П1.2</td>
+                                                <td>Исследование и разработка...</td>
+                                                <td>Результаты экспериментальных исследований...<br>Результаты реверс-инжиниринга...</td>
                                                 <td>2023-2032 гг.</td>
                                             </tr>
                                         </tbody>
                                     </table>
+                                    </div>
                                     
                                     <div class="mt-3">
                                         <p><strong>Правила заполнения:</strong></p>
@@ -188,7 +183,6 @@
                 </div>
             </div>
 
-            <!-- Строка 3: Результаты импорта (на всю ширину) -->
             <div v-if="importResults" class="row">
                 <div class="col-12">
                     <div class="card">
@@ -223,7 +217,6 @@
                                 </div>
                             </div>
 
-                            <!-- Ошибки -->
                             <div v-if="importResults.errors.length > 0" class="mt-4">
                                 <h6 class="text-danger">Ошибки:</h6>
                                 <div class="alert alert-danger">
@@ -235,7 +228,6 @@
                                 </div>
                             </div>
 
-                            <!-- Предупреждения -->
                             <div v-if="importResults.warnings.length > 0" class="mt-3">
                                 <h6 class="text-warning">Предупреждения:</h6>
                                 <div class="alert alert-warning">
@@ -261,18 +253,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
-import { 
-    Home, 
-    Wrench, 
-    Target, 
-    Upload, 
-    FileText, 
-    Download, 
-    CheckCircle 
-} from 'lucide-vue-next'
+import { Home, Wrench, Target, Upload, FileText, Download } from 'lucide-vue-next'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import { apiClient } from '@/js/api/manager'
