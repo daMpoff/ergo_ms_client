@@ -3,7 +3,7 @@
         <!-- Панель фильтров в стиле SelectBox -->
         <div class="filters card p-3 mb-3">
             <div class="row g-2 align-items-end">
-                <div class="col-12 col-lg-4">
+                <div class="col-12 col-lg-6 col-xl-4">
                     <SelectBox
                         label="Политика/проект"
                         v-model="filters.projectId"
@@ -15,7 +15,7 @@
                         :castToNumber="true"
                     />
                 </div>
-                <div class="col-6 col-lg-4">
+                <div class="col-6 col-lg-3 col-xl-2">
                     <SelectBox
                         label="Срок реализации (год)"
                         v-model="filters.year"
@@ -25,7 +25,7 @@
                         :castToNumber="true"
                     />
                 </div>
-                <div class="col-6 col-lg-4">
+                <div class="col-6 col-lg-3 col-xl-2">
                     <SelectBox
                         label="Категория"
                         v-model="filters.category"
@@ -34,7 +34,7 @@
                         allLabel="Все"
                     />
                 </div>
-                <div class="col-6 col-lg-4">
+                <div class="col-6 col-lg-3 col-xl-2">
                     <SelectBox
                         label="Единица измерения"
                         v-model="filters.unit"
@@ -43,7 +43,7 @@
                         allLabel="Все"
                     />
                 </div>
-                <div class="col-6 col-lg-4">
+                <div class="col-6 col-lg-3 col-xl-2">
                     <SelectBox
                         label="Ответственный"
                         v-model="filters.responsibleId"
@@ -70,29 +70,29 @@
                             </div>
                             <div class="meta-row mt-1 d-flex align-items-center gap-3 flex-wrap">
                                 <span class="d-inline-flex align-items-center gap-1">
-                                    <Calendar class="icon-center" />
-                                    <span class="meta-link" @click.stop="onClickYearRange(it)" role="button">{{ durationRange(it) }}</span>
+                                    <Calendar class="icon-center" :title="'Срок реализации'" />
+                                    <span class="meta-link" :title="'Срок реализации'" @click.stop="onClickYearRange(it)" role="button">{{ durationRange(it) }}</span>
                                 </span>
                                 <span class="d-inline-flex align-items-center gap-1">
-                                    <Target class="icon-center" />
-                                    <span class="meta-link" @click.stop="onClickBlock(it)" role="button">{{ it.block || 'Блок не указан' }}</span>
+                                    <Target class="icon-center" :title="'Блок мероприятий'" />
+                                    <span class="meta-link" :title="'Блок мероприятий'" @click.stop="onClickBlock(it)" role="button">{{ it.block || 'Блок не указан' }}</span>
                                 </span>
                                 <span class="d-inline-flex align-items-center gap-1">
-                                    <Bookmark class="icon-center" />
-                                    <span class="meta-link" @click.stop="onClickCategory(it)" role="button">{{ it.description || it.categoryName || it.subcategoryName || '—' }}</span>
+                                    <Bookmark class="icon-center" :title="'Категория целевых показателей'" />
+                                    <span class="meta-link" :title="'Категория целевых показателей'" @click.stop="onClickCategory(it)" role="button">{{ it.description || it.categoryName || it.subcategoryName || '—' }}</span>
                                 </span>
                                 <span class="d-inline-flex align-items-center gap-1">
-                                    <RulerDimensionLine class="icon-center" />
-                                    <span class="meta-link" @click.stop="onClickUnit(it)" role="button">{{ it.unit || '—' }}</span>
+                                    <RulerDimensionLine class="icon-center" :title="'Единица измерения'" />
+                                    <span class="meta-link" :title="'Единица измерения'" @click.stop="onClickUnit(it)" role="button">{{ it.unit || '—' }}</span>
                                 </span>
                                 <span class="d-inline-flex align-items-center gap-2">
                                     <template v-if="it.responsibleAvatar">
-                                        <img :src="it.responsibleAvatar" alt="avatar" class="avatar-img-small" />
+                                        <img :src="it.responsibleAvatar" alt="avatar" class="avatar-img-small" :title="'Ответственный'" />
                                     </template>
                                     <template v-else>
-                                        <DefaultAvatar :size="'small'" :title="it.responsibleName || 'Ответственный'" />
+                                        <DefaultAvatar :size="'small'" :title="'Ответственный'" />
                                     </template>
-                                    <span class="meta-link" @click.stop="onClickResponsible(it)" role="button">{{ it.responsibleName || 'Не указан' }}</span>
+                                    <span class="meta-link" :title="'Ответственный'" @click.stop="onClickResponsible(it)" role="button">{{ it.responsibleName || 'Не указан' }}</span>
                                 </span>
                             </div>
                         </div>
@@ -106,8 +106,8 @@
                         <template v-if="nonZeroYears(it).length">
                             <div class="row gx-1 gy-3">
                                 <div v-for="year in nonZeroYears(it)" :key="year" class="col-4 col-sm-3 col-md-2 col-lg-2 d-flex flex-column align-items-center">
-                                    <div class="year-label">{{ year }}</div>
-                                    <div class="year-circle d-flex align-items-center justify-content-center">
+                                    <div class="year-label" :title="'Срок реализации'">{{ year }}</div>
+                                    <div class="year-circle d-flex align-items-center justify-content-center" :title="'Срок реализации'">
                                         <span class="year-value">{{ displayYearValue(it, year) }}</span>
                                     </div>
                                 </div>
@@ -351,6 +351,7 @@ function onClickResponsible(item) {
 .cell.text-center { justify-content: center; text-align: center; }
 .empty-hint { padding: 1rem; text-align: center; color: var(--color-secondary-text); }
 .filters.card { background-color: var(--color-primary-background); border-color: var(--bs-border-color, #dee2e6); }
+.filters .select-box, .filters .form-select { font-size: 0.9rem; }
 .years-th span { font-weight: 600; }
 /* Перенос длинных заголовков показателей */
 .title-text {
