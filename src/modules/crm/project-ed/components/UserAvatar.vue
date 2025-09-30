@@ -55,14 +55,19 @@ const props = defineProps({
   },
   // Опциональный URL аватара для переопределения
   customAvatarUrl: {
-    type: String,
-    default: null
+    type: [String, null],
+    default: undefined
   }
 })
 
 // Используем переданный URL или URL из store
 const avatarUrl = computed(() => {
-  return props.customAvatarUrl || userStore.avatarUrl
+  // Если customAvatarUrl явно передан (даже если null), используем его
+  // Если не передан вообще, используем аватар из store
+  if (props.customAvatarUrl !== undefined) {
+    return props.customAvatarUrl
+  }
+  return userStore.avatarUrl
 })
 
 // Проверяем, есть ли кастомный аватар

@@ -216,149 +216,21 @@
                 </div>
 
                 <!-- Участники проекта -->
-                <div class="form-section">
-                    <div class="participants-grid">
-                        <div class="form-group">
-                            <label for="curator" class="form-label required">
-                                Куратор проекта
-                            </label>
-                            <template v-if="prorectorCandidates && prorectorCandidates.length > 0">
-                                <SelectBox
-                                    class="curator-select"
-                                    v-model="localProvisions.curator"
-                                    :options="prorectorCandidates"
-                                    :valueKey="'id'"
-                                    :labelKey="'name'"
-                                    :includeAllOption="false"
-                                    :disabled="!prorectorCandidates || prorectorCandidates.length === 0"
-                                    allLabel="Выберите куратора"
-                                >
-                                    <template #selected="{ option, label }">
-                                        <div class="d-flex align-items-center gap-2 w-100">
-                                            <DefaultAvatar size="medium" :title="option?.name || label" />
-                                            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
-                                                <div class="text-truncate">{{ option?.name || label }}</div>
-                                                <div class="text-muted text-truncate" v-if="option?.position">{{ option.position }}</div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <template #option="{ option }">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <DefaultAvatar size="medium" :title="option.name" />
-                                            <div class="d-flex flex-column">
-                                                <div>{{ option.name }}</div>
-                                                <div class="text-muted" v-if="option.position">{{ option.position }}</div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </SelectBox>
-                            </template>
-                            <template v-else>
-                                <div class="customer-avatar-container">
-                                    <DefaultAvatar size="medium" :title="'Нет пользователей'" />
-                                    <div class="customer-info">
-                                        <div class="customer-name">—</div>
-                                        <div class="customer-position">Должность вакантна</div>
-                                    </div>
-                                </div>
-                            </template>
-                            <div v-if="errors.curator" class="error-message">
-                                {{ errors.curator }}
-                            </div>
-                            <!-- Комментарий для экспертов -->
-                            <div v-if="showComments" class="comment-section">
-                                <textarea
-                                    v-model="localProvisions.comments.curator"
-                                    class="comment-input"
-                                    placeholder="Комментарий эксперта..."
-                                    rows="2"
-                                ></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label required">
-                                Заказчик проекта
-                            </label>
-                            <template v-if="customerCandidates && customerCandidates.length > 0">
-                                <SelectBox
-                                    class="curator-select"
-                                    v-model="selectedCustomerId"
-                                    :options="customerCandidates"
-                                    :valueKey="'id'"
-                                    :labelKey="'name'"
-                                    :includeAllOption="false"
-                                    :disabled="!customerCandidates || customerCandidates.length === 0"
-                                    allLabel="Выберите заказчика"
-                                >
-                                    <template #selected="{ option, label }">
-                                        <div class="d-flex align-items-center gap-2 w-100">
-                                            <DefaultAvatar size="medium" :title="option?.name || label" />
-                                            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
-                                                <div class="text-truncate">{{ option?.name || label }}</div>
-                                                <div class="text-muted text-truncate" v-if="option?.position">{{ option.position }}</div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <template #option="{ option }">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <DefaultAvatar size="medium" :title="option.name" />
-                                            <div class="d-flex flex-column">
-                                                <div>{{ option.name }}</div>
-                                                <div class="text-muted" v-if="option.position">{{ option.position }}</div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </SelectBox>
-                            </template>
-                            <template v-else>
-                                <div class="customer-avatar-container">
-                                    <DefaultAvatar size="medium" :title="'Нет пользователей'" />
-                                    <div class="customer-info">
-                                        <div class="customer-name">—</div>
-                                        <div class="customer-position">Нет пользователей с ролью «Ректор»</div>
-                                    </div>
-                                </div>
-                            </template>
-                            <!-- Комментарий для экспертов -->
-                            <div v-if="showComments" class="comment-section">
-                                <textarea
-                                    v-model="localProvisions.comments.customer"
-                                    class="comment-input"
-                                    placeholder="Комментарий эксперта..."
-                                    rows="2"
-                                ></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label required">
-                                Руководитель проекта
-                            </label>
-                            <div class="manager-display">
-                                <div class="manager-avatar-container">
-                                    <UserAvatar
-                                        size="medium"
-                                        :title="props.userInfo.name"
-                                    />
-                                    <div class="manager-info">
-                                        <div class="manager-name">{{ props.userInfo.name }}</div>
-                                        <div class="manager-position">{{ props.userInfo.position || 'Руководитель проекта' }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Комментарий для экспертов -->
-                            <div v-if="showComments" class="comment-section">
-                                <textarea
-                                    v-model="localProvisions.comments.manager"
-                                    class="comment-input"
-                                    placeholder="Комментарий эксперта..."
-                                    rows="2"
-                                ></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <ParticipantsSection
+                    :curator="localProvisions.curator"
+                    :customer="localProvisions.customer"
+                    :userInfo="props.userInfo"
+                    :showComments="showComments"
+                    :errorCurator="errors.curator"
+                    :commentsCurator="localProvisions.comments.curator"
+                    :commentsCustomer="localProvisions.comments.customer"
+                    :commentsManager="localProvisions.comments.manager"
+                    @update:curator="val => (localProvisions.curator = val)"
+                    @update:customer="val => (localProvisions.customer = val)"
+                    @update:commentsCurator="val => (localProvisions.comments.curator = val)"
+                    @update:commentsCustomer="val => (localProvisions.comments.customer = val)"
+                    @update:commentsManager="val => (localProvisions.comments.manager = val)"
+                />
 
                 <!-- Исполнители проекта -->
                 <div class="form-section">
@@ -441,12 +313,10 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { generateInitials, generateProjectName, generateShortProjectName } from '@/modules/crm/project-ed/components/steps/js/initialsGenerator.js'
 import { HelpCircle } from 'lucide-vue-next'
-import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
-import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import ParticipantsSection from '@/modules/crm/project-ed/components/steps/ParticipantsSection.vue'
 import ExecutorSelector from '@/modules/crm/project-ed/components/ExecutorSelector.vue'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
-import SelectBox from '@/components/SelectBox.vue'
 
 const props = defineProps({
     provisions: {
@@ -487,8 +357,6 @@ const shortNameInfoIconRef = ref(null)
 // Ref для popover элементов
 const popoverElement = ref(null)
 const shortNamePopoverElement = ref(null)
-
-// Выпадающие заменены на SelectBox — локальное состояние открытости и глобальные обработчики не требуются
 
 // Функция для автоматического изменения высоты textarea
 const autoResizeTextarea = (textarea) => {
