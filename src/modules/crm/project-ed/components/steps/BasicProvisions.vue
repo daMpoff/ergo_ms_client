@@ -483,15 +483,26 @@ const localProvisions = ref({
 
 const errors = ref({})
 
-// Моковые данные для выпадающих списков
-const availablePersons = ref([
-    { id: 1, name: 'Сканцев Виталий Михайлович', position: 'Первый проректор', initials: 'С.В.М.' },
-    { id: 2, name: 'Шкаберин Виталий Александрович', position: 'Первый проректор по учебной работе и цифровизации', initials: 'Ш.В.А.' },
-    { id: 3, name: 'Киричек Андрей Викторович', position: 'Проректор по перспективному развитию', initials: 'К.А.В.' },
-    { id: 4, name: 'Симкин Альберт Зямович', position: 'Проректор по молодежной политике и воспитательной работе', initials: 'С.А.З.' },
-    { id: 5, name: 'Глебов Глеб Владимирович', position: 'Проректор по АХР', initials: 'Г.Г.В.' },
-    { id: 6, name: 'Геращенкова Татьяна Михайловна', position: 'Проректор по качеству и аккредитации', initials: 'Г.Т.М.' }
-])
+// Список доступных пользователей (для модального выбора исполнителей)
+const availablePersons = ref([])
+
+// Загрузка пользователей с должностями и аватарами для модального окна исполнителей
+async function fetchAvailableUsersForExecutors() {
+    try {
+        const resp = await apiClient.get('/project_ed/profiles/profiles/', { page_size: 1000 })
+        const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
+        const list = norm(resp)
+        const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
+        availablePersons.value = list.map(u => ({
+            id: u.id,
+            name: toName(u),
+            position: u.position_name || u.position || 'Сотрудник',
+            avatarUrl: u.avatar_url || u.avatar || null,
+        }))
+    } catch (e) {
+        availablePersons.value = []
+    }
+}
 
 // Данные пользователей/профилей для определения заказчика
 const usersForCustomer = ref([])
@@ -811,6 +822,7 @@ onMounted(() => {
     // Подтягиваем заказчика и кураторов из реальных данных
     resolveCustomerFromApi()
     resolveCuratorsFromApi()
+    fetchAvailableUsersForExecutors()
 })
 
 // Синхронизация названия заказчика в локальном состоянии
