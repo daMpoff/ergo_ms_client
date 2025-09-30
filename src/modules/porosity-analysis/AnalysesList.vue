@@ -88,6 +88,47 @@
     
     <div class="row">
       <div class="col-12">
+            <!-- Управление группами -->
+            <div class="card mb-3">
+              <div class="card-body">
+                <div class="d-flex flex-wrap align-items-end gap-3">
+                  <div class="flex-grow-1">
+                    <label class="form-label">Группы</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                      <select v-model.number="groupManager.selectedId" class="form-select" style="min-width: 260px;">
+                        <option :value="null">Выберите группу...</option>
+                        <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                      </select>
+                      <button class="btn btn-outline-primary d-inline-flex align-items-center" :disabled="!groupManager.selectedId" @click="selectAllByGroup">
+                        <List class="me-1" size="16" /> Выделить все в группе
+                      </button>
+                      <button class="btn btn-outline-danger d-inline-flex align-items-center" :disabled="!groupManager.selectedId" @click="ungroupAllInSelected">
+                        <Trash2 class="me-1" size="16" /> Снять группу у всех
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <label class="form-label">Создать/переименовать группу</label>
+                    <div class="input-group">
+                      <span class="input-group-text">
+                        <Hash size="16" />
+                      </span>
+                      <input class="form-control" v-model.trim="groupManager.name" placeholder="Название группы" />
+                      <button class="btn btn-success" :disabled="!groupManager.name" @click="createGroup">
+                        Создать
+                      </button>
+                      <button class="btn btn-secondary" :disabled="!groupManager.selectedId || !groupManager.name" @click="renameSelectedGroup">
+                        Переименовать
+                      </button>
+                      <button class="btn btn-outline-danger" :disabled="!groupManager.selectedId" @click="deleteSelectedGroup">
+                        Удалить группу
+                      </button>
+                    </div>
+                    <div class="form-text">Удаление группы не удаляет анализы, только снимает с них привязку</div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <!-- Фильтры и поиск (как в видео-аналитике) -->
             <div class="filters-card mb-3">
               <div class="card-body">
@@ -121,12 +162,21 @@
                     </select>
                   </div>
                   <div class="col-auto">
+                    <label class="form-label">Группа</label>
+                    <select v-model.number="currentGroupId" class="form-select w-auto d-inline-block" @change="changePage(1)">
+                      <option :value="null">Все группы</option>
+                      <option :value="0">Без группы</option>
+                      <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                    </select>
+                  </div>
+                  <div class="col-auto">
                     <label ref="orderingLabel" class="form-label">Сортировка</label>
                     <select 
                       ref="orderingSelect"
                       v-model="ordering" 
                       class="form-select w-auto d-inline-block"
                       :style="{ minWidth: orderingMinWidth }"
+                      @change="onOrderingChange"
                     >
                       <option value="-created_at">По дате создания ↓</option>
                       <option value="created_at">По дате создания ↑</option>
@@ -134,6 +184,8 @@
                       <option value="start_time">По дате запуска ↑</option>
                       <option value="name">По названию ↑</option>
                       <option value="-name">По названию ↓</option>
+                      <option value="group">По группе ↑</option>
+                      <option value="-group">По группе ↓</option>
                       <option value="status">По статусу ↑</option>
                       <option value="-status">По статусу ↓</option>
                     </select>
@@ -384,6 +436,18 @@
                               <small class="text-muted">Номер анализа:</small>
                               <div>{{ analysis.id }}</div>
                             </div>
+                            <div class="info-item" v-if="analysis.group || analysis.group_id">
+                              <Hash class="me-1" size="14" />
+                              <small class="text-muted">Группа:</small>
+                              <div>
+                                <template v-if="analysis.group">
+                                  [{{ analysis.group.id }}] {{ analysis.group.name }}
+                                </template>
+                                <template v-else>
+                                  [{{ analysis.group_id }}]
+                                </template>
+                              </div>
+                            </div>
                             <div class="info-item">
                               <Calendar class="me-1" size="14" />
                               <small class="text-muted">Создан:</small>
@@ -622,7 +686,7 @@
 import { porosityAnalysisAPI } from './js/porosity-analysis.js'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { 
-  Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
+  Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus, List,
   Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash
 } from 'lucide-vue-next'
@@ -635,7 +699,7 @@ export default {
   name: 'PorosityAnalysesList',
   components: {
     ConfirmDialog,
-    Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
+    Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus, List,
     Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
     ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash
   },
@@ -643,9 +707,12 @@ export default {
     return {
       analyses: [],
       loading: true,
+      groups: [],
+      groupsLoading: false,
       currentFilter: 'all',
       search: '',
       ordering: '-created_at',
+      currentGroupId: null,
       restartingAnalysis: null,
       downloadingAnalysis: null,
       deletingAnalysis: null,
@@ -669,6 +736,14 @@ export default {
       downloadInput: '',
       reportType: 'docx',
       downloadingReports: false,
+      // Массовое назначение группы
+      bulkGroupId: null,
+      bulkNewGroupName: '',
+      // Менеджер групп
+      groupManager: {
+        selectedId: null,
+        name: ''
+      },
       // Данные для пагинации
       pagination: {
         current_page: 1,
@@ -733,6 +808,18 @@ export default {
         sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
       } else if (ord === '-name') {
         sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''))
+      } else if (ord === 'group') {
+        sorted.sort((a, b) => {
+          const ga = (a.group && a.group.name) ? a.group.name : (a.group_id ? String(a.group_id) : '')
+          const gb = (b.group && b.group.name) ? b.group.name : (b.group_id ? String(b.group_id) : '')
+          return ga.localeCompare(gb)
+        })
+      } else if (ord === '-group') {
+        sorted.sort((a, b) => {
+          const ga = (a.group && a.group.name) ? a.group.name : (a.group_id ? String(a.group_id) : '')
+          const gb = (b.group && b.group.name) ? b.group.name : (b.group_id ? String(b.group_id) : '')
+          return gb.localeCompare(ga)
+        })
       } else if (ord === 'status') {
         sorted.sort((a, b) => (statusRank[a.status] || 0) - (statusRank[b.status] || 0))
       } else if (ord === '-status') {
@@ -806,9 +893,94 @@ export default {
   },
   async mounted() {
     this.syncSelectMinWidths()
-    await Promise.all([ this.loadAnalyses(), this.loadStats() ])
+    await Promise.all([ this.loadAnalyses(), this.loadStats(), this.loadGroups() ])
   },
   methods: {
+    async loadGroups() {
+      this.groupsLoading = true
+      try {
+        const resp = await porosityAnalysisAPI.getGroups()
+        if (resp && resp.success) this.groups = resp.data || []
+      } finally {
+        this.groupsLoading = false
+      }
+    },
+    selectAllByGroup() {
+      const gid = this.groupManager.selectedId
+      if (!gid) return
+      const ids = this.analyses.filter(a => a.group_id === gid || (a.group && a.group.id === gid)).map(a => a.id)
+      this.selectedIds = Array.from(new Set([ ...this.selectedIds, ...ids ]))
+      if (ids.length === 0) toast.info('В выбранной группе нет анализов на текущей странице')
+    },
+    async ungroupAllInSelected() {
+      const gid = this.groupManager.selectedId
+      if (!gid) return
+      const ids = this.analyses.filter(a => a.group_id === gid || (a.group && a.group.id === gid)).map(a => a.id)
+      if (ids.length === 0) { toast.info('На текущей странице нет анализов этой группы'); return }
+      try {
+        const resp = await porosityAnalysisAPI.bulkSetGroup({ analysis_ids: ids, remove: true })
+        if (resp && resp.success) {
+          const idSet = new Set(ids)
+          this.analyses = this.analyses.map(a => idSet.has(a.id) ? { ...a, group: null, group_id: null } : a)
+          toast.success('Группа снята у всех элементов группы на странице')
+        } else {
+          toast.error(resp?.message || 'Не удалось снять группы')
+        }
+      } catch (e) {
+        toast.error(e?.message || 'Ошибка снятия групп')
+      }
+    },
+    async createGroup() {
+      const name = this.groupManager.name && this.groupManager.name.trim()
+      if (!name) return
+      try {
+        const resp = await porosityAnalysisAPI.createGroup({ name })
+        if (resp && resp.success) {
+          await this.loadGroups()
+          const created = (resp.data && resp.data.id) ? resp.data : (Array.isArray(resp.data) ? resp.data.slice(-1)[0] : null)
+          this.groupManager.selectedId = created?.id || null
+          toast.success('Группа создана')
+        } else {
+          toast.error(resp?.message || 'Не удалось создать группу')
+        }
+      } catch (e) {
+        toast.error(e?.message || 'Ошибка создания группы')
+      }
+    },
+    async renameSelectedGroup() {
+      const gid = this.groupManager.selectedId
+      const name = this.groupManager.name && this.groupManager.name.trim()
+      if (!gid || !name) return
+      try {
+        const resp = await porosityAnalysisAPI.updateGroup(gid, { name })
+        if (resp && resp.success) {
+          await this.loadGroups()
+          toast.success('Группа переименована')
+        } else {
+          toast.error(resp?.message || 'Не удалось переименовать группу')
+        }
+      } catch (e) {
+        toast.error(e?.message || 'Ошибка переименования группы')
+      }
+    },
+    async deleteSelectedGroup() {
+      const gid = this.groupManager.selectedId
+      if (!gid) return
+      try {
+        const resp = await porosityAnalysisAPI.deleteGroup(gid)
+        if (resp && (resp.success || resp.status === 204)) {
+          // локально снимаем группы с элементов на странице
+          this.analyses = this.analyses.map(a => (a.group_id === gid || (a.group && a.group.id === gid)) ? { ...a, group: null, group_id: null } : a)
+          await this.loadGroups()
+          this.groupManager.selectedId = null
+          toast.success('Группа удалена')
+        } else {
+          toast.error(resp?.message || 'Не удалось удалить группу')
+        }
+      } catch (e) {
+        toast.error(e?.message || 'Ошибка удаления группы')
+      }
+    },
     syncSelectMinWidths() {
       // Вычисляем минимальную ширину селектов по ширине соответствующих label (+ небольшой отступ)
       const pad = 16
@@ -909,7 +1081,15 @@ export default {
       try {
         const params = {
           page: page,
-          page_size: this.pagination.page_size
+          page_size: this.pagination.page_size,
+          ...(this.currentGroupId === 0 ? { group_id: '' } : {}),
+          ...(this.currentGroupId && this.currentGroupId > 0 ? { group_id: this.currentGroupId } : {})
+        }
+        // Для сортировки по группе используем серверную сортировку по group__name
+        if (this.ordering === 'group') {
+          params.ordering = 'group__name'
+        } else if (this.ordering === '-group') {
+          params.ordering = '-group__name'
         }
         
         const response = await porosityAnalysisAPI.getAnalyses(params)
@@ -963,6 +1143,53 @@ export default {
         }
       } finally {
         this.loading = false
+      }
+    },
+    onOrderingChange() {
+      // При смене сортировки по группе запрашиваем данные с сервера, остальные сортируются на клиенте
+      if (this.ordering === 'group' || this.ordering === '-group') {
+        this.changePage(1)
+        this.loadAnalyses(1).catch(() => {})
+      }
+    },
+    async applyBulkGroup() {
+      if (this.selectedIds.length === 0) return
+      const payload = { analysis_ids: this.selectedIds }
+      if (this.bulkNewGroupName) payload.new_group_name = this.bulkNewGroupName
+      else if (this.bulkGroupId) payload.group_id = this.bulkGroupId
+      else return
+      try {
+        const resp = await porosityAnalysisAPI.bulkSetGroup(payload)
+        if (resp && resp.success) {
+          const targetGroup = resp.group || null
+          // обновляем локально
+          const idSet = new Set(this.selectedIds)
+          this.analyses = this.analyses.map(a => idSet.has(a.id) ? { ...a, group: targetGroup, group_id: targetGroup?.id || null } : a)
+          this.bulkGroupId = null
+          this.bulkNewGroupName = ''
+          this.clearSelection()
+          toast.success('Группа применена')
+        } else {
+          toast.error(resp?.message || 'Не удалось применить группу')
+        }
+      } catch (e) {
+        toast.error(e?.message || 'Ошибка применения группы')
+      }
+    },
+    async removeBulkGroup() {
+      if (this.selectedIds.length === 0) return
+      try {
+        const resp = await porosityAnalysisAPI.bulkSetGroup({ analysis_ids: this.selectedIds, remove: true })
+        if (resp && resp.success) {
+          const idSet = new Set(this.selectedIds)
+          this.analyses = this.analyses.map(a => idSet.has(a.id) ? { ...a, group: null, group_id: null } : a)
+          this.clearSelection()
+          toast.success('Группа снята у выбранных')
+        } else {
+          toast.error(resp?.message || 'Не удалось снять группу')
+        }
+      } catch (e) {
+        toast.error(e?.message || 'Ошибка снятия группы')
       }
     },
     isSelected(id) {

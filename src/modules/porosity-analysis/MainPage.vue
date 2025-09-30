@@ -109,6 +109,23 @@
                           ></textarea>
                         </div>
 
+                        <!-- Группа (необязательно) -->
+                        <div class="form-group">
+                          <label class="form-label">Группа <span class="optional-badge">необязательно</span></label>
+                          <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-6">
+                              <select class="form-select" v-model.number="selectedGroupId">
+                                <option :value="null">Без группы</option>
+                                <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                              </select>
+                            </div>
+                            <div class="col-12 col-md-6">
+                              <input type="text" class="form-control" v-model.trim="newGroupName" placeholder="Или создать новую группу" />
+                              <div class="form-help">Заполните, чтобы создать новую группу на лету</div>
+                            </div>
+                          </div>
+                        </div>
+
                         <div class="parameters-grid">
                           <div class="form-group">
                             <label for="scaleValue" class="form-label">Масштаб</label>
@@ -284,6 +301,10 @@ export default {
         scale_value: 100,  // Стандартное значение шкалы 100 мкм
         pixels_per_micron: null
       },
+      groups: [],
+      groupsLoading: false,
+      selectedGroupId: null,
+      newGroupName: '',
       selectedAnalysisImages: [],
       isCreating: false,
       dragActive: false,
@@ -301,10 +322,20 @@ export default {
   async mounted() {
     await Promise.all([
       this.loadStats(),
-      this.loadUploadConfig()
+      this.loadUploadConfig(),
+      this.loadGroups()
     ])
   },
   methods: {
+    async loadGroups() {
+      this.groupsLoading = true
+      try {
+        const resp = await porosityAnalysisAPI.getGroups()
+        if (resp && resp.success) this.groups = resp.data || []
+      } finally {
+        this.groupsLoading = false
+      }
+    },
     openFileDialog() {
       if (this.$refs.analysisImageInput) {
         this.$refs.analysisImageInput.click()
@@ -367,7 +398,9 @@ export default {
               name: this.newAnalysis.name ? `${this.newAnalysis.name} — ${file.name.replace(/\.[^/.]+$/, '')}` : '',
               description: this.newAnalysis.description || `Автоматически созданный анализ для файла ${file.name}`,
               scale_value: this.newAnalysis.scale_value,
-              pixels_per_micron: this.newAnalysis.pixels_per_micron
+              pixels_per_micron: this.newAnalysis.pixels_per_micron,
+              // Назначение группы: приоритет у нового имени
+              ...(this.newGroupName ? { new_group_name: this.newGroupName } : (this.selectedGroupId ? { group_id: this.selectedGroupId } : {}))
             }
             const createResp = await porosityAnalysisAPI.createAnalysis(analysisPayload)
             if (!(createResp && createResp.success)) throw new Error(createResp?.message || 'Не удалось создать анализ')
@@ -416,6 +449,8 @@ export default {
         pixels_per_micron: null
       }
       this.selectedAnalysisImages = []
+      this.selectedGroupId = null
+      this.newGroupName = ''
       if (this.$refs.analysisImageInput) {
         this.$refs.analysisImageInput.value = ''
       }

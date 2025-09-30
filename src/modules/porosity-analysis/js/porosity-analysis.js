@@ -214,6 +214,34 @@ class PorosityAnalysisAPI {
     }
   }
 
+  // ===== Группы анализов =====
+  async getGroups(params = {}) {
+    return await apiClient.get('porosity_analysis/groups/', params)
+  }
+
+  async createGroup(data) {
+    // data: { name, description? }
+    return await apiClient.post('porosity_analysis/groups/', data)
+  }
+
+  async updateGroup(groupId, data) {
+    return await apiClient.put(`porosity_analysis/groups/${groupId}/`, data)
+  }
+
+  async deleteGroup(groupId) {
+    return await apiClient.delete(`porosity_analysis/groups/${groupId}/`)
+  }
+
+  async setAnalysisGroup(analysisId, payload) {
+    // payload: { group_id? , new_group_name? , remove? }
+    return await apiClient.post(`${this.baseEndpoint}${analysisId}/set_group/`, payload)
+  }
+
+  async bulkSetGroup(payload) {
+    // payload: { analysis_ids: number[], group_id? , new_group_name? , remove? }
+    return await apiClient.post(`${this.baseEndpoint}bulk_set_group/`, payload)
+  }
+
   /**
    * Создать несколько анализов для множественных файлов
    */
