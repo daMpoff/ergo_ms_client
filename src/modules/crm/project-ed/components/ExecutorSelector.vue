@@ -74,9 +74,10 @@
                     @click="toggleUser(user)"
                 >
                     <div class="user-avatar">
-                        <DefaultAvatar
+                        <UserAvatar
                             :size="'small'"
                             :title="user.name"
+                            :customAvatarUrl="user.avatarUrl"
                         />
                     </div>
                     <div class="user-info">
@@ -116,7 +117,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { X } from 'lucide-vue-next'
-import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 
 const props = defineProps({
     modelValue: {

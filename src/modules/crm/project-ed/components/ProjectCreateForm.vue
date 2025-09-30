@@ -128,6 +128,11 @@ import {
     ArrowRight,
     Check
 } from 'lucide-vue-next'
+import { apiClient } from '@/js/api/manager.js'
+import { endpoints } from '@/js/api/endpoints.js'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 // Получаем данные пользователя из store
 const userStore = useUserStore()
@@ -344,13 +349,47 @@ watch(() => formData.budget.totals?.withInsurance, (newAmount) => {
 // Отправка формы
 const emit = defineEmits(['project-created'])
 
-const submitForm = () => {
-    if (canSubmit.value) {
-        console.log('Отправка данных проекта:', formData)
-        // Здесь будет логика отправки данных на сервер
-        // Пока что просто эмитим событие с данными
-        emit('project-created', formData)
-        alert('Проект успешно создан!')
+const isSubmitting = ref(false)
+
+const submitForm = async () => {
+    if (!canSubmit.value || isSubmitting.value) return
+
+    try {
+        isSubmitting.value = true
+        // Формируем payload под ProjectSerializer
+        const payload = {
+            short_name: formData.basicProvisions.shortName,
+            name: formData.basicProvisions.projectName,
+            name_clarification: formData.basicProvisions.projectNameClarification || '',
+            start_date: formData.basicProvisions.startDate,
+            end_date: formData.basicProvisions.endDate,
+            curator_id: formData.basicProvisions.curator ?? null,
+            customer_name: formData.basicProvisions.customer || '',
+            manager_name: formData.basicProvisions.manager || (userInfo.value?.name || ''),
+            budget_total: Number(
+                (formData.budget?.totals?.withInsurance) ?? formData.basicProvisions.budget ?? 0
+            ) || 0,
+            event: formData.event || null,
+            basic_provisions: formData.basicProvisions,
+            target_indicators: formData.targetIndicators,
+            calendar_plan: formData.calendarPlan,
+            budget: formData.budget,
+            additional_info: formData.additionalInfo,
+        }
+
+        const res = await apiClient.post(endpoints.project_ed.projects.create, payload)
+        if (res?.success) {
+            const serverData = res.data
+            toast.success('Проект успешно создан')
+            emit('project-created', serverData)
+        } else {
+            toast.error('Не удалось создать проект')
+        }
+    } catch (e) {
+        toast.error('Ошибка при создании проекта')
+        console.error('Ошибка создания проекта:', e)
+    } finally {
+        isSubmitting.value = false
     }
 }
 </script>
