@@ -546,7 +546,9 @@ onMounted(async () => {
                     keyResults: e.results,
                     period: e.years_display || `${e.start_year || ''}${e.end_year ? '-' + e.end_year : ''}`,
                     highlighted: false,
-                    leaders: []
+                    leaders: [],
+                    // Добавляем связь с блоком мероприятий, чтобы далее можно было фильтровать показатели по блоку
+                    blockId: b.id
                 }
             })
 

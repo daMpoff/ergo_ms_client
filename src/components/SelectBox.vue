@@ -1,7 +1,7 @@
 <template>
     <div class="select-box" ref="rootEl">
         <label v-if="label" class="form-label mb-1">{{ label }}</label>
-        <div class="dropdown w-100" :class="{ 'is-open': isOpen }">
+        <div class="dropdown" :class="{ 'is-open': isOpen }">
             <button
                 class="btn btn-light w-100 d-flex align-items-center justify-content-between select-trigger"
                 type="button"
@@ -68,6 +68,10 @@ const props = defineProps({
     size: { type: String, default: 'md' }, // sm | md | lg
     castToNumber: { type: Boolean, default: false },
     currentLabelFormatter: { type: Function, default: null },
+    // зарезервировано на будущее, сейчас селект всегда занимает 100% ширины контейнера
+    fullWidth: { type: Boolean, default: true },
+    // ограничение длины отображаемого выбранного текста (обрезается с …)
+    maxSelectedChars: { type: [Number, null], default: null },
 })
 
 const emit = defineEmits(['update:modelValue', 'change', 'blur'])
@@ -162,7 +166,7 @@ const sizeClass = computed(() => {
     return ''
 })
 
-const currentLabel = computed(() => {
+const rawCurrentLabel = computed(() => {
     if (props.modelValue === null || props.modelValue === undefined || props.modelValue === '') {
         return props.allLabel
     }
@@ -178,6 +182,15 @@ const currentLabel = computed(() => {
         try { return props.currentLabelFormatter({ option: found.raw, value: found.value, label: found.label }) } catch { /* noop */ }
     }
     return found.label
+})
+
+const currentLabel = computed(() => {
+    const label = rawCurrentLabel.value ?? ''
+    const limit = props.maxSelectedChars
+    if (typeof limit === 'number' && limit > 0 && label.length > limit) {
+        return label.slice(0, Math.max(0, limit - 1)) + '…'
+    }
+    return label
 })
 
 const selectedOption = computed(() => {
@@ -211,6 +224,10 @@ const currentFontSize = ref('1rem')
 const baseFontSize = 16 // px (примерно 1rem)
 const minFontSize = 12 // px
 function adjustFontSize() {
+    // Если явно задано ограничение символов, полагаемся на CSS-ellipsis и не пытаемся уменьшать шрифт
+    if (typeof props.maxSelectedChars === 'number' && props.maxSelectedChars > 0) {
+        return
+    }
     const el = valueTextEl.value
     if (!el) return
     // Сбрасываем до базового
@@ -291,7 +308,7 @@ watch(() => props.modelValue, async () => {
     min-width: unset;
 }
 .select-box { max-width: 100%; }
-.select-box .dropdown { position: relative; max-width: 100%; }
+.select-box .dropdown { position: relative; width: 100%; max-width: 100%; }
 .dropdown-item.multi-line {
     white-space: normal;
     overflow-wrap: anywhere;

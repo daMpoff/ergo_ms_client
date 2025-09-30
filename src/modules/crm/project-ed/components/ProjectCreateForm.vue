@@ -45,6 +45,7 @@
                 <TargetIndicators
                     v-if="currentStep === 3"
                     v-model:indicators="formData.targetIndicators"
+                    :selected-event="formData.event"
                     @next="nextStep"
                     @prev="prevStep"
                 />

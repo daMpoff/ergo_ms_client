@@ -16,42 +16,62 @@
                     <div class="indicator-fields">
                         <div class="form-group">
                             <label class="form-label">наименование показателя</label>
-                            <div class="select-wrapper">
-                                <select
+                            <template v-if="!indicator.isCustom">
+                                <SelectBox
                                     v-model="indicator.name"
-                                    class="form-select"
-                                >
-                                    <option v-if="!indicator.name" value="" disabled>Выберите показатель</option>
-                                    <option 
-                                        v-for="option in indicatorOptions" 
-                                        :key="option.value"
-                                        :value="option.value"
-                                    >
-                                        {{ option.label }}
-                                    </option>
-                                </select>
-                                <ChevronDown class="select-icon" :size="16" />
+                                    :options="indicatorOptions"
+                                    :valueKey="'value'"
+                                    :labelKey="'label'"
+                                    :includeAllOption="true"
+                                    :allLabel="'Выберите показатель'"
+                                    :fullWidth="false"
+                                    :maxSelectedChars="40"
+                                />
+                            </template>
+                            <template v-else>
+                                <input
+                                    v-model.trim="indicator.name"
+                                    type="text"
+                                    class="form-input"
+                                    placeholder="Введите наименование"
+                                />
+                            </template>
+                            <div class="custom-toggle">
+                                <input 
+                                    class="toggle-input" 
+                                    :id="`custom-${index}`" 
+                                    type="checkbox" 
+                                    v-model="indicator.isCustom" 
+                                />
+                                <label class="toggle-label" :for="`custom-${index}`">
+                                    <span class="toggle-track"></span>
+                                    <span class="toggle-text">вручную</span>
+                                </label>
                             </div>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">единица измерения</label>
-                            <div class="select-wrapper">
-                                <select
+                            <template v-if="!indicator.isCustom">
+                                <SelectBox
                                     v-model="indicator.unit"
-                                    class="form-select"
-                                >
-                                    <option v-if="!indicator.unit" value="" disabled>Выберите единицу</option>
-                                    <option 
-                                        v-for="unit in unitOptions" 
-                                        :key="unit.value"
-                                        :value="unit.value"
-                                    >
-                                        {{ unit.label }}
-                                    </option>
-                                </select>
-                                <ChevronDown class="select-icon" :size="16" />
-                            </div>
+                                    :options="unitOptions"
+                                    :valueKey="'value'"
+                                    :labelKey="'label'"
+                                    :includeAllOption="true"
+                                    :allLabel="'Выберите единицу'"
+                                    :fullWidth="false"
+                                    :maxSelectedChars="8"
+                                />
+                            </template>
+                            <template v-else>
+                                <input
+                                    v-model.trim="indicator.unit"
+                                    type="text"
+                                    class="form-input"
+                                    placeholder="Ед. изм. (шт., %, руб. и т.п.)"
+                                />
+                            </template>
                         </div>
                         
                         <div class="form-group">
@@ -107,11 +127,18 @@ import {
     X,
     ChevronDown
 } from 'lucide-vue-next'
+import { apiClient } from '@/js/api/manager.js'
+import { endpoints } from '@/js/api/endpoints.js'
+import SelectBox from '@/components/SelectBox.vue'
 
 const props = defineProps({
     indicators: {
         type: Array,
         default: () => []
+    },
+    selectedEvent: {
+        type: Object,
+        default: null
     }
 })
 
@@ -121,38 +148,13 @@ const emit = defineEmits(['update:indicators'])
 const localIndicators = ref((props.indicators && props.indicators.length) ? JSON.parse(JSON.stringify(props.indicators)) : [])
 
 // Опции для выпадающих списков
-const indicatorOptions = ref([
-    { value: 'participants', label: 'Количество участников' },
-    { value: 'satisfaction', label: 'Уровень удовлетворенности' },
-    { value: 'completion_rate', label: 'Процент выполнения' },
-    { value: 'revenue', label: 'Доходы' },
-    { value: 'costs', label: 'Расходы' },
-    { value: 'efficiency', label: 'Эффективность' },
-    { value: 'quality', label: 'Качество' },
-    { value: 'time', label: 'Время выполнения' }
-])
+const indicatorOptions = ref([])
 
-const unitOptions = ref([
-    { value: 'ед', label: 'ед.' },
-    { value: '%', label: '%' },
-    { value: 'руб', label: 'руб.' },
-    { value: 'чел', label: 'чел.' },
-    { value: 'м²', label: 'м²' },
-    { value: 'балл', label: 'балл' },
-    { value: 'синх/нед', label: 'кол-во синхронизаций в неделю' }
-])
+// Единицы измерения подгружаются из показателей выбранного блока
+const unitOptions = ref([])
 
 // Связка показателей и допустимых единиц измерения
-const indicatorToUnits = {
-    participants: ['чел'],
-    satisfaction: ['балл', '%'],
-    completion_rate: ['%'],
-    revenue: ['руб'],
-    costs: ['руб'],
-    efficiency: ['%'],
-    quality: ['балл', '%'],
-    time: ['синх/нед', 'ед']
-}
+const indicatorToUnits = {}
 
 // Методы
 const addIndicator = () => {
@@ -162,7 +164,8 @@ const addIndicator = () => {
             name: '',
             unit: '',
             baseValue: 0,
-            targetValue: 0
+            targetValue: 0,
+            isCustom: false
         }
     ]
     localIndicators.value = next
@@ -181,13 +184,15 @@ if (localIndicators.value.length === 0) {
 watch(localIndicators, (newValue) => {
     // Автокоррекция единиц при смене показателя
     newValue.forEach((ind) => {
-        const allowed = indicatorToUnits[ind.name]
-        if (allowed && !allowed.includes(ind.unit)) {
-            ind.unit = allowed[0]
-        }
-        // Если показатель не выбран, не навязываем единицу
-        if (!ind.name && ind.unit && !unitOptions.value.find(u => u.value === ind.unit)) {
-            ind.unit = ''
+        if (!ind.isCustom) {
+            const allowed = indicatorToUnits[ind.name]
+            if (allowed && !allowed.includes(ind.unit)) {
+                ind.unit = allowed[0]
+            }
+            // Если показатель не выбран, не навязываем единицу
+            if (!ind.name && ind.unit && !unitOptions.value.find(u => u.value === ind.unit)) {
+                ind.unit = ''
+            }
         }
     })
     emit('update:indicators', newValue)
@@ -204,6 +209,48 @@ watch(() => props.indicators, (newVal) => {
         }
     }
 }, { deep: true })
+
+// Загрузка целевых показателей по выбранному блоку мероприятий
+const loadIndicatorsByEventBlock = async (blockId) => {
+    try {
+        if (!blockId) {
+            indicatorOptions.value = []
+            unitOptions.value = []
+            return
+        }
+        const resp = await apiClient.get(endpoints.project_ed.target_indicators.list, { event_block: blockId })
+        const data = Array.isArray(resp?.data) ? resp.data : (resp?.data?.results || [])
+        indicatorOptions.value = data.map(it => ({ value: it.id || it.code || it.name, label: it.name }))
+        const dict = {}
+        for (const it of data) {
+            if (it.name && it.unit) dict[it.id || it.name] = [it.unit]
+        }
+        Object.assign(indicatorToUnits, dict)
+
+        // Устанавливаем список доступных единиц измерения из показателей блока
+        const uniqueUnits = Array.from(new Set((data || []).map(it => it.unit).filter(Boolean)))
+        unitOptions.value = uniqueUnits.map(u => ({ value: u, label: u }))
+
+        // Провалидируем текущие строки: сбросим неподдерживаемые единицы/подставим по умолчанию
+        localIndicators.value.forEach(ind => {
+            const allowed = indicatorToUnits[ind.name]
+            if (allowed && allowed.length) {
+                ind.unit = allowed[0]
+            } else if (ind.unit && !unitOptions.value.find(u => u.value === ind.unit)) {
+                ind.unit = ''
+            }
+        })
+    } catch (e) {
+        indicatorOptions.value = []
+        unitOptions.value = []
+    }
+}
+
+// Следим за изменениями выбранного мероприятия и подгружаем список показателей блоку
+watch(() => props.selectedEvent, (ev) => {
+    const blockId = ev?.blockId || ev?.block_id || ev?.event_block || ev?.sectionId || null
+    loadIndicatorsByEventBlock(blockId)
+}, { immediate: true, deep: true })
 </script>
 
 <style scoped lang="scss">
@@ -412,4 +459,66 @@ watch(() => props.indicators, (newVal) => {
         align-self: flex-end;
     }
 }
+
+// Красивая галочка-переключатель "вручную"
+.custom-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.toggle-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-track {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: #e9ecef;
+    border-radius: 999px;
+    transition: background-color 0.2s ease;
+    box-shadow: inset 0 0 0 1px #dee2e6;
+}
+
+.toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease;
+}
+
+.toggle-input:checked + .toggle-label .toggle-track {
+    background: #0d6efd;
+    box-shadow: inset 0 0 0 1px #0d6efd;
+}
+
+.toggle-input:checked + .toggle-label .toggle-track::after {
+    transform: translateX(18px);
+}
+
+.toggle-label .toggle-text {
+    font-size: 0.8125rem;
+    color: #6c757d;
+}
+
+// Удалены локальные ограничения ширины селектов — возвращаем дефолтный размер
 </style>
