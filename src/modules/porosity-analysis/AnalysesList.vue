@@ -483,7 +483,7 @@
                         </button>
                         
                         
-                        <div v-if="analysis.status === 'completed'" class="dropdown d-inline-block">
+                        <div class="dropdown d-inline-block">
                           <button
                             type="button"
                             class="action-btn success dropdown-toggle"
@@ -495,16 +495,25 @@
                             {{ downloadingAnalysis === analysis.id ? 'Скачивание...' : 'Скачать' }}
                           </button>
                           <ul class="dropdown-menu">
+                            <template v-if="analysis.status === 'completed'">
+                              <li>
+                                <a class="dropdown-item" href="#" @click.prevent="downloadReport(analysis.id, 'pdf')">
+                                  <FileText class="me-2" size="16" />
+                                  PDF отчет
+                                </a>
+                              </li>
+                              <li>
+                                <a class="dropdown-item" href="#" @click.prevent="downloadReport(analysis.id, 'docx')">
+                                  <FileText class="me-2" size="16" />
+                                  Word отчет
+                                </a>
+                              </li>
+                              <li><hr class="dropdown-divider"></li>
+                            </template>
                             <li>
-                              <a class="dropdown-item" href="#" @click.prevent="downloadReport(analysis.id, 'pdf')">
-                                <FileText class="me-2" size="16" />
-                                PDF отчет
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="#" @click.prevent="downloadReport(analysis.id, 'docx')">
-                                <FileText class="me-2" size="16" />
-                                Word отчет
+                              <a class="dropdown-item" href="#" @click.prevent="downloadOriginalImage(analysis.id)">
+                                <Download class="me-2" size="16" />
+                                Скачать исходное фото
                               </a>
                             </li>
                           </ul>
@@ -1517,6 +1526,31 @@ export default {
         toast.error(error.message || 'Ошибка при скачивании архива отчетов')
       } finally {
         this.downloadingReports = false
+      }
+    },
+    async downloadOriginalImage(analysisId) {
+      try {
+        this.downloadingAnalysis = analysisId
+        const response = await porosityAnalysisAPI.downloadOriginal(analysisId)
+        if (response && response.success) {
+          const blob = new Blob([response.data], { type: 'image/png' })
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `analysis_${analysisId}.png`
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+          window.URL.revokeObjectURL(url)
+          toast.success('Исходное фото скачивается')
+        } else {
+          throw new Error((response && response.message) ? response.message : 'Ошибка при скачивании исходного изображения')
+        }
+      } catch (error) {
+        console.error('Download original error:', error)
+        toast.error(error.message || 'Ошибка при скачивании исходного изображения')
+      } finally {
+        this.downloadingAnalysis = null
       }
     }
   }

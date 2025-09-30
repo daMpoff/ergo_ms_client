@@ -366,6 +366,22 @@ class PorosityAnalysisAPI {
   }
 
   /**
+   * Скачать исходное изображение
+   */
+  async downloadOriginal(analysisId) {
+    try {
+      const response = await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_original/`, {}, 'GET')
+      return response
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании исходного изображения',
+        data: null
+      }
+    }
+  }
+
+  /**
    * Скачать отчет
    */
   async downloadReport(analysisId, reportType) {
