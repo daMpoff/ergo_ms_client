@@ -117,49 +117,6 @@
       "title": "Управление организациями",
       "children": [
         {
-          "icon": "Target",
-          "routeName": "StrategicProjects",
-          "name": "Стратегические проекты",
-          "children": [
-            {
-              "routeName": "StrategicProjectsDashboard",
-              "name": "Главная"
-            },
-            {
-              "routeName": "StrategicProjectsDashboard",
-              "name": "Дашборд"
-            },
-            {
-              "routeName": "ProgramTopics",
-              "name": "Темы программы развития"
-            },
-            {
-              "routeName": "MyProjects",
-              "name": "Мои проекты"
-            },
-            {
-              "routeName": "ImportProgram",
-              "name": "Импорт программы"
-            },
-            {
-              "routeName": "ProjectReports",
-              "name": "Отчеты и аналитика"
-            },
-            {
-              "routeName": "ProjectsArchive",
-              "name": "Архив проектов"
-            },
-            {
-              "routeName": "EmployeeWorkload",
-              "name": "Занятость сотрудников"
-            },
-            {
-              "routeName": "ExpertApproval",
-              "name": "Экспертная оценка"
-            }
-          ]
-        },
-        {
           "icon": "FolderKanban",
           "routeName": "ProjectManagement",
           "name": "Управление проектами",
