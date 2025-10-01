@@ -89,42 +89,211 @@
     <div class="row">
       <div class="col-12">
             <!-- Управление группами -->
-            <div class="card mb-3">
+            <div class="card group-management-card mb-3">
+              <div class="card-header">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="group-icon">
+                    <Hash size="20" />
+                  </div>
+                  <h6 class="mb-0 fw-bold">Управление группами</h6>
+                  <span class="badge bg-primary ms-auto">{{ groups.length }} групп</span>
+                </div>
+              </div>
               <div class="card-body">
-                <div class="d-flex flex-wrap align-items-end gap-3">
-                  <div class="flex-grow-1">
-                    <label class="form-label">Группы</label>
-                    <div class="d-flex gap-2 flex-wrap">
-                      <select v-model.number="groupManager.selectedId" class="form-select" style="min-width: 260px;">
-                        <option :value="null">Выберите группу...</option>
-                        <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-                      </select>
-                      <button class="btn btn-outline-primary d-inline-flex align-items-center" :disabled="!groupManager.selectedId" @click="selectAllByGroup">
-                        <List class="me-1" size="16" /> Выделить все в группе
-                      </button>
-                      <button class="btn btn-outline-danger d-inline-flex align-items-center" :disabled="!groupManager.selectedId" @click="ungroupAllInSelected">
-                        <Trash2 class="me-1" size="16" /> Снять группу у всех
-                      </button>
+                <div class="row g-3">
+                  <!-- Выбор группы и действия -->
+                  <div class="col-lg-6">
+                    <div class="group-section group-section-equal">
+                      <label class="form-label d-flex align-items-center gap-2 mb-3">
+                        <Users size="16" />
+                        <span class="fw-semibold">Выбор группы</span>
+                      </label>
+                      <div class="group-selector">
+                        <select v-model.number="groupManager.selectedId" class="form-select group-select" @change="onGroupSelect">
+                          <option :value="null">Выберите группу для управления...</option>
+                          <option v-for="g in groups" :key="g.id" :value="g.id">
+                            {{ g.name }} ({{ getGroupAnalysesCount(g.id) }} анализов)
+                          </option>
+                        </select>
+                        <div v-if="groupManager.selectedId" class="selected-group-info mt-2">
+                          <div class="d-flex align-items-center gap-2 text-muted">
+                            <div class="group-color-indicator" :style="{ backgroundColor: getGroupColor(groupManager.selectedId) }"></div>
+                            <small>Выбрана группа: <strong>{{ getSelectedGroupName() }}</strong></small>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="group-actions mt-3">
+                        <div class="d-flex gap-2 flex-wrap">
+                          <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center" 
+                                  :disabled="!groupManager.selectedId" 
+                                  @click="selectAllByGroup">
+                            <List class="me-1" size="14" /> 
+                            Выделить все
+                          </button>
+                          <button class="btn btn-outline-warning btn-sm d-inline-flex align-items-center" 
+                                  :disabled="!groupManager.selectedId" 
+                                  @click="ungroupAllInSelected">
+                            <Unlink class="me-1" size="14" /> 
+                            Снять группу
+                          </button>
+                        </div>
+                      </div>
+                      <!-- Добавляем пустое место для выравнивания высоты -->
+                      <div class="group-spacer"></div>
                     </div>
                   </div>
-                  <div class="flex-grow-1">
-                    <label class="form-label">Создать/переименовать группу</label>
-                    <div class="input-group">
-                      <span class="input-group-text">
-                        <Hash size="16" />
-                      </span>
-                      <input class="form-control" v-model.trim="groupManager.name" placeholder="Название группы" />
-                      <button class="btn btn-success" :disabled="!groupManager.name" @click="createGroup">
-                        Создать
-                      </button>
-                      <button class="btn btn-secondary" :disabled="!groupManager.selectedId || !groupManager.name" @click="renameSelectedGroup">
-                        Переименовать
-                      </button>
-                      <button class="btn btn-outline-danger" :disabled="!groupManager.selectedId" @click="deleteSelectedGroup">
-                        Удалить группу
-                      </button>
+                  
+                  <!-- Создание и редактирование группы -->
+                  <div class="col-lg-6">
+                    <div class="group-section group-section-equal">
+                      <label class="form-label d-flex align-items-center gap-2 mb-3">
+                        <Plus size="16" />
+                        <span class="fw-semibold">Создание и редактирование</span>
+                      </label>
+                      <div class="group-creator">
+                        <div class="input-group">
+                          <span class="input-group-text">
+                            <Hash size="16" />
+                          </span>
+                          <input class="form-control" 
+                                 v-model.trim="groupManager.name" 
+                                 placeholder="Введите название группы" 
+                                 @keyup.enter="groupManager.selectedId ? renameSelectedGroup() : createGroup()" />
+                        </div>
+                        <div class="group-buttons mt-3">
+                          <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-success btn-sm d-inline-flex align-items-center" 
+                                    :disabled="!groupManager.name" 
+                                    @click="createGroup">
+                              <Plus class="me-1" size="14" /> 
+                              Создать
+                            </button>
+                            <button class="btn btn-secondary btn-sm d-inline-flex align-items-center" 
+                                    :disabled="!groupManager.selectedId || !groupManager.name" 
+                                    @click="renameSelectedGroup">
+                              <Edit3 class="me-1" size="14" /> 
+                              Переименовать
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center" 
+                                    :disabled="!groupManager.selectedId" 
+                                    @click="confirmDeleteGroup">
+                              <Trash2 class="me-1" size="14" /> 
+                              Удалить
+                            </button>
+                          </div>
+                        </div>
+                        <div class="form-text mt-2">
+                          <Info class="me-1" size="14" />
+                          Удаление группы не удаляет анализы, только снимает с них привязку
+                        </div>
+                      </div>
                     </div>
-                    <div class="form-text">Удаление группы не удаляет анализы, только снимает с них привязку</div>
+                  </div>
+                </div>
+                
+                <!-- Новый блок для назначения группы выбранным анализам -->
+                <div v-if="selectedIds.length > 0" class="group-assignment-section mt-4">
+                  <div class="card">
+                    <div class="card-header">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="group-icon">
+                          <Users size="20" />
+                        </div>
+                        <h6 class="mb-0 fw-bold">Назначить группу выбранным анализам</h6>
+                        <span class="badge bg-primary ms-auto">{{ selectedIds.length }} выбрано</span>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      <div class="row g-3 align-items-end">
+                        <div class="col-md-6">
+                          <label class="form-label d-flex align-items-center gap-2">
+                            <Hash size="16" />
+                            <span class="fw-semibold">Выберите группу</span>
+                          </label>
+                          <select v-model.number="bulkGroupId" class="form-select">
+                            <option :value="null">Выберите группу для назначения...</option>
+                            <option :value="0">Снять группу (без группы)</option>
+                            <option v-for="g in groups" :key="g.id" :value="g.id">
+                              {{ g.name }} ({{ getGroupAnalysesCount(g.id) }} анализов)
+                            </option>
+                          </select>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label d-flex align-items-center gap-2">
+                            <Plus size="16" />
+                            <span class="fw-semibold">Или создайте новую</span>
+                          </label>
+                          <div class="input-group">
+                            <span class="input-group-text">
+                              <Hash size="16" />
+                            </span>
+                            <input class="form-control" 
+                                   v-model.trim="bulkNewGroupName" 
+                                   placeholder="Название новой группы" 
+                                   @keyup.enter="applyBulkGroup" />
+                            <button class="btn btn-success" 
+                                    :disabled="!bulkNewGroupName" 
+                                    @click="createAndAssignGroup">
+                              <Plus class="me-1" size="14" />
+                              Создать и назначить
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="group-assignment-actions mt-3">
+                        <div class="d-flex gap-2 flex-wrap">
+                          <button class="btn btn-primary d-inline-flex align-items-center" 
+                                  :disabled="!bulkGroupId && !bulkNewGroupName" 
+                                  @click="applyBulkGroup">
+                            <Users class="me-1" size="14" />
+                            Назначить группу
+                          </button>
+                          <button class="btn btn-outline-warning d-inline-flex align-items-center" 
+                                  :disabled="!bulkGroupId" 
+                                  @click="removeBulkGroup">
+                            <Unlink class="me-1" size="14" />
+                            Снять группу
+                          </button>
+                          <button class="btn btn-outline-secondary d-inline-flex align-items-center" 
+                                  @click="clearBulkGroupSelection">
+                            <X class="me-1" size="14" />
+                            Очистить выбор
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Статистика по группам -->
+                <div v-if="groups.length > 0" class="group-stats mt-4">
+                  <div class="d-flex align-items-center gap-2 mb-3">
+                    <BarChart3 size="16" />
+                    <span class="fw-semibold">Статистика по группам</span>
+                  </div>
+                  <div class="row g-2">
+                    <div v-for="group in groups" :key="group.id" class="col-md-4 col-lg-3">
+                      <div class="group-stat-item">
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="group-color-indicator" :style="{ backgroundColor: getGroupColor(group.id) }"></div>
+                          <div class="flex-grow-1">
+                            <div class="group-name">{{ group.name }}</div>
+                            <div class="group-count">{{ getGroupAnalysesCount(group.id) }} анализов</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4 col-lg-3">
+                      <div class="group-stat-item group-stat-item-ungrouped">
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="group-color-indicator" style="background-color: #6c757d;"></div>
+                          <div class="flex-grow-1">
+                            <div class="group-name">Без группы</div>
+                            <div class="group-count">{{ getUngroupedAnalysesCount() }} анализов</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -716,7 +885,8 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { 
   Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus, List,
   Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash, Users, Unlink,
+  Edit3, Info, X
 } from 'lucide-vue-next'
 
 import { useToast } from 'vue-toastification'
@@ -1834,6 +2004,124 @@ export default {
       } finally {
         this.downloadingAnalysis = null
       }
+    },
+    // Новые методы для улучшенного управления группами
+    getGroupColor(groupId) {
+      if (!groupId) return '#6c757d'
+      const colors = [
+        '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', 
+        '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#6c757d'
+      ]
+      return colors[groupId % colors.length]
+    },
+    getGroupAnalysesCount(groupId) {
+      return this.analyses.filter(a => 
+        (a.group && a.group.id === groupId) || a.group_id === groupId
+      ).length
+    },
+    getUngroupedAnalysesCount() {
+      return this.analyses.filter(a => 
+        !a.group && !a.group_id
+      ).length
+    },
+    getSelectedGroupName() {
+      if (!this.groupManager.selectedId) return ''
+      const group = this.groups.find(g => g.id === this.groupManager.selectedId)
+      return group ? group.name : 'Неизвестная группа'
+    },
+    onGroupSelect() {
+      // Очищаем поле ввода при выборе группы
+      if (this.groupManager.selectedId) {
+        const group = this.groups.find(g => g.id === this.groupManager.selectedId)
+        this.groupManager.name = group ? group.name : ''
+      } else {
+        this.groupManager.name = ''
+      }
+    },
+    async confirmDeleteGroup() {
+      if (!this.groupManager.selectedId) return
+      
+      const groupName = this.getSelectedGroupName()
+      const analysesCount = this.getGroupAnalysesCount(this.groupManager.selectedId)
+      
+      let message = `Вы уверены, что хотите удалить группу "${groupName}"?`
+      if (analysesCount > 0) {
+        message += `\n\nВ группе находится ${analysesCount} анализ(а/ов). После удаления группы анализы останутся, но будут без группы.`
+      }
+      
+      if (confirm(message)) {
+        await this.deleteSelectedGroup()
+      }
+    },
+    // Методы для назначения группы выбранным анализам
+    async createAndAssignGroup() {
+      if (!this.bulkNewGroupName || this.selectedIds.length === 0) return
+      
+      try {
+        // Сначала создаем группу
+        const resp = await porosityAnalysisAPI.createGroup({ name: this.bulkNewGroupName })
+        if (resp && resp.success) {
+          const created = (resp.data && resp.data.id) ? resp.data : (Array.isArray(resp.data) ? resp.data.slice(-1)[0] : null)
+          if (created) {
+            // Затем назначаем группу выбранным анализам
+            await this.assignGroupToSelected(created.id)
+            this.bulkNewGroupName = ''
+            toast.success('Группа создана и назначена выбранным анализам')
+          } else {
+            toast.error('Не удалось создать группу')
+          }
+        } else {
+          toast.error(resp?.message || 'Не удалось создать группу')
+        }
+      } catch (e) {
+        toast.error(e?.message || 'Ошибка создания группы')
+      }
+    },
+    async assignGroupToSelected(groupId) {
+      if (this.selectedIds.length === 0) return
+      
+      try {
+        const payload = { analysis_ids: this.selectedIds }
+        if (groupId === 0) {
+          // Снимаем группу
+          const resp = await porosityAnalysisAPI.removeBulkGroup(payload)
+          if (resp && resp.success) {
+            this.analyses = this.analyses.map(a => 
+              this.selectedIds.includes(a.id) ? { ...a, group: null, group_id: null } : a
+            )
+            this.clearSelection()
+            toast.success('Группа снята с выбранных анализов')
+          } else {
+            toast.error(resp?.message || 'Не удалось снять группу')
+          }
+        } else {
+          // Назначаем группу
+          const resp = await porosityAnalysisAPI.applyBulkGroup({ ...payload, group_id: groupId })
+          if (resp && resp.success) {
+            this.analyses = this.analyses.map(a => 
+              this.selectedIds.includes(a.id) ? { ...a, group_id: groupId } : a
+            )
+            this.clearSelection()
+            toast.success('Группа назначена выбранным анализам')
+          } else {
+            toast.error(resp?.message || 'Не удалось назначить группу')
+          }
+        }
+      } catch (e) {
+        toast.error(e?.message || 'Ошибка назначения группы')
+      }
+    },
+    async applyBulkGroup() {
+      if (this.bulkGroupId !== null) {
+        await this.assignGroupToSelected(this.bulkGroupId)
+        this.bulkGroupId = null
+      } else if (this.bulkNewGroupName) {
+        await this.createAndAssignGroup()
+      }
+    },
+    clearBulkGroupSelection() {
+      this.bulkGroupId = null
+      this.bulkNewGroupName = ''
     }
   }
 }
@@ -2830,5 +3118,278 @@ export default {
 }
 .restart-actions .btn.btn-primary svg {
   color: #fff;
+}
+
+/* Стили для улучшенного блока управления группами */
+.group-management-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.group-management-card .card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #e9ecef;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1rem 1.5rem;
+}
+
+.group-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.group-section {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.group-section-equal {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.group-spacer {
+  flex-grow: 1;
+}
+
+.group-select {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.group-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.selected-group-info {
+  background: white;
+  border-radius: 6px;
+  padding: 0.75rem;
+  border: 1px solid #e9ecef;
+}
+
+.group-color-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.group-actions .btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.group-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group-creator .input-group {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.group-creator .input-group-text {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+}
+
+.group-creator .form-control {
+  border: none;
+  border-radius: 0;
+  padding: 0.75rem 1rem;
+}
+
+.group-creator .form-control:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.group-buttons .btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.group-buttons .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group-buttons .btn-success {
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+  border: none;
+}
+
+.group-buttons .btn-success:hover {
+  background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+}
+
+.group-buttons .btn-secondary {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  border: none;
+}
+
+.group-buttons .btn-secondary:hover {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+}
+
+.group-buttons .btn-outline-danger:hover {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border-color: #dc3545;
+  color: white;
+}
+
+.group-stats {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.group-stat-item {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.group-stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #007bff;
+}
+
+.group-stat-item-ungrouped {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.group-name {
+  font-weight: 600;
+  color: #212529;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.group-count {
+  color: #6c757d;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .group-management-card .card-body {
+    padding: 1rem;
+  }
+  
+  .group-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .group-buttons .btn {
+    min-width: auto;
+    flex: 1;
+  }
+  
+  .group-stats .row {
+    margin: 0;
+  }
+  
+  .group-stats .col-md-4,
+  .group-stats .col-lg-3 {
+    padding: 0.25rem;
+  }
+}
+
+/* Стили для блока назначения групп */
+.group-assignment-section .card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.group-assignment-section .card-header {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-bottom: 1px solid #e9ecef;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1rem 1.5rem;
+}
+
+.group-assignment-section .card-body {
+  padding: 1.5rem;
+}
+
+.group-assignment-actions .btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.group-assignment-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group-assignment-actions .btn-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+}
+
+.group-assignment-actions .btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+}
+
+.group-assignment-actions .btn-outline-warning:hover {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  border-color: #ffc107;
+  color: white;
+}
+
+.group-assignment-actions .btn-outline-secondary:hover {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  border-color: #6c757d;
+  color: white;
+}
+
+/* Адаптивность для блока назначения групп */
+@media (max-width: 768px) {
+  .group-assignment-section .card-body {
+    padding: 1rem;
+  }
+  
+  .group-assignment-actions .btn {
+    min-width: auto;
+    flex: 1;
+  }
+  
+  .group-section-equal {
+    min-height: auto;
+  }
 }
 </style> 
