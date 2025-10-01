@@ -118,6 +118,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { X } from 'lucide-vue-next'
 import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
+import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const props = defineProps({
     modelValue: {
