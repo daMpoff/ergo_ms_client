@@ -163,7 +163,7 @@
                   </div>
                   <div class="col-auto">
                     <label class="form-label">Группа</label>
-                    <select v-model.number="currentGroupId" class="form-select w-auto d-inline-block" @change="changePage(1)">
+                    <select v-model.number="currentGroupId" class="form-select w-auto d-inline-block" @change="onGroupChange">
                       <option :value="null">Все группы</option>
                       <option :value="0">Без группы</option>
                       <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
@@ -369,11 +369,12 @@
               <!-- Блок скачивания архива отчетов -->
               <div class="card mb-3 download-actions">
                 <div class="card-body">
-                  <div class="row g-3 align-items-end">
-                    <div class="col-12">
+                  <div class="row g-3 align-items-start">
+                    <!-- Блок скачивания по номерам -->
+                    <div class="col-12 col-md-6">
                       <label class="form-label d-flex align-items-center gap-2 mb-2">
                         <Download :size="16" />
-                        <span class="fw-bold">Скачать архив отчетов</span>
+                        <span class="fw-bold">Скачать по номерам</span>
                       </label>
                       <div class="input-group">
                         <span class="input-group-text d-inline-flex align-items-center">
@@ -402,6 +403,21 @@
                       </div>
                       <div class="form-text text-muted mt-1">
                         Введите номера анализов через запятую или тире для диапазонов (например: 1-100, 150, 200-300). Ограничений по количеству нет.
+                      </div>
+                    </div>
+
+                    <!-- Блок скачивания выбранных -->
+                    <div class="col-12 col-md-6">
+                      <label class="form-label d-flex align-items-center gap-2 mb-2 invisible">&nbsp;</label>
+                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
+                        <button 
+                          class="btn btn-primary d-inline-flex align-items-center" 
+                          :disabled="selectedIds.length === 0 || downloadingReports" 
+                          @click="downloadSelectedReports"
+                        >
+                          <Download class="me-1" size="16" /> 
+                          Скачать выбранные ({{ selectedIds.length }})
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -441,10 +457,10 @@
                               <small class="text-muted">Группа:</small>
                               <div>
                                 <template v-if="analysis.group">
-                                  [{{ analysis.group.id }}] {{ analysis.group.name }}
+                                  {{ analysis.group.name }}
                                 </template>
                                 <template v-else>
-                                  [{{ analysis.group_id }}]
+                                  {{ '{' + analysis.group_id + '}' }}
                                 </template>
                               </div>
                             </div>
@@ -460,6 +476,18 @@
                             </div>
                           </div>
                           <div class="info-col">
+                            <div class="info-item" v-if="analysis.group || analysis.group_id">
+                              <Hash class="me-1" size="14" />
+                              <small class="text-muted">Номер группы:</small>
+                              <div>
+                                <template v-if="analysis.group">
+                                  {{ analysis.group.id }}
+                                </template>
+                                <template v-else>
+                                  {{ analysis.group_id }}
+                                </template>
+                              </div>
+                            </div>
                             <div class="info-item">
                               <Ruler class="me-1" size="14" />
                               <small class="text-muted">Шкала:</small>
@@ -1016,6 +1044,8 @@ export default {
       this.ordering = '-created_at'
       this.currentFilter = 'all'
       this.pagination.current_page = 1
+      // Сбрасываем выделение карточек
+      this.clearSelection()
       // Перезагружаем список и статистику
       this.loadAnalyses(1)
       this.loadStats().catch(() => {})
@@ -1151,6 +1181,11 @@ export default {
         this.changePage(1)
         this.loadAnalyses(1).catch(() => {})
       }
+    },
+    onGroupChange() {
+      // При смене фильтра по группе сразу запрашиваем данные с сервера
+      this.changePage(1)
+      this.loadAnalyses(1).catch(() => {})
     },
     async applyBulkGroup() {
       if (this.selectedIds.length === 0) return
@@ -1706,42 +1741,8 @@ export default {
           // Освобождаем URL
           window.URL.revokeObjectURL(url)
           
-          // Показываем информацию о результате скачивания
-          const successCount = parseInt(response.headers?.['X-Reports-Count'] || '0')
-          const failedCount = parseInt(response.headers?.['X-Failed-Count'] || '0')
-          const notFound = response.headers?.['X-Not-Found']
-          
-          let message = ''
-          let toastType = 'success'
-          
-          if (successCount > 0) {
-            message = `Архив отчетов скачивается. Успешно создано отчетов: ${successCount}`
-            if (failedCount > 0) {
-              message += `, с ошибками: ${failedCount}`
-              toastType = 'warning'
-            }
-            if (notFound) {
-              message += `, не найдено анализов: ${notFound.split(',').length}`
-              toastType = 'warning'
-            }
-          } else {
-            // Если ни одного отчета не создано
-            if (notFound) {
-              message = `Архив скачивается с информацией. Не найдено анализов: ${notFound.split(',').length}`
-            } else {
-              message = 'Архив скачивается с информацией об ошибках'
-            }
-            toastType = 'info'
-          }
-          
-          // Показываем соответствующий тип уведомления
-          if (toastType === 'success') {
-            toast.success(message)
-          } else if (toastType === 'warning') {
-            toast.warning(message)
-          } else {
-            toast.info(message)
-          }
+          // Показываем простое уведомление о скачивании
+          toast.success('Архив отчетов скачивается')
           
           // Очищаем поле ввода после успешного скачивания
           this.downloadInput = ''
@@ -1750,6 +1751,60 @@ export default {
         }
       } catch (error) {
         console.error('Download multiple reports error:', error)
+        toast.error(error.message || 'Ошибка при скачивании архива отчетов')
+      } finally {
+        this.downloadingReports = false
+      }
+    },
+    async downloadSelectedReports() {
+      if (this.selectedIds.length === 0) {
+        return
+      }
+
+      this.downloadingReports = true
+
+      try {
+        const params = {
+          analysis_ids: this.selectedIds,
+          report_type: this.reportType
+        }
+
+        console.log('Downloading selected reports with params:', params)
+
+        const response = await porosityAnalysisAPI.downloadMultipleReports(params)
+        console.log('Download response:', response)
+
+        if (response && response.success && response.data) {
+          // Получаем blob из ответа
+          const blob = response.data
+          
+          // Создаем ссылку для скачивания
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          
+          // Формируем имя файла
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+          link.download = `porosity_reports_selected_${this.reportType}_${timestamp}.zip`
+          
+          // Добавляем ссылку в DOM, кликаем и удаляем
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          
+          // Освобождаем URL
+          window.URL.revokeObjectURL(url)
+          
+          // Показываем простое уведомление о скачивании
+          toast.success('Архив отчетов скачивается')
+          
+          // Очищаем выделение после успешного скачивания
+          this.clearSelection()
+        } else {
+          throw new Error((response && response.message) ? response.message : 'Ошибка при скачивании архива отчетов')
+        }
+      } catch (error) {
+        console.error('Download selected reports error:', error)
         toast.error(error.message || 'Ошибка при скачивании архива отчетов')
       } finally {
         this.downloadingReports = false
@@ -2080,7 +2135,7 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  max-width: 480px;
+  max-width: 420px;
   margin: 0 auto;
   position: relative;
   overflow: visible;
