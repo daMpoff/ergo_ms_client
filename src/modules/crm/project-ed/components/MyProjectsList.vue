@@ -19,13 +19,7 @@ const props = defineProps({
     },
 })
 
-const fallbackProjects = [
-    { id: 1, shortName: 'МП3.1-2025(ФИО)', name: 'Развитие воспитательной деятельности ...', role: 'Руководитель', status: 'Черновик' },
-    { id: 2, shortName: 'МП3.2-2025(ФИО)', name: 'Название проекта (пример)', role: 'Руководитель', status: 'На утверждении' },
-    { id: 3, shortName: 'ОП1.3-2025(ФИО)', name: 'Название проекта (пример)', role: 'Руководитель', status: 'Отклонен' },
-    { id: 4, shortName: 'ОП1.2-2025(ФИО)', name: 'Название проекта (пример)', role: 'Руководитель', status: 'В работе' },
-    { id: 5, shortName: 'НП2.3-2024(ФИО)', name: 'Название проекта (пример)', role: 'Исполнитель', status: 'Завершен' },
-]
+const fallbackProjects = []
 
 const filters = ref({ shortName: '', role: '', status: '' })
 
