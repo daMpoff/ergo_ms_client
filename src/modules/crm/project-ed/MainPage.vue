@@ -6,7 +6,7 @@
                 <h3>
                     <router-link :to="{ name: 'ProjectEdMyProjects' }" class="h3-link">Мои проекты</router-link>
                 </h3>
-                <MyProjectsList @has-items="val => hasMyProjects = val" />
+                <MyProjectsList :projects="projects" />
             </div>
             <div class="content-programm">
                 <div class="programm-header" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -39,17 +39,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Home } from 'lucide-vue-next'
 import MyProjectsList from './components/MyProjectsList.vue'
 import ProgrammList from './components/ProgrammList.vue'
 import Breadcrumbs from './components/Breadcrumbs.vue'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
 // Программа развития: выбранная вкладка
 const selectedProgramTab = ref('events')
 
-// Флаг наличия собственных проектов для отображения блока
-const hasMyProjects = ref(true)
+// Состояние загрузки проектов
+const projects = ref([])
+const isLoadingProjects = ref(false)
+const projectsError = ref('')
+
+// Вычисляемое свойство для определения наличия проектов
+const hasMyProjects = computed(() => projects.value.length > 0)
 
 // Настройка breadcrumbs для главной страницы
 const breadcrumbItems = ref([
@@ -58,6 +65,64 @@ const breadcrumbItems = ref([
         icon: Home
     }
 ])
+
+// Функция для преобразования статуса проекта
+const getProjectStatus = (status) => {
+    const statusMap = {
+        'draft': 'Черновик',
+        'pending': 'На утверждении',
+        'rejected': 'Отклонен',
+        'active': 'В работе',
+        'done': 'Завершен'
+    }
+    return statusMap[status] || status
+}
+
+// Функция для получения роли в проекте
+const getProjectRole = (project) => {
+    if (project.user_role) {
+        return project.user_role
+    }
+    return 'Участник'
+}
+
+// Загрузка проектов
+async function loadProjects() {
+    isLoadingProjects.value = true
+    projectsError.value = ''
+    
+    try {
+        console.log('Загружаем проекты в MainPage...')
+        const response = await apiClient.get(endpoints.project_ed.projects.list)
+        const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
+        
+        // Преобразуем данные API в нужный формат
+        const mappedProjects = data.map(project => ({
+            id: project.id,
+            shortName: project.short_name,
+            name: project.name,
+            role: getProjectRole(project),
+            status: getProjectStatus(project.status),
+            executors_count: project.executors_count || 0,
+            created_at: project.created_at,
+            updated_at: project.updated_at
+        }))
+        
+        projects.value = mappedProjects
+        console.log('Загружено проектов:', mappedProjects.length)
+    } catch (err) {
+        console.error('Ошибка загрузки проектов в MainPage:', err)
+        projectsError.value = 'Не удалось загрузить проекты'
+        projects.value = []
+    } finally {
+        isLoadingProjects.value = false
+    }
+}
+
+// Загружаем проекты при монтировании
+onMounted(() => {
+    loadProjects()
+})
 </script>
 
 <style scoped lang="scss">

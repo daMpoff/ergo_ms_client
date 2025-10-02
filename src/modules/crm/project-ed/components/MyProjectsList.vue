@@ -1,17 +1,25 @@
 <template>
     <div class="my-projects-list">
-        <ProjectTable :items="filteredProjects" @rowClick="onRowClick" />
-        <button class="btn btn-secondary w-100" @click="goToMyProjects">Еще...</button>
+        <ProjectTable :items="filteredProjects" @rowClick="onRowClick">
+            <template #empty>
+                <div class="text-center py-4">
+                    <p class="text-muted">У вас пока нет проектов</p>
+                    <router-link to="/project-ed/create" class="btn btn-primary">
+                        Создать первый проект
+                    </router-link>
+                </div>
+            </template>
+        </ProjectTable>
+        <button v-if="filteredProjects.length > 0" class="btn btn-secondary w-100" @click="goToMyProjects">Еще...</button>
     </div>
-    
 </template>
 
 <script setup>
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ProjectTable from '@/modules/crm/project-ed/components/ProjectTable.vue'
 
-// Входные данные (можно передать извне). Если не передали — покажем примеры для визуализации.
+// Входные данные - проекты передаются из родительского компонента
 const props = defineProps({
     projects: {
         type: Array,
@@ -19,20 +27,15 @@ const props = defineProps({
     },
 })
 
-const fallbackProjects = []
-
-const emit = defineEmits(['has-items'])
-
 const filters = ref({ shortName: '', role: '', status: '' })
 
-const sourceProjects = computed(() => (props.projects && props.projects.length ? props.projects : fallbackProjects))
-
+// Используем переданные проекты
 const filteredProjects = computed(() => {
     const name = filters.value.shortName.toLowerCase()
     const role = filters.value.role
     const status = filters.value.status
 
-    return sourceProjects.value.filter(p => {
+    return props.projects.filter(p => {
         const byName = !name || p.shortName.toLowerCase().includes(name)
         const byRole = !role || p.role === role
         const byStatus = !status || p.status === status
@@ -40,14 +43,13 @@ const filteredProjects = computed(() => {
     })
 })
 
-// Сообщаем родителю, есть ли что показывать
-watchEffect(() => {
-    emit('has-items', sourceProjects.value.length > 0)
-})
-
 const router = useRouter()
 
-const onRowClick = () => {}
+const onRowClick = (project) => {
+    // Переходим к детальной странице проекта
+    router.push({ name: 'ProjectEdProjectDetail', params: { id: project.id } })
+}
+
 const goToMyProjects = () => {
     router.push({ name: 'ProjectEdMyProjects' })
 }
