@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import ProjectTable from '@/modules/crm/project-ed/components/ProjectTable.vue'
 
@@ -20,6 +20,8 @@ const props = defineProps({
 })
 
 const fallbackProjects = []
+
+const emit = defineEmits(['has-items'])
 
 const filters = ref({ shortName: '', role: '', status: '' })
 
@@ -36,6 +38,11 @@ const filteredProjects = computed(() => {
         const byStatus = !status || p.status === status
         return byName && byRole && byStatus
     })
+})
+
+// Сообщаем родителю, есть ли что показывать
+watchEffect(() => {
+    emit('has-items', sourceProjects.value.length > 0)
 })
 
 const router = useRouter()

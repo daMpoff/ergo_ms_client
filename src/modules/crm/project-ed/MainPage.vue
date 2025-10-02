@@ -2,11 +2,11 @@
     <div class="page-container">
         <Breadcrumbs :items="breadcrumbItems" />
         <div class="page-content">
-            <div class="content-projects">
+            <div class="content-projects" v-if="hasMyProjects">
                 <h3>
                     <router-link :to="{ name: 'ProjectEdMyProjects' }" class="h3-link">Мои проекты</router-link>
                 </h3>
-                <MyProjectsList />
+                <MyProjectsList @has-items="val => hasMyProjects = val" />
             </div>
             <div class="content-programm">
                 <div class="programm-header" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -47,6 +47,9 @@ import Breadcrumbs from './components/Breadcrumbs.vue'
 
 // Программа развития: выбранная вкладка
 const selectedProgramTab = ref('events')
+
+// Флаг наличия собственных проектов для отображения блока
+const hasMyProjects = ref(true)
 
 // Настройка breadcrumbs для главной страницы
 const breadcrumbItems = ref([
