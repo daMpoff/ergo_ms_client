@@ -199,7 +199,7 @@ class PorosityAnalysisAPI {
    */
   async getUploadConfig() {
     try {
-      const response = await apiClient.get(`${this.baseEndpoint}upload_config/`)
+      const response = await apiClient.get('porosity_analysis/groups/upload_config/')
       return response
     } catch (error) {
       console.error('Error getting upload config:', error)

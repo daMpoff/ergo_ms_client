@@ -110,20 +110,22 @@
                         </div>
 
                         <!-- Группа (необязательно) -->
-                        <div class="form-group">
-                          <label class="form-label">Группа <span class="optional-badge">необязательно</span></label>
-                          <div class="row g-2 align-items-center">
-                            <div class="col-12 col-md-6">
-                              <select class="form-select" v-model.number="selectedGroupId">
-                                <option :value="null">Без группы</option>
-                                <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-                              </select>
-                            </div>
-                            <div class="col-12 col-md-6">
-                              <input type="text" class="form-control" v-model.trim="newGroupName" placeholder="Или создать новую группу" />
-                              <div class="form-help">Заполните, чтобы создать новую группу на лету</div>
+                        <div class="form-group group-selector">
+                          <label class="form-label">
+                            <Users :size="16" class="label-icon" />
+                            Группа 
+                            <span class="optional-badge">необязательно</span>
+                          </label>
+                          <div class="group-select-container">
+                            <select class="form-select group-select" v-model.number="selectedGroupId">
+                              <option :value="null">Без группы</option>
+                              <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                            </select>
+                            <div class="group-select-icon">
+                              <ChevronDown :size="16" />
                             </div>
                           </div>
+                          <div class="form-help">Выберите группу для организации анализов</div>
                         </div>
 
                         <div class="parameters-grid">
@@ -278,7 +280,7 @@
 <script>
 import { porosityAnalysisAPI } from './js/porosity-analysis.js'
 import { useToast } from 'vue-toastification'
-import { Microscope, List, Plus, Upload, Image, X, BarChart3, Clock, Loader2, CheckCircle, AlertTriangle } from 'lucide-vue-next'
+import { Microscope, List, Plus, Upload, Image, X, BarChart3, Clock, Loader2, CheckCircle, AlertTriangle, Users, ChevronDown } from 'lucide-vue-next'
 
 const toast = useToast()
 
@@ -290,7 +292,9 @@ export default {
     Upload,
     Image,
     X,
-    BarChart3
+    BarChart3,
+    Users,
+    ChevronDown
   },
   name: 'PorosityAnalysisMainPage',
   data() {
@@ -304,7 +308,6 @@ export default {
       groups: [],
       groupsLoading: false,
       selectedGroupId: null,
-      newGroupName: '',
       selectedAnalysisImages: [],
       isCreating: false,
       dragActive: false,
@@ -399,8 +402,8 @@ export default {
               description: this.newAnalysis.description || `Автоматически созданный анализ для файла ${file.name}`,
               scale_value: this.newAnalysis.scale_value,
               pixels_per_micron: this.newAnalysis.pixels_per_micron,
-              // Назначение группы: приоритет у нового имени
-              ...(this.newGroupName ? { new_group_name: this.newGroupName } : (this.selectedGroupId ? { group_id: this.selectedGroupId } : {}))
+              // Назначение группы
+              ...(this.selectedGroupId ? { group_id: this.selectedGroupId } : {})
             }
             const createResp = await porosityAnalysisAPI.createAnalysis(analysisPayload)
             if (!(createResp && createResp.success)) throw new Error(createResp?.message || 'Не удалось создать анализ')
@@ -450,7 +453,6 @@ export default {
       }
       this.selectedAnalysisImages = []
       this.selectedGroupId = null
-      this.newGroupName = ''
       if (this.$refs.analysisImageInput) {
         this.$refs.analysisImageInput.value = ''
       }
@@ -697,6 +699,75 @@ export default {
 /* Группы форм */
 .form-group {
   margin-bottom: 1.5rem;
+}
+
+/* Стили для выбора группы */
+.group-selector {
+  margin-top: 1.5rem;
+}
+
+.group-selector .form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.label-icon {
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.group-select-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.group-select {
+  appearance: none;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  padding-right: 3rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  width: 100%;
+  cursor: pointer;
+}
+
+.group-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: white;
+  outline: none;
+}
+
+.group-select:hover {
+  border-color: #cbd5e0;
+  background: white;
+}
+
+.group-select-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.group-select:focus + .group-select-icon {
+  color: #667eea;
+}
+
+.group-selector .form-help {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #718096;
+  line-height: 1.4;
 }
 
 .form-label {

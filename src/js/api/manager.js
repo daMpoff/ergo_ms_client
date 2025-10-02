@@ -225,13 +225,11 @@ class ApiClient {
     // Вспомогательный метод для добавления токена авторизации в конфигурацию
     _addAuthToken(config) {
         const token = tokenService.getAccess();
-        console.log('Токен из cookies:', token ? 'есть' : 'отсутствует');
         if (token) {
             if (!config.headers) {
                 config.headers = {};
             }
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('Добавлен заголовок Authorization:', `Bearer ${token.substring(0, 20)}...`);
         } else {
             console.warn('Токен не найден в cookies');
         }
@@ -284,7 +282,7 @@ class ApiClient {
 
             return {
                 success,
-                data,
+                data: data.data || data,
                 message: data.message,
                 status: response.status
             };

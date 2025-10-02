@@ -85,21 +85,37 @@
       @cancel="cancelBulkDelete"
       @close="cancelBulkDelete"
     />
+
+    <!-- Модальное окно подтверждения удаления группы -->
+    <ConfirmDialog
+      :show="showDeleteGroupConfirm"
+      title="Удаление группы"
+      :message="deleteGroupMessage"
+      confirm-text="Удалить группу"
+      cancel-text="Отмена"
+      variant="danger"
+      :loading="deletingGroup"
+      @confirm="confirmDeleteGroup"
+      @close="cancelDeleteGroup"
+    />
     
     <div class="row">
       <div class="col-12">
             <!-- Управление группами -->
             <div class="card group-management-card mb-3">
-              <div class="card-header">
+              <div class="card-header group-management-header" @click="toggleGroupManagement">
                 <div class="d-flex align-items-center gap-2">
                   <div class="group-icon">
                     <Hash size="20" />
                   </div>
                   <h6 class="mb-0 fw-bold">Управление группами</h6>
                   <span class="badge bg-primary ms-auto">{{ groups.length }} групп</span>
+                  <div class="collapse-icon">
+                    <ChevronDown :size="16" :class="{ 'rotated': !groupManagementCollapsed }" />
+                  </div>
                 </div>
               </div>
-              <div class="card-body">
+              <div v-show="!groupManagementCollapsed" class="card-body">
                 <div class="row g-3">
                   <!-- Выбор группы и действия -->
                   <div class="col-lg-6">
@@ -176,7 +192,7 @@
                             </button>
                             <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center" 
                                     :disabled="!groupManager.selectedId" 
-                                    @click="confirmDeleteGroup">
+                                    @click="requestDeleteGroup">
                               <Trash2 class="me-1" size="14" /> 
                               Удалить
                             </button>
@@ -205,56 +221,33 @@
                     </div>
                     <div class="card-body">
                       <div class="row g-3 align-items-end">
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                           <label class="form-label d-flex align-items-center gap-2">
                             <Hash size="16" />
                             <span class="fw-semibold">Выберите группу</span>
                           </label>
                           <select v-model.number="bulkGroupId" class="form-select">
                             <option :value="null">Выберите группу для назначения...</option>
-                            <option :value="0">Снять группу (без группы)</option>
                             <option v-for="g in groups" :key="g.id" :value="g.id">
                               {{ g.name }} ({{ getGroupAnalysesCount(g.id) }} анализов)
                             </option>
                           </select>
                         </div>
-                        <div class="col-md-6">
-                          <label class="form-label d-flex align-items-center gap-2">
-                            <Plus size="16" />
-                            <span class="fw-semibold">Или создайте новую</span>
-                          </label>
-                          <div class="input-group">
-                            <span class="input-group-text">
-                              <Hash size="16" />
-                            </span>
-                            <input class="form-control" 
-                                   v-model.trim="bulkNewGroupName" 
-                                   placeholder="Название новой группы" 
-                                   @keyup.enter="applyBulkGroup" />
-                            <button class="btn btn-success" 
-                                    :disabled="!bulkNewGroupName" 
-                                    @click="createAndAssignGroup">
-                              <Plus class="me-1" size="14" />
-                              Создать и назначить
+                        <div class="col-md-4">
+                          <label class="form-label">&nbsp;</label>
+                          <div class="d-flex gap-2">
+                            <button class="btn btn-primary d-inline-flex align-items-center flex-fill" 
+                                    :disabled="!bulkGroupId" 
+                                    @click="applyBulkGroup">
+                              <Users class="me-1" size="14" />
+                              Назначить группу
                             </button>
                           </div>
                         </div>
                       </div>
                       <div class="group-assignment-actions mt-3">
                         <div class="d-flex gap-2 flex-wrap">
-                          <button class="btn btn-primary d-inline-flex align-items-center" 
-                                  :disabled="!bulkGroupId && !bulkNewGroupName" 
-                                  @click="applyBulkGroup">
-                            <Users class="me-1" size="14" />
-                            Назначить группу
-                          </button>
-                          <button class="btn btn-outline-warning d-inline-flex align-items-center" 
-                                  :disabled="!bulkGroupId" 
-                                  @click="removeBulkGroup">
-                            <Unlink class="me-1" size="14" />
-                            Снять группу
-                          </button>
-                          <button class="btn btn-outline-secondary d-inline-flex align-items-center" 
+                          <button class="btn btn-outline-warning clear-selection-btn d-inline-flex align-items-center" 
                                   @click="clearBulkGroupSelection">
                             <X class="me-1" size="14" />
                             Очистить выбор
@@ -265,32 +258,226 @@
                   </div>
                 </div>
                 
-                <!-- Статистика по группам -->
-                <div v-if="groups.length > 0" class="group-stats mt-4">
-                  <div class="d-flex align-items-center gap-2 mb-3">
-                    <BarChart3 size="16" />
-                    <span class="fw-semibold">Статистика по группам</span>
-                  </div>
-                  <div class="row g-2">
-                    <div v-for="group in groups" :key="group.id" class="col-md-4 col-lg-3">
-                      <div class="group-stat-item">
-                        <div class="d-flex align-items-center gap-2">
-                          <div class="group-color-indicator" :style="{ backgroundColor: getGroupColor(group.id) }"></div>
-                          <div class="flex-grow-1">
-                            <div class="group-name">{{ group.name }}</div>
-                            <div class="group-count">{{ getGroupAnalysesCount(group.id) }} анализов</div>
+                <!-- Блок для добавления анализов в группу по номерам -->
+                <div class="group-number-assignment-section mt-4">
+                  <div class="row">
+                    <div class="col-12">
+                      <div class="group-section group-section-equal">
+                        <label class="form-label d-flex align-items-center gap-2 mb-3">
+                          <UserPlus size="16" />
+                          <span class="fw-semibold">Добавить анализы в группу по номерам</span>
+                        </label>
+                        <div class="group-number-input">
+                          <div class="row g-3">
+                            <div class="col-md-6">
+                              <label class="form-label d-flex align-items-center gap-2">
+                                <HashIcon size="16" />
+                                <span class="fw-semibold">Номера анализов</span>
+                              </label>
+                              <textarea 
+                                class="form-control" 
+                                v-model.trim="numberInput" 
+                                placeholder="Введите номера анализов через запятую, пробел или тире (например: 1,2,3 или 1-5 или 1 2 3)"
+                                rows="3"
+                              ></textarea>
+                              <div class="form-text">
+                                <Info class="me-1" size="14" />
+                                Поддерживаются диапазоны (1-5), запятые (1,2,3) и пробелы (1 2 3)
+                              </div>
+                            </div>
+                            <div class="col-md-6">
+                              <label class="form-label d-flex align-items-center gap-2">
+                                <Users size="16" />
+                                <span class="fw-semibold">Выберите группу</span>
+                              </label>
+                              <select v-model.number="numberGroupId" class="form-select">
+                                <option :value="null">Выберите группу...</option>
+                                <option v-for="g in groups" :key="g.id" :value="g.id">
+                                  {{ g.name }} ({{ getGroupAnalysesCount(g.id) }} анализов)
+                                </option>
+                              </select>
+                            </div>
                           </div>
+                        </div>
+                        <div class="group-number-actions mt-3">
+                          <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-primary d-inline-flex align-items-center" 
+                                    :disabled="!numberInput || !numberGroupId" 
+                                    @click="addAnalysesByNumbers">
+                              <Users class="me-1" size="14" />
+                              Добавить в группу
+                            </button>
+                            <button class="btn btn-outline-danger clear-btn d-inline-flex align-items-center" 
+                                    @click="clearNumberInput">
+                              <X class="me-1" size="14" />
+                              Очистить
+                            </button>
+                          </div>
+                        </div>
+                        <!-- Добавляем пустое место для выравнивания высоты -->
+                        <div class="group-spacer"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+
+            <!-- Управление анализами -->
+            <div class="card analysis-management-card mb-3">
+              <div class="card-header analysis-management-header" @click="toggleAnalysisManagement">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="analysis-icon">
+                    <Microscope :size="20" />
+                  </div>
+                  <h6 class="mb-0 fw-bold">Управление анализами</h6>
+                  <span class="badge bg-success ms-auto">{{ filteredAnalyses.length }} анализов</span>
+                  <div class="collapse-icon">
+                    <ChevronDown :size="16" :class="{ 'rotated': !analysisManagementCollapsed }" />
+                  </div>
+                </div>
+              </div>
+              <div v-show="!analysisManagementCollapsed" class="card-body">
+                <div class="row g-3">
+                  <!-- Перезапуск по номерам -->
+                  <div class="col-12">
+                    <div class="analysis-section">
+                      <label class="form-label d-flex align-items-center gap-2 mb-3">
+                        <RotateCcw :size="16" />
+                        <span class="fw-semibold">Перезапустить по номерам</span>
+                      </label>
+                      <div class="row g-3">
+                        <div class="col-md-8">
+                          <div class="input-group">
+                            <span class="input-group-text d-inline-flex align-items-center">
+                              <Hash size="16" />
+                            </span>
+                            <input
+                              v-model.trim="restartInput"
+                              type="text"
+                              class="form-control"
+                              placeholder="Например: 12-15, 18; 20"
+                              aria-label="Номера анализов"
+                            />
+                            <button
+                              class="btn btn-primary d-inline-flex align-items-center gap-1 lh-1"
+                              :disabled="!canRestartByInput || restartingMultiple"
+                              @click="restartByInput"
+                            >
+                              <RotateCcw size="16" />
+                              <span class="d-inline-flex align-items-center">
+                                {{ restartingMultiple ? 'Перезапуск...' : 'Перезапустить' }}
+                              </span>
+                            </button>
+                          </div>
+                          <div class="form-text text-muted mt-2">
+                            <Info class="me-1" size="14" />
+                            Указывайте номера через запятую, пробел или точку с запятой. Диапазоны — через тире.
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <button class="btn btn-primary d-inline-flex align-items-center w-100" :disabled="selectedIds.length === 0 || restartingMultiple" @click="restartSelected">
+                            <RotateCcw class="me-1" size="14" /> 
+                            Перезапустить выбранные ({{ selectedIds.length }})
+                          </button>
                         </div>
                       </div>
                     </div>
-                    <div class="col-md-4 col-lg-3">
-                      <div class="group-stat-item group-stat-item-ungrouped">
-                        <div class="d-flex align-items-center gap-2">
-                          <div class="group-color-indicator" style="background-color: #6c757d;"></div>
-                          <div class="flex-grow-1">
-                            <div class="group-name">Без группы</div>
-                            <div class="group-count">{{ getUngroupedAnalysesCount() }} анализов</div>
+                  </div>
+
+                  <!-- Удаление по номерам -->
+                  <div class="col-12">
+                    <div class="analysis-section">
+                      <label class="form-label d-flex align-items-center gap-2 mb-3">
+                        <Trash2 :size="16" />
+                        <span class="fw-semibold">Удалить по номерам</span>
+                      </label>
+                      <div class="row g-3">
+                        <div class="col-md-8">
+                          <div class="input-group">
+                            <span class="input-group-text d-inline-flex align-items-center">
+                              <FileText size="16" />
+                            </span>
+                            <input
+                              v-model.trim="bulkInput"
+                              type="text"
+                              class="form-control"
+                              placeholder="Например: 12-15, 18; 20"
+                              aria-label="Номера анализов"
+                            />
+                            <button
+                              class="btn btn-danger d-inline-flex align-items-center gap-1 lh-1"
+                              :disabled="!canBulkDeleteByInput || bulkDeleting"
+                              @click="requestBulkDeleteByInput"
+                            >
+                              <Trash2 size="16" />
+                              <span class="d-inline-flex align-items-center">Удалить</span>
+                            </button>
                           </div>
+                          <div class="form-text text-muted mt-2">
+                            <Info class="me-1" size="14" />
+                            Внимание! Удаление необратимо. Анализы будут удалены навсегда.
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <button class="btn btn-danger d-inline-flex align-items-center w-100" :disabled="selectedIds.length === 0 || bulkDeleting" @click="requestBulkDeleteSelected">
+                            <Trash2 class="me-1" size="14" /> 
+                            Удалить выбранные ({{ selectedIds.length }})
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Скачивание по номерам -->
+                  <div class="col-12">
+                    <div class="analysis-section">
+                      <label class="form-label d-flex align-items-center gap-2 mb-3">
+                        <Download :size="16" />
+                        <span class="fw-semibold">Скачать по номерам</span>
+                      </label>
+                      <div class="row g-3">
+                        <div class="col-md-8">
+                          <div class="input-group">
+                            <span class="input-group-text d-inline-flex align-items-center">
+                              <Hash size="16" />
+                            </span>
+                            <input
+                              v-model.trim="downloadInput"
+                              type="text"
+                              class="form-control"
+                              placeholder="Например: 1-100, 150, 200-300"
+                              aria-label="Номера анализов для скачивания"
+                            />
+                            <select v-model="reportType" class="form-select" style="max-width: 100px;">
+                              <option value="docx">DOCX</option>
+                              <option value="pdf">PDF</option>
+                            </select>
+                            <button
+                              class="btn btn-primary d-inline-flex align-items-center gap-1 lh-1"
+                              :disabled="!canDownloadByInput || downloadingReports"
+                              @click="downloadMultipleReports"
+                            >
+                              <Download size="16" />
+                              <span v-if="downloadingReports">Скачивание...</span>
+                              <span v-else>Скачать архив</span>
+                            </button>
+                          </div>
+                          <div class="form-text text-muted mt-2">
+                            <Info class="me-1" size="14" />
+                            Введите номера анализов через запятую или тире для диапазонов.
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <button 
+                            class="btn btn-primary d-inline-flex align-items-center w-100" 
+                            :disabled="selectedIds.length === 0 || downloadingReports" 
+                            @click="downloadSelectedReports"
+                          >
+                            <Download class="me-1" size="14" /> 
+                            Скачать выбранные ({{ selectedIds.length }})
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -298,6 +485,7 @@
                 </div>
               </div>
             </div>
+
             <!-- Фильтры и поиск (как в видео-аналитике) -->
             <div class="filters-card mb-3">
               <div class="card-body">
@@ -440,158 +628,8 @@
             </div>
             
             <div v-else>
-              <!-- Панель перезапуска -->
-              <div class="card mb-3 restart-actions">
-                <div class="card-body">
-                  <div class="row g-3 align-items-start">
-                    <!-- Блок перезапуска по номерам -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label d-flex align-items-center gap-2 mb-2">
-                        <RotateCcw :size="16" />
-                        <span class="fw-bold">Перезапустить по номерам</span>
-                      </label>
-                      <div class="input-group">
-                        <span class="input-group-text d-inline-flex align-items-center">
-                          <Hash size="16" />
-                        </span>
-                        <input
-                          v-model.trim="restartInput"
-                          type="text"
-                          class="form-control"
-                          placeholder="Например: 12-15, 18; 20"
-                          aria-label="Номера анализов"
-                        />
-                        <button
-                          class="btn btn-primary d-inline-flex align-items-center gap-1 lh-1"
-                          :disabled="!canRestartByInput || restartingMultiple"
-                          @click="restartByInput"
-                        >
-                          <RotateCcw size="16" />
-                          <span class="d-inline-flex align-items-center">
-                            {{ restartingMultiple ? 'Перезапуск...' : 'Перезапустить' }}
-                          </span>
-                        </button>
-                      </div>
-                      <div class="form-text text-muted mt-1">
-                        Указывайте номера через запятую, пробел или точку с запятой. Диапазоны — через тире (например: 12-15).
-                      </div>
-                    </div>
-                    
-                    <!-- Блок перезапуска по выбранным карточкам -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label d-flex align-items-center gap-2 mb-2 invisible">&nbsp;</label>
-                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
-                        <button class="btn btn-primary d-inline-flex align-items-center" :disabled="selectedIds.length === 0 || restartingMultiple" @click="restartSelected">
-                          <RotateCcw class="me-1" size="16" /> Перезапустить выбранные ({{ selectedIds.length }})
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <!-- Панель удаления -->
-              <div class="card mb-3 bulk-actions">
-                <div class="card-body">
-                  <div class="row g-3 align-items-start">
-                    <!-- Блок удаления по номерам -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label d-flex align-items-center gap-2 mb-2">
-                        <Search :size="16" />
-                        <span class="fw-bold">Удалить по номерам</span>
-                      </label>
-                      <div class="input-group">
-                        <span class="input-group-text d-inline-flex align-items-center">
-                          <FileText size="16" />
-                        </span>
-                        <input
-                          v-model.trim="bulkInput"
-                          type="text"
-                          class="form-control"
-                          placeholder="Например: 12-15, 18; 20"
-                          aria-label="Номера анализов"
-                        />
-                        <button
-                          class="btn btn-danger d-inline-flex align-items-center gap-1 lh-1"
-                          :disabled="!canBulkDeleteByInput || bulkDeleting"
-                          @click="requestBulkDeleteByInput"
-                        >
-                          <Trash2 size="16" />
-                          <span class="d-inline-flex align-items-center">Удалить</span>
-                        </button>
-                      </div>
-                    </div>
 
-                    <!-- Блок действий с выделением -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label d-flex align-items-center gap-2 mb-2 invisible">&nbsp;</label>
-                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
-                        <button class="btn btn-danger d-inline-flex align-items-center" :disabled="selectedIds.length === 0 || bulkDeleting" @click="requestBulkDeleteSelected">
-                          <Trash2 class="me-1" size="16" /> Удалить выбранные ({{ selectedIds.length }})
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Блок скачивания архива отчетов -->
-              <div class="card mb-3 download-actions">
-                <div class="card-body">
-                  <div class="row g-3 align-items-start">
-                    <!-- Блок скачивания по номерам -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label d-flex align-items-center gap-2 mb-2">
-                        <Download :size="16" />
-                        <span class="fw-bold">Скачать по номерам</span>
-                      </label>
-                      <div class="input-group">
-                        <span class="input-group-text d-inline-flex align-items-center">
-                          <Hash size="16" />
-                        </span>
-                        <input
-                          v-model.trim="downloadInput"
-                          type="text"
-                          class="form-control"
-                          placeholder="Например: 1-100, 150, 200-300"
-                          aria-label="Номера анализов для скачивания"
-                        />
-                        <select v-model="reportType" class="form-select" style="max-width: 100px;">
-                          <option value="docx">DOCX</option>
-                          <option value="pdf">PDF</option>
-                        </select>
-                        <button
-                          class="btn btn-primary d-inline-flex align-items-center gap-1 lh-1"
-                          :disabled="!canDownloadByInput || downloadingReports"
-                          @click="downloadMultipleReports"
-                        >
-                          <Download size="16" />
-                          <span v-if="downloadingReports">Скачивание...</span>
-                          <span v-else>Скачать архив</span>
-                        </button>
-                      </div>
-                      <div class="form-text text-muted mt-1">
-                        Введите номера анализов через запятую или тире для диапазонов (например: 1-100, 150, 200-300). Ограничений по количеству нет.
-                      </div>
-                    </div>
-
-                    <!-- Блок скачивания выбранных -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label d-flex align-items-center gap-2 mb-2 invisible">&nbsp;</label>
-                      <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
-                        <button 
-                          class="btn btn-primary d-inline-flex align-items-center" 
-                          :disabled="selectedIds.length === 0 || downloadingReports" 
-                          @click="downloadSelectedReports"
-                        >
-                          <Download class="me-1" size="16" /> 
-                          Скачать выбранные ({{ selectedIds.length }})
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <div class="row">
                 <div
                   v-for="analysis in paginatedAnalyses"
@@ -886,7 +924,7 @@ import {
   Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus, List,
   Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash, Users, Unlink,
-  Edit3, Info, X
+  Edit3, Info, X, ChevronDown, UserPlus, Hash as HashIcon
 } from 'lucide-vue-next'
 
 import { useToast } from 'vue-toastification'
@@ -899,7 +937,8 @@ export default {
     ConfirmDialog,
     Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus, List,
     Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
-    ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash
+    ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Hash, Users, Unlink,
+    Edit3, Info, X, ChevronDown, UserPlus, HashIcon
   },
   data() {
     return {
@@ -916,6 +955,9 @@ export default {
       deletingAnalysis: null,
       showDeleteConfirm: false,
       analysisToDelete: null,
+      showDeleteGroupConfirm: false,
+      deletingGroup: false,
+      deleteGroupMessage: '',
       restartingMultiple: false,
       // Массовое удаление
       selectedIds: [],
@@ -936,12 +978,18 @@ export default {
       downloadingReports: false,
       // Массовое назначение группы
       bulkGroupId: null,
-      bulkNewGroupName: '',
+      // Добавление по номерам
+      numberInput: '',
+      numberGroupId: null,
       // Менеджер групп
       groupManager: {
         selectedId: null,
         name: ''
       },
+      // Состояние сворачивания блока управления группами
+      groupManagementCollapsed: true,
+      // Состояние сворачивания блока управления анализами
+      analysisManagementCollapsed: true,
       // Данные для пагинации
       pagination: {
         current_page: 1,
@@ -1094,6 +1142,14 @@ export default {
     await Promise.all([ this.loadAnalyses(), this.loadStats(), this.loadGroups() ])
   },
   methods: {
+    // Переключение состояния сворачивания блока управления группами
+    toggleGroupManagement() {
+      this.groupManagementCollapsed = !this.groupManagementCollapsed
+    },
+    // Переключение состояния сворачивания блока управления анализами
+    toggleAnalysisManagement() {
+      this.analysisManagementCollapsed = !this.analysisManagementCollapsed
+    },
     async loadGroups() {
       this.groupsLoading = true
       try {
@@ -1178,6 +1234,18 @@ export default {
       } catch (e) {
         toast.error(e?.message || 'Ошибка удаления группы')
       }
+    },
+    async confirmDeleteGroup() {
+      this.deletingGroup = true
+      try {
+        await this.deleteSelectedGroup()
+        this.showDeleteGroupConfirm = false
+      } finally {
+        this.deletingGroup = false
+      }
+    },
+    cancelDeleteGroup() {
+      this.showDeleteGroupConfirm = false
     },
     syncSelectMinWidths() {
       // Вычисляем минимальную ширину селектов по ширине соответствующих label (+ небольшой отступ)
@@ -1356,46 +1424,6 @@ export default {
       // При смене фильтра по группе сразу запрашиваем данные с сервера
       this.changePage(1)
       this.loadAnalyses(1).catch(() => {})
-    },
-    async applyBulkGroup() {
-      if (this.selectedIds.length === 0) return
-      const payload = { analysis_ids: this.selectedIds }
-      if (this.bulkNewGroupName) payload.new_group_name = this.bulkNewGroupName
-      else if (this.bulkGroupId) payload.group_id = this.bulkGroupId
-      else return
-      try {
-        const resp = await porosityAnalysisAPI.bulkSetGroup(payload)
-        if (resp && resp.success) {
-          const targetGroup = resp.group || null
-          // обновляем локально
-          const idSet = new Set(this.selectedIds)
-          this.analyses = this.analyses.map(a => idSet.has(a.id) ? { ...a, group: targetGroup, group_id: targetGroup?.id || null } : a)
-          this.bulkGroupId = null
-          this.bulkNewGroupName = ''
-          this.clearSelection()
-          toast.success('Группа применена')
-        } else {
-          toast.error(resp?.message || 'Не удалось применить группу')
-        }
-      } catch (e) {
-        toast.error(e?.message || 'Ошибка применения группы')
-      }
-    },
-    async removeBulkGroup() {
-      if (this.selectedIds.length === 0) return
-      try {
-        const resp = await porosityAnalysisAPI.bulkSetGroup({ analysis_ids: this.selectedIds, remove: true })
-        if (resp && resp.success) {
-          const idSet = new Set(this.selectedIds)
-          this.analyses = this.analyses.map(a => idSet.has(a.id) ? { ...a, group: null, group_id: null } : a)
-          this.clearSelection()
-          toast.success('Группа снята у выбранных')
-        } else {
-          toast.error(resp?.message || 'Не удалось снять группу')
-        }
-      } catch (e) {
-        toast.error(e?.message || 'Ошибка снятия группы')
-      }
     },
     isSelected(id) {
       return this.selectedIds.includes(id)
@@ -1757,6 +1785,15 @@ export default {
     deleteAnalysis(analysisId) {
       this.analysisToDelete = analysisId
       this.showDeleteConfirm = true
+      // Добавляем класс modal-open к body
+      document.body.classList.add('modal-open')
+      // Сбрасываем hover состояние карточек
+      this.$nextTick(() => {
+        const cards = document.querySelectorAll('.analysis-card')
+        cards.forEach(card => {
+          card.classList.remove('hover')
+        })
+      })
     },
     
     async confirmDeleteAnalysis() {
@@ -1804,12 +1841,16 @@ export default {
         this.deletingAnalysis = null
         this.showDeleteConfirm = false
         this.analysisToDelete = null
+        // Убираем класс modal-open с body
+        document.body.classList.remove('modal-open')
       }
     },
     
     cancelDeleteAnalysis() {
       this.showDeleteConfirm = false
       this.analysisToDelete = null
+      // Убираем класс modal-open с body
+      document.body.classList.remove('modal-open')
     },
     
     async downloadReport(analysisId, reportType) {
@@ -2038,7 +2079,7 @@ export default {
         this.groupManager.name = ''
       }
     },
-    async confirmDeleteGroup() {
+    requestDeleteGroup() {
       if (!this.groupManager.selectedId) return
       
       const groupName = this.getSelectedGroupName()
@@ -2049,34 +2090,10 @@ export default {
         message += `\n\nВ группе находится ${analysesCount} анализ(а/ов). После удаления группы анализы останутся, но будут без группы.`
       }
       
-      if (confirm(message)) {
-        await this.deleteSelectedGroup()
-      }
+      this.deleteGroupMessage = message
+      this.showDeleteGroupConfirm = true
     },
     // Методы для назначения группы выбранным анализам
-    async createAndAssignGroup() {
-      if (!this.bulkNewGroupName || this.selectedIds.length === 0) return
-      
-      try {
-        // Сначала создаем группу
-        const resp = await porosityAnalysisAPI.createGroup({ name: this.bulkNewGroupName })
-        if (resp && resp.success) {
-          const created = (resp.data && resp.data.id) ? resp.data : (Array.isArray(resp.data) ? resp.data.slice(-1)[0] : null)
-          if (created) {
-            // Затем назначаем группу выбранным анализам
-            await this.assignGroupToSelected(created.id)
-            this.bulkNewGroupName = ''
-            toast.success('Группа создана и назначена выбранным анализам')
-          } else {
-            toast.error('Не удалось создать группу')
-          }
-        } else {
-          toast.error(resp?.message || 'Не удалось создать группу')
-        }
-      } catch (e) {
-        toast.error(e?.message || 'Ошибка создания группы')
-      }
-    },
     async assignGroupToSelected(groupId) {
       if (this.selectedIds.length === 0) return
       
@@ -2084,11 +2101,17 @@ export default {
         const payload = { analysis_ids: this.selectedIds }
         if (groupId === 0) {
           // Снимаем группу
-          const resp = await porosityAnalysisAPI.removeBulkGroup(payload)
+          const resp = await porosityAnalysisAPI.bulkSetGroup({ ...payload, remove: true })
           if (resp && resp.success) {
             this.analyses = this.analyses.map(a => 
-              this.selectedIds.includes(a.id) ? { ...a, group: null, group_id: null } : a
+              this.selectedIds.includes(a.id) ? { 
+                ...a, 
+                group: null, 
+                group_id: null 
+              } : a
             )
+            // Принудительно обновляем реактивность
+            this.$forceUpdate()
             this.clearSelection()
             toast.success('Группа снята с выбранных анализов')
           } else {
@@ -2096,11 +2119,19 @@ export default {
           }
         } else {
           // Назначаем группу
-          const resp = await porosityAnalysisAPI.applyBulkGroup({ ...payload, group_id: groupId })
+          const resp = await porosityAnalysisAPI.bulkSetGroup({ ...payload, group_id: groupId })
           if (resp && resp.success) {
+            // Находим информацию о группе
+            const groupInfo = this.groups.find(g => g.id === groupId)
             this.analyses = this.analyses.map(a => 
-              this.selectedIds.includes(a.id) ? { ...a, group_id: groupId } : a
+              this.selectedIds.includes(a.id) ? { 
+                ...a, 
+                group_id: groupId,
+                group: groupInfo || null
+              } : a
             )
+            // Принудительно обновляем реактивность
+            this.$forceUpdate()
             this.clearSelection()
             toast.success('Группа назначена выбранным анализам')
           } else {
@@ -2115,13 +2146,99 @@ export default {
       if (this.bulkGroupId !== null) {
         await this.assignGroupToSelected(this.bulkGroupId)
         this.bulkGroupId = null
-      } else if (this.bulkNewGroupName) {
-        await this.createAndAssignGroup()
       }
     },
     clearBulkGroupSelection() {
       this.bulkGroupId = null
-      this.bulkNewGroupName = ''
+    },
+    
+    // Методы для добавления анализов по номерам
+    parseAnalysisNumbers(input) {
+      if (!input || !input.trim()) return []
+      
+      const numbers = []
+      const parts = input.split(/[,;\s]+/)
+      
+      for (const part of parts) {
+        const trimmed = part.trim()
+        if (!trimmed) continue
+        
+        if (trimmed.includes('-')) {
+          // Обработка диапазонов (например, "1-5")
+          const rangeParts = trimmed.split('-')
+          if (rangeParts.length === 2) {
+            const start = parseInt(rangeParts[0])
+            const end = parseInt(rangeParts[1])
+            if (!isNaN(start) && !isNaN(end) && start <= end) {
+              for (let i = start; i <= end; i++) {
+                numbers.push(i)
+              }
+            }
+          }
+        } else {
+          // Обработка отдельных номеров
+          const num = parseInt(trimmed)
+          if (!isNaN(num)) {
+            numbers.push(num)
+          }
+        }
+      }
+      
+      // Удаляем дубликаты и сортируем
+      return [...new Set(numbers)].sort((a, b) => a - b)
+    },
+    
+    async addAnalysesByNumbers() {
+      if (!this.numberInput || !this.numberGroupId) {
+        toast.error('Заполните номера анализов и выберите группу')
+        return
+      }
+      
+      const analysisIds = this.parseAnalysisNumbers(this.numberInput)
+      if (analysisIds.length === 0) {
+        toast.error('Не найдено валидных номеров анализов')
+        return
+      }
+      
+      try {
+        const payload = {
+          analysis_ids: analysisIds,
+          group_id: this.numberGroupId
+        }
+        
+        const response = await porosityAnalysisAPI.bulkSetGroup(payload)
+        
+        if (response && response.success) {
+          toast.success(`Добавлено ${response.updated} анализов в группу`)
+          this.clearNumberInput()
+          
+          // Находим информацию о группе
+          const groupInfo = this.groups.find(g => g.id === this.numberGroupId)
+          
+          // Обновляем анализы в текущем списке
+          this.analyses = this.analyses.map(a => {
+            if (analysisIds.includes(a.id)) {
+              return { ...a, group_id: this.numberGroupId, group: groupInfo || null }
+            }
+            return a
+          })
+          // Принудительно обновляем реактивность
+          this.$forceUpdate()
+          
+          // Обновляем группы (на случай если была создана новая)
+          await this.loadGroups()
+        } else {
+          toast.error(response?.error || 'Ошибка при добавлении анализов в группу')
+        }
+      } catch (error) {
+        console.error('Ошибка при добавлении анализов по номерам:', error)
+        toast.error('Ошибка при добавлении анализов в группу')
+      }
+    },
+    
+    clearNumberInput() {
+      this.numberInput = ''
+      this.numberGroupId = null
     }
   }
 }
@@ -2434,6 +2551,14 @@ export default {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   border-color: #007bff;
   z-index: 2000; /* увеличиваем z-index чтобы карточка всегда была поверх соседних */
+}
+
+/* Убираем hover эффекты когда открыто модальное окно */
+body.modal-open .analysis-card:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #e9ecef;
+  z-index: auto;
 }
 .analysis-card.selected {
   border-color: #dc3545;
@@ -3128,6 +3253,96 @@ export default {
   border: none;
 }
 
+/* Стили для блока управления анализами */
+.analysis-management-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.analysis-management-card .card-header {
+  background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+  border-bottom: 1px solid #d4edda;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1rem 1.5rem;
+}
+
+.analysis-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.analysis-section {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+/* Выравнивание иконок в блоке управления анализами */
+.analysis-management-card .d-flex.align-items-center svg {
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.analysis-management-card .card-header .d-flex.align-items-center svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+.analysis-management-card .form-label svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+.analysis-management-card .btn svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+.analysis-management-card .btn.d-inline-flex.align-items-center {
+  align-items: center;
+}
+
+.analysis-management-card .btn.d-inline-flex.align-items-center svg {
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.analysis-management-card .input-group-text svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+.analysis-management-card .form-text svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+/* Специальное выравнивание для form-text в блоке управления анализами */
+.analysis-management-card .form-text {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.analysis-management-card .form-text svg {
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
 .group-management-card .card-header {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 1px solid #e9ecef;
@@ -3144,6 +3359,71 @@ export default {
   align-items: center;
   justify-content: center;
   color: white;
+}
+
+/* Выравнивание иконок в блоке управления группами */
+.group-management-card .d-flex.align-items-center svg {
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.group-management-card .card-header .d-flex.align-items-center svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+.group-management-card .form-label svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px; /* Небольшая корректировка для идеального выравнивания */
+}
+
+.group-management-card .btn svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+.group-management-card .btn.d-inline-flex.align-items-center {
+  align-items: center;
+}
+
+.group-management-card .btn.d-inline-flex.align-items-center svg {
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.group-management-card .input-group-text svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+.group-management-card .form-text svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+/* Выравнивание иконок в form-text элементах */
+.form-text svg {
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -1px;
+}
+
+/* Специальное выравнивание для блока с номерами анализов */
+.group-number-assignment-section .form-text {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.group-number-assignment-section .form-text svg {
+  flex-shrink: 0;
+  margin-top: 0;
+  vertical-align: middle;
 }
 
 .group-section {
@@ -3305,6 +3585,15 @@ export default {
     padding: 1rem;
   }
   
+  .analysis-management-card .card-body {
+    padding: 1rem;
+  }
+  
+  .analysis-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
   .group-section {
     padding: 1rem;
     margin-bottom: 1rem;
@@ -3391,5 +3680,152 @@ export default {
   .group-section-equal {
     min-height: auto;
   }
+}
+
+/* Стили для блока добавления по номерам */
+.group-number-assignment-section .card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.group-number-assignment-section .card-header {
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+  border-bottom: 1px solid #e9ecef;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1rem 1.5rem;
+}
+
+.group-number-assignment-section .card-body {
+  padding: 1.5rem;
+}
+
+.group-number-actions .btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.group-number-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group-number-actions .btn-primary {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  border: none;
+}
+
+.group-number-actions .btn-outline-secondary {
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.group-number-actions .btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+/* Стили для кнопок очистки */
+.clear-selection-btn {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  border: 2px solid #ffc107;
+  color: #212529;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+}
+
+.clear-selection-btn:hover {
+  background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+  border-color: #e0a800;
+  color: #212529;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 193, 7, 0.35);
+}
+
+.clear-selection-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+}
+
+.clear-btn {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border: 2px solid #dc3545;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
+}
+
+.clear-btn:hover {
+  background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+  border-color: #c82333;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(220, 53, 69, 0.35);
+}
+
+.clear-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
+}
+
+.clear-btn:disabled {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: white;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .group-number-assignment-section .card-body {
+    padding: 1rem;
+  }
+  
+  .group-number-actions .btn {
+    min-width: auto;
+    flex: 1;
+  }
+}
+
+/* Стили для сворачиваемого блока управления группами */
+.group-management-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.group-management-header:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Стили для сворачиваемого блока управления анализами */
+.analysis-management-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.analysis-management-header:hover {
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.collapse-icon {
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.collapse-icon .rotated {
+  transform: rotate(180deg);
 }
 </style> 
