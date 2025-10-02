@@ -356,7 +356,56 @@ const submitForm = async () => {
 
     try {
         isSubmitting.value = true
-        // Формируем payload под ProjectSerializer
+        // Нормализация данных под ProjectCreateSerializer API
+        const normalizedTargetIndicators = (formData.targetIndicators || []).map((ti) => {
+            const isIdName = typeof ti.name === 'number'
+            return {
+                source_indicator_id: isIdName ? ti.name : undefined,
+                name: !isIdName ? (ti.name || '') : undefined,
+                unit: ti.unit || '',
+                baseline: ti.baseline ?? ti.baseValue ?? null,
+                planned: ti.planned ?? ti.targetValue ?? null,
+            }
+        })
+
+        const normalizedStages = (formData.calendarPlan?.stages || []).map((st, idx) => ({
+            id: st.id ?? st.key ?? idx,
+            name: st.name || '',
+            startDate: st.startDate || st.start || formData.calendarPlan.startDate || '',
+            endDate: st.endDate || st.end || formData.calendarPlan.endDate || '',
+            plannedResults: st.plannedResults || (st.result ? [st.result] : []),
+        }))
+
+        const flattenedBudgetItems = []
+        ;(formData.budget?.stages || []).forEach((st, idx) => {
+            (st.items || []).forEach((it) => {
+                flattenedBudgetItems.push({
+                    stageId: st.id ?? st.key ?? idx,
+                    article: it.article || it.costArticle || '',
+                    source: it.source || it.fundingSource || '',
+                    amount: Number(it.amount || 0),
+                })
+            })
+        })
+
+        const normalizedBudget = {
+            items: flattenedBudgetItems,
+            totals: formData.budget?.totals || {
+                withInsurance: Number(formData.basicProvisions.budget || 0),
+            },
+        }
+
+        const normalizedCalendarPlan = {
+            startDate: formData.calendarPlan?.startDate || formData.basicProvisions.startDate || '',
+            endDate: formData.calendarPlan?.endDate || formData.basicProvisions.endDate || '',
+            stages: normalizedStages,
+        }
+
+        const normalizedAdditionalInfo = {
+            notes: formData.additionalInfo?.notes || formData.additionalInfo?.additionalInfo || '',
+        }
+
+        // Формируем payload под ProjectCreateSerializer
         const payload = {
             short_name: formData.basicProvisions.shortName,
             name: formData.basicProvisions.projectName,
@@ -371,10 +420,10 @@ const submitForm = async () => {
             ) || 0,
             event: formData.event || null,
             basic_provisions: formData.basicProvisions,
-            target_indicators: formData.targetIndicators,
-            calendar_plan: formData.calendarPlan,
-            budget: formData.budget,
-            additional_info: formData.additionalInfo,
+            target_indicators: normalizedTargetIndicators,
+            calendar_plan: normalizedCalendarPlan,
+            budget: normalizedBudget,
+            additional_info: normalizedAdditionalInfo,
         }
 
         const res = await apiClient.post(endpoints.project_ed.projects.create, payload)
