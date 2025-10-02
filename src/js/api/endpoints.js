@@ -427,6 +427,7 @@ export const endpoints = {
             delete: (id) => `project_ed/event-blocks/${id}/safe_delete/`,
             updateOrder: (id) => `project_ed/event-blocks/${id}/update_order/`,
             events: (id) => `project_ed/event-blocks/${id}/events/`,
+            indicators: (id) => `project_ed/event-blocks/${id}/indicators/`,
         },
         events: {
             list: 'project_ed/events/',

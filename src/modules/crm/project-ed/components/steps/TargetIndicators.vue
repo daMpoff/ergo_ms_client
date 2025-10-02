@@ -210,7 +210,7 @@ watch(() => props.indicators, (newVal) => {
     }
 }, { deep: true })
 
-// Загрузка целевых показателей по выбранному блоку мероприятий
+// Загрузка целевых показателей по выбранному БЛОКУ мероприятия (через его подкатегорию)
 const loadIndicatorsByEventBlock = async (blockId) => {
     try {
         if (!blockId) {
@@ -218,8 +218,40 @@ const loadIndicatorsByEventBlock = async (blockId) => {
             unitOptions.value = []
             return
         }
-        const resp = await apiClient.get(endpoints.project_ed.target_indicators.list, { event_block: blockId })
-        const data = Array.isArray(resp?.data) ? resp.data : (resp?.data?.results || [])
+        // 1) Получаем данные блока, чтобы узнать его подкатегорию
+        const blockRes = await apiClient.get(endpoints.project_ed.event_blocks.detail(blockId))
+        const block = blockRes?.data || {}
+        const subcategoryId = block?.subcategory || block?.subcategory_id || null
+
+        if (!subcategoryId) {
+            indicatorOptions.value = []
+            unitOptions.value = []
+            return
+        }
+
+        // 2) Пробуем загрузить целевые показатели напрямую по блоку
+        let resp
+        try {
+            resp = await apiClient.get(endpoints.project_ed.event_blocks.indicators(blockId))
+        } catch (_) {
+            resp = null
+        }
+        // 2b) Если отдельного вью нет или вернулся пустой список — грузим по подкатегории
+        if (!resp || !Array.isArray(resp?.data) || resp.data.length === 0) {
+            resp = await apiClient.get(endpoints.project_ed.target_indicators.list, { subcategory_id: subcategoryId, event_block: blockId })
+        }
+        let data = Array.isArray(resp?.data) ? resp.data : (resp?.data?.results || [])
+        // Показатели могут быть привязаны к конкретному блоку: отфильтруем по нему с приведением типов
+        const blockIdNum = Number(blockId)
+        let filtered = data.filter(it => {
+            const evBlk = (it?.event_block ?? it?.event_block_id ?? null)
+            if (evBlk === null || evBlk === undefined || evBlk === '') return false
+            const evBlkNum = Number(evBlk)
+            return Number.isFinite(blockIdNum) && Number.isFinite(evBlkNum) ? evBlkNum === blockIdNum : String(evBlk) === String(blockId)
+        })
+        // Если по блоку ничего не нашли, подстрахуемся показателями по подкатегории
+        if (!filtered.length) filtered = data
+        data = filtered
         indicatorOptions.value = data.map(it => ({ value: it.id || it.code || it.name, label: it.name }))
         const dict = {}
         for (const it of data) {
@@ -246,7 +278,7 @@ const loadIndicatorsByEventBlock = async (blockId) => {
     }
 }
 
-// Следим за изменениями выбранного мероприятия и подгружаем список показателей блоку
+// Следим за изменениями выбранного мероприятия и подгружаем список показателей для соответствующего блока
 watch(() => props.selectedEvent, (ev) => {
     const blockId = ev?.blockId || ev?.block_id || ev?.event_block || ev?.sectionId || null
     loadIndicatorsByEventBlock(blockId)
