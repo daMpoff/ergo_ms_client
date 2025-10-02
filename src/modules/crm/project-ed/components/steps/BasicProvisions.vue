@@ -461,6 +461,7 @@ const localProvisions = ref({
     endDate: props.provisions.endDate || convertToDateString(props.provisions.endDate) || '',
     curator: props.provisions.curator || null,
     customer: props.provisions.customer || (props.rectorInfo?.name ?? ''), // Автоматически устанавливаем ректора (если есть)
+    customerId: props.provisions.customerId || null,
     manager: props.provisions.manager || props.userInfo.name || '', // Автоматически устанавливаем создателя проекта
     executors: props.provisions.executors || [],
     plannedResults: props.provisions.plannedResults || ['', ''],
@@ -755,6 +756,7 @@ watch(selectedCustomerId, (newId) => {
     if (found) {
         customerInfo.value = { name: found.name, position: found.position || 'Ректор' }
         localProvisions.value.customer = found.name
+        localProvisions.value.customerId = found.id
     }
 })
 
@@ -831,6 +833,9 @@ watch(customerInfo, (val) => {
         localProvisions.value.customer = val.name
     } else {
         localProvisions.value.customer = ''
+    }
+    if (selectedCustomerId.value) {
+        localProvisions.value.customerId = selectedCustomerId.value
     }
 }, { immediate: true })
 

@@ -144,6 +144,7 @@ const userRole = ref('expert') // Может быть: 'user', 'expert', 'admin'
 const userInfo = computed(() => {
     const fullName = userStore.fullName
     return {
+        id: userStore.user?.id,
         name: fullName,
         initials: generateInitials(fullName)
     }
@@ -413,6 +414,8 @@ const submitForm = async () => {
             start_date: formData.basicProvisions.startDate,
             end_date: formData.basicProvisions.endDate,
             curator_id: formData.basicProvisions.curator ?? null,
+            manager_id: userInfo.value?.id || null,
+            customer_id: formData.basicProvisions.customerId ?? null,
             customer_name: formData.basicProvisions.customer || '',
             manager_name: formData.basicProvisions.manager || (userInfo.value?.name || ''),
             budget_total: Number(
