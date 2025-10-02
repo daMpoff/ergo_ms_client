@@ -53,41 +53,12 @@
             </div>
             
             <div v-else class="projects-list">
-                <div 
-                    v-for="project in filteredProjects" 
-                    :key="project.id" 
-                    class="project-item"
-                    @click="onProjectClick(project)"
-                >
-                    <div class="project-main">
-                        <div class="project-title-section">
-                            <h4 class="project-title">{{ project.shortName }}</h4>
-                            <span class="status-badge" :class="getStatusClass(project.status)">
-                                {{ project.status }}
-                            </span>
-                        </div>
-                        
-                        <div v-if="project.nameClarification" class="project-clarification">
-                            {{ project.nameClarification }}
-                        </div>
-                        
-                        <p class="project-description">{{ project.name }}</p>
-                        
-                        <div class="project-meta">
-                            <span class="role-badge" :class="getRoleClass(project.role)">
-                                <User class="role-icon" :size="14" />
-                                {{ project.role }}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="project-actions">
-                        <button class="btn btn-outline-primary btn-sm" @click.stop="onProjectClick(project)">
-                            <ArrowRight class="me-1" :size="16" />
-                            Открыть
-                        </button>
-                    </div>
-                </div>
+                <ProjectListItem
+                    v-for="project in filteredProjects"
+                    :key="project.id"
+                    :project="project"
+                    @open="onProjectClick"
+                />
             </div>
         </div>
     </div>
@@ -95,9 +66,10 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
-import { Home, Briefcase, FolderKanban, List, Search, ArrowRight, User } from 'lucide-vue-next'
+import { Home, List } from 'lucide-vue-next'
 import { useToast } from 'vue-toastification'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
+import ProjectListItem from '@/modules/crm/project-ed/components/ProjectListItem.vue'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
@@ -143,27 +115,7 @@ const onProjectClick = (project) => {
     // router.push({ name: 'ProjectCard', params: { id: project.id } })
 }
 
-// Функции для стилизации
-const getStatusClass = (status) => {
-    const statusMap = {
-        'Черновик': 'badge-warning',
-        'На утверждении': 'badge-info',
-        'Отклонен': 'badge-danger',
-        'В работе': 'badge-success',
-        'Завершен': 'badge-secondary'
-    }
-    return statusMap[status] || 'badge-secondary'
-}
-
-const getRoleClass = (role) => {
-    const roleMap = {
-        'Руководитель': 'badge-secondary',
-        'Куратор': 'badge-warning',
-        'Заказчик': 'badge-dark',
-        'Исполнитель': 'badge-success'
-    }
-    return roleMap[role] || 'badge-secondary'
-}
+// Стили применяются в компоненте ProjectListItem
 
 // Загрузка проектов пользователя
 async function loadProjects() {
@@ -179,7 +131,10 @@ async function loadProjects() {
             nameClarification: project.name_clarification,
             name: project.name,
             role: project.user_role || getProjectRole(project), // Используем роль из API
-            status: getProjectStatus(project.status)
+            status: getProjectStatus(project.status),
+            executors_count: project.executors_count || 0, // Добавляем количество исполнителей
+            created_at: project.created_at,
+            updated_at: project.updated_at
         }))
         
         // Проверяем на дубликаты по ID
@@ -278,138 +233,5 @@ onMounted(async () => {
     flex-direction: column;
     gap: 1rem;
 }
-
-.project-item {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    
-    &:hover {
-        border-color: #0d6efd;
-        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
-    }
-    
-    .project-main {
-        flex: 1;
-        
-        .project-title-section {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 0.5rem;
-            
-            .project-title {
-                font-size: 1.25rem;
-                font-weight: 600;
-                color: #0d6efd;
-                margin: 0;
-                text-decoration: none;
-                
-                &:hover {
-                    text-decoration: underline;
-                }
-            }
-            
-            .status-badge {
-                border: 1px solid transparent;
-                border-radius: 1rem;
-                padding: 0.25rem 0.5rem;
-                font-size: 0.75rem;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.025em;
-                
-                &.badge-warning {
-                    border-color: #f59e0b;
-                }
-                
-                &.badge-info {
-                    border-color: #0dcaf0;
-                }
-                
-                &.badge-danger {
-                    border-color: #dc3545;
-                }
-                
-                &.badge-success {
-                    border-color: #198754;
-                }
-                
-                &.badge-secondary {
-                    border-color: #6c757d;
-                }
-            }
-        }
-        
-        .project-clarification {
-            color: #495057;
-            font-size: 0.95rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            padding: 0.25rem 0.5rem;
-            background-color: #f8f9fa;
-            border-radius: 0.25rem;
-            border-left: 3px solid #0d6efd;
-            display: inline-block;
-        }
-        
-        .project-description {
-            color: #6c757d;
-            font-size: 0.875rem;
-            line-height: 1.5;
-            margin: 0 0 1rem 0;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        
-        .project-meta {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            
-            .role-badge {
-                display: flex;
-                align-items: center;
-                gap: 0.25rem;
-                
-                .role-icon {
-                    display: flex;
-                    align-items: center;
-                }
-            }
-        }
-    }
-    
-    .project-actions {
-        display: flex;
-        align-items: center;
-    }
-}
-
-// Responsive
-@media (max-width: 768px) {
-    .project-item {
-        flex-direction: column;
-        gap: 1rem;
-        
-        .project-actions {
-            align-self: flex-start;
-        }
-    }
-    
-    .project-meta {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 0.5rem !important;
-    }
-}
+/* Стили элемента проекта перенесены в ProjectListItem */
 </style>
