@@ -55,12 +55,12 @@
             </button>
         </div>
 
-        <button v-if="filteredProjects.length > 0" class="btn btn-secondary w-100" @click="goToMyProjects">Еще...</button>
+        
     </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, User } from 'lucide-vue-next'
 import { getRelativeTime } from '@/modules/crm/project-ed/components/steps/js/timeUtils.js'
@@ -111,14 +111,43 @@ const formatCreated = (project) => {
     return created ? getRelativeTime(created) : ''
 }
 
+// Блокируем ручную прокрутку (колесо мыши/тач) — оставляем только кнопки
+let wheelHandler = null
+let touchMoveHandler = null
+
+onMounted(() => {
+    if (!scrollContainer.value) return
+    wheelHandler = (e) => {
+        // Разрешаем клики по карточкам, но блокируем горизонтальную прокрутку жестами
+        if (e.deltaX !== 0 || e.deltaY !== 0) {
+            e.preventDefault()
+        }
+    }
+    touchMoveHandler = (e) => {
+        e.preventDefault()
+    }
+    scrollContainer.value.addEventListener('wheel', wheelHandler, { passive: false })
+    scrollContainer.value.addEventListener('touchmove', touchMoveHandler, { passive: false })
+})
+
+onBeforeUnmount(() => {
+    if (!scrollContainer.value) return
+    if (wheelHandler) {
+        scrollContainer.value.removeEventListener('wheel', wheelHandler)
+        wheelHandler = null
+    }
+    if (touchMoveHandler) {
+        scrollContainer.value.removeEventListener('touchmove', touchMoveHandler)
+        touchMoveHandler = null
+    }
+})
+
 const onRowClick = (project) => {
     // Переходим к детальной странице проекта
     router.push({ name: 'ProjectEdProjectDetail', params: { id: project.id } })
 }
 
-const goToMyProjects = () => {
-    router.push({ name: 'ProjectEdMyProjects' })
-}
+// Кнопка "Еще..." удалена по требованию
 </script>
 
 <style scoped lang="scss">
@@ -131,18 +160,18 @@ const goToMyProjects = () => {
 .cards-scroll-container {
     display: flex;
     gap: 1rem;
-    overflow-x: auto;
+    overflow-x: auto; // нужен для программного скролла
     padding: .25rem;
     scroll-behavior: smooth;
-    scrollbar-width: thin;
+    scrollbar-width: none; // скрыть в Firefox
 }
 
 .cards-scroll-container::-webkit-scrollbar {
-    height: 8px;
+    width: 0;
+    height: 0; // скрыть в WebKit/Chromium
 }
 .cards-scroll-container::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,.2);
-    border-radius: 4px;
+    background: transparent;
 }
 
 .project-card {
@@ -170,8 +199,8 @@ const goToMyProjects = () => {
     border-radius: 50%;
     opacity: .9;
 }
-.nav-btn.left { left: -12px; }
-.nav-btn.right { right: -12px; }
+.nav-btn.left { left: 0; }
+.nav-btn.right { right: 0; }
 
 .full-name {
     color: var(--color-secondary-text);
