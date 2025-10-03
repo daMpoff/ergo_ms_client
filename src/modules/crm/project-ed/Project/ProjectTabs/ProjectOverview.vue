@@ -18,6 +18,7 @@
               :status-variant="projectStatusVariant"
               :start-date="projectStartDate"
               :end-date="projectEndDate"
+              :performers="projectPerformers"
             />
         </aside>
     </div>
@@ -97,6 +98,10 @@ const projectEndDate = computed(() => {
   if (!props.projectData) return ''
   const d = props.projectData.end_date || props.projectData.end_at || props.projectData.end || props.projectData.endDate || props.projectData.deadline
   return d || ''
+})
+
+const projectPerformers = computed(() => {
+  return Array.isArray(props.projectData?.performers) ? props.projectData.performers : []
 })
 </script>
 

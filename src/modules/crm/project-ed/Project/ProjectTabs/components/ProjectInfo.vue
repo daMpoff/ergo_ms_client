@@ -90,14 +90,44 @@
                         <span v-else class="text-muted">—</span>
                     </dd>
                 </div>
+                <div class="info-row">
+                    <dt>Исполнители</dt>
+                    <dd>
+                        <div v-if="performers && performers.length" class="contributors">
+                            <div class="contributors__list">
+                                <div
+                                    v-for="(person, idx) in performers"
+                                    :key="person.id || idx"
+                                    class="contributors__item"
+                                    :ref="el => setPerformerRef(el, idx)"
+                                >
+                                    <img
+                                        v-if="person.avatar_url"
+                                        :src="person.avatar_url"
+                                        :alt="person.full_name || 'Исполнитель'"
+                                        class="contributors__avatar"
+                                    />
+                                    <DefaultAvatar
+                                        v-else
+                                        size="small"
+                                        :title="person.full_name || '—'"
+                                        class="contributors__avatar"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <span v-else class="text-muted">—</span>
+                    </dd>
+                </div>
             </dl>
         </div>
     </div>
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
+import { defineProps, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import { initializePopover, cleanupPopover } from '@/modules/crm/project-ed/components/steps/js/popoverUtils.js'
 
 const props = defineProps({
   projectRoles: {
@@ -123,7 +153,53 @@ const props = defineProps({
   endDate: {
     type: [String, Number, Date],
     default: ''
+  },
+  performers: {
+    type: Array,
+    default: () => []
   }
+})
+
+const performerRefs = ref([])
+const popovers = ref([])
+
+function setPerformerRef(el, index) {
+  performerRefs.value[index] = el
+}
+
+function initPerformerPopovers() {
+  // Очистим прежние
+  popovers.value.forEach(p => cleanupPopover(p))
+  popovers.value = []
+
+  performerRefs.value.forEach((el, index) => {
+    if (!el) return
+    const person = props.performers?.[index]
+    const name = person?.full_name || ''
+    const pop = initializePopover(el, name, {
+      className: 'custom-popover',
+      position: 'auto',
+      offset: 8,
+      showArrow: true,
+      maxWidth: 240
+    })
+    if (pop) popovers.value.push(pop)
+  })
+}
+
+onMounted(async () => {
+  await nextTick()
+  initPerformerPopovers()
+})
+
+watch(() => props.performers, async () => {
+  await nextTick()
+  initPerformerPopovers()
+}, { deep: true })
+
+onBeforeUnmount(() => {
+  popovers.value.forEach(p => cleanupPopover(p))
+  popovers.value = []
 })
 
 function formatDate(value) {
@@ -175,10 +251,6 @@ function formatDate(value) {
   border-bottom: 1px dashed var(--color-border);
 }
 
-.info-row:last-child {
-  border-bottom: none;
-}
-
 dt {
   margin: 0;
   color: #6c757d;
@@ -207,5 +279,24 @@ dd {
   font-weight: 500;
   color: #495057;
   font-size: 0.875rem;
+}
+
+.contributors__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.contributors__item {
+  width: 36px;
+  height: 36px;
+}
+
+.contributors__avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
