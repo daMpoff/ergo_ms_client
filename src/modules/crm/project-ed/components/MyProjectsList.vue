@@ -9,7 +9,7 @@
 
         <div v-else class="position-relative">
             <button
-                class="btn btn-light shadow-sm nav-btn left"
+                class="btn btn-info text-white shadow-sm nav-btn left"
                 type="button"
                 @click="scrollLeft"
                 aria-label="Прокрутить влево"
@@ -46,7 +46,7 @@
                 </div>
             </div>
             <button
-                class="btn btn-light shadow-sm nav-btn right"
+                class="btn btn-info text-white shadow-sm nav-btn right"
                 type="button"
                 @click="scrollRight"
                 aria-label="Прокрутить вправо"
@@ -197,7 +197,7 @@ const onRowClick = (project) => {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    opacity: .9;
+    opacity: .40;
 }
 .nav-btn.left { left: 0; }
 .nav-btn.right { right: 0; }
