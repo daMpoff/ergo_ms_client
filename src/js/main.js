@@ -15,7 +15,6 @@ import VueApexCharts from 'vue3-apexcharts'
 import { setupCalendar } from 'v-calendar'
 import { plugin as Slicksort } from 'vue-slicksort'
 import Toast from 'vue-toastification'
-import { createYmaps } from 'vue-yandex-maps'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -48,14 +47,5 @@ app.use(Toast, {
 app.use(setupCalendar, {
   color: 'red',
 })
-
-try {
-  app.use(
-    createYmaps({
-      apikey: import.meta.env.VITE_YANDEX_MAPS_API_KEY,
-    }),
-  )
-} catch (error) {
-}
 
 app.mount('#app')
