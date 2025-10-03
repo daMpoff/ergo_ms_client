@@ -112,13 +112,13 @@ onMounted(async () => {
         position: relative;
 
         &:hover {
-          color: #24292e;
+          color: #0366d6; /* как в breadcrumbs */
           background-color: rgba(0, 0, 0, 0.05);
         }
 
         &.active {
-          color: #f85149;
-          border-bottom-color: #f85149;
+          color: #0366d6; /* голубой цвет как в breadcrumbs */
+          border-bottom-color: #0366d6;
           background-color: transparent;
         }
 
@@ -145,7 +145,7 @@ onMounted(async () => {
         }
 
         &.active .tab-badge {
-          background-color: #f85149;
+          background-color: #0366d6;
         }
       }
     }
