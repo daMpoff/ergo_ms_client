@@ -78,20 +78,38 @@ export function initializePopover(element, content, options = {}) {
                 break;
             case 'auto':
             default:
-                // Автоматическое позиционирование - проверяем, помещается ли сверху
-                if (rect.top - popover.offsetHeight - offset > 0) {
+                // Автоматическое позиционирование — выбираем сторону с большим свободным пространством
+                const spaceAbove = rect.top;
+                const spaceBelow = window.innerHeight - rect.bottom;
+
+                if (spaceAbove >= popover.offsetHeight + offset) {
+                    // Помещается сверху
+                    popoverLeft = rect.left + scrollX + (rect.width / 2) - (popover.offsetWidth / 2);
+                    popoverTop = rect.top + scrollY - popover.offsetHeight - offset;
+                } else if (spaceBelow >= popover.offsetHeight + offset) {
+                    // Помещается снизу
+                    popoverLeft = rect.left + scrollX + (rect.width / 2) - (popover.offsetWidth / 2);
+                    popoverTop = rect.bottom + scrollY + offset;
+                } else if (spaceAbove >= spaceBelow) {
+                    // Не помещается полностью — выбираем сторону с большим пространством (верх)
                     popoverLeft = rect.left + scrollX + (rect.width / 2) - (popover.offsetWidth / 2);
                     popoverTop = rect.top + scrollY - popover.offsetHeight - offset;
                 } else {
+                    // или низ
                     popoverLeft = rect.left + scrollX + (rect.width / 2) - (popover.offsetWidth / 2);
                     popoverTop = rect.bottom + scrollY + offset;
                 }
                 break;
         }
         
-        // Убеждаемся, что popover не выходит за границы экрана
-        popoverLeft = Math.max(10, Math.min(popoverLeft, window.innerWidth - popover.offsetWidth - 10));
-        popoverTop = Math.max(10, Math.min(popoverTop, window.innerHeight - popover.offsetHeight - 10));
+        // Убеждаемся, что popover не выходит за границы видимой области с учетом скролла
+        const minLeft = scrollX + 10;
+        const maxLeft = scrollX + window.innerWidth - popover.offsetWidth - 10;
+        const minTop = scrollY + 10;
+        const maxTop = scrollY + window.innerHeight - popover.offsetHeight - 10;
+
+        popoverLeft = Math.max(minLeft, Math.min(popoverLeft, maxLeft));
+        popoverTop = Math.max(minTop, Math.min(popoverTop, maxTop));
         
         popover.style.left = popoverLeft + 'px';
         popover.style.top = popoverTop + 'px';
