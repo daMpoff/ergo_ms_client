@@ -1,23 +1,69 @@
 <template>
     <div class="my-projects-list">
-        <ProjectTable :items="filteredProjects" @rowClick="onRowClick">
-            <template #empty>
-                <div class="text-center py-4">
-                    <p class="text-muted">У вас пока нет проектов</p>
-                    <router-link to="/project-ed/create" class="btn btn-primary">
-                        Создать первый проект
-                    </router-link>
+        <div v-if="filteredProjects.length === 0" class="text-center py-4">
+            <p class="text-muted">У вас пока нет проектов</p>
+            <router-link to="/project-ed/create" class="btn btn-primary">
+                Создать первый проект
+            </router-link>
+        </div>
+
+        <div v-else class="position-relative">
+            <button
+                class="btn btn-light shadow-sm nav-btn left"
+                type="button"
+                @click="scrollLeft"
+                aria-label="Прокрутить влево"
+            >
+                <ChevronLeft :size="20" class="d-block mx-auto" />
+            </button>
+            <div
+                ref="scrollContainer"
+                class="cards-scroll-container"
+            >
+                <div
+                    v-for="project in filteredProjects"
+                    :key="project.id"
+                    class="project-card card h-100"
+                    role="button"
+                    @click="onRowClick(project)"
+                >
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0 text-truncate">{{ project.shortName }}</h6>
+                        </div>
+                        <div class="full-name small">
+                            {{ project.name }}
+                        </div>
+                        <div class="text-muted small mb-3 text-truncate d-inline-flex align-items-center gap-1 role-line">
+                            <User :size="14" />
+                            <span>{{ project.role || '—' }}</span>
+                        </div>
+                        <div class="mt-auto d-flex align-items-center justify-content-between text-muted small">
+                            <span class="text-truncate">{{ formatCreated(project) }}</span>
+                            <span class="badge bg-secondary text-wrap ms-2">{{ project.status }}</span>
+                        </div>
+                    </div>
                 </div>
-            </template>
-        </ProjectTable>
+            </div>
+            <button
+                class="btn btn-light shadow-sm nav-btn right"
+                type="button"
+                @click="scrollRight"
+                aria-label="Прокрутить вправо"
+            >
+                <ChevronRight :size="20" class="d-block mx-auto" />
+            </button>
+        </div>
+
         <button v-if="filteredProjects.length > 0" class="btn btn-secondary w-100" @click="goToMyProjects">Еще...</button>
     </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import ProjectTable from '@/modules/crm/project-ed/components/ProjectTable.vue'
+import { ChevronLeft, ChevronRight, User } from 'lucide-vue-next'
+import { getRelativeTime } from '@/modules/crm/project-ed/components/steps/js/timeUtils.js'
 
 // Входные данные - проекты передаются из родительского компонента
 const props = defineProps({
@@ -44,6 +90,26 @@ const filteredProjects = computed(() => {
 })
 
 const router = useRouter()
+const scrollContainer = ref(null)
+
+const scrollByAmount = 320
+
+const scrollLeft = () => {
+    if (scrollContainer.value) {
+        scrollContainer.value.scrollBy({ left: -scrollByAmount, behavior: 'smooth' })
+    }
+}
+
+const scrollRight = () => {
+    if (scrollContainer.value) {
+        scrollContainer.value.scrollBy({ left: scrollByAmount, behavior: 'smooth' })
+    }
+}
+
+const formatCreated = (project) => {
+    const created = project?.createdAt || project?.created_at || project?.created || project?.createdDate
+    return created ? getRelativeTime(created) : ''
+}
 
 const onRowClick = (project) => {
     // Переходим к детальной странице проекта
@@ -62,32 +128,61 @@ const goToMyProjects = () => {
     gap: 1rem;
 }
 
-.filters-card {
-    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
-    border: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: 1rem;
-    padding: 1rem;
-}
-
-.filters-grid {
-    display: grid;
-    grid-template-columns: 1fr 220px 220px;
-    gap: .75rem;
-
-    @media (max-width: 992px) {
-        grid-template-columns: 1fr 1fr;
-    }
-    @media (max-width: 576px) {
-        grid-template-columns: 1fr;
-    }
-}
-
-.filter-item {
+.cards-scroll-container {
     display: flex;
-    flex-direction: column;
+    gap: 1rem;
+    overflow-x: auto;
+    padding: .25rem;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
 }
 
-/* стили таблицы перенесены в общий компонент */
+.cards-scroll-container::-webkit-scrollbar {
+    height: 8px;
+}
+.cards-scroll-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,.2);
+    border-radius: 4px;
+}
+
+.project-card {
+    min-width: 280px;
+    max-width: 320px;
+    border-radius: .75rem;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+}
+
+.nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    opacity: .9;
+}
+.nav-btn.left { left: -12px; }
+.nav-btn.right { right: -12px; }
+
+.full-name {
+    color: var(--color-secondary-text);
+    white-space: normal;
+    overflow: visible;
+    font-size: .65rem;
+}
+
+.role-line {
+    margin-top: .25rem;
+}
 </style>
 
 
