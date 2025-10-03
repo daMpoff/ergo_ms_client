@@ -22,6 +22,11 @@
                 </div>
             </nav>
         </div>
+        
+        <!-- Контент активной вкладки -->
+        <div class="tab-content mt-3">
+            <ProjectOverview v-if="activeTab === 'overview'" :project-data="projectData" />
+        </div>
     </div>
 </template>
 
@@ -34,11 +39,13 @@ import { Home, List, FileText, BookOpen, Users, CheckSquare, Activity } from 'lu
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
 import { slugify as translitSlugify } from 'transliteration'
+import ProjectOverview from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectOverview.vue'
 
 const route = useRoute()
 
 const projectTitleHeading = ref('Проект')
 const projectTitleBreadcrumb = ref('Проект')
+const projectData = ref(null)
 
 const breadcrumbItems = computed(() => ([
     { label: 'Главная', to: '/crm/project-ed/main', icon: Home },
@@ -70,6 +77,7 @@ onMounted(async () => {
         if (!match?.id) return
         // 3) получить детальную карточку по id (источник истины)
         const { data } = await apiClient.get(endpoints.project_ed.projects.detail(match.id))
+        projectData.value = data
         // Заголовок страницы: полное название без уточнения
         const headingBase = data?.name || data?.short_name || 'Проект'
         projectTitleHeading.value = headingBase
