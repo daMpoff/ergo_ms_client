@@ -63,6 +63,7 @@
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, User } from 'lucide-vue-next'
+import { slugify as translitSlugify } from 'transliteration'
 import { getRelativeTime } from '@/modules/crm/project-ed/components/steps/js/timeUtils.js'
 
 // Входные данные - проекты передаются из родительского компонента
@@ -143,8 +144,8 @@ onBeforeUnmount(() => {
 })
 
 const onRowClick = (project) => {
-    // Переходим к детальной странице проекта
-    router.push({ name: 'ProjectEdProjectDetail', params: { id: project.id } })
+    const slug = translitSlugify(project.name || project.shortName || 'project').toLowerCase()
+    router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
 }
 
 // Кнопка "Еще..." удалена по требованию

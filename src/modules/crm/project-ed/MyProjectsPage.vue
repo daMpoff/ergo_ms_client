@@ -110,9 +110,13 @@ const filteredProjects = computed(() => {
     })
 })
 
+import { useRouter } from 'vue-router'
+import { slugify as translitSlugify } from 'transliteration'
+const router = useRouter()
+
 const onProjectClick = (project) => {
-    // Заглушка: здесь будет переход на карточку проекта
-    // router.push({ name: 'ProjectCard', params: { id: project.id } })
+    const slug = translitSlugify(project.name || project.shortName || 'project').toLowerCase()
+    router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
 }
 
 // Стили применяются в компоненте ProjectListItem

@@ -569,6 +569,14 @@
         "requiresAuth": true
       }
     },
+    "ProjectEdProjectDetail": {
+      "path": "/crm/project-ed/project/:slug",
+      "component": "@/modules/crm/project-ed/Project/ProjectPage.vue",
+      "meta": {
+        "title": "Карточка проекта",
+        "requiresAuth": true
+      }
+    },
     "ProjectEdTargetIndicators": {
       "path": "/crm/project-ed/target-indicators",
       "component": "@/modules/crm/project-ed/TargetIndicatorsPage.vue",
