@@ -53,10 +53,14 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Home, Plus, List, FileText, BarChart } from 'lucide-vue-next'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import ProjectCreateForm from '@/modules/crm/project-ed/components/ProjectCreateForm.vue'
 import ReportsPage from '@/modules/crm/project-ed/ReportsPage.vue'
+
+// Инициализация роутера
+const router = useRouter()
 
 // Настройка breadcrumbs
 const breadcrumbItems = ref([
@@ -79,9 +83,14 @@ const breadcrumbItems = ref([
 // Обработка создания проекта
 const handleProjectCreated = (projectData) => {
     console.log('Проект создан:', projectData)
-    // Здесь можно добавить логику перенаправления или уведомления
-    // Например, перенаправление на страницу созданного проекта
-    // router.push(`/crm/project-ed/projects/${projectData.id}`)
+    
+    // Перенаправляем на страницу созданного проекта
+    if (projectData?.id) {
+        // Используем ID проекта для перенаправления
+        router.push(`/crm/project-ed/project/${projectData.id}`)
+    } else {
+        console.error('ID проекта не найден в ответе сервера')
+    }
 }
 
 // Локальное состояние активного раздела (переключатели над разделителем)
