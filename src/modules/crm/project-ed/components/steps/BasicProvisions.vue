@@ -1,10 +1,10 @@
 <template>
     <div class="basic-provisions">
         <div class="step-header">
-            <h2 class="step-title">1. Основные положения</h2>
-            <div class="status-indicator">
-                <span class="status-badge draft">Статус: Черновик</span>
-            </div>
+            <h2 class="step-title">Основные положения</h2>
+            <p class="step-description">
+                Заполните основную информацию о проекте
+            </p>
         </div>
 
         <div class="form-content">
@@ -1079,58 +1079,23 @@ onUnmounted(() => {
     flex-direction: column;
     gap: 2rem;
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
 }
 
 .step-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 12px;
-    border: 1px solid #dee2e6;
+    text-align: center;
+    margin-bottom: 1rem;
 }
 
 .step-title {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #212529;
+    margin: 0 0 0.5rem 0;
+}
+
+.step-description {
+    color: #6c757d;
     margin: 0;
-}
-
-.status-indicator {
-    display: flex;
-    align-items: center;
-}
-
-.status-badge {
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    
-    &.draft {
-        background: #6c757d;
-        color: white;
-    }
-    
-    &.approved {
-        background: #198754;
-        color: white;
-    }
-    
-    &.rejected {
-        background: #dc3545;
-        color: white;
-    }
-    
-    &.pending {
-        background: #ffc107;
-        color: #212529;
-    }
 }
 
 .form-content {
@@ -1717,12 +1682,6 @@ onUnmounted(() => {
 @media (max-width: 768px) {
     .basic-provisions {
         padding: 1rem;
-    }
-    
-    .step-header {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
     }
     
     
