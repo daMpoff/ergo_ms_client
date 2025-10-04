@@ -1,15 +1,20 @@
 <template>
     <div class="overview-grid">
         <div class="overview-main">
-            <!-- Здесь позже будут дашборды и метрики проекта -->
+            <!-- Дашборд проекта -->
+            <ProjectDashboard :project-data="projectData" />
+            
             <div class="placeholder-card">
-                <h5 class="mb-2">Дашборды проекта</h5>
-                <p class="mb-0 text-muted">Здесь отобразим ключевые метрики проекта.</p>
+                <div class="placeholder-card__header">
+                    <h6 class="mb-0">Ход работ</h6>
+                </div>
+                <div class="placeholder-card__body">
+                    <p class="mb-0 text-muted">Сводка задач, прогресса и активностей.</p>
+                </div>
             </div>
-            <div class="placeholder-card">
-                <h5 class="mb-2">Ход работ</h5>
-                <p class="mb-0 text-muted">Сводка задач, прогресса и активностей.</p>
-            </div>
+            
+            <!-- Информация о проекте -->
+            <ProjectInfoDetails :project-data="projectData" />
         </div>
         <aside class="overview-aside">
             <ProjectInfoActionBar 
@@ -32,8 +37,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import ProjectDashboard from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectDashboard.vue'
 import ProjectInfo from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfo.vue'
 import ProjectInfoActionBar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoActionBar.vue'
+import ProjectInfoDetails from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoDetails.vue'
 
 const props = defineProps({
   projectData: {
@@ -135,7 +142,17 @@ const emit = defineEmits(['project-updated'])
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  padding: 1rem;
+  overflow: hidden;
+}
+
+.placeholder-card__header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: #f8f9fa;
+}
+
+.placeholder-card__body {
+  padding: 0.75rem 1rem;
 }
 
 .overview-aside {
