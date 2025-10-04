@@ -347,6 +347,26 @@ watch(() => formData.budget.totals?.withInsurance, (newAmount) => {
     formData.basicProvisions.budget = newAmount || 0
 }, { immediate: true })
 
+// Синхронизация дат между BasicProvisions и CalendarPlan
+watch(() => [formData.basicProvisions.startDate, formData.basicProvisions.endDate], ([startDate, endDate]) => {
+    if (startDate) {
+        formData.calendarPlan.startDate = startDate
+    }
+    if (endDate) {
+        formData.calendarPlan.endDate = endDate
+    }
+}, { immediate: true })
+
+// Обратная синхронизация: если даты изменяются в CalendarPlan, обновляем BasicProvisions
+watch(() => [formData.calendarPlan.startDate, formData.calendarPlan.endDate], ([startDate, endDate]) => {
+    if (startDate && startDate !== formData.basicProvisions.startDate) {
+        formData.basicProvisions.startDate = startDate
+    }
+    if (endDate && endDate !== formData.basicProvisions.endDate) {
+        formData.basicProvisions.endDate = endDate
+    }
+}, { immediate: true })
+
 // Отправка формы
 const emit = defineEmits(['project-created'])
 
