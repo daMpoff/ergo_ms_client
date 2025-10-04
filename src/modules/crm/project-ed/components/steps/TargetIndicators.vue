@@ -41,12 +41,24 @@
                                     class="toggle-input" 
                                     :id="`custom-${index}`" 
                                     type="checkbox" 
-                                    v-model="indicator.isCustom" 
+                                    :checked="indicator.isCustom"
+                                    :disabled="indicatorOptions.length === 0 && !indicator.isCustom"
+                                    @change="handleToggleChange($event, index)"
                                 />
-                                <label class="toggle-label" :for="`custom-${index}`">
+                                <label 
+                                    class="toggle-label" 
+                                    :for="`custom-${index}`"
+                                    :class="{ 'shake': shakeIndex === index }"
+                                >
                                     <span class="toggle-track"></span>
                                     <span class="toggle-text">вручную</span>
                                 </label>
+                                <div 
+                                    v-if="indicatorOptions.length === 0 && shakeIndex === index" 
+                                    class="toggle-error"
+                                >
+                                    Отсутствуют целевые показатели
+                                </div>
                             </div>
                         </div>
                         
@@ -156,6 +168,9 @@ const unitOptions = ref([])
 // Связка показателей и допустимых единиц измерения
 const indicatorToUnits = {}
 
+// Анимация тряски
+const shakeIndex = ref(null)
+
 // Методы
 const addIndicator = () => {
     const next = [
@@ -165,7 +180,7 @@ const addIndicator = () => {
             unit: '',
             baseValue: 0,
             targetValue: 0,
-            isCustom: false
+            isCustom: indicatorOptions.value.length === 0
         }
     ]
     localIndicators.value = next
@@ -173,6 +188,24 @@ const addIndicator = () => {
 
 const removeIndicator = (index) => {
     localIndicators.value = localIndicators.value.filter((_, i) => i !== index)
+}
+
+// Обработка изменения тумблера
+const handleToggleChange = (event, index) => {
+    // Если нет показателей и пытаемся выключить режим "вручную"
+    if (indicatorOptions.value.length === 0 && !event.target.checked) {
+        // Предотвращаем изменение - возвращаем чекбокс в исходное состояние
+        event.target.checked = true
+        // Запускаем анимацию тряски
+        shakeIndex.value = index
+        setTimeout(() => {
+            shakeIndex.value = null
+        }, 2000) // Увеличиваем время показа сообщения об ошибке
+        return
+    }
+    
+    // Если есть показатели или включаем режим "вручную", разрешаем переключение
+    localIndicators.value[index].isCustom = event.target.checked
 }
 
 // Инициализация - добавляем один показатель по умолчанию если список пустой
@@ -263,6 +296,13 @@ const loadIndicatorsByEventBlock = async (blockId) => {
         const uniqueUnits = Array.from(new Set((data || []).map(it => it.unit).filter(Boolean)))
         unitOptions.value = uniqueUnits.map(u => ({ value: u, label: u }))
 
+        // Если нет доступных показателей, включаем режим "вручную" для всех индикаторов
+        if (indicatorOptions.value.length === 0) {
+            localIndicators.value.forEach(ind => {
+                ind.isCustom = true
+            })
+        }
+
         // Провалидируем текущие строки: сбросим неподдерживаемые единицы/подставим по умолчанию
         localIndicators.value.forEach(ind => {
             const allowed = indicatorToUnits[ind.name]
@@ -275,6 +315,11 @@ const loadIndicatorsByEventBlock = async (blockId) => {
     } catch (e) {
         indicatorOptions.value = []
         unitOptions.value = []
+        
+        // При ошибке загрузки также включаем режим "вручную" для всех индикаторов
+        localIndicators.value.forEach(ind => {
+            ind.isCustom = true
+        })
     }
 }
 
@@ -550,6 +595,25 @@ watch(() => props.selectedEvent, (ev) => {
 .toggle-label .toggle-text {
     font-size: 0.8125rem;
     color: #6c757d;
+}
+
+// Анимация тряски
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+    20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+.toggle-label.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+// Сообщение об ошибке
+.toggle-error {
+    font-size: 0.75rem;
+    color: #dc3545;
+    margin-top: 0.25rem;
+    font-weight: 500;
 }
 
 // Удалены локальные ограничения ширины селектов — возвращаем дефолтный размер
