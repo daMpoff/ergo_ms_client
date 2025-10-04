@@ -25,30 +25,36 @@
                     </div>
 
                     <!-- Сетка руководителей -->
-                    <div class="leaders-grid">
+                    <div v-if="leaders.length === 0" class="no-leaders-message">
+                        <div class="no-leaders-icon">?</div>
+                        <div class="no-leaders-text">Руководители не указаны</div>
+                    </div>
+                    
+                    <div v-else class="leaders-grid">
                         <div 
                             v-for="leader in leaders" 
                             :key="leader.id"
-                            class="leader-card"
+                            class="leader-card clickable"
+                            :title="`Перейти к профилю ${formatLeaderName(leader.full_name || leader.name)}`"
+                            @click="navigateToProfile(leader.id)"
                         >
                             <div class="leader-avatar-container">
                                 <img 
-                                    v-if="leader.avatar && leader.avatar !== '/src/assets/avatars/placeholder.svg'"
-                                    :src="leader.avatar" 
-                                    :alt="getLeaderInitials(leader.name)" 
+                                    v-if="leader.avatar_url && leader.avatar_url !== '/src/assets/avatars/placeholder.svg'"
+                                    :src="leader.avatar_url" 
+                                    :alt="getLeaderInitials(leader.full_name || leader.name)" 
                                     class="leader-avatar"
                                     @error="handleAvatarError"
                                 />
-                                <div 
+                                <DefaultAvatar 
                                     v-else
-                                    class="leader-avatar leader-avatar-placeholder"
-                                >
-                                    {{ getLeaderInitials(leader.name) }}
-                                </div>
+                                    size="medium"
+                                    :title="formatLeaderName(leader.full_name || leader.name)"
+                                />
                             </div>
                             
                             <div class="leader-info">
-                                <div class="leader-name">{{ formatLeaderName(leader.name) }}</div>
+                                <div class="leader-name">{{ formatLeaderName(leader.full_name || leader.name) }}</div>
                                 <div v-if="leader.position" class="leader-position">{{ leader.position }}</div>
                             </div>
                         </div>
@@ -61,7 +67,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { Users, X } from 'lucide-vue-next'
+import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const props = defineProps({
     visible: {
@@ -75,8 +83,16 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+const router = useRouter()
 
 const avatarErrors = ref(new Set())
+
+// Навигация к профилю пользователя
+const navigateToProfile = (userId) => {
+    // Закрываем модальное окно перед переходом
+    emit('close')
+    router.push({ name: 'ProjectEdProfile', params: { userId: userId } })
+}
 
 const closeModal = (event) => {
     // Если событие не передано, закрываем модалку
@@ -136,14 +152,16 @@ const formatLeaderName = (name) => {
     // Если имя состоит из одного слова, возвращаем как есть
     if (nameParts.length === 1) return nameParts[0]
     
-    // Если имя состоит из двух слов, возвращаем как есть
-    if (nameParts.length === 2) return nameParts.join(' ')
+    // Если имя состоит из двух слов, форматируем как Фамилия И.
+    if (nameParts.length === 2) {
+        return `${nameParts[0]} ${nameParts[1].charAt(0)}.`
+    }
     
-    // Если имя состоит из трех или более слов, форматируем как Фамилия И.О.
+    // Если имя состоит из трех или более слов, форматируем как Фамилия И.
     const surname = nameParts[0]
-    const initials = nameParts.slice(1).map(part => part.charAt(0) + '.').join('')
+    const firstInitial = nameParts[1].charAt(0) + '.'
     
-    return `${surname} ${initials}`
+    return `${surname} ${firstInitial}`
 }
 
 const getLeaderInitials = (name) => {
@@ -230,6 +248,35 @@ const handleAvatarError = (event) => {
     }
 }
 
+.no-leaders-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    color: #6c757d;
+    text-align: center;
+}
+
+.no-leaders-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.no-leaders-text {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
 .leaders-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -265,15 +312,32 @@ const handleAvatarError = (event) => {
     text-align: center;
     padding: 0.75rem;
     border-radius: 8px;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
     
     &:hover {
         background: #f8f9fa;
+    }
+    
+    &.clickable {
+        cursor: pointer;
+        
+        &:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        &:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
     }
 }
 
 .leader-avatar-container {
     margin-bottom: 0.5rem;
+    width: 48px;
+    height: 48px;
 }
 
 .leader-avatar {
@@ -283,20 +347,6 @@ const handleAvatarError = (event) => {
     object-fit: cover;
     border: 2px solid #e9ecef;
     background: #f8f9fa;
-}
-
-.leader-avatar-placeholder {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #6c757d;
-    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-    border: 2px solid #dee2e6;
 }
 
 .leader-info {
@@ -356,11 +406,14 @@ const handleAvatarError = (event) => {
         padding: 1rem;
     }
     
-    .leader-avatar,
-    .leader-avatar-placeholder {
+    .leader-avatar-container {
         width: 40px;
         height: 40px;
-        font-size: 0.75rem;
+    }
+    
+    .leader-avatar {
+        width: 40px;
+        height: 40px;
     }
     
     .leader-name {
@@ -378,11 +431,14 @@ const handleAvatarError = (event) => {
         gap: 0.5rem;
     }
     
-    .leader-avatar,
-    .leader-avatar-placeholder {
+    .leader-avatar-container {
         width: 36px;
         height: 36px;
-        font-size: 0.625rem;
+    }
+    
+    .leader-avatar {
+        width: 36px;
+        height: 36px;
     }
     
     .leader-name {

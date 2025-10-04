@@ -169,7 +169,7 @@
                                         @mouseleave="hideLeadersTooltip"
                                     >
                                         <Users class="icon" :size="16" />
-                                        {{ event.leaders.length }} {{ getLeadersText(event.leaders.length) }}
+                                        {{ event.leadersCount || event.leaders.length }} {{ getLeadersText(event.leadersCount || event.leaders.length) }}
                                     </div>
                                 </div>
                             </div>
@@ -453,7 +453,8 @@ const setLeaderButtonRef = (eventId, el) => {
 
 const showLeadersTooltip = (event, mouseEvent) => {
     // Не показываем тултип, если руководителей нет
-    if (!event?.leaders || event.leaders.length === 0) {
+    const leadersCount = event?.leadersCount || (event?.leaders ? event.leaders.length : 0)
+    if (leadersCount === 0) {
         return
     }
     // Отменяем предыдущий таймер скрытия
@@ -499,8 +500,10 @@ const handleTooltipMouseLeave = () => {
 // Методы для управления модальным окном руководителей
 const openLeadersModal = () => {
     // Сохраняем данные о руководителях перед открытием модального окна
-    if (hoveredEvent.value?.leaders) {
+    if (hoveredEvent.value?.leaders && Array.isArray(hoveredEvent.value.leaders)) {
         modalLeaders.value = [...hoveredEvent.value.leaders]
+    } else {
+        modalLeaders.value = []
     }
     leadersModalVisible.value = true
 }
@@ -546,7 +549,8 @@ onMounted(async () => {
                     keyResults: e.results,
                     period: e.years_display || `${e.start_year || ''}${e.end_year ? '-' + e.end_year : ''}`,
                     highlighted: false,
-                    leaders: [],
+                    leaders: e.leaders || [],
+                    leadersCount: e.unique_leaders_count || 0,
                     // Добавляем связь с блоком мероприятий, чтобы далее можно было фильтровать показатели по блоку
                     blockId: b.id
                 }

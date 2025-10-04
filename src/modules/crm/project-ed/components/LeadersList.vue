@@ -1,30 +1,35 @@
 <template>
     <div class="leaders-list">
+        <div v-if="leaders.length === 0" class="no-leaders">
+            <div class="no-leaders-icon">?</div>
+            <div class="no-leaders-text">Не указано</div>
+        </div>
         
-        <div class="leaders-items">
+        <div v-else class="leaders-items">
             <div 
                 v-for="leader in displayedLeaders" 
                 :key="leader.id"
-                class="leader-item"
+                class="leader-item clickable"
+                :title="`Перейти к профилю ${formatLeaderName(leader.full_name || leader.name)}`"
+                @click="navigateToProfile(leader.id)"
             >
                 <div class="leader-avatar-container">
                     <img 
-                        v-if="leader.avatar && leader.avatar !== '/src/assets/avatars/placeholder.svg'"
-                        :src="leader.avatar" 
-                        :alt="getLeaderInitials(leader.name)" 
+                        v-if="leader.avatar_url && leader.avatar_url !== '/src/assets/avatars/placeholder.svg'"
+                        :src="leader.avatar_url" 
+                        :alt="getLeaderInitials(leader.full_name || leader.name)" 
                         class="leader-avatar"
                         @error="handleAvatarError"
                     />
-                    <div 
+                    <DefaultAvatar 
                         v-else
-                        class="leader-avatar leader-avatar-placeholder"
-                    >
-                        {{ getLeaderInitials(leader.name) }}
-                    </div>
+                        size="small"
+                        :title="formatLeaderName(leader.full_name || leader.name)"
+                    />
                 </div>
                 
                 <div class="leader-info">
-                    <span class="leader-name">{{ formatLeaderName(leader.name) }}</span>
+                    <span class="leader-name">{{ formatLeaderName(leader.full_name || leader.name) }}</span>
                     <span v-if="leader.position" class="leader-position">{{ leader.position }}</span>
                 </div>
             </div>
@@ -39,9 +44,9 @@
                         :style="{ zIndex: 4 - index }"
                     >
                         <img 
-                            v-if="leader.avatar && leader.avatar !== '/src/assets/avatars/placeholder.svg'"
-                            :src="leader.avatar" 
-                            :alt="getLeaderInitials(leader.name)" 
+                            v-if="leader.avatar_url && leader.avatar_url !== '/src/assets/avatars/placeholder.svg'"
+                            :src="leader.avatar_url" 
+                            :alt="getLeaderInitials(leader.full_name || leader.name)" 
                             class="stacked-avatar-img"
                             @error="handleAvatarError"
                         />
@@ -49,7 +54,7 @@
                             v-else
                             class="stacked-avatar-img stacked-avatar-placeholder"
                         >
-                            {{ getLeaderInitials(leader.name) }}
+                            {{ getLeaderInitials(leader.full_name || leader.name) }}
                         </div>
                     </div>
                     
@@ -74,7 +79,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Users } from 'lucide-vue-next'
+import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const props = defineProps({
     leaders: {
@@ -87,7 +94,13 @@ const props = defineProps({
     }
 })
 
+const router = useRouter()
 const avatarErrors = ref(new Set())
+
+// Навигация к профилю пользователя
+const navigateToProfile = (userId) => {
+    router.push({ name: 'ProjectEdProfile', params: { userId: userId } })
+}
 
 // Ограничиваем количество отображаемых руководителей
 const displayedLeaders = computed(() => {
@@ -131,14 +144,16 @@ const formatLeaderName = (name) => {
     // Если имя состоит из одного слова, возвращаем как есть
     if (nameParts.length === 1) return nameParts[0]
     
-    // Если имя состоит из двух слов, возвращаем как есть
-    if (nameParts.length === 2) return nameParts.join(' ')
+    // Если имя состоит из двух слов, форматируем как Фамилия И.
+    if (nameParts.length === 2) {
+        return `${nameParts[0]} ${nameParts[1].charAt(0)}.`
+    }
     
-    // Если имя состоит из трех или более слов, форматируем как Фамилия И.О.
+    // Если имя состоит из трех или более слов, форматируем как Фамилия И.
     const surname = nameParts[0]
-    const initials = nameParts.slice(1).map(part => part.charAt(0) + '.').join('')
+    const firstInitial = nameParts[1].charAt(0) + '.'
     
-    return `${surname} ${initials}`
+    return `${surname} ${firstInitial}`
 }
 
 const getLeaderInitials = (name) => {
@@ -181,6 +196,33 @@ const openModal = (event) => {
     min-width: 200px;
 }
 
+.no-leaders {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    color: #6c757d;
+}
+
+.no-leaders-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    flex-shrink: 0;
+}
+
+.no-leaders-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
 
 .leaders-items {
     display: flex;
@@ -220,10 +262,25 @@ const openModal = (event) => {
     &:hover {
         background-color: #f8f9fa;
     }
+    
+    &.clickable {
+        cursor: pointer;
+        
+        &:hover {
+            background-color: #e9ecef;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        &:active {
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+    }
 }
 
 .leader-avatar-container {
     flex-shrink: 0;
+    width: 32px;
+    height: 32px;
 }
 
 .leader-avatar {
@@ -233,17 +290,6 @@ const openModal = (event) => {
     object-fit: cover;
     border: 2px solid #e9ecef;
     background: #f8f9fa;
-}
-
-.leader-avatar-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #6c757d;
-    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-    border: 2px solid #dee2e6;
 }
 
 .leader-info {
@@ -359,11 +405,14 @@ const openModal = (event) => {
         padding: 0.375rem;
     }
     
-    .leader-avatar,
-    .leader-avatar-placeholder {
+    .leader-avatar-container {
         width: 28px;
         height: 28px;
-        font-size: 0.625rem;
+    }
+    
+    .leader-avatar {
+        width: 28px;
+        height: 28px;
     }
     
     .stacked-avatar {
