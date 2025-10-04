@@ -45,7 +45,8 @@ const breadcrumbItems = ref([
 const handleProjectCreated = (projectData) => {
     
     if (projectData?.id) {
-        router.push(`/crm/project-ed/project/${projectData.id}`)
+        // Используем новый маршрут с ID, который автоматически перенаправит на slug
+        router.push(`/crm/project-ed/project/id/${projectData.id}`)
     } else {
         console.error('ID проекта не найден в ответе сервера')
     }

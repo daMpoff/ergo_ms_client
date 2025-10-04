@@ -569,6 +569,22 @@
         "requiresAuth": true
       }
     },
+    "ProjectEdProjectDetailById": {
+      "path": "/crm/project-ed/project/id/:id",
+      "component": "@/modules/crm/project-ed/Project/ProjectRedirect.vue",
+      "meta": {
+        "title": "Карточка проекта",
+        "requiresAuth": true
+      }
+    },
+    "ProjectEdProjectDetailByDirectId": {
+      "path": "/crm/project-ed/project/:id(\\d+)",
+      "component": "@/modules/crm/project-ed/Project/ProjectRedirect.vue",
+      "meta": {
+        "title": "Карточка проекта",
+        "requiresAuth": true
+      }
+    },
     "ProjectEdProjectDetail": {
       "path": "/crm/project-ed/project/:slug",
       "component": "@/modules/crm/project-ed/Project/ProjectPage.vue",
