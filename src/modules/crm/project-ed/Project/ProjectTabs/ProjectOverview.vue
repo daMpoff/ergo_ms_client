@@ -12,6 +12,10 @@
             </div>
         </div>
         <aside class="overview-aside">
+            <ProjectInfoActionBar 
+              :project-data="projectData"
+              @project-submitted="onProjectSubmitted"
+            />
             <ProjectInfo 
               :project-roles="projectRoles" 
               :status-label="projectStatusLabel" 
@@ -29,6 +33,7 @@
 <script setup>
 import { computed } from 'vue'
 import ProjectInfo from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfo.vue'
+import ProjectInfoActionBar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoActionBar.vue'
 
 const props = defineProps({
   projectData: {
@@ -103,6 +108,14 @@ const projectEndDate = computed(() => {
 const projectPerformers = computed(() => {
   return Array.isArray(props.projectData?.performers) ? props.projectData.performers : []
 })
+
+// Обработчик события отправки проекта на рассмотрение
+const onProjectSubmitted = (updatedProjectData) => {
+  // Эмитим событие наверх для обновления данных проекта
+  emit('project-updated', updatedProjectData)
+}
+
+const emit = defineEmits(['project-updated'])
 </script>
 
 <style scoped lang="scss">
