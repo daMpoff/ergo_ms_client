@@ -18,6 +18,9 @@
             
             <!-- Календарный план-график -->
             <ProjectInfoCalendar :project-data="projectData" />
+            
+            <!-- Бюджет проекта -->
+            <ProjectInfoBudget :project-data="projectData" />
         </div>
         <aside class="overview-aside">
             <ProjectInfoActionBar 
@@ -45,6 +48,7 @@ import ProjectInfo from '@/modules/crm/project-ed/Project/ProjectTabs/components
 import ProjectInfoActionBar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoActionBar.vue'
 import ProjectInfoDetails from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoDetails.vue'
 import ProjectInfoCalendar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoCalendar.vue'
+import ProjectInfoBudget from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoBudget.vue'
 
 const props = defineProps({
   projectData: {
