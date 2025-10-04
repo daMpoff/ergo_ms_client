@@ -389,19 +389,23 @@ const submitForm = async () => {
             }
         })
 
-        const normalizedStages = (formData.calendarPlan?.stages || []).map((st, idx) => ({
-            id: st.id ?? st.key ?? idx,
-            name: st.name || '',
-            startDate: st.startDate || st.start || formData.calendarPlan.startDate || '',
-            endDate: st.endDate || st.end || formData.calendarPlan.endDate || '',
-            plannedResults: st.plannedResults || (st.result ? [st.result] : []),
-        }))
+        // Фильтруем пустые этапы перед нормализацией, чтобы индексы совпадали с бюджетом
+        const normalizedStages = (formData.calendarPlan?.stages || [])
+            .filter(st => st?.name && st.name.trim() !== '')
+            .map((st, idx) => ({
+                id: st.id ?? st.key ?? idx,
+                name: st.name || '',
+                startDate: st.startDate || st.start || formData.calendarPlan.startDate || '',
+                endDate: st.endDate || st.end || formData.calendarPlan.endDate || '',
+                plannedResults: st.plannedResults || (st.result ? [st.result] : []),
+            }))
 
         const flattenedBudgetItems = []
         ;(formData.budget?.stages || []).forEach((st, idx) => {
-            (st.items || []).forEach((it) => {
+            ;(st.items || []).forEach((it) => {
+                const stageId = st.id ?? st.key ?? idx
                 flattenedBudgetItems.push({
-                    stageId: st.id ?? st.key ?? idx,
+                    stageId: stageId,
                     article: it.article || it.costArticle || '',
                     source: it.source || it.fundingSource || '',
                     amount: Number(it.amount || 0),

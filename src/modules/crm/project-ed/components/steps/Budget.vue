@@ -27,9 +27,18 @@
                                     <div class="input-group">
                                         <label class="input-label">Статья расходов</label>
                                         <div class="select-wrapper">
-                                            <select class="form-select" v-model="row.article">
-                                                <option value="salary">заработная плата</option>
-                                                <option value="other">другие расходы</option>
+                                            <select 
+                                                class="form-select" 
+                                                v-model="row.article"
+                                                @change="onArticleChange(sIndex, rIndex, $event)"
+                                            >
+                                                <option 
+                                                    v-for="article in getAvailableArticles(sIndex, rIndex)" 
+                                                    :key="article.value" 
+                                                    :value="article.value"
+                                                >
+                                                    {{ article.label }}
+                                                </option>
                                             </select>
                                             <ChevronDown class="select-icon" :size="16" />
                                         </div>
@@ -37,9 +46,18 @@
                                     <div class="input-group">
                                         <label class="input-label">Источник финансирования</label>
                                         <div class="select-wrapper">
-                                            <select class="form-select" v-model="row.source">
-                                                <option value="budget">бюджетные источники финансирования</option>
-                                                <option value="nonbudget">внебюджетные источники финансирования</option>
+                                            <select 
+                                                class="form-select" 
+                                                v-model="row.source"
+                                                @change="onSourceChange(sIndex, rIndex, $event)"
+                                            >
+                                                <option 
+                                                    v-for="source in getAvailableSources(sIndex, rIndex, row.article)" 
+                                                    :key="source.value" 
+                                                    :value="source.value"
+                                                >
+                                                    {{ source.label }}
+                                                </option>
                                             </select>
                                             <ChevronDown class="select-icon" :size="16" />
                                         </div>
@@ -78,9 +96,10 @@
                             <button 
                                 type="button" 
                                 class="btn btn-outline-primary btn-sm" 
+                                :disabled="stage.items.length >= MAX_ITEMS_PER_STAGE || getAvailableCombinations(sIndex).length === 0"
                                 @click="addRow(sIndex)"
                             >
-                                Добавить статью расходов
+                                {{ stage.items.length >= MAX_ITEMS_PER_STAGE ? 'Максимум статей достигнут' : 'Добавить статью расходов' }}
                             </button>
                             <div class="stage-total-info">
                                 <div class="stage-total-label">Итого по этапу, руб.</div>
@@ -162,16 +181,21 @@ const localStages = ref([])
 
 const normalizeFromPlan = () => {
     const stages = Array.isArray(props?.plan?.stages) ? props.plan.stages : []
+    
+    // Фильтруем только этапы с валидными названиями
+    const validStages = stages.filter(s => s?.name && s.name.trim() !== '')
+    
     // переносим существующие суммы, если бюджет уже был
     const byName = new Map()
     if (Array.isArray(props?.budget?.stages)) {
         props.budget.stages.forEach(s => byName.set(s.name, s))
     }
-    localStages.value = stages.map(s => {
-        const name = s?.name || ''
+    localStages.value = validStages.map((s, filteredIndex) => {
+        const name = s.name.trim()
         const existing = byName.get(name)
         return {
             name,
+            filteredIndex, // Индекс в отфильтрованном массиве (совпадает с normalizedStages на бэкенде)
             items: existing?.items?.length ? existing.items.map(r => ({
                 article: r.article === 'salary' ? 'salary' : r.article === 'other' ? 'other' : 'other',
                 source: r.source === 'budget' ? 'budget' : 'nonbudget',
@@ -185,14 +209,143 @@ normalizeFromPlan()
 
 watch(() => props.plan, normalizeFromPlan, { deep: true })
 
+// Максимальное количество статей расходов
+const MAX_ITEMS_PER_STAGE = 4
+
+// Получить доступные комбинации для этапа
+const getAvailableCombinations = (stageIndex) => {
+    const stage = localStages.value[stageIndex]
+    if (!stage) return []
+    
+    const usedCombinations = new Set()
+    stage.items.forEach(item => {
+        usedCombinations.add(`${item.article}-${item.source}`)
+    })
+    
+    const allCombinations = [
+        { article: 'salary', source: 'budget' },
+        { article: 'salary', source: 'nonbudget' },
+        { article: 'other', source: 'budget' },
+        { article: 'other', source: 'nonbudget' }
+    ]
+    
+    return allCombinations.filter(combo => 
+        !usedCombinations.has(`${combo.article}-${combo.source}`)
+    )
+}
+
+// Получить доступные статьи расходов для селектора
+const getAvailableArticles = (stageIndex, currentRowIndex) => {
+    const stage = localStages.value[stageIndex]
+    if (!stage) return []
+    
+    const usedCombinations = new Set()
+    stage.items.forEach((item, index) => {
+        if (index !== currentRowIndex) {
+            usedCombinations.add(`${item.article}-${item.source}`)
+        }
+    })
+    
+    const articles = [
+        { value: 'salary', label: 'заработная плата' },
+        { value: 'other', label: 'другие расходы' }
+    ]
+    
+    return articles.filter(article => {
+        const budgetUsed = usedCombinations.has(`${article.value}-budget`)
+        const nonbudgetUsed = usedCombinations.has(`${article.value}-nonbudget`)
+        return !(budgetUsed && nonbudgetUsed)
+    })
+}
+
+// Получить доступные источники финансирования для селектора
+const getAvailableSources = (stageIndex, currentRowIndex, selectedArticle) => {
+    const stage = localStages.value[stageIndex]
+    if (!stage) return []
+    
+    const usedCombinations = new Set()
+    stage.items.forEach((item, index) => {
+        if (index !== currentRowIndex) {
+            usedCombinations.add(`${item.article}-${item.source}`)
+        }
+    })
+    
+    const sources = [
+        { value: 'budget', label: 'бюджетные источники финансирования' },
+        { value: 'nonbudget', label: 'внебюджетные источники финансирования' }
+    ]
+    
+    return sources.filter(source => 
+        !usedCombinations.has(`${selectedArticle}-${source.value}`)
+    )
+}
+
 // действия с строками
 const addRow = (stageIndex) => {
-    localStages.value[stageIndex].items.push({ article: 'salary', source: 'budget', amount: 0 })
+    const stage = localStages.value[stageIndex]
+    if (stage.items.length >= MAX_ITEMS_PER_STAGE) {
+        return // Не добавляем, если уже достигнут лимит
+    }
+    
+    const availableCombinations = getAvailableCombinations(stageIndex)
+    if (availableCombinations.length === 0) {
+        return // Нет доступных комбинаций
+    }
+    
+    // Берем первую доступную комбинацию
+    const newItem = { ...availableCombinations[0], amount: 0 }
+    stage.items.push(newItem)
 }
+
 const removeRow = (stageIndex, rowIndex) => {
     const items = localStages.value[stageIndex].items
     items.splice(rowIndex, 1)
-    if (items.length === 0) items.push({ article: 'salary', source: 'budget', amount: 0 })
+    if (items.length === 0) {
+        items.push({ article: 'salary', source: 'budget', amount: 0 })
+    }
+}
+
+// Обработчики изменений селекторов
+const onArticleChange = (stageIndex, rowIndex, event) => {
+    const newArticle = event.target.value
+    const stage = localStages.value[stageIndex]
+    const item = stage.items[rowIndex]
+    
+    // Проверяем, доступна ли текущая комбинация с новым источником
+    const availableSources = getAvailableSources(stageIndex, rowIndex, newArticle)
+    
+    if (availableSources.length === 0) {
+        // Если нет доступных источников, выбираем первый доступный
+        const availableCombinations = getAvailableCombinations(stageIndex)
+        if (availableCombinations.length > 0) {
+            item.article = availableCombinations[0].article
+            item.source = availableCombinations[0].source
+        }
+    } else if (!availableSources.some(s => s.value === item.source)) {
+        // Если текущий источник недоступен, выбираем первый доступный
+        item.source = availableSources[0].value
+    }
+}
+
+const onSourceChange = (stageIndex, rowIndex, event) => {
+    const newSource = event.target.value
+    const stage = localStages.value[stageIndex]
+    const item = stage.items[rowIndex]
+    
+    // Проверяем, доступна ли текущая комбинация с новым источником
+    const availableArticles = getAvailableArticles(stageIndex, rowIndex)
+    
+    if (availableArticles.length === 0) {
+        // Если нет доступных статей, выбираем первую доступную комбинацию
+        const availableCombinations = getAvailableCombinations(stageIndex)
+        if (availableCombinations.length > 0) {
+            item.article = availableCombinations[0].article
+            item.source = availableCombinations[0].source
+        }
+    } else if (!availableArticles.some(a => a.value === item.article)) {
+        // Если текущая статья недоступна, выбираем первую доступную
+        item.article = availableArticles[0].value
+    }
 }
 
 // суммы
@@ -220,11 +373,28 @@ const validationErrors = ref([])
 const isBudgetValid = computed(() => {
     const errors = []
     
+    // Проверяем, что есть хотя бы один этап с валидным названием
+    if (localStages.value.length === 0) {
+        errors.push('Необходимо создать хотя бы один этап в календарном плане')
+    }
+    
     // Проверяем, что все этапы имеют хотя бы одну статью расходов
     localStages.value.forEach((stage, stageIndex) => {
         if (!stage.items || stage.items.length === 0) {
             errors.push(`Этап "${stage.name}" должен содержать хотя бы одну статью расходов`)
         }
+    })
+    
+    // Проверяем на дублирование комбинаций статья+источник
+    localStages.value.forEach((stage, stageIndex) => {
+        const combinations = new Set()
+        stage.items.forEach((item, itemIndex) => {
+            const combination = `${item.article}-${item.source}`
+            if (combinations.has(combination)) {
+                errors.push(`В этапе "${stage.name}" дублируется комбинация "статья расходов + источник финансирования"`)
+            }
+            combinations.add(combination)
+        })
     })
     
     // Проверяем, что есть хотя бы одна сумма больше 0
@@ -382,7 +552,12 @@ const formatCurrency = (value) => new Intl.NumberFormat('ru-RU', { style: 'curre
 // эмит наружу
 watch(localStages, (val) => {
     emit('update:budget', {
-        stages: val.map(s => ({ name: s.name, items: s.items })),
+        stages: val.map((s, idx) => ({ 
+            id: s.filteredIndex,  // Используем индекс из отфильтрованного массива (совпадает с normalizedStages)
+            key: s.filteredIndex, // Используем тот же индекс для совместимости
+            name: s.name, 
+            items: s.items 
+        })),
         totals: {
             salary: totalSalary.value,
             other: totalOther.value,
@@ -572,6 +747,15 @@ watch(localStages, (val) => {
     transition: background .15s ease;
 }
 .btn:hover { background: #eef5ff; }
+.btn:disabled {
+    border-color: #dee2e6;
+    color: #6c757d;
+    background: #f8f9fa;
+    cursor: not-allowed;
+}
+.btn:disabled:hover {
+    background: #f8f9fa;
+}
 .btn-remove { 
     width: 32px; 
     height: 32px; 
