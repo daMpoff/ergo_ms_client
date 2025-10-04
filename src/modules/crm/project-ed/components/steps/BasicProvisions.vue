@@ -669,7 +669,7 @@ const validateForm = () => {
 }
 
 // Порядковый номер проекта в рамках того же мероприятия и года для текущего руководителя
-const sequenceNumber = ref(null)
+const sequenceNumber = ref(1) // Инициализируем значением по умолчанию
 
 async function fetchSequenceNumber() {
     try {
@@ -677,21 +677,56 @@ async function fetchSequenceNumber() {
             sequenceNumber.value = 1
             return
         }
+        
         const currentYear = new Date().getFullYear()
-        // Получаем все проекты текущего пользователя и считаем совпадающие по коду мероприятия и году
-        const resp = await apiClient.get(endpoints.project_ed.projects.list)
-        const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
         const eventCode = props.selectedEvent.code || ''
-        const sameKey = (p) => {
-            const code = p.event_code || p.eventCode || p.event?.code || p.code || ''
-            const year = Number(p.year || p.project_year || p.start_year || p.startYear || (p.created_at ? new Date(p.created_at).getFullYear() : currentYear))
-            const manager = (p.manager_name || p.manager || p.owner_name || '').toLowerCase()
-            const my = String(props.userInfo.name || '').toLowerCase()
-            return code === eventCode && year === currentYear && manager && my && manager.includes(my.split(' ')[0])
+        
+        // Получаем все проекты текущего пользователя
+        const resp = await apiClient.get(endpoints.project_ed.projects.list, { 
+            page_size: 1000 // Получаем все проекты для точного подсчета
+        })
+        
+        const data = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+        
+        
+        // Функция для проверки, является ли проект аналогичным (тот же код мероприятия, год и руководитель)
+        const isSimilarProject = (project) => {
+            // Поскольку API не возвращает event.code напрямую, мы будем сравнивать по event_id
+            // Для этого нужно получить ID выбранного мероприятия
+            if (props.selectedEvent?.id && project.event_id !== props.selectedEvent.id) {
+                return false
+            }
+            
+            // Проверяем год проекта
+            let projectYear = currentYear
+            if (project.start_date) {
+                projectYear = new Date(project.start_date).getFullYear()
+            } else if (project.created_at) {
+                projectYear = new Date(project.created_at).getFullYear()
+            }
+            
+            if (projectYear !== currentYear) {
+                return false
+            }
+            
+            // Проверяем руководителя проекта - сравниваем по owner_id (владелец проекта)
+            const currentUserId = props.userInfo?.id
+            if (currentUserId && project.owner_id !== currentUserId) {
+                return false
+            }
+            
+            return true
         }
-        const count = data.filter(sameKey).length
-        sequenceNumber.value = count + 1
-    } catch (e) {
+        
+        // Подсчитываем количество аналогичных проектов
+        const similarProjectsCount = data.filter(isSimilarProject).length
+        
+        // Следующий порядковый номер
+        sequenceNumber.value = similarProjectsCount + 1
+        
+        
+    } catch (error) {
+        console.error('Ошибка при получении порядкового номера проекта:', error)
         sequenceNumber.value = 1
     }
 }
@@ -763,14 +798,29 @@ watch(selectedCustomerId, (newId) => {
 // Следим за изменениями выбранного мероприятия и обновляем наименование проекта
 watch(() => props.selectedEvent, async (newEvent) => {
     if (newEvent) {
+        // Сначала получаем порядковый номер
         await fetchSequenceNumber()
+        
+        // Затем обновляем названия с учетом нового порядкового номера
+        await nextTick()
+        localProvisions.value.projectName = generateProjectNameLocal()
+        localProvisions.value.shortName = generateShortProjectNameLocal()
+        
+        await nextTick()
+        autoResizeTextarea(projectNameTextarea.value)
+    }
+}, { immediate: true })
+
+// Также следим за изменениями порядкового номера и обновляем названия
+watch(sequenceNumber, (newSequenceNumber) => {
+    if (newSequenceNumber && props.selectedEvent) {
         localProvisions.value.projectName = generateProjectNameLocal()
         localProvisions.value.shortName = generateShortProjectNameLocal()
         nextTick(() => {
             autoResizeTextarea(projectNameTextarea.value)
         })
     }
-}, { immediate: true })
+})
 
 // Следим за изменениями наименования проекта и автоматически изменяем высоту
 watch(() => localProvisions.value.projectName, () => {
@@ -825,6 +875,15 @@ onMounted(() => {
     resolveCustomerFromApi()
     resolveCuratorsFromApi()
     fetchAvailableUsersForExecutors()
+    
+    // Инициализируем порядковый номер проекта и обновляем названия
+    if (props.selectedEvent) {
+        fetchSequenceNumber().then(() => {
+            // Обновляем названия после получения порядкового номера
+            localProvisions.value.projectName = generateProjectNameLocal()
+            localProvisions.value.shortName = generateShortProjectNameLocal()
+        })
+    }
 })
 
 // Синхронизация названия заказчика в локальном состоянии

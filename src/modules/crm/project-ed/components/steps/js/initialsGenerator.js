@@ -101,6 +101,7 @@ export const generateInitials = (fullName) => {
  * Генерирует наименование проекта в формате: КодМероприятия-Год-Инициалы-Наименование
  * @param {Object} selectedEvent - Выбранное мероприятие
  * @param {Object} userInfo - Информация о пользователе (может быть computed из userStore)
+ * @param {number} sequenceNumber - Порядковый номер проекта
  * @returns {string} - Сгенерированное наименование проекта
  */
 export const generateProjectName = (selectedEvent, userInfo, sequenceNumber) => {
@@ -123,7 +124,8 @@ export const generateProjectName = (selectedEvent, userInfo, sequenceNumber) => 
         }
     }
     
-    const seq = sequenceNumber ? `-${String(sequenceNumber).padStart(2, '0')}` : ''
+    // Добавляем порядковый номер (начинаем с 01)
+    const seq = sequenceNumber && sequenceNumber > 0 ? `-${String(sequenceNumber).padStart(2, '0')}` : '-01'
     return `${eventCode}-${currentYear}${seq}-${userInitials}-${eventTitle}`
 }
 
@@ -143,6 +145,7 @@ export const validateFullName = (fullName) => {
  * Генерирует краткое наименование проекта в формате: КодМероприятия-Год-Инициалы
  * @param {Object} selectedEvent - Выбранное мероприятие
  * @param {Object} userInfo - Информация о пользователе (может быть computed из userStore)
+ * @param {number} sequenceNumber - Порядковый номер проекта
  * @returns {string} - Сгенерированное краткое наименование проекта
  */
 export const generateShortProjectName = (selectedEvent, userInfo, sequenceNumber) => {
@@ -164,7 +167,8 @@ export const generateShortProjectName = (selectedEvent, userInfo, sequenceNumber
         }
     }
     
-    const seq = sequenceNumber ? `-${String(sequenceNumber).padStart(2, '0')}` : ''
+    // Добавляем порядковый номер (начинаем с 01)
+    const seq = sequenceNumber && sequenceNumber > 0 ? `-${String(sequenceNumber).padStart(2, '0')}` : '-01'
     return `${eventCode}-${currentYear}${seq}-${userInitials}`
 }
 
