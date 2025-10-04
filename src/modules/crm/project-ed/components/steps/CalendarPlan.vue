@@ -9,7 +9,6 @@
 
         <div class="form-content">
             <form class="calendar-form">
-                <!-- Этапы проекта -->
                 <div class="form-section">
                     <div class="section-header">
                         <div class="actions">
@@ -58,6 +57,7 @@
                                         <input
                                             v-model="stage.start"
                                             @click="openNativePicker"
+                                            @change="syncStageDates(index, 'start')"
                                             type="date"
                                             class="form-input"
                                             :readonly="index === 0"
@@ -76,6 +76,7 @@
                                         <input
                                             v-model="stage.end"
                                             @click="openNativePicker"
+                                            @change="syncStageDates(index, 'end')"
                                             type="date"
                                             class="form-input"
                                             :readonly="index === localPlan.stages.length - 1"
@@ -176,47 +177,81 @@ const localPlan = ref({
 })
 
 // Вычисляемые свойства
-const projectDuration = computed(() => {
-    if (!localPlan.value.startDate || !localPlan.value.endDate) return null
-    const start = new Date(localPlan.value.startDate)
-    const end = new Date(localPlan.value.endDate)
-    const diffTime = Math.abs(end - start)
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-})
-
 const normalizedStartDate = computed(() => toISODate(localPlan.value.startDate))
 const normalizedEndDate = computed(() => toISODate(localPlan.value.endDate))
 
-// Даты по умолчанию (как в BasicProvisions)
-const getDefaultStartDate = () => {
-    const today = new Date()
-    const nextMonth = today.getMonth() + 1
-    const nextYear = nextMonth > 11 ? today.getFullYear() + 1 : today.getFullYear()
-    const actualNextMonth = nextMonth > 11 ? 0 : nextMonth
-    const firstDay = new Date(nextYear, actualNextMonth, 1)
-    return toISODate(firstDay)
-}
-
-const getDefaultEndDate = () => {
-    const today = new Date()
-    const endOfYear = new Date(today.getFullYear(), 11, 31)
-    return toISODate(endOfYear)
-}
-
-
-const isFormValid = computed(() => {
-    return localPlan.value.startDate !== '' &&
-        localPlan.value.endDate !== '' &&
-        new Date(localPlan.value.startDate) < new Date(localPlan.value.endDate)
-})
-
 // Методы
 const addStage = () => {
-    localPlan.value.stages.push({ name: '', start: '', end: '', result: '' })
+    const newStage = { name: '', start: '', end: '', result: '' }
+    
+    // Если это не первый этап, устанавливаем дату начала на основе предыдущего этапа
+    if (localPlan.value.stages.length > 0) {
+        const lastStage = localPlan.value.stages[localPlan.value.stages.length - 1]
+        if (lastStage.end) {
+            newStage.start = lastStage.end
+        }
+    }
+    
+    localPlan.value.stages.push(newStage)
 }
 
 const removeStage = (index) => {
     localPlan.value.stages.splice(index, 1)
+    
+    // После удаления этапа синхронизируем оставшиеся этапы
+    if (localPlan.value.stages.length > 1) {
+        for (let i = 0; i < localPlan.value.stages.length - 1; i++) {
+            const currentStage = localPlan.value.stages[i]
+            const nextStage = localPlan.value.stages[i + 1]
+            
+            if (currentStage.end && !nextStage.start) {
+                nextStage.start = currentStage.end
+            }
+        }
+    }
+}
+
+// Функция для добавления одного дня к дате
+const addOneDay = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    date.setDate(date.getDate() + 1)
+    return toISODate(date)
+}
+
+// Функция для вычитания одного дня от даты
+const subtractOneDay = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    date.setDate(date.getDate() - 1)
+    return toISODate(date)
+}
+
+// Синхронизация дат при изменении конкретного этапа
+const syncStageDates = (changedIndex, field) => {
+    const stages = localPlan.value.stages
+    
+    if (field === 'start' && changedIndex > 0) {
+        // Если изменилась дата начала, обновляем дату окончания предыдущего этапа
+        const prevStage = stages[changedIndex - 1]
+        const currentStage = stages[changedIndex]
+        
+        if (currentStage.start) {
+            // Предыдущий этап заканчивается на день раньше начала текущего
+            prevStage.end = subtractOneDay(currentStage.start)
+        }
+    }
+    
+    if (field === 'end' && changedIndex < stages.length - 1) {
+        // Если изменилась дата окончания, обновляем дату начала следующего этапа
+        const currentStage = stages[changedIndex]
+        const nextStage = stages[changedIndex + 1]
+        
+        if (currentStage.end) {
+            // Следующий этап начинается на день после окончания текущего
+            nextStage.start = addOneDay(currentStage.end)
+        }
+    }
 }
 
 // Обработчики больше не нужны — используем v-model у инпутов дат
@@ -301,16 +336,6 @@ onUnmounted(() => {
     }
 })
 
-const formatDate = (dateString) => {
-    if (!dateString) return ''
-    
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    })
-}
 
 
 // Синхронизация дат: начало первого этапа и окончание последнего
@@ -322,11 +347,48 @@ watch(() => [normalizedStartDate.value, normalizedEndDate.value, localPlan.value
     }
 }, { immediate: true })
 
+// Синхронизация между этапами: конец предыдущего = начало следующего
+watch(() => localPlan.value.stages, (newStages) => {
+    if (newStages && newStages.length > 1) {
+        for (let i = 0; i < newStages.length - 1; i++) {
+            const currentStage = newStages[i]
+            const nextStage = newStages[i + 1]
+            
+            // Если у текущего этапа есть дата окончания, устанавливаем дату начала следующего на следующий день
+            if (currentStage.end && !nextStage.start) {
+                nextStage.start = addOneDay(currentStage.end)
+            }
+            
+            // Если у следующего этапа есть дата начала, устанавливаем дату окончания текущего на предыдущий день
+            if (nextStage.start && !currentStage.end) {
+                currentStage.end = subtractOneDay(nextStage.start)
+            }
+        }
+    }
+}, { deep: true })
+
 // При изменении входных данных плана снаружи (выбор мероприятия), подтягиваем даты в первый/последний этап
 watch(() => props.plan, (newPlan) => {
     if (!newPlan) return
-    if (newPlan.startDate !== undefined) localPlan.value.startDate = toISODate(newPlan.startDate)
-    if (newPlan.endDate !== undefined) localPlan.value.endDate = toISODate(newPlan.endDate)
+    
+    const newStartDate = toISODate(newPlan.startDate)
+    const newEndDate = toISODate(newPlan.endDate)
+    
+    // Обновляем даты только если они действительно изменились
+    if (newStartDate && newStartDate !== localPlan.value.startDate) {
+        localPlan.value.startDate = newStartDate
+    }
+    if (newEndDate && newEndDate !== localPlan.value.endDate) {
+        localPlan.value.endDate = newEndDate
+    }
+    
+    // Обновляем даты в этапах после изменения дат проекта
+    nextTick(() => {
+        if (localPlan.value.stages.length > 0) {
+            localPlan.value.stages[0].start = normalizedStartDate.value
+            localPlan.value.stages[localPlan.value.stages.length - 1].end = normalizedEndDate.value
+        }
+    })
 }, { deep: true, immediate: true })
 
 // Следим за изменениями и обновляем родительский компонент
@@ -334,12 +396,10 @@ watch(localPlan, (newValue) => {
     emit('update:plan', newValue)
 }, { deep: true })
 
-// Инициализация дат по умолчанию при пустых значениях (поведение как в BasicProvisions)
+// Инициализация дат в этапах
 onMounted(() => {
     nextTick(() => {
-        if (!localPlan.value.startDate) localPlan.value.startDate = getDefaultStartDate()
-        if (!localPlan.value.endDate) localPlan.value.endDate = getDefaultEndDate()
-        // Притянуть сразу в этапы
+        // Притянуть даты в этапы
         if (localPlan.value.stages.length > 0) {
             localPlan.value.stages[0].start = normalizedStartDate.value
             localPlan.value.stages[localPlan.value.stages.length - 1].end = normalizedEndDate.value
@@ -396,42 +456,6 @@ onMounted(() => {
     margin-bottom: 1.5rem;
 }
 
-.section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #212529;
-    margin: 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #0d6efd;
-}
-
-.date-range {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-label {
-    font-weight: 500;
-    color: #212529;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-
-    &.required::after {
-        content: ' *';
-        color: #dc3545;
-    }
-}
 
 .form-input,
 .form-textarea {
@@ -515,25 +539,6 @@ onMounted(() => {
     margin: 0;
 }
 
-.stage-row {
-    display: grid;
-    grid-template-columns: 48px 1.2fr 0.9fr 0.9fr 1.4fr 40px;
-    gap: 0.75rem;
-    align-items: start;
-}
-
-.stage-number {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: #f1f3f5;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    font-weight: 600;
-    color: #495057;
-}
 
 .field {
     display: flex;
@@ -565,18 +570,6 @@ onMounted(() => {
     z-index: 2;
 }
 
-.date-info-popover {
-    position: absolute;
-    z-index: 1100;
-    background: #212529;
-    color: #fff;
-    padding: 8px 10px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    max-width: 220px;
-    pointer-events: none;
-}
 
 // Чтобы иконка не перекрывала текст
 .field--with-icon .form-input {
@@ -593,47 +586,6 @@ onMounted(() => {
     cursor: not-allowed;
 }
 
-.duration-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: #d1ecf1;
-    color: #0c5460;
-    border-radius: 6px;
-    font-weight: 500;
-
-    .icon {
-        flex-shrink: 0;
-    }
-}
-
-.milestones-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.milestone-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1.5rem;
-}
-
-.milestone-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-
-    h4 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #212529;
-    }
-}
 
 .btn-remove {
     display: flex;
@@ -657,28 +609,6 @@ onMounted(() => {
     }
 }
 
-// Выровнять кнопку удаления по вертикали относительно инпута
-.stage-row .stage-remove {
-    height: 40px;
-    width: 40px;
-    display: inline-flex;
-}
-
-.milestone-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
-}
 
 .empty-state {
     text-align: center;
@@ -700,86 +630,6 @@ onMounted(() => {
     }
 }
 
-.timeline {
-    position: relative;
-    padding: 2rem 0;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 2rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #dee2e6;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 2rem;
-    padding-left: 4rem;
-
-    &:last-child {
-        margin-bottom: 0;
-    }
-}
-
-.timeline-marker {
-    position: absolute;
-    left: 1.5rem;
-    top: 0.5rem;
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    border: 3px solid white;
-    box-shadow: 0 0 0 2px #dee2e6;
-
-    &.start {
-        background: #198754;
-        box-shadow: 0 0 0 2px #198754;
-    }
-
-    &.milestone {
-        background: #0d6efd;
-        box-shadow: 0 0 0 2px #0d6efd;
-    }
-
-    &.end {
-        background: #dc3545;
-        box-shadow: 0 0 0 2px #dc3545;
-    }
-}
-
-.timeline-content {
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-    h5 {
-        margin: 0 0 0.5rem 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #212529;
-    }
-
-    p {
-        margin: 0 0 0.5rem 0;
-        color: #6c757d;
-        font-size: 0.875rem;
-
-        &:last-child {
-            margin-bottom: 0;
-        }
-
-        &.description {
-            font-style: italic;
-            color: #495057;
-        }
-    }
-}
 
 
 // Адаптивность
@@ -789,31 +639,5 @@ onMounted(() => {
         gap: 1rem;
         align-items: stretch;
     }
-
-    .stage-row {
-        grid-template-columns: 32px 1fr;
-    }
-
-    .stage-remove {
-        grid-column: 2 / 3;
-        justify-self: start;
-    }
-
-    .timeline {
-        padding-left: 1rem;
-    }
-
-    .timeline::before {
-        left: 1rem;
-    }
-
-    .timeline-item {
-        padding-left: 3rem;
-    }
-
-    .timeline-marker {
-        left: 0.5rem;
-    }
-
 }
 </style>
