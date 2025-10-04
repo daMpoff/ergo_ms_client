@@ -50,7 +50,7 @@ const projectRoles = computed(() => {
       curator: null
     }
   }
-
+  
   return {
     manager: props.projectData.manager_data ? {
       full_name: `${props.projectData.manager_data.first_name || ''} ${props.projectData.manager_data.last_name || ''}`.trim() || props.projectData.manager_data.username,

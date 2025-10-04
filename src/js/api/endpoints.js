@@ -392,6 +392,7 @@ export const endpoints = {
             list: 'project_ed/projects/',
             create: 'project_ed/projects/',
             detail: (id) => `project_ed/projects/${id}/`,
+            publicView: (id) => `project_ed/projects/${id}/public_view/`,
             update: (id) => `project_ed/projects/${id}/`,
             delete: (id) => `project_ed/projects/${id}/`,
         },

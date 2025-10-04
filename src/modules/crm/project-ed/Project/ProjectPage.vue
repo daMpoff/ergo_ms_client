@@ -64,28 +64,60 @@ const tabs = ref([
 
 onMounted(async () => {
     const slug = route.params?.slug
-    if (!slug) return
+    const projectId = route.params?.projectId
+    if (!slug && !projectId) return
+    
     try {
-        // 1) получить список моих проектов
-        const resp = await apiClient.get(endpoints.project_ed.projects.list)
-        const list = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
-        // 2) найти проект по сгенерированному слагу из названия
-        const match = list.find((p) => {
-            const name = p?.name || p?.short_name || ''
-            return translitSlugify(name).toLowerCase() === slug
-        })
-        if (!match?.id) return
-        // 3) получить детальную карточку по id (источник истины)
-        const { data } = await apiClient.get(endpoints.project_ed.projects.detail(match.id))
-        projectData.value = data
-        // Заголовок страницы: полное название без уточнения
-        const headingBase = data?.name || data?.short_name || 'Проект'
-        projectTitleHeading.value = headingBase
-        // Хлебные крошки: как раньше, с возможным уточнением
-        const crumbBase = data?.short_name || data?.name || 'Проект'
-        const clarification = data?.name_clarification ? ` ${data.name_clarification}` : ''
-        projectTitleBreadcrumb.value = `${crumbBase}${clarification}`
+        let projectIdToLoad = null
+        
+        if (projectId) {
+            // Если передан прямой ID проекта, используем его
+            projectIdToLoad = projectId
+        } else if (slug) {
+            // Если передан slug, ищем в списке проектов
+            const resp = await apiClient.get(endpoints.project_ed.projects.list)
+            const list = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+            const match = list.find((p) => {
+                const name = p?.name || p?.short_name || ''
+                return translitSlugify(name).toLowerCase() === slug
+            })
+            projectIdToLoad = match?.id
+        }
+        
+        if (!projectIdToLoad) return
+        
+        // Получить детальную карточку по id (источник истины)
+        let projectDataLoaded = null
+        
+        try {
+            // Сначала пробуем получить через обычный endpoint (для своих проектов)
+            const { data } = await apiClient.get(endpoints.project_ed.projects.detail(projectIdToLoad))
+            projectDataLoaded = data
+        } catch (error) {
+            try {
+                // Если не получилось, пробуем через публичный endpoint (для чужих проектов)
+                const { data } = await apiClient.get(endpoints.project_ed.projects.publicView(projectIdToLoad))
+                projectDataLoaded = data
+            } catch (publicError) {
+                console.error('Failed to load project:', publicError)
+                throw publicError
+            }
+        }
+        
+        if (projectDataLoaded) {
+            projectData.value = projectDataLoaded
+            
+            // Заголовок страницы: полное название без уточнения
+            const headingBase = projectDataLoaded?.name || projectDataLoaded?.short_name || 'Проект'
+            projectTitleHeading.value = headingBase
+            
+            // Хлебные крошки: как раньше, с возможным уточнением
+            const crumbBase = projectDataLoaded?.short_name || projectDataLoaded?.name || 'Проект'
+            const clarification = projectDataLoaded?.name_clarification ? ` ${projectDataLoaded.name_clarification}` : ''
+            projectTitleBreadcrumb.value = `${crumbBase}${clarification}`
+        }
     } catch (e) {
+        console.error('Ошибка загрузки данных проекта:', e)
         // оставляем дефолтный заголовок при ошибке
     }
 })
