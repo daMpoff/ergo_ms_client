@@ -494,7 +494,18 @@ async function fetchAvailableUsersForExecutors() {
         const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
         const list = norm(resp)
         const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
-        availablePersons.value = list.map(u => ({
+        
+        // Фильтруем пользователей: исключаем создателя проекта и пользователей с должностями "ректор" и "проректор"
+        const filteredList = list.filter(u => {
+            const position = (u.position_name || u.position || '').toLowerCase()
+            const isRector = position.includes('ректор')
+            const isProrector = position.includes('проректор')
+            const isProjectCreator = u.id === props.userInfo?.id
+            
+            return !isRector && !isProrector && !isProjectCreator
+        })
+        
+        availablePersons.value = filteredList.map(u => ({
             id: u.id,
             name: toName(u),
             position: u.position_name || u.position || 'Сотрудник',
