@@ -1,7 +1,6 @@
 <template>
     <div class="overview-grid">
         <div class="overview-main">
-            <!-- Дашборд проекта -->
             <ProjectDashboard :project-data="projectData" />
             
             <div class="placeholder-card">
@@ -13,13 +12,12 @@
                 </div>
             </div>
             
-            <!-- Информация о проекте -->
             <ProjectInfoDetails :project-data="projectData" />
             
-            <!-- Календарный план-график -->
+            <ProjectInfoTargetInd :project-data="projectData" />
+            
             <ProjectInfoCalendar :project-data="projectData" />
             
-            <!-- Бюджет проекта -->
             <ProjectInfoBudget :project-data="projectData" />
         </div>
         <aside class="overview-aside">
@@ -49,6 +47,7 @@ import ProjectInfoActionBar from '@/modules/crm/project-ed/Project/ProjectTabs/c
 import ProjectInfoDetails from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoDetails.vue'
 import ProjectInfoCalendar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoCalendar.vue'
 import ProjectInfoBudget from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoBudget.vue'
+import ProjectInfoTargetInd from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoTargetInd.vue'
 
 const props = defineProps({
   projectData: {
@@ -136,7 +135,7 @@ const emit = defineEmits(['project-updated'])
 <style scoped lang="scss">
 .overview-grid {
   display: grid;
-  grid-template-columns: 1fr 340px; /* основная колонка + правая панель */
+  grid-template-columns: 1fr 340px;
   gap: 1rem;
 }
 
@@ -147,7 +146,7 @@ const emit = defineEmits(['project-updated'])
 }
 
 .placeholder-card {
-  background: #fff;
+  background: var(--color-primary-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
@@ -156,7 +155,7 @@ const emit = defineEmits(['project-updated'])
 .placeholder-card__header {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-border);
-  background: #f8f9fa;
+  background: var(--color-secondary-background);
 }
 
 .placeholder-card__body {
