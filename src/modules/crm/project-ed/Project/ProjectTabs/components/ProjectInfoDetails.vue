@@ -7,6 +7,17 @@
     
     <div class="info-section">
       <h5 class="section-title">
+        <Edit class="section-icon" />
+        Уточняющее название
+      </h5>
+      <div class="section-content">
+        <p v-if="clarifyingTitle" class="clarifying-title-text">{{ clarifyingTitle }}</p>
+        <p v-else class="text-muted">Уточняющее название не указано</p>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h5 class="section-title">
         <Target class="section-icon" />
         Цель проекта
       </h5>
@@ -81,7 +92,7 @@
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
-import { Target, List, CheckCircle, Check, Info } from 'lucide-vue-next'
+import { Target, List, CheckCircle, Check, Info, Edit } from 'lucide-vue-next'
 
 const props = defineProps({
   projectData: {
@@ -92,6 +103,13 @@ const props = defineProps({
 
 const projectTasks = ref([])
 const loadingTasks = ref(false)
+
+const clarifyingTitle = computed(() => {
+  if (!props.projectData) return ''
+  
+  // Используем поле name_clarification из модели Project
+  return props.projectData.name_clarification || ''
+})
 
 const projectGoal = computed(() => {
   if (!props.projectData) return ''
@@ -164,7 +182,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .project-info-details {
-  background: #fff;
+  background: var(--color-primary-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
@@ -173,7 +191,7 @@ onMounted(() => {
 .project-info-details__header {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-border);
-  background: #f8f9fa;
+  background: var(--color-secondary-background);
 }
 
 .project-info-details__body {
@@ -195,14 +213,14 @@ onMounted(() => {
   margin-bottom: 1rem;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-primary-text);
   line-height: 1.2;
 }
 
 .section-icon {
   width: 18px;
   height: 18px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -213,16 +231,23 @@ onMounted(() => {
   margin-left: 1.5rem;
 }
 
+.clarifying-title-text {
+  line-height: 1.6;
+  color: var(--color-primary-text);
+  margin-bottom: 0;
+  font-weight: 500;
+}
+
 .goal-text {
   line-height: 1.6;
-  color: var(--color-text-secondary);
+  color: var(--color-primary-text);
   margin-bottom: 0;
 }
 
 .loading-state {
   display: flex;
   align-items: center;
-  color: var(--color-text-muted);
+  color: var(--color-secondary-text);
   padding: 1rem 0;
 }
 
@@ -255,13 +280,13 @@ onMounted(() => {
 }
 
 .task-text {
-  color: var(--color-text-primary);
+  color: var(--color-primary-text);
   font-weight: 500;
   line-height: 1.4;
 }
 
 .task-description {
-  color: var(--color-text-secondary);
+  color: var(--color-secondary-text);
   font-size: 0.875rem;
   line-height: 1.4;
 }
@@ -289,20 +314,20 @@ onMounted(() => {
 }
 
 .result-text {
-  color: var(--color-text-secondary);
+  color: var(--color-primary-text);
   flex: 1;
 }
 
 .text-muted {
-  color: var(--color-text-muted);
+  color: var(--color-secondary-text);
   font-style: italic;
   margin-bottom: 0;
 }
 
 .additional-info-text {
   line-height: 1.6;
-  color: var(--color-text-secondary);
+  color: var(--color-primary-text);
   margin-bottom: 0;
-  white-space: pre-wrap; /* Сохраняем переносы строк */
+  white-space: pre-wrap;
 }
 </style>
