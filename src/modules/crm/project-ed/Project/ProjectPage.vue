@@ -4,30 +4,39 @@
         <Breadcrumbs :items="breadcrumbItems" class="mt-3" />
         <h2 class="mt-3">{{ projectTitleHeading }}</h2>
 
-        <!-- Полоса с переключателями страниц -->
-        <div class="project-navigation mt-2">
-            <nav class="nav-tabs-container">
-                <div class="nav-tabs">
-                    <button 
-                        v-for="tab in tabs" 
-                        :key="tab.id" 
-                        class="nav-tab"
-                        :class="{ active: activeTab === tab.id }"
-                        @click="activeTab = tab.id"
-                    >
-                        <component :is="tab.icon" :size="16" class="tab-icon" />
-                        <span class="tab-text">{{ tab.name }}</span>
-                        <span v-if="tab.count !== undefined" class="tab-badge">{{ tab.count }}</span>
-                    </button>
-                </div>
-            </nav>
+        <!-- Состояние загрузки -->
+        <div v-if="isLoading" class="loading-state mt-3">
+            <div class="spinner-border text-primary" role="status" aria-label="Загрузка"></div>
+            <div class="loading-text mt-2">Загрузка проекта…</div>
         </div>
-        
-        <!-- Контент активной вкладки -->
-        <div class="tab-content mt-3">
-            <ProjectOverview v-if="activeTab === 'overview'" :project-data="projectData" />
-            <ReportsPage v-else-if="activeTab === 'reports'" />
-        </div>
+
+        <!-- Основной контент -->
+        <template v-else>
+            <!-- Полоса с переключателями страниц -->
+            <div class="project-navigation mt-2">
+                <nav class="nav-tabs-container">
+                    <div class="nav-tabs">
+                        <button 
+                            v-for="tab in tabs" 
+                            :key="tab.id" 
+                            class="nav-tab"
+                            :class="{ active: activeTab === tab.id }"
+                            @click="activeTab = tab.id"
+                        >
+                            <component :is="tab.icon" :size="16" class="tab-icon" />
+                            <span class="tab-text">{{ tab.name }}</span>
+                            <span v-if="tab.count !== undefined" class="tab-badge">{{ tab.count }}</span>
+                        </button>
+                    </div>
+                </nav>
+            </div>
+            
+            <!-- Контент активной вкладки -->
+            <div class="tab-content mt-3">
+                <ProjectOverview v-if="activeTab === 'overview'" :project-data="projectData" />
+                <ReportsPage v-else-if="activeTab === 'reports'" />
+            </div>
+        </template>
     </div>
 </template>
 
@@ -48,6 +57,7 @@ const route = useRoute()
 const projectTitleHeading = ref('Проект')
 const projectTitleBreadcrumb = ref('Проект')
 const projectData = ref(null)
+const isLoading = ref(true)
 
 const breadcrumbItems = computed(() => ([
     { label: 'Главная', to: '/crm/project-ed/main', icon: Home },
@@ -122,6 +132,8 @@ onMounted(async () => {
     } catch (e) {
         console.error('Ошибка загрузки данных проекта:', e)
         // оставляем дефолтный заголовок при ошибке
+    } finally {
+        isLoading.value = false
     }
 })
 </script>
@@ -193,5 +205,15 @@ onMounted(async () => {
       }
     }
   }
+}
+
+/* Стили состояния загрузки */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #6a737d;
 }
 </style>
