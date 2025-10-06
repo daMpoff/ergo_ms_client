@@ -1,6 +1,6 @@
 <template>
-  <BaseInfoCard title="Дополнительная информация" :project-data="projectData">
-    <div class="section-content">
+  <BaseInfoCard title="Дополнительная информация" :project-data="projectData" @edit-click="openEditModal">
+    <div class="section-content" v-if="!isUpdating">
       <template v-if="hasStructuredInfo">
         <div class="info-list">
           <div v-if="risks" class="info-item">
@@ -26,17 +26,52 @@
           </div>
         </div>
       </template>
-      <p v-else-if="additionalInfo" class="additional-info-text">{{ additionalInfo }}</p>
+      <p v-else-if="displayedAdditionalInfo" class="additional-info-text">{{ displayedAdditionalInfo }}</p>
       <p v-else class="text-muted">Дополнительная информация не указана</p>
     </div>
+    <div class="section-content d-flex align-items-center justify-content-center py-4" v-else>
+      <div class="d-flex flex-column align-items-center text-center">
+        <div class="spinner-border text-primary mb-2" role="status" aria-label="Загрузка">
+          <span class="visually-hidden">Загрузка...</span>
+        </div>
+        <div class="text-muted">Обновляем данные...</div>
+      </div>
+    </div>
   </BaseInfoCard>
+  
+  <!-- Модальное окно редактирования раздела (как в TargetIndicatorsPage.vue) -->
+  <div class="modal fade" :class="{ 'show d-block': showModal }" tabindex="-1" v-if="showModal">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Дополнительная информация</h5>
+          <button type="button" class="btn-close" @click="closeModal"></button>
+        </div>
+        <div class="modal-body">
+          <AdditionalInfo v-model:info="localInfo" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="handleCancel" :disabled="isSaving">Отменить</button>
+          <button type="button" class="btn btn-primary" @click="handleSave" :disabled="isSaving">
+            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span>{{ isSaving ? 'Сохранение...' : 'Сохранить' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" :class="{ 'show': showModal }" v-if="showModal"></div>
   
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { AlertTriangle, Package, StickyNote } from 'lucide-vue-next'
 import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
+import AdditionalInfo from '@/modules/crm/project-ed/components/steps/AdditionalInfo.vue'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
+import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   projectData: {
@@ -55,6 +90,57 @@ const additionalInfo = computed(() => {
   if (!props.projectData) return ''
   return props.projectData.additional_info || props.projectData.additionalInfo || ''
 })
+
+// Локально отображаемый текст (обновляется сразу после сохранения)
+const displayedAdditionalInfo = ref('')
+displayedAdditionalInfo.value = additionalInfo.value
+
+// Данные для формы в модальном окне (используем ref, чтобы v-model заменял объект)
+const localInfo = ref({
+  additionalInfo: additionalInfo.value || ''
+})
+
+const showModal = ref(false)
+const isSaving = ref(false)
+const isUpdating = ref(false)
+const emit = defineEmits(['saved', 'cancelled'])
+const toast = useToast()
+
+function openEditModal() {
+  // Инициализируем локальное значение при открытии
+  localInfo.value = { additionalInfo: additionalInfo.value || '' }
+  showModal.value = true
+}
+function closeModal() { showModal.value = false }
+
+function handleCancel() {
+  emit('cancelled')
+  closeModal()
+}
+
+async function handleSave() {
+  if (!props.projectData?.id) {
+    toast.error('Не удалось определить проект')
+    return
+  }
+  try {
+    isSaving.value = true
+    isUpdating.value = true
+    const payload = { additional_info: localInfo.value.additionalInfo || '' }
+    await apiClient.patch(endpoints.project_ed.projects.update(props.projectData.id), payload)
+    toast.success('Изменения сохранены')
+    emit('saved', { ...localInfo.value })
+    // Мгновенно обновляем отображение в контейнере
+    displayedAdditionalInfo.value = localInfo.value.additionalInfo || ''
+    closeModal()
+  } catch (e) {
+    toast.error('Ошибка при сохранении изменений')
+  } finally {
+    isSaving.value = false
+    // Небольшая задержка для ощущения обновления
+    setTimeout(() => { isUpdating.value = false }, 300)
+  }
+}
 </script>
 
 <style scoped lang="scss">
