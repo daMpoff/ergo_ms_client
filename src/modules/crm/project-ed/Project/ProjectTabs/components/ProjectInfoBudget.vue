@@ -1,9 +1,5 @@
 <template>
-  <div class="project-info-budget">
-    <div class="project-info-budget__header">
-        <h6 class="mb-0">Бюджет проекта</h6>
-    </div>
-    <div class="project-info-budget__body">
+  <BaseInfoCard title="Бюджет проекта">
       <div class="info-section">
         <div class="section-content">
           <div v-if="loadingBudget" class="loading-state">
@@ -88,13 +84,13 @@
           <p v-else class="text-muted">Данные о бюджете не найдены</p>
         </div>
       </div>
-    </div>
-  </div>
+  </BaseInfoCard>
 </template>
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
 import { DollarSign, Layers } from 'lucide-vue-next'
+import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
 
 const props = defineProps({
   projectData: {
@@ -267,23 +263,6 @@ const navigateToStage = (stageData) => {
 </script>
 
 <style scoped lang="scss">
-.project-info-budget {
-  background: var(--color-primary-background);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.project-info-budget__header {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-secondary-background);
-}
-
-.project-info-budget__body {
-  padding: 0.75rem 1rem;
-}
-
 .info-section {
   margin-bottom: 2rem;
   

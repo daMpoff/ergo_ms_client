@@ -1,9 +1,5 @@
 <template>
-  <div class="project-info-calendar">
-    <div class="project-info-calendar__header">
-        <h6 class="mb-0">Календарный план-график</h6>
-    </div>
-    <div class="project-info-calendar__body">
+  <BaseInfoCard title="Календарный план-график">
       <div class="info-section">
         <div class="section-content">
           <div v-if="loadingStages" class="loading-state">
@@ -57,13 +53,13 @@
           <p v-else class="text-muted">Этапы проекта не найдены</p>
         </div>
       </div>
-    </div>
-  </div>
+  </BaseInfoCard>
 </template>
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
 import { Calendar, Target } from 'lucide-vue-next'
+import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
 
 const props = defineProps({
   projectData: {
@@ -134,23 +130,6 @@ const navigateToStage = (stage) => {
 </script>
 
 <style scoped lang="scss">
-.project-info-calendar {
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.project-info-calendar__header {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  background: #f8f9fa;
-}
-
-.project-info-calendar__body {
-  padding: 0.75rem 1rem;
-}
-
 .info-section {
   margin-bottom: 2rem;
   

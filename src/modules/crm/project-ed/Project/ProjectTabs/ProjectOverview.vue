@@ -14,11 +14,8 @@
             
             <ProjectInfoEvent :project-data="projectData" />
             <ProjectInfoDetails :project-data="projectData" />
-            
             <ProjectInfoTargetInd :project-data="projectData" />
-            
             <ProjectInfoCalendar :project-data="projectData" />
-            
             <ProjectInfoBudget :project-data="projectData" />
         </div>
         <aside class="overview-aside">

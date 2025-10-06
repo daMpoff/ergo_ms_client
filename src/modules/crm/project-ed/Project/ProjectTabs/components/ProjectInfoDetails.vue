@@ -1,9 +1,5 @@
 <template>
-  <div class="project-info-details">
-    <div class="project-info-details__header">
-        <h6 class="mb-0">Основная информация</h6>
-    </div>
-    <div class="project-info-details__body">
+  <BaseInfoCard title="Основная информация">
     
     <div class="info-section">
       <h5 class="section-title">
@@ -86,13 +82,13 @@
         <p v-else class="text-muted">Дополнительная информация не указана</p>
       </div>
     </div>
-    </div>
-  </div>
+  </BaseInfoCard>
 </template>
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
 import { Target, List, CheckCircle, Check, Info, Edit } from 'lucide-vue-next'
+import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
 
 const props = defineProps({
   projectData: {
@@ -181,23 +177,6 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-.project-info-details {
-  background: var(--color-primary-background);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.project-info-details__header {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-secondary-background);
-}
-
-.project-info-details__body {
-  padding: 0.75rem 1rem;
-}
-
 .info-section {
   margin-bottom: 2rem;
   

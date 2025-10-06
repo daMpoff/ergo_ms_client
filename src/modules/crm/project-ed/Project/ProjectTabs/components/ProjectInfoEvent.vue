@@ -1,10 +1,6 @@
 <template>
-  <div class="info-card">
-    <div class="info-card__header">
-      <h6 class="mb-0">Блок и мероприятие проекта</h6>
-    </div>
-    <div class="info-card__body">
-      <dl class="info-list">
+  <BaseInfoCard title="Блок и мероприятие проекта">
+    <dl class="info-list">
         <div class="info-row">
           <dt>Блок мероприятий</dt>
           <dd>
@@ -30,15 +26,15 @@
         </div>
 
         
-      </dl>
-    </div>
-  </div>
+    </dl>
+  </BaseInfoCard>
 </template>
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
+import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
 
 const props = defineProps({
   projectData: {
@@ -123,23 +119,6 @@ const eventTitle = computed(() => (eventObj.value?.name || eventObj.value?.title
 </script>
 
 <style scoped lang="scss">
-.info-card {
-  background: var(--color-primary-background);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.info-card__header {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-secondary-background);
-}
-
-.info-card__body {
-  padding: 0.75rem 1rem;
-}
-
 .info-list {
   margin: 0;
 }
