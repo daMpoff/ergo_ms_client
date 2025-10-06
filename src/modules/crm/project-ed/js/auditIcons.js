@@ -49,13 +49,13 @@ export function getAuditActionVerb(actionDisplay) {
   const src = String(actionDisplay || '').toLowerCase()
   const map = new Map([
     ['обновление', 'обновил'],
-    ['изменение', 'изменил'],
+    ['изменение', 'обновил'],
     ['создание', 'создал'],
     ['удаление', 'удалил'],
     ['добавление', 'добавил'],
     ['назначение', 'назначил'],
     ['update', 'обновил'],
-    ['change', 'изменил'],
+    ['change', 'обновил'],
     ['create', 'создал'],
     ['delete', 'удалил'],
     ['add', 'добавил'],

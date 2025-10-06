@@ -166,6 +166,7 @@ function translateSectionName(value) {
   const key = String(value).trim().toLowerCase()
   const map = {
     'additional_info': 'Дополнительная информация',
+    'budget_items': 'Бюджет проекта',
   }
   return map[key] || value
 }
