@@ -1,7 +1,30 @@
 <template>
   <div class="info-card">
-    <div class="info-card__header">
-      <h6 class="mb-0">{{ title }}</h6>
+    <div class="info-card__header d-flex align-items-center justify-content-between">
+      <h6 class="mb-0 d-flex align-items-center">
+        {{ title }}
+        <button
+          type="button"
+          class="icon-btn icon-btn--danger ms-1"
+          @click="$emit('warnings-click')"
+          :title="'Показать комментарии экспертной группы'"
+          aria-label="Показать комментарии экспертной группы"
+          v-if="isProjectManager"
+        >
+          <AlertCircle :size="18" />
+        </button>
+      </h6>
+      <div class="info-card__actions d-flex align-items-center" v-if="isProjectManager">
+        <button
+          type="button"
+          class="icon-btn"
+          @click="$emit('edit-click')"
+          :title="'Редактировать раздел'"
+          aria-label="Редактировать раздел"
+        >
+          <Pencil :size="18" />
+        </button>
+      </div>
     </div>
     <div class="info-card__body">
       <slot />
@@ -10,14 +33,27 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
+import { defineProps, defineEmits, computed } from 'vue'
+import { Pencil, AlertCircle } from 'lucide-vue-next'
+import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { isProjectManager as isProjectManagerUtil } from '@/modules/crm/project-ed/js/projectRoles.js'
 
 const props = defineProps({
   title: {
     type: String,
     default: ''
+  },
+  projectData: {
+    type: Object,
+    default: null
   }
 })
+
+defineEmits(['edit-click', 'warnings-click'])
+
+const userStore = useUserStore()
+
+const isProjectManager = computed(() => isProjectManagerUtil(userStore.user, props.projectData))
 </script>
 
 <style scoped lang="scss">
@@ -36,6 +72,36 @@ const props = defineProps({
 
 .info-card__body {
   padding: 0.75rem 1rem;
+}
+
+.info-card__actions {
+  gap: 0.25rem;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  padding: 0;
+  border-radius: 50%;
+  transition: background-color 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.icon-btn:hover {
+  background-color: var(--color-hover-background);
+}
+
+.icon-btn:active {
+  transform: scale(0.98);
+}
+
+.icon-btn--danger {
+  color: var(--bs-danger);
 }
 </style>
 

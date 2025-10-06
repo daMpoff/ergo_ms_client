@@ -1,5 +1,5 @@
 <template>
-  <BaseInfoCard title="Целевые показатели">
+  <BaseInfoCard title="Целевые показатели" :project-data="projectData">
       <div class="info-section">
         <div class="section-content">
           <div v-if="loadingIndicators" class="loading-state">

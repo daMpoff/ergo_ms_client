@@ -1,5 +1,5 @@
 <template>
-  <BaseInfoCard title="Календарный план-график">
+  <BaseInfoCard title="Календарный план-график" :project-data="projectData">
       <div class="info-section">
         <div class="section-content">
           <div v-if="loadingStages" class="loading-state">

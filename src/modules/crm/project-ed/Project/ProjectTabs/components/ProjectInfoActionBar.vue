@@ -20,6 +20,7 @@ import { Send } from 'lucide-vue-next'
 import { useToast } from 'vue-toastification'
 import { useUserStore } from '@/modules/cms/js/userStore.js'
 import { apiClient } from '@/js/api/manager.js'
+import { isProjectManager as isProjectManagerUtil } from '@/modules/crm/project-ed/js/projectRoles.js'
 
 const props = defineProps({
   projectData: {
@@ -36,14 +37,7 @@ const userStore = useUserStore()
 const isSubmitting = ref(false)
 
 // Проверяем, является ли текущий пользователь руководителем проекта
-const isProjectManager = computed(() => {
-  if (!props.projectData || !userStore.user) return false
-  
-  const currentUserId = userStore.user.id
-  const managerId = props.projectData.manager_id || props.projectData.manager?.id || props.projectData.manager_data?.id
-  
-  return String(currentUserId) === String(managerId)
-})
+const isProjectManager = computed(() => isProjectManagerUtil(userStore.user, props.projectData))
 
 // Проверяем, можно ли отправить проект на рассмотрение
 const canSubmit = computed(() => {

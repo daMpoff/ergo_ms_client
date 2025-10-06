@@ -1,5 +1,5 @@
 <template>
-  <BaseInfoCard title="Основная информация">
+  <BaseInfoCard title="Основная информация" :project-data="projectData">
     
     <div class="info-section">
       <h5 class="section-title">

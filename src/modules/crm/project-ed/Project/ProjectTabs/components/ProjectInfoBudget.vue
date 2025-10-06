@@ -1,5 +1,5 @@
 <template>
-  <BaseInfoCard title="Бюджет проекта">
+  <BaseInfoCard title="Бюджет проекта" :project-data="projectData">
       <div class="info-section">
         <div class="section-content">
           <div v-if="loadingBudget" class="loading-state">

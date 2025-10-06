@@ -1,5 +1,5 @@
 <template>
-  <BaseInfoCard title="Блок и мероприятие проекта">
+  <BaseInfoCard title="Блок и мероприятие проекта" :project-data="projectData">
     <dl class="info-list">
         <div class="info-row">
           <dt>Блок мероприятий</dt>
