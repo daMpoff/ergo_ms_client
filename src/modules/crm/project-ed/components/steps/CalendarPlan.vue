@@ -25,13 +25,14 @@
                             :key="`stage-${index}`"
                             class="stage-card"
                         >
+                            <div class="stage-card__inner" :class="{ 'is-blurred': confirmDeleteIndex === index }">
                             <div class="stage-card__header">
                                 <div class="stage-index">Этап {{ index + 1 }}</div>
                                 <button
                                     v-if="localPlan.stages.length > 1"
                                     type="button"
                                     class="btn-remove stage-remove"
-                                    @click="removeStage(index)"
+                                    @click="requestRemoveStage(index)"
                                     aria-label="Удалить этап"
                                 >
                                     <X class="icon" :size="16" />
@@ -100,6 +101,30 @@
                                     ></textarea>
                                 </div>
                             </div>
+                            </div>
+
+                            <!-- Подтверждение удаления (только при редактировании и наличии индикаторов) -->
+                            <div v-if="confirmDeleteIndex === index" class="confirm-overlay">
+                                <div class="confirm-card">
+                                    <div class="confirm-content">
+                                        <div class="confirm-icon">
+                                            <AlertCircle class="icon-alert" :size="48" />
+                                        </div>
+                                        <div class="confirm-text">
+                                        Вы уверены, что хотите удалить этот этап? К этому этапу привязаны статьи бюджета, которые в случае удаления тоже будут удалены.
+                                        </div>
+                                    </div>
+                                    <div class="confirm-actions">
+                                        <button type="button" class="btn btn-danger"
+                                                :disabled="confirmCountdown > 0"
+                                                @click="confirmDelete()">
+                                            <span v-if="confirmCountdown > 0">Да, я хочу удалить ({{ confirmCountdown }})</span>
+                                            <span v-else>Да, я хочу удалить</span>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" @click="cancelConfirm()">Отмена</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -124,13 +149,22 @@ import {
     Calendar, 
     Plus, 
     X,
-    CircleHelp as CircleQuestionMark
+    CircleHelp as CircleQuestionMark,
+    AlertCircle
 } from 'lucide-vue-next'
 
 const props = defineProps({
     plan: {
         type: Object,
         required: true
+    },
+    isEdit: {
+        type: Boolean,
+        default: false
+    },
+    hasIndicatorsForStage: {
+        type: Function,
+        default: () => false
     }
 })
 
@@ -209,6 +243,46 @@ const removeStage = (index) => {
             }
         }
     }
+}
+
+// --- Подтверждение удаления при редактировании и наличии индикаторов ---
+const confirmDeleteIndex = ref(null)
+const confirmCountdown = ref(0)
+let confirmTimer = null
+
+const requestRemoveStage = (index) => {
+    if (props.isEdit && props.hasIndicatorsForStage(index, localPlan.value.stages[index])) {
+        confirmDeleteIndex.value = index
+        startConfirmCountdown()
+        return
+    }
+    removeStage(index)
+}
+
+const startConfirmCountdown = () => {
+    confirmCountdown.value = 5
+    clearInterval(confirmTimer)
+    confirmTimer = setInterval(() => {
+        if (confirmCountdown.value > 0) {
+            confirmCountdown.value -= 1
+        } else {
+            clearInterval(confirmTimer)
+        }
+    }, 1000)
+}
+
+const cancelConfirm = () => {
+    clearInterval(confirmTimer)
+    confirmTimer = null
+    confirmDeleteIndex.value = null
+    confirmCountdown.value = 0
+}
+
+const confirmDelete = () => {
+    if (confirmDeleteIndex.value === null) return
+    const idx = confirmDeleteIndex.value
+    cancelConfirm()
+    removeStage(idx)
 }
 
 // Функция для добавления одного дня к дате
@@ -334,6 +408,7 @@ onUnmounted(() => {
         datePopover.value.remove()
         datePopover.value = null
     }
+    clearInterval(confirmTimer)
 })
 
 
@@ -502,6 +577,12 @@ onMounted(() => {
     border: 1px solid #dee2e6;
     border-radius: 10px;
     padding: 1rem;
+    position: relative;
+}
+
+.stage-card__inner.is-blurred {
+    filter: blur(3px);
+    pointer-events: none;
 }
 
 .stage-card__header {
@@ -584,6 +665,49 @@ onMounted(() => {
 .form-input[readonly] {
     background: #e9ecef;
     cursor: not-allowed;
+}
+
+// Оверлей подтверждения удаления
+.confirm-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.confirm-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 1rem;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.confirm-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.confirm-icon .icon-alert {
+    color: #dc3545; // красный
+}
+
+.confirm-text {
+    color: #343a40;
+    margin-bottom: 1rem;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
 }
 
 

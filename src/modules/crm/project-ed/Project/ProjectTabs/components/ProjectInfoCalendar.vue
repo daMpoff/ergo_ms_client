@@ -1,5 +1,5 @@
 <template>
-  <BaseInfoCard title="Календарный план-график" :project-data="projectData">
+  <BaseInfoCard title="Календарный план-график" :project-data="projectData" @edit-click="openEditModal">
       <div class="info-section">
         <div class="section-content">
           <div v-if="loadingStages" class="loading-state">
@@ -54,12 +54,42 @@
         </div>
       </div>
   </BaseInfoCard>
+  <div class="modal fade" :class="{ 'show d-block': showModal }" tabindex="-1" v-if="showModal">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Редактирование календарного плана</h5>
+          <button type="button" class="btn-close" @click="closeModal"></button>
+        </div>
+        <div class="modal-body">
+          <CalendarPlan 
+            :plan="localPlan"
+            :isEdit="true"
+            :hasIndicatorsForStage="hasIndicatorsForStage"
+            @update:plan="onPlanUpdate"
+          />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="handleCancel" :disabled="isSaving">Отменить</button>
+          <button type="button" class="btn btn-primary" @click="handleSave" :disabled="isSaving || !isPlanValid">
+            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span>{{ isSaving ? 'Сохранение...' : 'Сохранить' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" :class="{ 'show': showModal }" v-if="showModal"></div>
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { Calendar, Target } from 'lucide-vue-next'
 import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
+import CalendarPlan from '@/modules/crm/project-ed/components/steps/CalendarPlan.vue'
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
+import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   projectData: {
@@ -70,6 +100,19 @@ const props = defineProps({
 
 const projectStages = ref([])
 const loadingStages = ref(false)
+const showModal = ref(false)
+const isSaving = ref(false)
+const isUpdating = ref(false)
+const isPlanValid = ref(true)
+const toast = useToast()
+const emit = defineEmits(['saved', 'cancelled'])
+
+// Локальная модель плана для редактирования
+const localPlan = ref({
+  startDate: '',
+  endDate: '',
+  stages: []
+})
 
 // Загружаем этапы проекта из данных
 const loadProjectStages = () => {
@@ -87,6 +130,23 @@ const loadProjectStages = () => {
     planned_results: stage.planned_results,
     order: stage.order
   }))
+}
+
+// Подготовка локальной модели плана из данных проекта
+const buildLocalPlanFromProject = () => {
+  const start = props.projectData?.start_date || ''
+  const end = props.projectData?.end_date || ''
+  const stages = Array.isArray(props.projectData?.stages) ? props.projectData.stages : []
+  localPlan.value = {
+    startDate: start,
+    endDate: end,
+    stages: stages.map(s => ({
+      name: s.name || '',
+      start: s.start_date || '',
+      end: s.end_date || '',
+      result: s.planned_results || ''
+    }))
+  }
 }
 
 // Форматирование даты
@@ -127,6 +187,94 @@ const navigateToStage = (stage) => {
   // Например: router.push(`/projects/${props.projectData.id}/stages/${stage.id}`)
   console.log('Переход к этапу:', stage)
 }
+
+// Проверка наличия индикаторов для этапа: по умолчанию требуем подтверждение
+const hasIndicatorsForStage = () => true
+
+// Открытие/закрытие модалки
+function openEditModal() {
+  buildLocalPlanFromProject()
+  showModal.value = true
+}
+
+function closeModal() { showModal.value = false }
+
+function handleCancel() {
+  emit('cancelled')
+  closeModal()
+}
+
+// Обновление из дочернего компонента
+function onPlanUpdate(val) {
+  localPlan.value = { ...val }
+}
+
+// Сохранение: обновляем даты проекта (этапы требуют серверной поддержки)
+async function handleSave() {
+  if (!props.projectData?.id) {
+    toast.error('Не удалось определить проект')
+    return
+  }
+  try {
+    isSaving.value = true
+    isUpdating.value = true
+    const payload = {
+      start_date: localPlan.value.startDate,
+      end_date: localPlan.value.endDate,
+    }
+    // Готовим этапы к отправке на сервер
+    const updatedStages = (localPlan.value.stages || []).map((s, idx) => ({
+      id: projectStages.value?.[idx]?.id, // сохраняем id по индексу, если был
+      name: s.name || '',
+      start_date: s.start || '',
+      end_date: s.end || '',
+      planned_results: s.result || '',
+      order: idx
+    }))
+    payload.stages = updatedStages
+    await apiClient.patch(endpoints.project_ed.projects.update(props.projectData.id), payload)
+    toast.success('Изменения сохранены')
+    // Эмитим обновлённые данные включая этапы для синхронизации родителя
+    emit('saved', { ...payload, stages: updatedStages })
+    try {
+      const projectId = props.projectData.id
+      window.dispatchEvent(new CustomEvent('project-audit:reload', { detail: { projectId } }))
+    } catch (_) { /* no-op */ }
+    // Полностью пересобираем локальное отображение этапов из формы
+    projectStages.value = updatedStages
+    closeModal()
+  } catch (e) {
+    toast.error('Ошибка при сохранении изменений')
+  } finally {
+    isSaving.value = false
+    setTimeout(() => { isUpdating.value = false }, 300)
+  }
+}
+
+// Блокируем прокрутку страницы при открытой модалке
+watch(showModal, (isOpen) => {
+  try {
+    const body = document?.body
+    const html = document?.documentElement
+    if (!body || !html) return
+    if (isOpen) {
+      body.style.overflow = 'hidden'
+      html.style.overflow = 'hidden'
+    } else {
+      body.style.overflow = ''
+      html.style.overflow = ''
+    }
+  } catch (e) { /* no-op */ }
+})
+
+onUnmounted(() => {
+  try {
+    const body = document?.body
+    const html = document?.documentElement
+    if (body) body.style.overflow = ''
+    if (html) html.style.overflow = ''
+  } catch (e) { /* no-op */ }
+})
 </script>
 
 <style scoped lang="scss">
