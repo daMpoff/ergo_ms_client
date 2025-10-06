@@ -32,6 +32,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { getUserAvatar, getCachedUserAvatar } from '@/js/userAvatar'
 import { apiClient } from '@/js/api/manager'
 import { getRelativeTime, getFormattedDateWithRelative } from '@/modules/crm/project-ed/components/steps/js/timeUtils.js'
+import { getAuditActionType, getAuditActionIconName, AUDIT_ACTION_COLOR_MAP, getAuditActionVerb } from '@/modules/crm/project-ed/js/auditIcons.js'
 
 const props = defineProps({
   timestamp: {
@@ -81,7 +82,7 @@ const props = defineProps({
 })
 
 const ActionIconComp = computed(() => {
-  const actionIconName = getActionIconName(props.actionDisplay)
+  const actionIconName = getAuditActionIconName(props.actionDisplay)
   return getIcon(actionIconName) || getIcon('Activity')
 })
 
@@ -125,24 +126,12 @@ const relativeTime = computed(() => getRelativeTime(props.timestamp))
 const fullDateTooltip = computed(() => getFormattedDateWithRelative(props.timestamp))
 
 const authorName = computed(() => (props.userName && props.userName.trim()) ? props.userName.trim() : 'Система')
-const actionVerb = computed(() => toActionVerb(props.actionDisplay))
+const actionVerb = computed(() => getAuditActionVerb(props.actionDisplay))
 const hasField = computed(() => !!(props.fieldName && props.fieldName.trim()))
 const sectionName = computed(() => hasField.value ? translateSectionName(props.fieldName) : '')
 const modelTypeLower = computed(() => props.modelTypeDisplay ? props.modelTypeDisplay.toLocaleLowerCase('ru-RU') : '')
 
-const actionIconClass = computed(() => {
-  const actionType = getActionType(props.actionDisplay)
-  const colorMap = {
-    'create': 'text-success',
-    'update': 'text-primary', 
-    'delete': 'text-danger',
-    'add': 'text-success',
-    'assign': 'text-warning',
-    'change': 'text-info',
-    'default': 'text-secondary'
-  }
-  return colorMap[actionType] || colorMap['default']
-})
+const actionIconClass = computed(() => 'text-secondary')
 
 function translateSectionName(value) {
   if (!value) return ''
@@ -153,56 +142,7 @@ function translateSectionName(value) {
   return map[key] || value
 }
 
-function toActionVerb(actionDisplay) {
-  const src = String(actionDisplay || '').toLowerCase()
-  const map = new Map([
-    ['обновление', 'обновил'],
-    ['изменение', 'изменил'],
-    ['создание', 'создал'],
-    ['удаление', 'удалил'],
-    ['добавление', 'добавил'],
-    ['назначение', 'назначил'],
-    ['update', 'обновил'],
-    ['change', 'изменил'],
-    ['create', 'создал'],
-    ['delete', 'удалил'],
-    ['add', 'добавил'],
-    ['assign', 'назначил'],
-  ])
-  for (const [key, val] of map.entries()) {
-    if (src.includes(key)) return val
-  }
-  return src || 'выполнил действие'
-}
+// Определение глагола действия перенесено в общий модуль
 
-function getActionType(actionDisplay) {
-  const src = String(actionDisplay || '').toLowerCase()
-  if (src.includes('создание') || src.includes('create') || src.includes('добавление') || src.includes('add')) {
-    return 'create'
-  }
-  if (src.includes('обновление') || src.includes('update') || src.includes('изменение') || src.includes('change')) {
-    return 'update'
-  }
-  if (src.includes('удаление') || src.includes('delete')) {
-    return 'delete'
-  }
-  if (src.includes('назначение') || src.includes('assign')) {
-    return 'assign'
-  }
-  return 'default'
-}
-
-function getActionIconName(actionDisplay) {
-  const actionType = getActionType(actionDisplay)
-  const iconMap = {
-    'create': 'Plus',
-    'update': 'Edit',
-    'delete': 'Trash2', 
-    'add': 'Plus',
-    'assign': 'UserPlus',
-    'change': 'Edit',
-    'default': 'Activity'
-  }
-  return iconMap[actionType] || iconMap['default']
-}
+// Локальные функции выбора типа действия/иконки перенесены в общий модуль
 </script>

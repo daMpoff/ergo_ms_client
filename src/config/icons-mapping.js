@@ -52,6 +52,12 @@ import {
   Plug,
   LayoutDashboard,
   FolderKanban,
+  // Иконки, используемые в аудите
+  Plus,
+  Edit,
+  Trash2,
+  UserPlus,
+  Activity,
 } from 'lucide-vue-next'
 
 /**
@@ -101,6 +107,12 @@ export const iconMapping = {
   Plug,
   LayoutDashboard,
   FolderKanban,
+  // Иконки, используемые в аудите
+  Plus,
+  Edit,
+  Trash2,
+  UserPlus,
+  Activity,
 }
 
 /**
