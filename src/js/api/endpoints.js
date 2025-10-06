@@ -395,6 +395,7 @@ export const endpoints = {
             publicView: (id) => `project_ed/projects/${id}/public_view/`,
             update: (id) => `project_ed/projects/${id}/`,
             delete: (id) => `project_ed/projects/${id}/`,
+            auditLogs: (id) => `project_ed/projects/${id}/audit_logs/`,
         },
         categories: {
             list: 'project_ed/categories/',

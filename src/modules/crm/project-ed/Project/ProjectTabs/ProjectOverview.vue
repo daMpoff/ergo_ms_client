@@ -2,16 +2,8 @@
     <div class="overview-grid">
         <div class="overview-main">
             <ProjectDashboard :project-data="projectData" />
-            
-            <div class="placeholder-card">
-                <div class="placeholder-card__header">
-                    <h6 class="mb-0">Ход работ</h6>
-                </div>
-                <div class="placeholder-card__body">
-                    <p class="mb-0 text-muted">Сводка задач, прогресса и активностей.</p>
-                </div>
-            </div>
-            
+            <ProjectAudit :project-data="projectData" />
+
             <ProjectInfoEvent :project-data="projectData" />
             <ProjectInfoDetails :project-data="projectData" />
             <ProjectInfoTargetInd :project-data="projectData" />
@@ -41,6 +33,7 @@
 <script setup>
 import { computed } from 'vue'
 import ProjectDashboard from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectDashboard.vue'
+import ProjectAudit from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectAudit.vue'
 import ProjectInfo from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfo.vue'
 import ProjectInfoActionBar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoActionBar.vue'
 import ProjectInfoDetails from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoDetails.vue'
