@@ -28,7 +28,7 @@
 <script setup>
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import { getIcon } from '@/config/icons-mapping'
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { getUserAvatar, getCachedUserAvatar } from '@/js/userAvatar'
 import { apiClient } from '@/js/api/manager'
 import { getRelativeTime, getFormattedDateWithRelative } from '@/modules/crm/project-ed/components/steps/js/timeUtils.js'
@@ -99,9 +99,6 @@ async function ensureAvatarLoaded() {
   }
 }
 
-onMounted(() => {
-  ensureAvatarLoaded()
-})
 
 watch(() => [props.userId, props.avatarUrl], () => {
   avatarSrc.value = normalizeUrl(props.avatarUrl) || normalizeUrl(getCachedUserAvatar(props.userId)) || null
@@ -122,8 +119,39 @@ function onAvatarError() {
   avatarSrc.value = null
 }
 
-const relativeTime = computed(() => getRelativeTime(props.timestamp))
-const fullDateTooltip = computed(() => getFormattedDateWithRelative(props.timestamp))
+// Реактивная переменная для принудительного обновления времени
+const timeUpdateTrigger = ref(0)
+
+const relativeTime = computed(() => {
+  // Зависимость от timeUpdateTrigger для обновления каждую минуту
+  timeUpdateTrigger.value
+  return getRelativeTime(props.timestamp)
+})
+
+const fullDateTooltip = computed(() => {
+  // Зависимость от timeUpdateTrigger для обновления каждую минуту
+  timeUpdateTrigger.value
+  return getFormattedDateWithRelative(props.timestamp)
+})
+
+// Интервал для обновления времени каждую минуту
+let timeUpdateInterval = null
+
+onMounted(() => {
+  ensureAvatarLoaded()
+  // Обновляем время каждую минуту (60000 мс)
+  timeUpdateInterval = setInterval(() => {
+    timeUpdateTrigger.value++
+  }, 60000)
+})
+
+onUnmounted(() => {
+  // Очищаем интервал при размонтировании компонента
+  if (timeUpdateInterval) {
+    clearInterval(timeUpdateInterval)
+    timeUpdateInterval = null
+  }
+})
 
 const authorName = computed(() => (props.userName && props.userName.trim()) ? props.userName.trim() : 'Система')
 const actionVerb = computed(() => getAuditActionVerb(props.actionDisplay))

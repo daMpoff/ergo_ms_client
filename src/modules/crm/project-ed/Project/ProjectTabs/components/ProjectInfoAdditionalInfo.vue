@@ -130,6 +130,13 @@ async function handleSave() {
     await apiClient.patch(endpoints.project_ed.projects.update(props.projectData.id), payload)
     toast.success('Изменения сохранены')
     emit('saved', { ...localInfo.value })
+    // Сообщаем контейнеру аудита о необходимости перезагрузки
+    try {
+      const projectId = props.projectData.id
+      window.dispatchEvent(new CustomEvent('project-audit:reload', { detail: { projectId } }))
+    } catch (err) {
+      // no-op: безопасный фоллбек, если window недоступен
+    }
     // Мгновенно обновляем отображение в контейнере
     displayedAdditionalInfo.value = localInfo.value.additionalInfo || ''
     closeModal()

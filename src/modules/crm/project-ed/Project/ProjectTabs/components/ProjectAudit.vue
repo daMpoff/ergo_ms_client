@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
@@ -86,6 +86,23 @@ async function loadAudit() {
 
 onMounted(loadAudit)
 watch(() => props.projectData?.id, () => loadAudit())
+
+// Перезагрузка по глобальному событию, инициируемому после сохранения
+function handleAuditReload(event) {
+  const incomingId = event?.detail?.projectId
+  const currentId = props.projectData?.id
+  if (!incomingId || !currentId || incomingId === currentId) {
+    loadAudit()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('project-audit:reload', handleAuditReload)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('project-audit:reload', handleAuditReload)
+})
 </script>
 
 <style scoped lang="scss">
