@@ -12,6 +12,7 @@
                 </div>
             </div>
             
+            <ProjectInfoEvent :project-data="projectData" />
             <ProjectInfoDetails :project-data="projectData" />
             
             <ProjectInfoTargetInd :project-data="projectData" />
@@ -45,6 +46,7 @@ import ProjectDashboard from '@/modules/crm/project-ed/Project/ProjectTabs/compo
 import ProjectInfo from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfo.vue'
 import ProjectInfoActionBar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoActionBar.vue'
 import ProjectInfoDetails from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoDetails.vue'
+import ProjectInfoEvent from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoEvent.vue'
 import ProjectInfoCalendar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoCalendar.vue'
 import ProjectInfoBudget from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoBudget.vue'
 import ProjectInfoTargetInd from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoTargetInd.vue'
