@@ -23,7 +23,8 @@
                 <div
                     v-for="project in filteredProjects"
                     :key="project.id"
-                    class="project-card card h-100"
+                    class="project-card card"
+                    :style="cardHeight ? { height: cardHeight + 'px' } : null"
                     role="button"
                     @click="onRowClick(project)"
                 >
@@ -60,7 +61,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, User } from 'lucide-vue-next'
 import { slugify as translitSlugify } from 'transliteration'
@@ -92,6 +93,7 @@ const filteredProjects = computed(() => {
 
 const router = useRouter()
 const scrollContainer = ref(null)
+const cardHeight = ref(null)
 
 const scrollByAmount = 320
 
@@ -129,6 +131,15 @@ onMounted(() => {
     }
     scrollContainer.value.addEventListener('wheel', wheelHandler, { passive: false })
     scrollContainer.value.addEventListener('touchmove', touchMoveHandler, { passive: false })
+
+    nextTick(async () => {
+        adjustNamesToFit()
+        await nextTick()
+        syncUniformHeights()
+        setTimeout(() => syncUniformHeights(), 250)
+    })
+    window.addEventListener('load', syncUniformHeights)
+    window.addEventListener('resize', onResizeDebounced)
 })
 
 onBeforeUnmount(() => {
@@ -141,6 +152,8 @@ onBeforeUnmount(() => {
         scrollContainer.value.removeEventListener('touchmove', touchMoveHandler)
         touchMoveHandler = null
     }
+    window.removeEventListener('resize', onResizeDebounced)
+    window.removeEventListener('load', syncUniformHeights)
 })
 
 const onRowClick = (project) => {
@@ -148,7 +161,55 @@ const onRowClick = (project) => {
     router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
 }
 
-// Кнопка "Еще..." удалена по требованию
+// Подгон шрифта у полного названия, если контент не помещается в фиксированную высоту карточки
+const adjustNamesToFit = () => {
+    if (!scrollContainer.value) return
+    const cards = scrollContainer.value.querySelectorAll('.project-card')
+    cards.forEach((card) => {
+        const body = card.querySelector('.card-body')
+        const nameEl = card.querySelector('.full-name')
+        if (!body || !nameEl) return
+        nameEl.classList.remove('shrink', 'shrink-2')
+        if (body.scrollHeight > body.clientHeight) {
+            nameEl.classList.add('shrink')
+        }
+        if (body.scrollHeight > body.clientHeight) {
+            nameEl.classList.add('shrink-2')
+        }
+    })
+}
+
+let resizeTimer = null
+const onResizeDebounced = () => {
+    if (resizeTimer) clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(() => {
+        adjustNamesToFit()
+        nextTick(() => syncUniformHeights())
+    }, 150)
+}
+
+// Если список проектов меняется (фильтры/данные), пересчитать подгон
+watch(filteredProjects, async () => {
+    await nextTick()
+    adjustNamesToFit()
+    await nextTick()
+    syncUniformHeights()
+})
+
+// Выравнивание высоты всех карточек по максимальной естественной
+const syncUniformHeights = () => {
+    if (!scrollContainer.value) return
+    const cards = Array.from(scrollContainer.value.querySelectorAll('.project-card'))
+    if (cards.length === 0) return
+    // Сначала убираем выставленную высоту, чтобы измерить естественную
+    cards.forEach((c) => (c.style.height = ''))
+    // Ждём один кадр для стабильной раскладки перед измерением
+    requestAnimationFrame(() => {
+        const naturalHeights = cards.map((c) => c.offsetHeight)
+        const maxHeight = Math.max(...naturalHeights)
+        cardHeight.value = maxHeight
+    })
+}
 </script>
 
 <style scoped lang="scss">
@@ -181,6 +242,7 @@ const onRowClick = (project) => {
     border-radius: .75rem;
     cursor: pointer;
     transition: transform .15s ease, box-shadow .15s ease;
+    overflow: hidden; // скрываем переполнение
 }
 .project-card:hover {
     transform: translateY(-2px);
@@ -203,15 +265,35 @@ const onRowClick = (project) => {
 .nav-btn.left { left: 0; }
 .nav-btn.right { right: 0; }
 
+.project-card .card-body {
+    height: 100%; // растягиваем содержимое по высоте карточки
+    min-height: 100%;
+}
+
 .full-name {
     color: var(--color-secondary-text);
     white-space: normal;
-    overflow: visible;
-    font-size: .65rem;
+    overflow: hidden; // чтобы контент не вылезал из карточки
+    text-overflow: ellipsis;
+    display: -webkit-box; // многострочное обрезание
+    -webkit-line-clamp: 6; // разумный максимум строк по умолчанию
+    line-clamp: 6;
+    -webkit-box-orient: vertical;
+    flex: 1 1 auto; // занимает доступную высоту между заголовком и нижней частью
+    min-height: 0; // позволяет блоку сжиматься в пределах flex-контейнера
+    font-size: .72rem;
 }
 
 .role-line {
     margin-top: .25rem;
+}
+
+// Ужатие шрифта, если карточка не помещает контент по высоте
+.full-name.shrink {
+    font-size: .64rem;
+}
+.full-name.shrink-2 {
+    font-size: .58rem;
 }
 </style>
 
