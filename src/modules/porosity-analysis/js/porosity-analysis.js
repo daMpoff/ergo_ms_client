@@ -6,13 +6,32 @@ import { apiClient } from '../../../js/api/manager.js'
 class PorosityAnalysisAPI {
   constructor() {
     this.baseEndpoint = 'porosity_analysis/analyses/'
+    this.baseUrl = apiClient.getBaseUrl()
+  }
+
+  /**
+   * Получить токен авторизации
+   */
+  getAuthToken() {
+    return apiClient.getAuthToken()
   }
 
   /**
    * Получить список всех анализов
    */
   async getAnalyses(params = {}) {
-    return await apiClient.get(this.baseEndpoint, params)
+    try {
+      const response = await apiClient.get(this.baseEndpoint, params)
+      return response
+    } catch (error) {
+      console.error('API: Ошибка при получении анализов:', error)
+      // Возвращаем объект с ошибкой в том же формате
+      return {
+        success: false,
+        message: error.message || 'Ошибка при загрузке анализов',
+        data: null
+      }
+    }
   }
 
   /**
@@ -130,26 +149,6 @@ class PorosityAnalysisAPI {
     return await apiClient.get(`${this.baseEndpoint}${analysisId}/status/`)
   }
 
-  /**
-   * Получить результаты анализа
-   */
-  async getAnalysisResults(analysisId) {
-    return await apiClient.get(`${this.baseEndpoint}${analysisId}/results/`)
-  }
-
-  /**
-   * Получить краткое описание анализа
-   */
-  async getAnalysisSummary(analysisId) {
-    return await apiClient.get(`${this.baseEndpoint}${analysisId}/summary/`)
-  }
-
-  /**
-   * Получить список файлов результатов для скачивания (отключено)
-   */
-  async getDownloadResults(analysisId) {
-    return { success: false, message: 'Скачивание архива результатов отключено' }
-  }
 
   /**
    * Скачать конкретный файл результатов
@@ -159,33 +158,6 @@ class PorosityAnalysisAPI {
     return await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_file/`, params, 'GET')
   }
 
-  /**
-   * Получить ожидающие анализы
-   */
-  async getPendingAnalyses() {
-    return await apiClient.get(`${this.baseEndpoint}pending/`)
-  }
-
-  /**
-   * Получить обрабатываемые анализы
-   */
-  async getProcessingAnalyses() {
-    return await apiClient.get(`${this.baseEndpoint}processing/`)
-  }
-
-  /**
-   * Получить завершенные анализы
-   */
-  async getCompletedAnalyses() {
-    return await apiClient.get(`${this.baseEndpoint}completed/`)
-  }
-
-  /**
-   * Получить анализы с ошибками
-   */
-  async getFailedAnalyses() {
-    return await apiClient.get(`${this.baseEndpoint}failed/`)
-  }
 
   /**
    * Получить статистику анализов
@@ -242,128 +214,6 @@ class PorosityAnalysisAPI {
     return await apiClient.post(`${this.baseEndpoint}bulk_set_group/`, payload)
   }
 
-  /**
-   * Создать несколько анализов для множественных файлов
-   */
-  async createMultipleAnalyses(files, defaultScale = 100.0) {
-    if (!Array.isArray(files) || files.length === 0) {
-      return []
-    }
-
-    console.log(`Creating ${files.length} analyses with scale: ${defaultScale}`)
-
-    const promises = files.map(async (file, index) => {
-      try {
-        console.log(`Processing file ${index + 1}/${files.length}: ${file.name}`)
-        
-        const analysisData = {
-          name: `Анализ ${file.name.replace(/\.[^/.]+$/, '')}`,
-          description: `Автоматически созданный анализ для файла ${file.name}`,
-          scale_value: defaultScale,
-          pixels_per_micron: null
-        }
-
-        const response = await this.createAnalysis(analysisData)
-        console.log(`Analysis creation response for ${file.name}:`, response)
-        
-        if (response && response.success) {
-          // Получаем ID анализа из ответа
-          let analysisId = null
-          
-          if (response.data && typeof response.data === 'object') {
-            analysisId = response.data.id
-          } else if (typeof response.data === 'number') {
-            analysisId = response.data
-          }
-          
-          if (analysisId && typeof analysisId === 'number') {
-            try {
-              // Загружаем изображение для созданного анализа
-              const uploadResponse = await this.uploadImage(analysisId, file)
-              console.log(`Upload response for ${file.name}:`, uploadResponse)
-              
-              if (uploadResponse && uploadResponse.success) {
-                return {
-                  success: true,
-                  message: 'Анализ создан и изображение загружено успешно',
-                  data: response.data
-                }
-              } else {
-                return {
-                  success: false,
-                  message: `Ошибка загрузки изображения для анализа ${analysisId}`,
-                  data: response.data
-                }
-              }
-            } catch (uploadError) {
-              console.error(`Upload error for ${file.name}:`, uploadError)
-              return {
-                success: false,
-                message: `Ошибка загрузки изображения для анализа ${analysisId}: ${uploadError.message || 'Неизвестная ошибка'}`,
-                data: response.data
-              }
-            }
-          } else {
-            console.warn(`No valid analysis ID for ${file.name}:`, response.data)
-            return {
-              success: false,
-              message: 'Не удалось получить ID анализа',
-              data: response.data
-            }
-          }
-        } else {
-          console.warn(`Analysis creation failed for ${file.name}:`, response)
-          return {
-            success: false,
-            message: (response && response.message) ? response.message : 'Ошибка создания анализа',
-            data: (response && response.data) ? response.data : null
-          }
-        }
-      } catch (error) {
-        console.error(`Error creating analysis for ${file.name}:`, error)
-        return {
-          success: false,
-          message: `Ошибка создания анализа для файла ${file.name}: ${error.message || 'Неизвестная ошибка'}`,
-          data: null
-        }
-      }
-    })
-
-    try {
-      const results = await Promise.all(promises)
-      console.log('All analyses creation results:', results)
-      
-      // Проверяем, что все результаты имеют правильный формат
-      const validatedResults = results.map(result => {
-        if (result && typeof result === 'object' && result.hasOwnProperty('success')) {
-          return result
-        } else {
-          console.warn('Invalid result format:', result)
-          return {
-            success: false,
-            message: 'Неверный формат результата',
-            data: result
-          }
-        }
-      })
-      
-      console.log('Validated results:', validatedResults)
-      
-      // Если у нас только один результат, возвращаем его как объект
-      if (validatedResults.length === 1) {
-        return validatedResults[0]
-      }
-      
-      return validatedResults
-    } catch (error) {
-      console.error('Error in Promise.all for multiple analyses:', error)
-      return [{
-        success: false,
-        message: `Ошибка при создании анализов: ${error.message || 'Неизвестная ошибка'}`,
-        data: null
-      }]
-    }
-  }
 
   /**
    * Получить URL для скачивания файла
@@ -379,12 +229,6 @@ class PorosityAnalysisAPI {
     return `${apiClient.baseUrl}media/porosity_analysis/initial_photo/${imageUuid}.png`
   }
 
-  /**
-   * Генерировать отчеты по анализу
-   */
-  async generateReports(analysisId) {
-    return await apiClient.get(`${this.baseEndpoint}${analysisId}/generate_report/`)
-  }
 
   /**
    * Получить URL для скачивания отчета
@@ -397,10 +241,27 @@ class PorosityAnalysisAPI {
    * Скачать исходное изображение
    */
   async downloadOriginal(analysisId) {
+    console.log(`API: Downloading original image for analysis ${analysisId}`)
     try {
       const response = await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_original/`, {}, 'GET')
-      return response
+      console.log('API: Original image download response:', response)
+      
+      // Проверяем, что response.data является Blob
+      if (response && response.data instanceof Blob) {
+        return {
+          success: true,
+          data: response.data,
+          message: 'Исходное изображение успешно загружено'
+        }
+      } else {
+        return {
+          success: false,
+          message: 'Получен некорректный формат файла',
+          data: null
+        }
+      }
     } catch (error) {
+      console.error('API: Original image download error:', error)
       return {
         success: false,
         message: error.message || 'Ошибка при скачивании исходного изображения',
@@ -412,19 +273,67 @@ class PorosityAnalysisAPI {
   /**
    * Скачать отчет
    */
-  async downloadReport(analysisId, reportType) {
-    console.log(`API: Downloading report for analysis ${analysisId}, type: ${reportType}`)
+  async downloadReport(analysisId, reportType = 'pdf') {
     try {
+      console.log('API: Downloading report:', analysisId, 'type:', reportType)
       const response = await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_report/`, { type: reportType }, 'GET')
-      console.log('API: Download response:', response)
+      console.log('API: Report download response:', response)
       return response
     } catch (error) {
-      console.error('API: Download error:', error)
-      // Возвращаем объект с ошибкой в том же формате
+      console.error('API: Report download error:', error)
       return {
         success: false,
         message: error.message || 'Ошибка при скачивании отчета',
         data: null
+      }
+    }
+  }
+
+  /**
+   * Скачать отчет с прогрессом (использует временную ссылку с токеном)
+   */
+  async downloadReportWithProgress(analysisId, reportType = 'pdf', filename) {
+    try {
+      console.log('Генерация временной ссылки для скачивания отчета:', analysisId, reportType)
+      
+      // Запрашиваем временную ссылку с токеном
+      const response = await apiClient.post(`${this.baseEndpoint}${analysisId}/generate_download_token/`, {
+        file_type: 'report',
+        report_type: reportType
+      })
+      
+      if (response && response.success && response.data.download_url) {
+        const downloadUrl = response.data.download_url
+        
+        console.log('Временная ссылка получена:', downloadUrl)
+        
+        // Открываем ссылку для скачивания
+        // Браузер автоматически покажет прогресс
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = filename || `analysis_${analysisId}_report.${reportType}`
+        link.target = '_blank'
+        link.style.display = 'none'
+        
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        return {
+          success: true,
+          message: 'Скачивание начато'
+        }
+      } else {
+        return {
+          success: false,
+          message: response?.message || 'Не удалось создать ссылку для скачивания'
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка генерации ссылки для скачивания отчета:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании отчета'
       }
     }
   }
@@ -448,7 +357,220 @@ class PorosityAnalysisAPI {
     }
   }
 
+  /**
+   * Скачать архив с результатами анализов (изображения, данные, отчеты)
+   * Использует download_multiple_reports для скачивания отчетов
+   */
+  async downloadAnalysesArchive(params) {
+    console.log('API: Downloading analyses archive with params:', params)
+    try {
+      // Используем download_multiple_reports для скачивания отчетов
+      const response = await apiClient.downloadFile(`${this.baseEndpoint}download_multiple_reports/`, params, 'POST')
+      console.log('API: Analyses archive download response:', response)
+      return response
+    } catch (error) {
+      console.error('API: Analyses archive download error:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании архива анализов',
+        data: null
+      }
+    }
+  }
+
   // Убран метод getLimits, так как ограничения сняты
+
+  /**
+   * Получить список всех архивов
+   */
+  async getArchives(params = {}) {
+    try {
+      const response = await apiClient.get('porosity_analysis/archives/', params)
+      return response
+    } catch (error) {
+      console.error('API: Ошибка при получении архивов:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при загрузке архивов',
+        data: null
+      }
+    }
+  }
+
+  /**
+   * Создать новый архив
+   */
+  async createArchive(data) {
+    try {
+      console.log('Creating archive with data:', data)
+      const response = await apiClient.post('porosity_analysis/archives/', data)
+      console.log('Archive creation response:', response)
+      return response
+    } catch (error) {
+      console.error('Error in createArchive:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при создании архива',
+        data: null
+      }
+    }
+  }
+
+  /**
+   * Скачать архив
+   */
+  async downloadArchive(archiveId) {
+    try {
+      console.log('API: Downloading archive:', archiveId)
+      const response = await apiClient.downloadFile(`porosity_analysis/archives/${archiveId}/download/`, {}, 'GET')
+      console.log('API: Archive download response:', response)
+      return response
+    } catch (error) {
+      console.error('API: Archive download error:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании архива',
+        data: null
+      }
+    }
+  }
+
+  /**
+   * Скачать архив с прогрессом (использует временную ссылку с токеном)
+   */
+  async downloadArchiveWithProgress(archiveId, filename) {
+    try {
+      console.log('Генерация временной ссылки для скачивания архива:', archiveId)
+      
+      // Запрашиваем временную ссылку с токеном
+      const response = await apiClient.post(`porosity_analysis/archives/${archiveId}/generate_download_token/`)
+      
+      if (response && response.success && response.data.download_url) {
+        const downloadUrl = response.data.download_url
+        
+        console.log('Временная ссылка получена:', downloadUrl)
+        
+        // Открываем ссылку в новой вкладке для скачивания
+        // Браузер автоматически покажет прогресс
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = filename || `archive_${archiveId}.zip`
+        link.target = '_blank'
+        link.style.display = 'none'
+        
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        return {
+          success: true,
+          message: 'Скачивание начато'
+        }
+      } else {
+        return {
+          success: false,
+          message: response?.message || 'Не удалось создать ссылку для скачивания'
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка генерации ссылки для скачивания архива:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании архива'
+      }
+    }
+  }
+
+  /**
+   * Скачать архив с реальным прогрессом загрузки
+   */
+  async downloadArchiveWithRealProgress(archiveId, filename, onProgress) {
+    try {
+      const token = this.getAuthToken()
+      const url = `${this.baseUrl}api/porosity_analysis/archives/${archiveId}/download/`
+      
+      console.log('Скачивание архива с реальным прогрессом:', url)
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки: ${response.status} ${response.statusText}`)
+      }
+      
+      const contentLength = response.headers.get('content-length')
+      const total = parseInt(contentLength, 10)
+      let loaded = 0
+      
+      const reader = response.body.getReader()
+      const chunks = []
+      
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) break
+        
+        chunks.push(value)
+        loaded += value.length
+        
+        if (onProgress && total > 0) {
+          const progress = (loaded / total) * 100
+          onProgress({
+            loaded,
+            total,
+            progress: Math.round(progress)
+          })
+        }
+      }
+      
+      // Создаем blob из чанков
+      const blob = new Blob(chunks)
+      const blobUrl = URL.createObjectURL(blob)
+      
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = filename || `archive_${archiveId}.zip`
+      link.style.display = 'none'
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Освобождаем память
+      URL.revokeObjectURL(blobUrl)
+      
+      return {
+        success: true,
+        message: 'Архив успешно скачан'
+      }
+    } catch (error) {
+      console.error('Ошибка скачивания архива с прогрессом:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при скачивании архива'
+      }
+    }
+  }
+
+  /**
+   * Удалить архив
+   */
+  async deleteArchive(archiveId) {
+    try {
+      const response = await apiClient.delete(`porosity_analysis/archives/${archiveId}/delete_archive/`)
+      return response
+    } catch (error) {
+      console.error('API: Archive deletion error:', error)
+      return {
+        success: false,
+        message: error.message || 'Ошибка при удалении архива',
+        data: null
+      }
+    }
+  }
 }
 
 // Создать и экспортировать синглтон-объект

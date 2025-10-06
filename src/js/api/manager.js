@@ -206,19 +206,43 @@ class ApiClient {
             }
             
             console.log('Конфигурация запроса:', config);
+            console.log('Ответ сервера:', response);
+            console.log('Тип данных:', typeof response.data, 'Is Blob:', response.data instanceof Blob);
+            console.log('Размер данных:', response.data?.size);
             
-            // Для бинарных данных возвращаем специальный формат
-            return {
-                success: true,
-                data: response.data, // Это blob объект
-                message: 'Файл успешно загружен',
-                status: response.status,
-                headers: response.headers
-            };
+            // Проверяем, что получили blob
+            if (response.data instanceof Blob) {
+                return {
+                    success: true,
+                    data: response.data, // Это blob объект
+                    message: 'Файл успешно загружен',
+                    status: response.status,
+                    headers: response.headers
+                };
+            } else {
+                console.error('Получен не blob объект:', response.data);
+                return {
+                    success: false,
+                    message: 'Получен некорректный формат файла',
+                    data: null
+                };
+            }
         } catch (error) {
             console.error('Ошибка при скачивании файла:', error);
-            const errorInfo = this.handleError(error);
-            throw error;
+            console.error('Детали ошибки:', {
+                message: error.message,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data
+            });
+            
+            // Возвращаем объект с ошибкой вместо throw
+            return {
+                success: false,
+                message: error.response?.data?.message || error.message || 'Ошибка при скачивании файла',
+                data: null,
+                status: error.response?.status
+            };
         }
     }
 
@@ -314,6 +338,16 @@ class ApiClient {
             status: status,
             errors: error.response?.data
         };
+    }
+
+    // Получить базовый URL
+    getBaseUrl() {
+        return this.baseUrl;
+    }
+
+    // Получить токен авторизации
+    getAuthToken() {
+        return tokenService.getAccess();
     }
 }
 
