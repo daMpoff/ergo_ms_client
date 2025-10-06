@@ -26,6 +26,7 @@
         <!-- Контент активной вкладки -->
         <div class="tab-content mt-3">
             <ProjectOverview v-if="activeTab === 'overview'" :project-data="projectData" />
+            <ReportsPage v-else-if="activeTab === 'reports'" />
         </div>
     </div>
 </template>
@@ -35,11 +36,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
-import { Home, List, FileText, BookOpen, Users, CheckSquare, Activity } from 'lucide-vue-next'
+import { Home, List, FileText, BookOpen, Users, CheckSquare, Activity, FileSpreadsheet } from 'lucide-vue-next'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
 import { slugify as translitSlugify } from 'transliteration'
 import ProjectOverview from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectOverview.vue'
+import ReportsPage from '@/modules/crm/project-ed/ReportsPage.vue'
 
 const route = useRoute()
 
@@ -59,6 +61,7 @@ const tabs = ref([
     { id: 'overview', name: 'Обзор', icon: BookOpen },
     { id: 'team', name: 'Команда', icon: Users },
     { id: 'tasks', name: 'Задачи', icon: CheckSquare, count: undefined },
+    { id: 'reports', name: 'Отчеты', icon: FileSpreadsheet },
     { id: 'activity', name: 'Активность', icon: Activity, count: undefined },
 ])
 
