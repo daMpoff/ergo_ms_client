@@ -72,22 +72,13 @@
       </div>
     </div>
 
-    <div class="info-section">
-      <h5 class="section-title">
-        <Info class="section-icon" />
-        Дополнительная информация
-      </h5>
-      <div class="section-content">
-        <p v-if="additionalInfo" class="additional-info-text">{{ additionalInfo }}</p>
-        <p v-else class="text-muted">Дополнительная информация не указана</p>
-      </div>
-    </div>
+    
   </BaseInfoCard>
 </template>
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
-import { Target, List, CheckCircle, Check, Info, Edit } from 'lucide-vue-next'
+import { Target, List, CheckCircle, Check, Edit } from 'lucide-vue-next'
 import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
 
 const props = defineProps({
@@ -142,12 +133,7 @@ const projectResults = computed(() => {
   return Array.isArray(results) ? results : []
 })
 
-const additionalInfo = computed(() => {
-  if (!props.projectData) return ''
-  
-  // Используем поле additional_info из модели Project
-  return props.projectData.additional_info || ''
-})
+// Раздел "Дополнительная информация" перенесен в отдельный компонент ProjectInfoAdditionalInfo
 
 // Загружаем задачи проекта из данных (они уже приходят с проектом)
 const loadProjectTasks = () => {

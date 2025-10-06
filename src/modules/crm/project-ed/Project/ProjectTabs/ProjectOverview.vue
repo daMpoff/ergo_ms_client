@@ -17,6 +17,7 @@
             <ProjectInfoTargetInd :project-data="projectData" />
             <ProjectInfoCalendar :project-data="projectData" />
             <ProjectInfoBudget :project-data="projectData" />
+            <ProjectInfoAdditionalInfo :project-data="projectData" />
         </div>
         <aside class="overview-aside">
             <ProjectInfoActionBar 
@@ -47,6 +48,7 @@ import ProjectInfoEvent from '@/modules/crm/project-ed/Project/ProjectTabs/compo
 import ProjectInfoCalendar from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoCalendar.vue'
 import ProjectInfoBudget from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoBudget.vue'
 import ProjectInfoTargetInd from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoTargetInd.vue'
+import ProjectInfoAdditionalInfo from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfoAdditionalInfo.vue'
 
 const props = defineProps({
   projectData: {
