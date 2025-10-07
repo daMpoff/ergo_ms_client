@@ -111,7 +111,7 @@
                                         v-else
                                         size="small"
                                         :title="person.full_name || '—'"
-                                        class="contributors__avatar"
+                                        class="role-person__avatar"
                                     />
                                 </div>
                             </div>
@@ -288,15 +288,15 @@ dd {
 }
 
 .contributors__item {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
 }
 
 .contributors__avatar {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
 }
 </style>
