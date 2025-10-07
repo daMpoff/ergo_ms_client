@@ -443,6 +443,12 @@ export const endpoints = {
         import: {
             excel: 'project_ed/import/excel/',
         },
+        profiles: {
+            list: 'project_ed/profiles/profiles/',
+            detail: (id) => `project_ed/profiles/profiles/${id}/`,
+            leadership: 'project_ed/profiles/profiles/leadership/',
+            userProjects: (id) => `project_ed/profiles/profiles/${id}/projects/`,
+        },
     },
     assets_analysis: {
         cryptoPrices: 'assets_analysis/crypto-prices/',

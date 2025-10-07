@@ -34,6 +34,7 @@
             <!-- Контент активной вкладки -->
             <div class="tab-content mt-3">
                 <ProjectOverview v-if="activeTab === 'overview'" :project-data="projectData" />
+                <ProjectTeam v-else-if="activeTab === 'team'" :project-data="projectData" />
                 <ReportsPage v-else-if="activeTab === 'reports'" />
             </div>
         </template>
@@ -50,6 +51,7 @@ import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
 import { slugify as translitSlugify } from 'transliteration'
 import ProjectOverview from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectOverview.vue'
+import ProjectTeam from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectTeam.vue'
 import ReportsPage from '@/modules/crm/project-ed/ReportsPage.vue'
 
 const route = useRoute()
@@ -119,6 +121,15 @@ onMounted(async () => {
         
         if (projectDataLoaded) {
             projectData.value = projectDataLoaded
+            
+            // Отладочная информация
+            console.log('ProjectPage: Загружены данные проекта:', projectDataLoaded)
+            console.log('ProjectPage: Владелец ID:', projectDataLoaded?.owner_id)
+            console.log('ProjectPage: Руководитель ID:', projectDataLoaded?.manager_id)
+            console.log('ProjectPage: Куратор ID:', projectDataLoaded?.curator_id)
+            console.log('ProjectPage: Заказчик ID:', projectDataLoaded?.customer_id)
+            console.log('ProjectPage: Исполнители:', projectDataLoaded?.performers)
+            console.log('ProjectPage: Роли пользователей:', projectDataLoaded?.roles)
             
             // Заголовок страницы: полное название без уточнения
             const headingBase = projectDataLoaded?.name || projectDataLoaded?.short_name || 'Проект'
