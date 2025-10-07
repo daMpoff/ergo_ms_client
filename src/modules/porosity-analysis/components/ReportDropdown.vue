@@ -76,19 +76,16 @@ export default {
   methods: {
     downloadPDF() {
       if (this.downloading) return
-      console.log('Downloading PDF for analysis:', this.analysisId)
       this.$emit('download-pdf', this.analysisId)
     },
     
     downloadWord() {
       if (this.downloading) return
-      console.log('Downloading Word for analysis:', this.analysisId)
       this.$emit('download-word', this.analysisId)
     },
     
     downloadOriginal() {
       if (this.downloading) return
-      console.log('Downloading original image for analysis:', this.analysisId)
       this.$emit('download-original', this.analysisId)
     }
   }

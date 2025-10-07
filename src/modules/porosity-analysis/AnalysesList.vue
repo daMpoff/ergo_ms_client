@@ -597,7 +597,6 @@ export default {
     
     ungroupAllInSelected(groupId) {
       // Реализация снятия группы
-      console.log('Ungroup all in selected:', groupId)
     },
     
     async createGroup(name) {
@@ -678,7 +677,6 @@ export default {
     async downloadReport(analysisId) {
       try {
         const analysis = this.analyses.find(a => a.id === analysisId)
-        console.log('Скачивание отчета для анализа:', analysisId, 'тип: docx')
         
         const filename = this.generateFilename(analysis, 'docx')
         const response = await porosityAnalysisAPI.downloadReportWithProgress(analysisId, 'docx', filename)
@@ -697,7 +695,6 @@ export default {
     
     async downloadPDF(analysisId) {
       try {
-        console.log('Скачивание PDF отчета для анализа:', analysisId)
         const analysis = this.analyses.find(a => a.id === analysisId)
         
         const filename = this.generateFilename(analysis, 'pdf')
@@ -717,7 +714,6 @@ export default {
     
     async downloadWord(analysisId) {
       try {
-        console.log('Скачивание Word отчета для анализа:', analysisId)
         const analysis = this.analyses.find(a => a.id === analysisId)
         
         const filename = this.generateFilename(analysis, 'docx')
@@ -737,10 +733,8 @@ export default {
     
     async downloadOriginal(analysisId) {
       try {
-        console.log('Скачивание исходного изображения для анализа:', analysisId)
         const analysis = this.analyses.find(a => a.id === analysisId)
         const response = await porosityAnalysisAPI.downloadOriginal(analysisId)
-        console.log('Ответ API для исходного изображения:', response)
         if (response && response.success) {
           const filename = this.generateFilename(analysis, 'png', 'original')
           this.downloadBlob(response.data, filename)
@@ -787,8 +781,6 @@ export default {
     // Вспомогательный метод для скачивания blob
     downloadBlob(blob, filename) {
       try {
-        console.log('Создание ссылки для скачивания:', filename, 'Blob:', blob)
-        
         // Создаем URL для blob
         const url = window.URL.createObjectURL(blob)
         
@@ -804,8 +796,6 @@ export default {
         
         // Освобождаем память
         window.URL.revokeObjectURL(url)
-        
-        console.log('Файл успешно скачан:', filename)
       } catch (error) {
         console.error('Ошибка при создании ссылки для скачивания:', error)
         toast.error('Ошибка при скачивании файла')
@@ -843,28 +833,22 @@ export default {
     // Массовые операции
     async restartByInput(input) {
       // Реализация перезапуска по номерам
-      console.log('Restart by input:', input)
     },
     
     async restartSelected(selectedIds) {
       // Реализация перезапуска выбранных
-      console.log('Restart selected:', selectedIds)
     },
     
     async requestBulkDeleteByInput(input) {
       // Реализация массового удаления по номерам
-      console.log('Bulk delete by input:', input)
     },
     
     async requestBulkDeleteSelected(selectedIds) {
       // Реализация массового удаления выбранных
-      console.log('Bulk delete selected:', selectedIds)
     },
     
     
     async downloadAnalysesArchive({ selectedIds, type }) {
-      console.log('Download archive:', selectedIds, type)
-      
       this.downloadingArchive = true
       
       try {
@@ -878,9 +862,7 @@ export default {
           return
         }
         
-        console.log('Sending archive download request with params:', params)
         const response = await porosityAnalysisAPI.downloadAnalysesArchive(params)
-        console.log('Archive download response:', response)
         
         if (response && response.success && response.data instanceof Blob) {
           // Генерируем имя файла для архива
@@ -965,7 +947,6 @@ export default {
     async confirmBulkDelete() {
       try {
         // Здесь должна быть логика массового удаления
-        console.log('Bulk delete confirmed for:', this.selectedIds)
         
         // TODO: Реализовать логику массового удаления через API
         // const response = await porosityAnalysisAPI.bulkDeleteAnalyses(this.selectedIds)
@@ -1032,8 +1013,6 @@ export default {
       this.downloadingArchive = archive.id
       
       try {
-        console.log('Скачивание архива:', archive)
-        
         // Используем метод с временными ссылками для показа прогресса в браузере
         const filename = `${archive.name}.zip`
         const response = await porosityAnalysisAPI.downloadArchiveWithProgress(archive.id, filename)

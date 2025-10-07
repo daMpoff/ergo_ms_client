@@ -46,9 +46,7 @@ class PorosityAnalysisAPI {
    */
   async createAnalysis(data) {
     try {
-      console.log('Creating analysis with data:', data)
       const response = await apiClient.post(this.baseEndpoint, data)
-      console.log('Analysis creation response:', response)
       return response
     } catch (error) {
       console.error('Error in createAnalysis:', error)
@@ -89,11 +87,9 @@ class PorosityAnalysisAPI {
    */
   async uploadImage(analysisId, imageFile) {
     try {
-      console.log(`Uploading image for analysis ${analysisId}:`, imageFile.name)
       const formData = new FormData()
       formData.append('image', imageFile)
       const response = await apiClient.post(`${this.baseEndpoint}${analysisId}/upload_image/`, formData)
-      console.log(`Upload response for analysis ${analysisId}:`, response)
       return response
     } catch (error) {
       console.error(`Error uploading image for analysis ${analysisId}:`, error)
@@ -241,10 +237,8 @@ class PorosityAnalysisAPI {
    * Скачать исходное изображение
    */
   async downloadOriginal(analysisId) {
-    console.log(`API: Downloading original image for analysis ${analysisId}`)
     try {
       const response = await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_original/`, {}, 'GET')
-      console.log('API: Original image download response:', response)
       
       // Проверяем, что response.data является Blob
       if (response && response.data instanceof Blob) {
@@ -275,9 +269,7 @@ class PorosityAnalysisAPI {
    */
   async downloadReport(analysisId, reportType = 'pdf') {
     try {
-      console.log('API: Downloading report:', analysisId, 'type:', reportType)
       const response = await apiClient.downloadFile(`${this.baseEndpoint}${analysisId}/download_report/`, { type: reportType }, 'GET')
-      console.log('API: Report download response:', response)
       return response
     } catch (error) {
       console.error('API: Report download error:', error)
@@ -294,8 +286,6 @@ class PorosityAnalysisAPI {
    */
   async downloadReportWithProgress(analysisId, reportType = 'pdf', filename) {
     try {
-      console.log('Генерация временной ссылки для скачивания отчета:', analysisId, reportType)
-      
       // Запрашиваем временную ссылку с токеном
       const response = await apiClient.post(`${this.baseEndpoint}${analysisId}/generate_download_token/`, {
         file_type: 'report',
@@ -304,8 +294,6 @@ class PorosityAnalysisAPI {
       
       if (response && response.success && response.data.download_url) {
         const downloadUrl = response.data.download_url
-        
-        console.log('Временная ссылка получена:', downloadUrl)
         
         // Открываем ссылку для скачивания
         // Браузер автоматически покажет прогресс
@@ -342,10 +330,8 @@ class PorosityAnalysisAPI {
    * Скачать архив отчетов по нескольким анализам
    */
   async downloadMultipleReports(params) {
-    console.log('API: Downloading multiple reports with params:', params)
     try {
       const response = await apiClient.downloadFile(`${this.baseEndpoint}download_multiple_reports/`, params, 'POST')
-      console.log('API: Multiple reports download response:', response)
       return response
     } catch (error) {
       console.error('API: Multiple reports download error:', error)
@@ -362,11 +348,9 @@ class PorosityAnalysisAPI {
    * Использует download_multiple_reports для скачивания отчетов
    */
   async downloadAnalysesArchive(params) {
-    console.log('API: Downloading analyses archive with params:', params)
     try {
       // Используем download_multiple_reports для скачивания отчетов
       const response = await apiClient.downloadFile(`${this.baseEndpoint}download_multiple_reports/`, params, 'POST')
-      console.log('API: Analyses archive download response:', response)
       return response
     } catch (error) {
       console.error('API: Analyses archive download error:', error)
@@ -402,9 +386,7 @@ class PorosityAnalysisAPI {
    */
   async createArchive(data) {
     try {
-      console.log('Creating archive with data:', data)
       const response = await apiClient.post('porosity_analysis/archives/', data)
-      console.log('Archive creation response:', response)
       return response
     } catch (error) {
       console.error('Error in createArchive:', error)
@@ -421,9 +403,7 @@ class PorosityAnalysisAPI {
    */
   async downloadArchive(archiveId) {
     try {
-      console.log('API: Downloading archive:', archiveId)
       const response = await apiClient.downloadFile(`porosity_analysis/archives/${archiveId}/download/`, {}, 'GET')
-      console.log('API: Archive download response:', response)
       return response
     } catch (error) {
       console.error('API: Archive download error:', error)
@@ -440,15 +420,11 @@ class PorosityAnalysisAPI {
    */
   async downloadArchiveWithProgress(archiveId, filename) {
     try {
-      console.log('Генерация временной ссылки для скачивания архива:', archiveId)
-      
       // Запрашиваем временную ссылку с токеном
       const response = await apiClient.post(`porosity_analysis/archives/${archiveId}/generate_download_token/`)
       
       if (response && response.success && response.data.download_url) {
         const downloadUrl = response.data.download_url
-        
-        console.log('Временная ссылка получена:', downloadUrl)
         
         // Открываем ссылку в новой вкладке для скачивания
         // Браузер автоматически покажет прогресс
@@ -488,8 +464,6 @@ class PorosityAnalysisAPI {
     try {
       const token = this.getAuthToken()
       const url = `${this.baseUrl}api/porosity_analysis/archives/${archiveId}/download/`
-      
-      console.log('Скачивание архива с реальным прогрессом:', url)
       
       const response = await fetch(url, {
         headers: {

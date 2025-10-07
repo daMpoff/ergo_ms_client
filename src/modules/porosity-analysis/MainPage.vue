@@ -303,10 +303,8 @@ export default {
         const response = await porosityAnalysisAPI.getUploadConfig()
         if (response && response.success && response.data) {
           this.concurrencyLimit = response.data.upload_threads || 8
-          console.log(`Установлено количество потоков загрузки: ${this.concurrencyLimit}`)
         }
       } catch (error) {
-        console.warn('Не удалось загрузить конфигурацию загрузки, используется значение по умолчанию:', error)
         this.concurrencyLimit = 8
       }
     },
