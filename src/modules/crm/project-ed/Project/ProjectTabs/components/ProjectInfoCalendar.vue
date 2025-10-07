@@ -232,6 +232,31 @@ async function handleSave() {
       order: idx
     }))
     payload.stages = updatedStages
+
+    // При удалении этапов очищаем связанные значения в бюджете
+    try {
+      const existingItems = Array.isArray(props.projectData?.budget_items) ? props.projectData.budget_items : []
+      const keptStageIds = new Set(updatedStages.map(s => s.id).filter(Boolean))
+      const remainingItems = existingItems.filter(it => it?.stage_id && keptStageIds.has(it.stage_id))
+
+      // Пересчет итогов аналогично логике Budget.vue
+      const INSURANCE_COEFF = 1.302
+      const sumBy = (pred) => remainingItems.filter(pred).reduce((s, it) => s + (Number(it.amount) || 0), 0)
+      const salary_budget = sumBy(it => it.cost_article === 'salary' && it.funding_source === 'budget')
+      const salary_off_budget = sumBy(it => it.cost_article === 'salary' && it.funding_source === 'nonbudget')
+      const other_budget = sumBy(it => it.cost_article === 'other' && it.funding_source === 'budget')
+      const other_off_budget = sumBy(it => it.cost_article === 'other' && it.funding_source === 'nonbudget')
+      const total_with_insurance = (salary_budget + salary_off_budget) * INSURANCE_COEFF + (other_budget + other_off_budget)
+
+      payload.budget_items = remainingItems
+      payload.budget_totals = {
+        salary_budget,
+        salary_off_budget,
+        other_budget,
+        other_off_budget,
+        total_with_insurance
+      }
+    } catch (_) { /* no-op */ }
     await apiClient.patch(endpoints.project_ed.projects.update(props.projectData.id), payload)
     toast.success('Изменения сохранены')
     // Эмитим обновлённые данные включая этапы для синхронизации родителя
@@ -239,6 +264,12 @@ async function handleSave() {
     try {
       const projectId = props.projectData.id
       window.dispatchEvent(new CustomEvent('project-audit:reload', { detail: { projectId } }))
+      // Уведомляем бюджет о необходимости обновиться после изменения этапов и передаем актуальные данные, если есть
+      window.dispatchEvent(new CustomEvent('project-budget:reload', { detail: { 
+        projectId,
+        budget_items: payload?.budget_items || null,
+        budget_totals: payload?.budget_totals || null
+      } }))
     } catch (_) { /* no-op */ }
     // Полностью пересобираем локальное отображение этапов из формы
     projectStages.value = updatedStages

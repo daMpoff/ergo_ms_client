@@ -145,6 +145,9 @@ const isSaving = ref(false)
 const toast = useToast()
 const emit = defineEmits(['saved', 'cancelled'])
 
+// Локальный снимок этапов проекта для отображения имен в бюджете
+const stagesSnapshot = ref([])
+
 // Локальная модель для Budget.vue
 const localBudget = ref({
   stages: [],
@@ -180,6 +183,7 @@ const loadBudgetData = () => {
   if (!props.projectData) {
     budgetData.value = null
     budgetItems.value = []
+    stagesSnapshot.value = []
     return
   }
   
@@ -192,6 +196,15 @@ const loadBudgetData = () => {
   if (props.projectData.budget_items) {
     budgetItems.value = props.projectData.budget_items
   }
+
+  // Снимок этапов для корректного отображения названий
+  if (Array.isArray(props.projectData.stages)) {
+    stagesSnapshot.value = props.projectData.stages.map(s => ({
+      id: s.id,
+      name: s.name,
+      order: s.order
+    }))
+  }
 }
 
 // Группируем позиции бюджета по этапам
@@ -203,8 +216,8 @@ const budgetItemsByStage = computed(() => {
   const stageMap = new Map()
   
   // Сначала добавляем все этапы проекта, если они есть
-  if (props.projectData?.stages) {
-    props.projectData.stages.forEach((stage, index) => {
+  if (Array.isArray(stagesSnapshot.value)) {
+    stagesSnapshot.value.forEach((stage, index) => {
       const stageId = stage.id || `stage-${index}`
       const stageName = stage.name ? `Этап №${index + 1}. ${stage.name}` : `Этап №${index + 1}`
       stageMap.set(stageId, {
@@ -249,9 +262,9 @@ const budgetItemsByStage = computed(() => {
   // Сортируем этапы по порядку (order) или по ID
   return stagesWithItems.sort((a, b) => {
     // Если есть этапы проекта, сортируем по их порядку
-    if (props.projectData?.stages) {
-      const stageA = props.projectData.stages.find(s => s.id === a.stageId)
-      const stageB = props.projectData.stages.find(s => s.id === b.stageId)
+    if (Array.isArray(stagesSnapshot.value)) {
+      const stageA = stagesSnapshot.value.find(s => s.id === a.stageId)
+      const stageB = stagesSnapshot.value.find(s => s.id === b.stageId)
       
       if (stageA && stageB) {
         return (stageA.order || 0) - (stageB.order || 0)
@@ -321,9 +334,19 @@ watch(() => props.projectData?.budget_items, () => {
   loadBudgetData()
 }, { immediate: true })
 
+// Следим за этапами проекта в пропсах, чтобы синхронизировать локальный снимок
+watch(() => props.projectData?.stages, () => {
+  if (Array.isArray(props.projectData?.stages)) {
+    stagesSnapshot.value = props.projectData.stages.map(s => ({ id: s.id, name: s.name, order: s.order }))
+  }
+}, { immediate: true })
+
 // Загружаем данные при монтировании компонента
 onMounted(() => {
   loadBudgetData()
+  try {
+    window.addEventListener('project-budget:reload', handleExternalReload)
+  } catch (e) { /* no-op */ }
 })
 
 // Навигация к этапу проекта
@@ -467,7 +490,61 @@ onUnmounted(() => {
   } catch (e) {
     // no-op
   }
+  try {
+    window.removeEventListener('project-budget:reload', handleExternalReload)
+  } catch (e) { /* no-op */ }
 })
+
+function handleExternalReload(event) {
+  const incomingId = event?.detail?.projectId
+  const currentId = props.projectData?.id
+  if (!currentId || !incomingId || incomingId === currentId) {
+    const items = event?.detail?.budget_items
+    const totals = event?.detail?.budget_totals
+    if (Array.isArray(items) || (totals && typeof totals === 'object')) {
+      if (Array.isArray(items)) budgetItems.value = items
+      if (totals && typeof totals === 'object') budgetData.value = totals
+      // Даже если пришли данные в событии, дополнительно синхронизируемся с сервером
+      setTimeout(() => reloadBudgetFromServer(currentId), 150)
+    } else {
+      // Если данных нет в событии — подтянем актуальные с сервера
+      reloadBudgetFromServer(currentId)
+    }
+  }
+}
+
+async function reloadBudgetFromServer(projectId) {
+  if (!projectId) return
+  try {
+    loadingBudget.value = true
+    const bust = `?_ts=${Date.now()}`
+    const resp = await apiClient.get(endpoints.project_ed.projects.detail(projectId) + bust)
+    const data = resp?.data || {}
+    if (data.budget_totals) budgetData.value = data.budget_totals
+    if (Array.isArray(data.budget_items)) budgetItems.value = data.budget_items
+    if (Array.isArray(data.stages)) {
+      stagesSnapshot.value = data.stages.map(s => ({ id: s.id, name: s.name, order: s.order }))
+    }
+    else {
+      // Повторная попытка через короткую задержку (бек может не успеть отдать обновлённые данные)
+      setTimeout(async () => {
+        try {
+          const resp2 = await apiClient.get(endpoints.project_ed.projects.detail(projectId) + `?_ts=${Date.now()}`)
+          const d2 = resp2?.data || {}
+          if (d2.budget_totals) budgetData.value = d2.budget_totals
+          if (Array.isArray(d2.budget_items)) budgetItems.value = d2.budget_items
+          if (Array.isArray(d2.stages)) {
+            stagesSnapshot.value = d2.stages.map(s => ({ id: s.id, name: s.name, order: s.order }))
+          }
+        } catch (_) { /* no-op */ }
+      }, 250)
+    }
+  } catch (e) {
+    // no-op
+  } finally {
+    loadingBudget.value = false
+  }
+}
 </script>
 
 <style scoped lang="scss">
