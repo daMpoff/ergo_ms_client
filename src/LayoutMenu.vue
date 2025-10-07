@@ -21,11 +21,11 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { isDatasetSidebarOpen, currentSidebarPage } from '@/modules/bi/MainPage/Sidebar/components/js/useSidebarStore'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { isDatasetSidebarOpen, currentSidebarPage } from '@/core/bi/MainPage/Sidebar/components/js/useSidebarStore'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 import MenuList from '@/components/menu/MenuList.vue'
 
-import StorageSidebar from '@/modules/bi/MainPage/Sidebar/StorageSidebar.vue'
+import StorageSidebar from '@/core/bi/MainPage/Sidebar/StorageSidebar.vue'
 import { Menu as IconMenu } from 'lucide-vue-next'
 
 const userStore = useUserStore()

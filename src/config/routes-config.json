@@ -30,7 +30,7 @@
     {
       "path": "/start-page",
       "name": "StartPage",
-      "component": "@/modules/cms/adp/pages/StartPage.vue",
+      "component": "@/core/cms/adp/pages/StartPage.vue",
       "meta": {
         "startRoute": true,
         "requiresAuth": false
@@ -39,7 +39,7 @@
     {
       "path": "/login",
       "name": "Login",
-      "component": "@/modules/cms/adp/pages/LoginPage.vue",
+      "component": "@/core/cms/adp/pages/LoginPage.vue",
       "meta": {
         "startRoute": true,
         "requiresAuth": false
@@ -48,7 +48,7 @@
     {
       "path": "/register",
       "name": "Register",
-      "component": "@/modules/cms/adp/pages/RegisterPage.vue",
+      "component": "@/core/cms/adp/pages/RegisterPage.vue",
       "meta": {
         "startRoute": true,
         "requiresAuth": false
@@ -57,7 +57,7 @@
     {
       "path": "/forgot-password",
       "name": "ForgotPassword",
-      "component": "@/modules/cms/adp/pages/ForgotPasswordPage.vue",
+      "component": "@/core/cms/adp/pages/ForgotPasswordPage.vue",
       "meta": {
         "startRoute": true,
         "requiresAuth": false
@@ -66,7 +66,7 @@
     {
       "path": "/reset-password",
       "name": "ResetPassword",
-      "component": "@/modules/cms/adp/pages/ResetPasswordPage.vue",
+      "component": "@/core/cms/adp/pages/ResetPasswordPage.vue",
       "meta": {
         "startRoute": true,
         "requiresAuth": false
@@ -86,7 +86,7 @@
   "routes": {
     "User": {
       "path": "/user",
-      "component": "@/modules/cms/adp/user/ParentLayout.vue",
+      "component": "@/core/cms/adp/user/ParentLayout.vue",
       "redirect": "Account",
       "meta": {
         "requiresAuth": true
@@ -94,14 +94,14 @@
     },
     "Account": {
       "path": "/user/account",
-      "component": "@/modules/cms/adp/user/account/ParentLayout.vue",
+      "component": "@/core/cms/adp/user/account/ParentLayout.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "SecuritySettings": {
       "path": "/user/security",
-      "component": "@/modules/cms/adp/settings/security/ParentLayout.vue",
+      "component": "@/core/cms/adp/settings/security/ParentLayout.vue",
       "meta": {
         "requiresAuth": true
       }
@@ -109,7 +109,7 @@
 
     "Settings": {
       "path": "/settings",
-      "component": "@/modules/cms/adp/settings/ParentLayout.vue",
+      "component": "@/core/cms/adp/settings/ParentLayout.vue",
       "redirect": "SiteSettings",
       "meta": {
         "requiresAuth": true
@@ -117,7 +117,7 @@
     },
     "AdminPanel": {
       "path": "/admin-panel",
-      "component": "@/modules/cms/adp/admin/ParentLayout.vue",
+      "component": "@/core/cms/adp/admin/ParentLayout.vue",
       "redirect": "UsersPanel",
       "meta": {
         "title": "Админ-панель",
@@ -126,7 +126,7 @@
     },
     "UsersPanel": {
       "path": "/admin-panel/users",
-      "component": "@/modules/cms/adp/admin/Users.vue",
+      "component": "@/core/cms/adp/admin/Users.vue",
       "meta": {
         "title": "Панель пользователей",
         "requiresAuth": true
@@ -134,7 +134,7 @@
     },
     "CategoriesPanel": {
       "path": "/admin-panel/categories",
-      "component": "@/modules/cms/adp/admin/Categories.vue",
+      "component": "@/core/cms/adp/admin/Categories.vue",
       "meta": {
         "title": "Панель категорий",
         "requiresAuth": true
@@ -142,7 +142,7 @@
     },
     "GroupsPanel": {
       "path": "/admin-panel/groups",
-      "component": "@/modules/cms/adp/admin/Groups.vue",
+      "component": "@/core/cms/adp/admin/Groups.vue",
       "meta": {
         "title": "Панель групп",
         "requiresAuth": true
@@ -150,7 +150,7 @@
     },
     "PermissionsPanel": {
       "path": "/admin-panel/permissions",
-      "component": "@/modules/cms/adp/admin/Permissions.vue",
+      "component": "@/core/cms/adp/admin/Permissions.vue",
       "meta": {
         "title": "Панель прав",
         "requiresAuth": true
@@ -158,7 +158,7 @@
     },
     "LiminationPanel": {
       "path": "/admin-panel/limitations",
-      "component": "@/modules/cms/adp/admin/limitationSettings.vue",
+      "component": "@/core/cms/adp/admin/limitationSettings.vue",
       "meta": {
         "title": "Панель Ограничений",
         "requiresAuth": true
@@ -167,7 +167,7 @@
     
     "Shortcodes": {
       "path": "/shortcodes",
-      "component": "@/modules/shortcodes/ParentLayout.vue",
+      "component": "@/core/shortcodes/ParentLayout.vue",
       "redirect": "MainShortcodePage",
       "meta": {
         "title": "Конструктор сайта",
@@ -176,7 +176,7 @@
     },
     "MainShortcodePage": {
       "path": "/shortcodes/editor",
-      "component": "@/modules/shortcodes/editor/MainPage.vue",
+      "component": "@/core/shortcodes/editor/MainPage.vue",
       "meta": {
         "title": "Главная",
         "requiresAuth": true
@@ -184,7 +184,7 @@
     },
     "ShortcodeEditor": {
       "path": "/shortcodes/editor/:id?",
-      "component": "@/modules/shortcodes/editor/ShortcodeEditor.vue",
+      "component": "@/core/shortcodes/editor/ShortcodeEditor.vue",
       "meta": {
         "title": "Редактор страниц",
         "requiresAuth": true
@@ -192,7 +192,7 @@
     },
     "Templates": {
       "path": "/shortcodes/templates",
-      "component": "@/modules/shortcodes/editor/TemplateManager.vue",
+      "component": "@/core/shortcodes/editor/TemplateManager.vue",
       "meta": {
         "title": "Компоненты",
         "requiresAuth": true
@@ -200,7 +200,7 @@
     },
     "Layouts": {
       "path": "/shortcodes/site-layouts",
-      "component": "@/modules/shortcodes/SiteLayout.vue",
+      "component": "@/core/shortcodes/SiteLayout.vue",
       "meta": {
         "title": "Разметка сайта",
         "requiresAuth": true
@@ -208,7 +208,7 @@
     },
     "PageShortcodeCategories": {
       "path": "/shortcodes/categories-page",
-      "component": "@/modules/shortcodes/editor/PageCategories.vue",
+      "component": "@/core/shortcodes/editor/PageCategories.vue",
       "meta": {
         "title": "Категории страниц",
         "requiresAuth": true
@@ -216,7 +216,7 @@
     },
     "CreatePage": {
       "path": "/shortcodes/create-page",
-      "component": "@/modules/shortcodes/editor/CreatePage.vue",
+      "component": "@/core/shortcodes/editor/CreatePage.vue",
       "meta": {
         "title": "Создание страниц",
         "requiresAuth": true
@@ -224,7 +224,7 @@
     },
     "Pages": {
       "path": "/shortcodes/pages",
-      "component": "@/modules/shortcodes/AllPages.vue",
+      "component": "@/core/shortcodes/AllPages.vue",
       "meta": {
         "title": "Страницы",
         "requiresAuth": true
@@ -232,7 +232,7 @@
     },
     "TemplateEditor": {
       "path": "/shortcodes/templates/:id?",
-      "component": "@/modules/shortcodes/editor/TemplateEditor.vue",
+      "component": "@/core/shortcodes/editor/TemplateEditor.vue",
       "meta": {
         "title": "Редактор компонентов",
         "requiresAuth": true
@@ -241,7 +241,7 @@
 
     "CmsAnyDepthPage": {
       "path": "/shortcodes/:parts(.*)+",
-      "component": "@/modules/shortcodes/CmsPage.vue",
+      "component": "@/core/shortcodes/CmsPage.vue",
       "meta": {
         "public": true
       }
@@ -249,7 +249,7 @@
 
     "Categories": {
       "path": "/categories",
-      "component": "@/modules/categories/ParentLayout.vue",
+      "component": "@/core/categories/ParentLayout.vue",
       "redirect": "PageCategories",
       "meta": {
         "requiresAuth": true
@@ -257,7 +257,7 @@
     },
     "PageCategories": {
       "path": "/categories/page-categories",
-      "component": "@/modules/categories/PageCategories.vue",
+      "component": "@/core/categories/PageCategories.vue",
       "meta": {
         "title": "Категории",
         "requiresAuth": true
@@ -265,7 +265,7 @@
     },
     "PageCategoriesManager": {
       "path": "/categories/categories-list",
-      "component": "@/modules/categories/CategoriesManagerPage.vue",
+      "component": "@/core/categories/CategoriesManagerPage.vue",
       "meta": {
         "title": "Создание категорий",
         "requiresAuth": true
@@ -273,7 +273,7 @@
     },
     "TagsManager": {
       "path": "/categories/tags-list",
-      "component": "@/modules/categories/TagsManagerPage.vue",
+      "component": "@/core/categories/TagsManagerPage.vue",
       "meta": {
         "title": "Создание тегов",
         "requiresAuth": true
@@ -282,7 +282,7 @@
 
     "SiteSettings": {
       "path": "/settings/site-settings",
-      "component": "@/modules/cms/adp/settings/siteSettings/ParentLayout.vue",
+      "component": "@/core/cms/adp/settings/siteSettings/ParentLayout.vue",
       "meta": {
         "requiresAuth": true
       }
@@ -290,7 +290,7 @@
 
     "FileManager": {
       "path": "/filemanager",
-      "component": "@/modules/cms/filemanager/FileManager.vue",
+      "component": "@/core/cms/filemanager/FileManager.vue",
       "meta": {
         "title": "Файлы",
         "requiresAuth": true
@@ -849,7 +849,7 @@
     },
     "DatabaseAnalyze": {
       "path": "/user/analyze/databaseanalyze",
-      "component": "@/modules/user/analyze/DatabaseAnalyze.vue",
+      "component": "@/core/user/analyze/DatabaseAnalyze.vue",
       "meta": {
         "requiresAuth": true
       }
@@ -857,21 +857,21 @@
 
     "BI": {
       "path": "/bi",
-      "component": "@/modules/bi/MainPage/HomePageBI.vue",
+      "component": "@/core/bi/MainPage/HomePageBI.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "DashboardPage": {
       "path": "/bi/dashboard/new/",
-      "component": "@/modules/bi/Dashboards/DashboardPage.vue",
+      "component": "@/core/bi/Dashboards/DashboardPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "Datasets": {
       "path": "/bi/datasets/",
-      "component": "@/modules/bi/Datasets/Datasets.vue",
+      "component": "@/core/bi/Datasets/Datasets.vue",
       "meta": {
         "title": "Датасеты",
         "requiresAuth": true
@@ -879,21 +879,21 @@
     },
     "DatasetPage": {
       "path": "/bi/datasets/:id(\\d+)?",
-      "component": "@/modules/bi/Datasets/DatasetPage.vue",
+      "component": "@/core/bi/Datasets/DatasetPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "NewDataset": {
       "path": "/bi/datasets/new",
-      "component": "@/modules/bi/Datasets/DatasetPage.vue",
+      "component": "@/core/bi/Datasets/DatasetPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "Connections": {
       "path": "/bi/connections/",
-      "component": "@/modules/bi/Connections/Connections.vue",
+      "component": "@/core/bi/Connections/Connections.vue",
       "meta": {
         "title": "Подключения",
         "requiresAuth": true
@@ -901,7 +901,7 @@
     },
     "Charts": {
       "path": "/bi/charts/",
-      "component": "@/modules/bi/Charts/Charts.vue",
+      "component": "@/core/bi/Charts/Charts.vue",
       "meta": {
         "title": "Чарты",
         "requiresAuth": true
@@ -909,63 +909,63 @@
     },
     "NewFile": {
       "path": "/bi/connections/new/file",
-      "component": "@/modules/bi/Connections/Files/NewFile.vue",
+      "component": "@/core/bi/Connections/Files/NewFile.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "ClickHouse": {
       "path": "/bi/connections/new/clickhouse",
-      "component": "@/modules/bi/Connections/components/db-settings/ClickHouse.vue",
+      "component": "@/core/bi/Connections/components/db-settings/ClickHouse.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "MSSQL": {
       "path": "/bi/connections/new/mssql",
-      "component": "@/modules/bi/Connections/components/db-settings/MSSQL.vue",
+      "component": "@/core/bi/Connections/components/db-settings/MSSQL.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "PostgreSQL": {
       "path": "/bi/connections/new/postgresql",
-      "component": "@/modules/bi/Connections/components/db-settings/PostgreSQL.vue",
+      "component": "@/core/bi/Connections/components/db-settings/PostgreSQL.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "ConnectionDetail": {
       "path": "/bi/connections/:pk",
-      "component": "@/modules/bi/Connections/components/db-settings/ConnectionDetail.vue",
+      "component": "@/core/bi/Connections/components/db-settings/ConnectionDetail.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "ConnectionFiles": {
       "path": "/bi/connections/:pk/files",
-      "component": "@/modules/bi/Connections/Files/ConnectionFiles.vue",
+      "component": "@/core/bi/Connections/Files/ConnectionFiles.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "NewConnection": {
       "path": "/bi/connections/new",
-      "component": "@/modules/bi/Connections/NewConnection.vue",
+      "component": "@/core/bi/Connections/NewConnection.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "NewChart": {
       "path": "/bi/chart/new",
-      "component": "@/modules/bi/Charts/ChartPage.vue",
+      "component": "@/core/bi/Charts/ChartPage.vue",
       "meta": {
         "requiresAuth": true
       }
     },
     "ChartPage": {
       "path": "/bi/chart/:id",
-      "component": "@/modules/bi/Charts/ChartPage.vue",
+      "component": "@/core/bi/Charts/ChartPage.vue",
       "meta": {
         "requiresAuth": true
       }

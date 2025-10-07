@@ -18,7 +18,7 @@
 import { computed, ref } from 'vue'
 import { Send } from 'lucide-vue-next'
 import { useToast } from 'vue-toastification'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 import { apiClient } from '@/js/api/manager.js'
 import { isProjectManager as isProjectManagerUtil } from '@/modules/crm/project-ed/js/projectRoles.js'
 

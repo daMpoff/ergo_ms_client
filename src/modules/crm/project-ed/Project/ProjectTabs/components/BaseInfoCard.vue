@@ -35,7 +35,7 @@
 <script setup>
 import { defineProps, defineEmits, computed } from 'vue'
 import { Pencil, AlertCircle } from 'lucide-vue-next'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 import { isProjectManager as isProjectManagerUtil } from '@/modules/crm/project-ed/js/projectRoles.js'
 
 const props = defineProps({

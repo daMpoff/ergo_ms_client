@@ -116,7 +116,7 @@
 <script setup>
 import { ref, computed, reactive, watch } from 'vue'
 import { generateInitials } from '@/modules/crm/project-ed/components/steps/js/initialsGenerator.js'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 import { 
     Calendar, 
     FileText, 

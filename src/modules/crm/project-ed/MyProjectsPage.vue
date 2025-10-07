@@ -72,7 +72,7 @@ import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import ProjectListItem from '@/modules/crm/project-ed/components/ProjectListItem.vue'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 
 const toast = useToast()
 const userStore = useUserStore()

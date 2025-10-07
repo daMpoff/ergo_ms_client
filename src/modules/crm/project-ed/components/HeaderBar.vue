@@ -43,7 +43,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { UserRound, Bell, Plus, Search } from 'lucide-vue-next'
 import ProfileMenu from './ProfileMenu.vue'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 
 const route = useRoute()
 const router = useRouter()

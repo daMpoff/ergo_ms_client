@@ -500,7 +500,7 @@ import { Modal } from 'bootstrap'
 import { Edit, Trash2 } from 'lucide-vue-next'
 import projectManagementApi from '@/modules/crm/project-management/js/projectManagementApi.js'
 import { useNotifications } from '@/modules/lms/composables/useNotifications'
-import { getAvatarUrl } from '@/modules/cms/js/avatarUtils.js'
+import { getAvatarUrl } from '@/core/cms/js/avatarUtils.js'
 
 export default {
   name: 'TasksList',

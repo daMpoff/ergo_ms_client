@@ -27,7 +27,7 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 
 const userStore = useUserStore()

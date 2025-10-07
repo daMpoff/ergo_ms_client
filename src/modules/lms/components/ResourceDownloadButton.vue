@@ -16,7 +16,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Download } from 'lucide-vue-next'
-import { downloadResource } from '@/modules/cms/filemanager/js/resourceDownload'
+import { downloadResource } from '@/core/cms/filemanager/js/resourceDownload'
 
 const props = defineProps({
   resource: {

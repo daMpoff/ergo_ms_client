@@ -44,7 +44,7 @@
                         :style="{ zIndex: 4 - index }"
                     >
                         <img 
-                            v-if="leader.avatar_url && leader.avatar_url !== '/src/assets/avatars/placeholder.svg'"
+                            v-if="leader.avatar_url"
                             :src="leader.avatar_url" 
                             :alt="getLeaderInitials(leader.full_name || leader.name)" 
                             class="stacked-avatar-img"

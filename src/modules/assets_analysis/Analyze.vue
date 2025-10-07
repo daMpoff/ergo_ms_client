@@ -17,7 +17,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
 
 const tasks = ref([]);
 const route = useRoute();

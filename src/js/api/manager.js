@@ -1,6 +1,6 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
-import tokenService from '@/modules/cms/js/tokenService'
+import tokenService from '@/core/cms/js/tokenService'
 
 // Класс для работы с API
 class ApiClient {

@@ -39,10 +39,10 @@
 import { defineProps, defineEmits, computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserRound, Settings, LogOut, Wrench } from 'lucide-vue-next'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 
 // Сервисы для проверки административных прав (как в router guard)
-import { authService } from '@/modules/cms/adp/js/authService'
+import { authService } from '@/core/cms/adp/js/authService'
 import { apiClient } from '@/js/api/manager.js'
 
 defineProps({

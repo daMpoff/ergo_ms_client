@@ -1,5 +1,8 @@
 import router from '@/js/routers.js'
-import '@/modules/cms/js/authGuard.js' // Подключаем защиту аутентификации
+import '@/core/cms/js/authGuard.js' // Подключаем защиту аутентификации
+
+// Подключаем систему логирования (автоматически переопределяет console)
+import '@/js/utils/logger.js'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'

@@ -64,5 +64,6 @@ export default defineConfig({
     'import.meta.env.VITE_API_HOST': JSON.stringify(process.env.API_HOST),
     'import.meta.env.VITE_API_PORT': JSON.stringify(process.env.API_PORT),
     'import.meta.env.VITE_DEFAULT_THEME': JSON.stringify(process.env.VITE_DEFAULT_THEME || 'light'),
+    'import.meta.env.VITE_LOG_LEVEL': JSON.stringify(process.env.VITE_LOG_LEVEL || (process.env.CLIENT_DEPLOY_TYPE === 'production' ? 'critical' : 'debug')),
   },
 })

@@ -20,7 +20,7 @@
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
-import { checkToken } from '@/modules/cms/adp/js/auth-index'
+import { checkToken } from '@/core/cms/adp/js/auth-index'
 import { generateAllRoutes, validateRoutesConfig } from '@/config/routes-generator.js'
 
 // Валидация конфигурации при запуске
@@ -50,7 +50,7 @@ const router = createRouter({
   },
 })
 
-import { checkAccessToPage, CheckAccessToComponents } from '../modules/cms/adp/admin/js/GroupsPolitics'
+import { checkAccessToPage, CheckAccessToComponents } from '../core/cms/adp/admin/js/GroupsPolitics'
 async function runCheckToken() {
   const isChecked = await checkToken()
   return isChecked
@@ -71,7 +71,7 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta && to.meta.requiresAdmin) {
       let isAdmin = false
       try {
-        const { useUserStore } = await import('@/modules/cms/js/userStore.js')
+        const { useUserStore } = await import('@/core/cms/js/userStore.js')
         const userStore = useUserStore()
         if (!userStore.isInitialized) {
           try { await userStore.initializeUser() } catch (_) {}
@@ -87,7 +87,7 @@ router.beforeEach(async (to, from, next) => {
       } catch (_) {}
 
       if (!isAdmin) {
-        const { useUserStore } = await import('@/modules/cms/js/userStore.js')
+        const { useUserStore } = await import('@/core/cms/js/userStore.js')
         const userStore = useUserStore()
         const uid = userStore.user?.id
         if (uid === undefined || uid === null) {

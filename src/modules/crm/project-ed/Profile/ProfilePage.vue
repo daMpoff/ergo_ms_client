@@ -288,7 +288,7 @@ import {
   Home,
   Users
 } from 'lucide-vue-next'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 import { apiClient } from '@/js/api/manager.js'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'

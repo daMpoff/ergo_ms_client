@@ -43,13 +43,14 @@ import { Search, Bot } from 'lucide-vue-next'
 import UserMenu from '@/components/header/UserMenu.vue'
 import ToggleTheme from '@/components/header/ToggleTheme.vue'
 import UserNotifications from '@/components/header/UserNotifications.vue'
-import AssistantChat from '@/components/assistant/AssistantChat.vue'
+import AssistantChat from '@/core/ai-assistant/AssistantChat.vue'
 import { computed, ref } from 'vue'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
-import { intentAnalyzer } from '@/js/assistant/intent-analyzer.js'
-import { routerActions } from '@/js/assistant/router-actions.js'
-import { componentAnalyzer } from '@/js/assistant/component-analyzer.js'
-import { connectionStatus } from '@/js/assistant/connection-status.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
+
+import { intentAnalyzer } from '@/core/ai-assistant/js/intent-analyzer.js'
+import { routerActions } from '@/core/ai-assistant/js/router-actions.js'
+import { componentAnalyzer } from '@/core/ai-assistant/js/component-analyzer.js'
+import { connectionStatus } from '@/core/ai-assistant/js/connection-status.js'
 
 const props = defineProps({
   isCollapsed: {
