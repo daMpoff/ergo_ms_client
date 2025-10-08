@@ -5,7 +5,13 @@
             <ProjectAudit :project-data="projectData" />
 
             <ProjectInfoEvent :project-data="projectData" />
-            <ProjectInfoDetails :project-data="projectData" />
+            <ProjectInfoDetails 
+              :project-data="projectData" 
+              :user-role="userRole"
+              :user-info="userInfo"
+              :rector-info="rectorInfo"
+              @project-updated="onProjectUpdated"
+            />
             <ProjectInfoTargetInd :project-data="projectData" />
             <ProjectInfoCalendar :project-data="projectData" />
             <ProjectInfoBudget :project-data="projectData" />
@@ -45,6 +51,18 @@ import ProjectInfoAdditionalInfo from '@/modules/crm/project-ed/Project/ProjectT
 
 const props = defineProps({
   projectData: {
+    type: Object,
+    default: null
+  },
+  userRole: {
+    type: String,
+    default: null
+  },
+  userInfo: {
+    type: Object,
+    default: null
+  },
+  rectorInfo: {
     type: Object,
     default: null
   }
@@ -121,6 +139,12 @@ const projectPerformers = computed(() => {
 const onProjectSubmitted = (updatedProjectData) => {
   // Эмитим событие наверх для обновления данных проекта
   emit('project-updated', updatedProjectData)
+}
+
+// Обработчик события обновления основной информации проекта
+const onProjectUpdated = () => {
+  // Эмитим событие наверх для обновления данных проекта
+  emit('project-updated')
 }
 
 const emit = defineEmits(['project-updated'])

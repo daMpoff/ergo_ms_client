@@ -136,10 +136,10 @@
                     <div class="manager-avatar-container">
                         <UserAvatar
                             size="medium"
-                            :title="userInfo?.name"
+                            :title="managerDisplayName"
                         />
                         <div class="manager-info">
-                            <div class="manager-name">{{ userInfo?.name }}</div>
+                            <div class="manager-name">{{ managerDisplayName }}</div>
                             <div class="manager-position">{{ userInfo?.position || 'Руководитель проекта' }}</div>
                         </div>
                     </div>
@@ -159,7 +159,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 import SelectBox from '@/components/SelectBox.vue'
@@ -279,6 +279,13 @@ watch(selectedCustomerId, (newId) => {
 onMounted(() => {
     resolveCustomerFromApi()
     resolveCuratorsFromApi()
+})
+
+// Отображаемое имя руководителя
+const managerDisplayName = computed(() => {
+    if (!props.userInfo) return '—'
+    const full = `${props.userInfo.first_name || ''} ${props.userInfo.last_name || ''}`.trim()
+    return full || props.userInfo.username || props.userInfo.name || '—'
 })
 
 </script>

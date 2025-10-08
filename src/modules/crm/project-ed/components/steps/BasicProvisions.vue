@@ -450,6 +450,10 @@ const getDefaultEndDate = () => {
 }
 
 // Инициализация данных с учетом новой структуры
+console.log('=== BasicProvisions: Отладка инициализации ===')
+console.log('BasicProvisions: props.provisions:', props.provisions)
+console.log('BasicProvisions: props.provisions.projectName:', props.provisions.projectName)
+
 const localProvisions = ref({
     // Основные поля
     projectName: props.provisions.projectName || '',
@@ -462,7 +466,11 @@ const localProvisions = ref({
     curator: props.provisions.curator || null,
     customer: props.provisions.customer || (props.rectorInfo?.name ?? ''), // Автоматически устанавливаем ректора (если есть)
     customerId: props.provisions.customerId || null,
-    manager: props.provisions.manager || props.userInfo.name || '', // Автоматически устанавливаем создателя проекта
+    manager: props.provisions.manager || (
+        props.userInfo
+            ? (`${props.userInfo.first_name || ''} ${props.userInfo.last_name || ''}`.trim() || props.userInfo.username || props.userInfo.name || '')
+            : ''
+    ), // Автоматически устанавливаем создателя проекта
     executors: props.provisions.executors || [],
     plannedResults: props.provisions.plannedResults || ['', ''],
     
@@ -481,6 +489,9 @@ const localProvisions = ref({
         plannedResults: props.provisions.comments?.plannedResults || ''
     }
 })
+
+console.log('BasicProvisions: localProvisions.value после инициализации:', localProvisions.value)
+console.log('BasicProvisions: localProvisions.value.projectName:', localProvisions.value.projectName)
 
 const errors = ref({})
 
@@ -813,23 +824,29 @@ watch(() => props.selectedEvent, async (newEvent) => {
         await fetchSequenceNumber()
         
         // Затем обновляем названия с учетом нового порядкового номера
-        await nextTick()
-        localProvisions.value.projectName = generateProjectNameLocal()
-        localProvisions.value.shortName = generateShortProjectNameLocal()
-        
-        await nextTick()
-        autoResizeTextarea(projectNameTextarea.value)
+        // НО только если это режим создания нового проекта (нет переданного названия)
+        if (!props.provisions.projectName || props.provisions.projectName.trim() === '') {
+            await nextTick()
+            localProvisions.value.projectName = generateProjectNameLocal()
+            localProvisions.value.shortName = generateShortProjectNameLocal()
+            
+            await nextTick()
+            autoResizeTextarea(projectNameTextarea.value)
+        }
     }
 }, { immediate: true })
 
 // Также следим за изменениями порядкового номера и обновляем названия
 watch(sequenceNumber, (newSequenceNumber) => {
     if (newSequenceNumber && props.selectedEvent) {
-        localProvisions.value.projectName = generateProjectNameLocal()
-        localProvisions.value.shortName = generateShortProjectNameLocal()
-        nextTick(() => {
-            autoResizeTextarea(projectNameTextarea.value)
-        })
+        // Обновляем названия только если это режим создания нового проекта
+        if (!props.provisions.projectName || props.provisions.projectName.trim() === '') {
+            localProvisions.value.projectName = generateProjectNameLocal()
+            localProvisions.value.shortName = generateShortProjectNameLocal()
+            nextTick(() => {
+                autoResizeTextarea(projectNameTextarea.value)
+            })
+        }
     }
 })
 
@@ -844,6 +861,18 @@ watch(() => localProvisions.value.projectName, () => {
 watch(localProvisions, (newValue) => {
     emit('update:provisions', newValue)
 }, { deep: true })
+
+// Следим за изменениями props.provisions
+watch(() => props.provisions, (newProvisions) => {
+    console.log('BasicProvisions: props.provisions изменились:', newProvisions)
+    console.log('BasicProvisions: newProvisions.projectName:', newProvisions.projectName)
+    
+    // Обновляем localProvisions при изменении props
+    if (newProvisions.projectName !== localProvisions.value.projectName) {
+        console.log('BasicProvisions: Обновляем projectName с', localProvisions.value.projectName, 'на', newProvisions.projectName)
+        localProvisions.value.projectName = newProvisions.projectName || ''
+    }
+}, { deep: true, immediate: true })
 
 // Инициализация высоты textarea при монтировании компонента
 onMounted(() => {
@@ -890,9 +919,11 @@ onMounted(() => {
     // Инициализируем порядковый номер проекта и обновляем названия
     if (props.selectedEvent) {
         fetchSequenceNumber().then(() => {
-            // Обновляем названия после получения порядкового номера
-            localProvisions.value.projectName = generateProjectNameLocal()
-            localProvisions.value.shortName = generateShortProjectNameLocal()
+            // Обновляем названия только если это режим создания нового проекта
+            if (!props.provisions.projectName || props.provisions.projectName.trim() === '') {
+                localProvisions.value.projectName = generateProjectNameLocal()
+                localProvisions.value.shortName = generateShortProjectNameLocal()
+            }
         })
     }
 })

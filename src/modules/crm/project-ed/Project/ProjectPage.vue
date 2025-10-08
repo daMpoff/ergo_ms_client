@@ -33,7 +33,14 @@
             
             <!-- Контент активной вкладки -->
             <div class="tab-content mt-3">
-                <ProjectOverview v-if="activeTab === 'overview'" :project-data="projectData" />
+                <ProjectOverview 
+                  v-if="activeTab === 'overview'" 
+                  :project-data="projectData" 
+                  :user-role="userRole"
+                  :user-info="userInfo"
+                  :rector-info="rectorInfo"
+                  @project-updated="onProjectUpdated"
+                />
                 <ProjectTeam v-else-if="activeTab === 'team'" :project-data="projectData" />
                 <ProjectAuditPage v-else-if="activeTab === 'activity'" :project-data="projectData" />
                 <ReportsPage v-else-if="activeTab === 'reports'" />
@@ -51,17 +58,24 @@ import { Home, List, FileText, BookOpen, Users, CheckSquare, Activity, FileSprea
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
 import { slugify as translitSlugify } from 'transliteration'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 import ProjectOverview from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectOverview.vue'
 import ProjectTeam from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectTeam.vue'
 import ProjectAuditPage from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectAuditPage.vue'
 import ReportsPage from '@/modules/crm/project-ed/ReportsPage.vue'
 
 const route = useRoute()
+const userStore = useUserStore()
 
 const projectTitleHeading = ref('Проект')
 const projectTitleBreadcrumb = ref('Проект')
 const projectData = ref(null)
 const isLoading = ref(true)
+
+// Данные пользователя
+const userRole = computed(() => userStore.user?.role || null)
+const userInfo = computed(() => userStore.user || null)
+const rectorInfo = ref(null)
 
 const breadcrumbItems = computed(() => ([
     { label: 'Главная', to: '/crm/project-ed/main', icon: Home },
@@ -87,6 +101,87 @@ function handleTabSwitch(event) {
     }
 }
 
+// Обработчик события обновления проекта
+const onProjectUpdated = async () => {
+  // Перезагружаем данные проекта
+  if (projectData.value?.id) {
+    await loadProjectData(projectData.value.id)
+  }
+}
+
+// Загрузка данных проекта
+const loadProjectData = async (projectIdToLoad) => {
+  try {
+    // Получить детальную карточку по id (источник истины)
+    let projectDataLoaded = null
+    
+    try {
+      // Сначала пробуем получить через обычный endpoint (для своих проектов)
+      const { data } = await apiClient.get(endpoints.project_ed.projects.detail(projectIdToLoad))
+      projectDataLoaded = data
+    } catch (error) {
+      try {
+        // Если не получилось, пробуем через публичный endpoint (для чужих проектов)
+        const { data } = await apiClient.get(endpoints.project_ed.projects.publicView(projectIdToLoad))
+        projectDataLoaded = data
+      } catch (publicError) {
+        console.error('Failed to load project:', publicError)
+        throw publicError
+      }
+    }
+    
+    if (projectDataLoaded) {
+      projectData.value = projectDataLoaded
+      
+      // Отладочная информация
+      console.log('=== ProjectPage: Отладка названия проекта ===')
+      console.log('ProjectPage: Загружены данные проекта:', projectDataLoaded)
+      console.log('ProjectPage: projectDataLoaded.name =', projectDataLoaded?.name)
+      console.log('ProjectPage: projectDataLoaded.short_name =', projectDataLoaded?.short_name)
+      console.log('ProjectPage: projectDataLoaded.name_clarification =', projectDataLoaded?.name_clarification)
+      console.log('ProjectPage: Владелец ID:', projectDataLoaded?.owner_id)
+      console.log('ProjectPage: Руководитель ID:', projectDataLoaded?.manager_id)
+      console.log('ProjectPage: Куратор ID:', projectDataLoaded?.curator_id)
+      console.log('ProjectPage: Заказчик ID:', projectDataLoaded?.customer_id)
+      console.log('ProjectPage: Исполнители:', projectDataLoaded?.performers)
+      console.log('ProjectPage: Роли пользователей:', projectDataLoaded?.roles)
+      
+      // Заголовок страницы: полное название без уточнения
+      const headingBase = projectDataLoaded?.name || projectDataLoaded?.short_name || 'Проект'
+      projectTitleHeading.value = headingBase
+      console.log('ProjectPage: Заголовок страницы (headingBase):', headingBase)
+      
+      // Хлебные крошки: как раньше, с возможным уточнением
+      const crumbBase = projectDataLoaded?.short_name || projectDataLoaded?.name || 'Проект'
+      const clarification = projectDataLoaded?.name_clarification ? ` ${projectDataLoaded.name_clarification}` : ''
+      projectTitleBreadcrumb.value = `${crumbBase}${clarification}`
+      console.log('ProjectPage: Хлебные крошки (crumbBase):', crumbBase)
+      console.log('ProjectPage: Уточнение (clarification):', clarification)
+      console.log('ProjectPage: Итоговые хлебные крошки:', projectTitleBreadcrumb.value)
+    }
+  } catch (e) {
+    console.error('Ошибка загрузки данных проекта:', e)
+    // оставляем дефолтный заголовок при ошибке
+  }
+}
+
+// Загрузка данных ректора
+const loadRectorInfo = async () => {
+  try {
+    const resp = await apiClient.get('/project_ed/profiles/profiles/leadership/', { position_exact: 'Ректор' })
+    const list = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+    if (list.length > 0) {
+      const rector = list[0]
+      rectorInfo.value = {
+        name: `${rector.first_name || ''} ${rector.last_name || ''}`.trim() || rector.username || '',
+        position: rector.position_name || 'Ректор'
+      }
+    }
+  } catch (error) {
+    console.warn('Не удалось загрузить данные ректора:', error)
+  }
+}
+
 onMounted(async () => {
     // Добавляем слушатель события для переключения вкладок
     window.addEventListener('switch-to-audit-tab', handleTabSwitch)
@@ -94,6 +189,9 @@ onMounted(async () => {
     const slug = route.params?.slug
     const projectId = route.params?.projectId
     if (!slug && !projectId) return
+    
+    // Загружаем данные ректора
+    await loadRectorInfo()
     
     try {
         let projectIdToLoad = null
@@ -114,45 +212,8 @@ onMounted(async () => {
         
         if (!projectIdToLoad) return
         
-        // Получить детальную карточку по id (источник истины)
-        let projectDataLoaded = null
-        
-        try {
-            // Сначала пробуем получить через обычный endpoint (для своих проектов)
-            const { data } = await apiClient.get(endpoints.project_ed.projects.detail(projectIdToLoad))
-            projectDataLoaded = data
-        } catch (error) {
-            try {
-                // Если не получилось, пробуем через публичный endpoint (для чужих проектов)
-                const { data } = await apiClient.get(endpoints.project_ed.projects.publicView(projectIdToLoad))
-                projectDataLoaded = data
-            } catch (publicError) {
-                console.error('Failed to load project:', publicError)
-                throw publicError
-            }
-        }
-        
-        if (projectDataLoaded) {
-            projectData.value = projectDataLoaded
-            
-            // Отладочная информация
-            console.log('ProjectPage: Загружены данные проекта:', projectDataLoaded)
-            console.log('ProjectPage: Владелец ID:', projectDataLoaded?.owner_id)
-            console.log('ProjectPage: Руководитель ID:', projectDataLoaded?.manager_id)
-            console.log('ProjectPage: Куратор ID:', projectDataLoaded?.curator_id)
-            console.log('ProjectPage: Заказчик ID:', projectDataLoaded?.customer_id)
-            console.log('ProjectPage: Исполнители:', projectDataLoaded?.performers)
-            console.log('ProjectPage: Роли пользователей:', projectDataLoaded?.roles)
-            
-            // Заголовок страницы: полное название без уточнения
-            const headingBase = projectDataLoaded?.name || projectDataLoaded?.short_name || 'Проект'
-            projectTitleHeading.value = headingBase
-            
-            // Хлебные крошки: как раньше, с возможным уточнением
-            const crumbBase = projectDataLoaded?.short_name || projectDataLoaded?.name || 'Проект'
-            const clarification = projectDataLoaded?.name_clarification ? ` ${projectDataLoaded.name_clarification}` : ''
-            projectTitleBreadcrumb.value = `${crumbBase}${clarification}`
-        }
+        // Загружаем данные проекта
+        await loadProjectData(projectIdToLoad)
     } catch (e) {
         console.error('Ошибка загрузки данных проекта:', e)
         // оставляем дефолтный заголовок при ошибке
