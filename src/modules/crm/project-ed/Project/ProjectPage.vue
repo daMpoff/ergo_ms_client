@@ -35,6 +35,7 @@
             <div class="tab-content mt-3">
                 <ProjectOverview v-if="activeTab === 'overview'" :project-data="projectData" />
                 <ProjectTeam v-else-if="activeTab === 'team'" :project-data="projectData" />
+                <ProjectAuditPage v-else-if="activeTab === 'activity'" :project-data="projectData" />
                 <ReportsPage v-else-if="activeTab === 'reports'" />
             </div>
         </template>
@@ -42,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
@@ -52,6 +53,7 @@ import { endpoints } from '@/js/api/endpoints.js'
 import { slugify as translitSlugify } from 'transliteration'
 import ProjectOverview from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectOverview.vue'
 import ProjectTeam from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectTeam.vue'
+import ProjectAuditPage from '@/modules/crm/project-ed/Project/ProjectTabs/ProjectAuditPage.vue'
 import ReportsPage from '@/modules/crm/project-ed/ReportsPage.vue'
 
 const route = useRoute()
@@ -77,7 +79,18 @@ const tabs = ref([
     { id: 'activity', name: 'Активность', icon: Activity, count: undefined },
 ])
 
+// Обработчик события переключения вкладки
+function handleTabSwitch(event) {
+    const tabId = event.detail?.tabId
+    if (tabId && tabs.value.find(tab => tab.id === tabId)) {
+        activeTab.value = tabId
+    }
+}
+
 onMounted(async () => {
+    // Добавляем слушатель события для переключения вкладок
+    window.addEventListener('switch-to-audit-tab', handleTabSwitch)
+    
     const slug = route.params?.slug
     const projectId = route.params?.projectId
     if (!slug && !projectId) return
@@ -146,6 +159,11 @@ onMounted(async () => {
     } finally {
         isLoading.value = false
     }
+})
+
+onBeforeUnmount(() => {
+    // Удаляем слушатель события при размонтировании компонента
+    window.removeEventListener('switch-to-audit-tab', handleTabSwitch)
 })
 </script>
 

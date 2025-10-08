@@ -7,34 +7,45 @@
       <div v-if="isLoading" class="text-muted">Загрузка журнала…</div>
       <template v-else>
         <div v-if="!auditLogs.length" class="text-muted">Нет записей аудита.</div>
-        <ul v-else class="list-unstyled mb-0">
-          <AuditUnit
-            v-for="item in auditLogs"
-            :key="item.id"
-            :timestamp="item.timestamp"
-            :action-display="item.action_display"
-            :model-type-display="item.model_type_display"
-            :user-name="item.user_name"
-            :user-id="
-              item.user_id ||
-              (typeof item.user === 'number' ? item.user : null) ||
-              item.user?.id ||
-              item.user_id_id ||
-              null
-            "
-            :avatar-url="
-              item.user_avatar_url ||
-              item.user_avatar ||
-              item.avatar_url ||
-              item.user?.avatar_url ||
-              null
-            "
-            :field-name="item.field_name"
-            :old-value="item.old_value"
-            :new-value="item.new_value"
-            :description="item.description"
-          />
-        </ul>
+        <template v-else>
+          <ul class="list-unstyled mb-0">
+            <AuditUnit
+              v-for="item in displayedAuditLogs"
+              :key="item.id"
+              :timestamp="item.timestamp"
+              :action-display="item.action_display"
+              :model-type-display="item.model_type_display"
+              :user-name="item.user_name"
+              :user-id="
+                item.user_id ||
+                (typeof item.user === 'number' ? item.user : null) ||
+                item.user?.id ||
+                item.user_id_id ||
+                null
+              "
+              :avatar-url="
+                item.user_avatar_url ||
+                item.user_avatar ||
+                item.avatar_url ||
+                item.user?.avatar_url ||
+                null
+              "
+              :field-name="item.field_name"
+              :old-value="item.old_value"
+              :new-value="item.new_value"
+              :description="item.description"
+              :expandable="false"
+            />
+          </ul>
+          <div v-if="hasMoreAuditLogs" class="text-center mt-3">
+            <button 
+              class="btn btn-outline-primary btn-sm"
+              @click="navigateToFullAudit"
+            >
+              Ещё...
+            </button>
+          </div>
+        </template>
       </template>
     </div>
   </div>
@@ -100,6 +111,16 @@ const shouldShowAudit = computed(() => {
   return isGlobalAdmin.value || isProjectLeader.value
 })
 
+// Ограничиваем количество отображаемых элементов до 5
+const displayedAuditLogs = computed(() => {
+  return auditLogs.value.slice(0, 5)
+})
+
+// Проверяем, есть ли больше элементов для отображения
+const hasMoreAuditLogs = computed(() => {
+  return auditLogs.value.length > 5
+})
+
 async function loadAudit() {
   const id = props.projectData?.id
   if (!id || !shouldShowAudit.value) {
@@ -153,6 +174,15 @@ function handleAuditReload(event) {
       loadAudit()
     }
   }
+}
+
+// Навигация на вкладку "Активность" в ProjectPage
+function navigateToFullAudit() {
+  // Отправляем событие для переключения на вкладку "Активность"
+  const event = new CustomEvent('switch-to-audit-tab', {
+    detail: { tabId: 'activity' }
+  })
+  window.dispatchEvent(event)
 }
 
 onMounted(() => {
