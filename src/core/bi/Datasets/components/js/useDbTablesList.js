@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
 export function useDbTablesList() {
   const dbTables = ref([])
@@ -10,7 +11,7 @@ export function useDbTablesList() {
     
     isDbLoading.value = true
     try {
-      const res = await apiClient.get(`bi_analysis/bi_connections/${connectionId}/tables/`)
+      const res = await apiClient.get(endpoints.bi.connectionTables(connectionId))
       if (res.success) {
         dbTables.value = res.data
       }

@@ -1,4 +1,5 @@
 import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
 export function useFileActions(uploadedFiles, selectedFile, fileToReplace, loadUserFiles, connectionId, isSheetPickerVisible, currentUploadFile, availableSheets, isReplacing) {
   
@@ -7,7 +8,7 @@ export function useFileActions(uploadedFiles, selectedFile, fileToReplace, loadU
     if (!confirmed) return
 
     try {
-      const res = await apiClient.delete(`bi_analysis/bi_datasets/upload/${file.id}/`)
+      const res = await apiClient.delete(endpoints.bi.uploadDelete(file.id))
 
       if (res.status === 204 || res.success) {
         const index = uploadedFiles.value.findIndex(f => f.id === file.id)
@@ -54,7 +55,7 @@ export function useFileActions(uploadedFiles, selectedFile, fileToReplace, loadU
       if (file.name.endsWith('.xlsx')) {
         const formData = new FormData()
         formData.append('file', file)
-        const sheetRes = await apiClient.upload('bi_analysis/bi_datasets/xlsx/sheets/', formData)
+        const sheetRes = await apiClient.upload(endpoints.bi.xlsxSheets, formData)
 
         console.log('[handleFileReplace] Ответ API для листов:', sheetRes)
         
@@ -89,7 +90,7 @@ export function useFileActions(uploadedFiles, selectedFile, fileToReplace, loadU
         console.log('[handleFileReplace] Заменяем с единственным листом:', sheetRes.data.sheets[0])
         
         const res = await apiClient.put(
-          `bi_analysis/bi_datasets/upload/${fileToReplace.value.id}/`,
+          endpoints.bi.uploadDelete(fileToReplace.value.id),
           formData
         )
 
@@ -134,7 +135,7 @@ export function useFileActions(uploadedFiles, selectedFile, fileToReplace, loadU
       }
 
       const res = await apiClient.put(
-        `bi_analysis/bi_datasets/upload/${fileToReplace.value.id}/`,
+        endpoints.bi.uploadDelete(fileToReplace.value.id),
         formData
       )
 
@@ -195,7 +196,7 @@ export function useFileActions(uploadedFiles, selectedFile, fileToReplace, loadU
       }
 
       const res = await apiClient.put(
-        `bi_analysis/bi_datasets/upload/${file.replaceFileId}/`,
+        endpoints.bi.uploadDelete(file.replaceFileId),
         formData
       )
 
@@ -234,7 +235,7 @@ export function useFileActions(uploadedFiles, selectedFile, fileToReplace, loadU
 
     const newName = `${newNameInput.trim()}.${originalExt}`
 
-    const res = await apiClient.patch(`bi_analysis/bi_datasets/upload/${file.id}/`, {
+    const res = await apiClient.patch(endpoints.bi.uploadDelete(file.id), {
       name: newName
     })
 

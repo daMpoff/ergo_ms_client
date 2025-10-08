@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
 export function useConnectionInfo(routeParamName = 'pk') {
   const connectionName = ref('')
@@ -12,7 +13,7 @@ export function useConnectionInfo(routeParamName = 'pk') {
     }
 
     try {
-      const res = await apiClient.get(`bi_analysis/bi_connections/${connectionId}/`)
+      const res = await apiClient.get(endpoints.bi.connectionDetail(connectionId))
       if (res.success && res.data) {
         connectionDetails.value = res.data
         connectionName.value = res.data.name

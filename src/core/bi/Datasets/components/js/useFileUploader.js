@@ -1,4 +1,5 @@
 import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
 export function useFileUploader(tempUploadedFiles, selectedFile, isSheetPickerVisible, currentUploadFile, availableSheets, loadUserFiles, connectionId) {
 
@@ -21,7 +22,7 @@ async function uploadFile(file, sheet = null) {
   }
 
   try {
-    const res = await apiClient.upload('bi_analysis/bi_datasets/upload/', formData)
+    const res = await apiClient.upload(endpoints.bi.Upload, formData)
 
     if (res.success) {
       const temp = {
@@ -43,7 +44,7 @@ async function uploadFile(file, sheet = null) {
 
   async function uploadFileRaw(formData, newName, originalFile) {
   try {
-    const res = await apiClient.post('bi_analysis/bi_datasets/upload/finalize/', formData)
+    const res = await apiClient.post(endpoints.bi.uploadFinalize, formData)
     return res
   } catch (err) {
     return { success: false, error: err }
@@ -113,7 +114,7 @@ async function handleSheetSelection(sheets) {
       if (file.name.endsWith('.xlsx')) {
         const formData = new FormData()
         formData.append('file', file)
-        const sheetRes = await apiClient.upload('bi_analysis/bi_datasets/xlsx/sheets/', formData)
+        const sheetRes = await apiClient.upload(endpoints.bi.xlsxSheets, formData)
 
         if (sheetRes.success && sheetRes.data.sheets.length > 1) {
           const tempFile = {

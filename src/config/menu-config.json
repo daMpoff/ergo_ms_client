@@ -106,38 +106,25 @@
       ]
     },
     {
-      "icon": "MessagesSquare",
-      "routeName": "Messenger",
-      "title": "Мессенджер"
-    },
-
-    {
       "icon": "ClipboardList",
       "routeName": "CRM",
       "title": "Управление организациями",
       "children": [
         {
-          "icon": "FolderKanban",
-          "routeName": "ProjectManagement",
-          "name": "Управление проектами",
-          "children": [
-            {
-              "routeName": "MyProjectsList",
-              "name": "Мои проекты"
-            },
-            {
-              "routeName": "ProjectCalendar",
-              "name": "Календарь задач"
-            },
-            {
-              "routeName": "KanbanBoard",
-              "name": "Доска задач"
-            },
-            {
-              "routeName": "ProjectsAndTasksManagement",
-              "name": "Проекты и задачи"
-            }
-          ]
+          "routeName": "MyProjectsList",
+          "name": "Мои проекты"
+        },
+        {
+          "routeName": "ProjectCalendar",
+          "name": "Календарь задач"
+        },
+        {
+          "routeName": "KanbanBoard",
+          "name": "Доска задач"
+        },
+        {
+          "routeName": "ProjectsAndTasksManagement",
+          "name": "Проекты и задачи"
         }
       ]
     },
@@ -166,7 +153,6 @@
         }
       ]
     },
-
     {
       "icon": "ChartSpline",
       "routeName": "BI",

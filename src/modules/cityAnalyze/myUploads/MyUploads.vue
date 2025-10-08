@@ -1,7 +1,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import Cookies from 'js-cookie';
+import { useToast } from 'vue-toastification';
+import cityAnalyzeApiService from '../js/apiService';
 
+const toast = useToast();
 const groups = ref([]);
 const loading = ref(true);
 const error = ref(null);
@@ -11,50 +13,40 @@ let group_info = {}
 const fetchGroups = async () => {
   try {
     group_info = {}
-    const token = Cookies.get('token');
-    const response = await fetch('http://localhost:8000/api/cities_expansion/get_my_groups/', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const response = await cityAnalyzeApiService.getMyUploads();
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Не авторизован. Пожалуйста, войдите в систему.');
+    if (response.success) {
+      groups.value = response.data;
+      for (const group of groups.value) {
+        group_info[group.id] = ref(null);
       }
-      throw new Error('Ошибка при загрузке групп');
+      // Предзагружаем изображения для каждой группы
+      await preloadImages();
+    } else {
+      throw new Error(response.message || 'Ошибка при загрузке групп');
     }
-
-    groups.value = await response.json();
-    for (const group of groups.value) {
-      group_info[group.id] = ref(null);
-    }
-    // Предзагружаем изображения для каждой группы
-    await preloadImages();
   } catch (err) {
-    error.value = err.message;
+    console.error('Ошибка загрузки групп:', err);
+    error.value = err.response?.data?.message || err.message || 'Ошибка при загрузке групп';
+    if (err.response?.status === 401) {
+      error.value = 'Не авторизован. Пожалуйста, войдите в систему.';
+    }
+    toast.error(error.value);
   } finally {
     loading.value = false;
   }
 };
 
 const preloadImages = async () => {
-  const token = Cookies.get('token');
-
   for (const group of groups.value) {
     if (group.files && group.files.length) {
       for (const file of group.files) {
         if (file.name.match(/\.(jpeg|jpg|gif|png)$/)) {
           try {
-            const response = await fetch(`http://localhost:8000/api/cities_expansion/get_file/?id=${file.id}`, {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
+            const response = await cityAnalyzeApiService.getFile(file.id);
 
-            if (response.ok) {
-              const blob = await response.blob();
-              fileUrls.value[file.id] = URL.createObjectURL(blob);
+            if (response.success && response.data instanceof Blob) {
+              fileUrls.value[file.id] = URL.createObjectURL(response.data);
             }
           } catch (err) {
             console.error(`Ошибка загрузки файла ${file.id}:`, err);
@@ -67,33 +59,27 @@ const preloadImages = async () => {
 
 const deleteGroup = async (id) => {
   try {
-    const token = Cookies.get('token');
-
     if (!id) {
       throw new Error('Необходим ID группы.');
     }
 
-    const response = await fetch(`http://localhost:8000/api/cities_expansion/delete_group/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await cityAnalyzeApiService.deleteGroup(id);
 
-    if (!response.ok) {
-      console.log('Произошла ошибка при удалении группы');
-      return;
+    if (response.success) {
+      toast.success('Группа успешно удалена');
+      fetchGroups();
+    } else {
+      throw new Error(response.message || 'Произошла ошибка при удалении группы');
     }
-
-    fetchGroups();
   } catch (err) {
-    console.log(err);
+    console.error('Ошибка удаления группы:', err);
+    const errorMsg = err.response?.data?.message || err.message || 'Произошла ошибка при удалении группы';
+    toast.error(errorMsg);
   }
 }
 
 const startAnalysis = async (groupId) => {
   try {
-    const token = Cookies.get('token');
     // Блокируем кнопку
     let group = groups.value.find(g => g.id === groupId);
     if (group) {
@@ -102,28 +88,24 @@ const startAnalysis = async (groupId) => {
 
     const kValue = group?.kValue || 2;
 
-    const response = await fetch(
-      `http://localhost:8000/api/cities_expansion/geoanalyzer/perform_analysis?group_id=${groupId}&k=${kValue}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+    const response = await cityAnalyzeApiService.performAnalysis(groupId, kValue);
+
+    if (response.success) {
+      // Скрываем кнопку после успешного запуска
+      group = groups.value.find(g => g.id === groupId);
+      if (group) {
+        group.analysisStarted = true;
       }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Неизвестная ошибка');
-    }
-
-    // Скрываем кнопку после успешного запуска
-    group = groups.value.find(g => g.id === groupId);
-    if (group) {
-      group.analysisStarted = true;
+      toast.success('Анализ успешно запущен');
+    } else {
+      throw new Error(response.message || 'Неизвестная ошибка');
     }
 
   } catch (error) {
+    console.error('Ошибка запуска анализа:', error);
+    const errorMsg = error.response?.data?.error || error.message || 'Ошибка при запуске анализа';
+    toast.error(errorMsg);
+    
     let group = groups.value.find(g => g.id === groupId);
     if (group) {
       group.isAnalysisLoading = false;

@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 import { useRoute } from 'vue-router'
 
 export function useFileList(tempUploadedFiles, selectedFile, uploadedFiles, currentUploadFile, availableSheets, sheetBeingEdited, isSheetPickerVisible, connectionIdRef) {
@@ -53,7 +54,7 @@ export function useFileList(tempUploadedFiles, selectedFile, uploadedFiles, curr
     const cleanId = typeof id === 'object' ? id.value || id : id
   
     try {
-      const res = await apiClient.getUploadedFiles(`bi_analysis/bi_datasets/connection/${cleanId}/files/`)
+      const res = await apiClient.getUploadedFiles(endpoints.bi.connectionFiles(cleanId))
       if (res.success) {
         uploadedFiles.value = res.data
       } else {

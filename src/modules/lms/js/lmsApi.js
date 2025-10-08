@@ -262,7 +262,7 @@ export const lmsApi = {
       
       // Пытаемся получить прогресс из API
       try {
-        const progressResponse = await apiClient.get(`lms/analytics/student/progress/?course_id=${courseId}`)
+        const progressResponse = await apiClient.get(`${endpoints.lms.studentProgress}?course_id=${courseId}`)
         if (progressResponse.data?.completed_lessons_count !== undefined) {
           completedLessons = progressResponse.data.completed_lessons_count
           console.log(`📊 Загружен реальный прогресс курса ${courseId}: ${completedLessons}/${totalLessons}`)
