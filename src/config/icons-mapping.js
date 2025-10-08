@@ -8,112 +8,19 @@
  * Позволяет использовать строковые имена в menu-config.json
  * вместо прямого импорта компонентов, что делает конфигурацию
  * более простой и доступной для редактирования.
+ * 
+ * Все иконки импортируются автоматически из lucide-vue-next,
+ * поэтому добавление новых иконок в menu-config.json не требует
+ * изменений в этом файле.
  */
 
-import {
-  AtSign,
-  Braces,
-  Calendar,
-  ChartBarStacked,
-  ChartSpline,
-  ChartCandlestick,
-  CircleUserRound,
-  Component,
-  Code2,
-  Grid2x2,
-  Map,
-  MessagesSquare,
-  PictureInPicture2,
-  Table2,
-  TextCursorInput,
-  UserCog,
-  Wallet,
-  KeySquare,
-  BookOpen,
-  NotepadTextDashed,
-  Video,
-  Files,
-  Layers,
-  GraduationCap,
-  Brain,
-  Users,
-  BarChart3,
-  Table,
-  FileText,
-  Square,
-  Puzzle,
-  CreditCard,
-  Landmark,
-  ClipboardList,
-  LayoutGrid,
-  Microscope,
-  Zap,
-  Database,
-  Plug,
-  LayoutDashboard,
-  FolderKanban,
-  // Иконки, используемые в аудите
-  Plus,
-  Edit,
-  Trash2,
-  UserPlus,
-  Activity,
-} from 'lucide-vue-next'
+import * as LucideIcons from 'lucide-vue-next'
 
 /**
  * Объект маппинга строковых имен иконок на Vue компоненты
- * Ключ - строковое имя иконки (используется в JSON конфигурации)
- * Значение - импортированный компонент иконки
+ * Автоматически включает все иконки из библиотеки lucide-vue-next
  */
-export const iconMapping = {
-  AtSign,
-  Braces,
-  Calendar,
-  ChartBarStacked,
-  ChartSpline,
-  ChartCandlestick,
-  CircleUserRound,
-  Component,
-  Code2,
-  Grid2x2,
-  Map,
-  MessagesSquare,
-  PictureInPicture2,
-  Table2,
-  TextCursorInput,
-  UserCog,
-  Wallet,
-  KeySquare,
-  BookOpen,
-  NotepadTextDashed,
-  Video,
-  Files,
-  Layers,
-  GraduationCap,
-  Brain,
-  Users,
-  BarChart3,
-  Table,
-  FileText,
-  Square,
-  Puzzle,
-  CreditCard,
-  Landmark,
-  ClipboardList,
-  LayoutGrid,
-  Microscope,
-  Zap,
-  Database,
-  Plug,
-  LayoutDashboard,
-  FolderKanban,
-  // Иконки, используемые в аудите
-  Plus,
-  Edit,
-  Trash2,
-  UserPlus,
-  Activity,
-}
+export const iconMapping = LucideIcons
 
 /**
  * Функция получения компонента иконки по строковому имени
