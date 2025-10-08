@@ -362,7 +362,31 @@ const saveChanges = async () => {
       start_date: editProvisions.value.startDate,
       end_date: editProvisions.value.endDate,
       curator_id: editProvisions.value.curator,
-      customer_id: editProvisions.value.customerId
+      customer_id: editProvisions.value.customerId,
+      planned_results: Array.isArray(editProvisions.value.plannedResults)
+        ? editProvisions.value.plannedResults
+            .map((res, idx) => {
+              const description = typeof res === 'string' ? res : (res?.description || '')
+              return { description: (description || '').trim(), order: idx }
+            })
+            .filter(item => item.description)
+        : [],
+      tasks: Array.isArray(editProvisions.value.projectTasks)
+        ? editProvisions.value.projectTasks
+            .map((t, idx) => {
+              const description = typeof t === 'string' ? t : (t?.description || t?.title || '')
+              return { description: (description || '').trim(), order: idx }
+            })
+            .filter(item => item.description)
+        : [],
+      executors: Array.isArray(editProvisions.value.executors)
+        ? editProvisions.value.executors
+            .map(id => {
+              const n = Number(id)
+              return Number.isFinite(n) ? n : null
+            })
+            .filter(Boolean)
+        : []
     }
 
     // Обновляем проект
