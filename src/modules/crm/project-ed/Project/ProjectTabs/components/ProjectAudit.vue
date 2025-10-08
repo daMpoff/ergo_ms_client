@@ -1,5 +1,5 @@
 <template>
-  <div class="placeholder-card">
+  <div v-if="shouldShowAudit" class="placeholder-card">
     <div class="placeholder-card__header d-flex align-items-center justify-content-between">
       <h6 class="mb-0">Ход работ</h6>
     </div>
@@ -38,14 +38,15 @@
       </template>
     </div>
   </div>
-
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
+import { useUserStore } from '@/core/cms/js/userStore.js'
+import { isProjectManager } from '@/modules/crm/project-ed/js/projectRoles.js'
 import AuditUnit from './AuditUnit.vue'
 
 const props = defineProps({
@@ -56,12 +57,52 @@ const props = defineProps({
 })
 
 const toast = useToast()
+const userStore = useUserStore()
 const isLoading = ref(false)
 const auditLogs = ref([])
+const isGlobalAdmin = ref(false)
+const isLoadingRole = ref(true)
+
+// Функция для проверки глобальной роли администратора
+async function checkGlobalAdminRole() {
+  try {
+    const userId = userStore.user?.id
+    if (!userId) {
+      isGlobalAdmin.value = false
+      return
+    }
+
+    // Проверяем роль через API профиля ProjectEd
+    const resp = await apiClient.get(`/project_ed/profiles/profiles/${userId}/`)
+    const profile = resp.data
+    if (profile) {
+      const roleName = profile?.role_name
+      isGlobalAdmin.value = roleName === 'Администратор'
+    } else {
+      isGlobalAdmin.value = false
+    }
+  } catch (error) {
+    console.error('Ошибка проверки роли администратора:', error)
+    isGlobalAdmin.value = false
+  } finally {
+    isLoadingRole.value = false
+  }
+}
+
+// Проверяем, является ли пользователь руководителем проекта
+const isProjectLeader = computed(() => {
+  return isProjectManager(userStore.user, props.projectData)
+})
+
+// Проверяем, должен ли компонент отображаться
+const shouldShowAudit = computed(() => {
+  if (isLoadingRole.value) return false
+  return isGlobalAdmin.value || isProjectLeader.value
+})
 
 async function loadAudit() {
   const id = props.projectData?.id
-  if (!id) {
+  if (!id || !shouldShowAudit.value) {
     auditLogs.value = []
     return
   }
@@ -84,15 +125,33 @@ async function loadAudit() {
   }
 }
 
-onMounted(loadAudit)
-watch(() => props.projectData?.id, () => loadAudit())
+onMounted(async () => {
+  await checkGlobalAdminRole()
+  loadAudit()
+})
+
+watch(() => props.projectData?.id, () => {
+  if (!isLoadingRole.value) {
+    loadAudit()
+  }
+})
+
+watch(shouldShowAudit, (newValue) => {
+  if (newValue && !isLoading.value) {
+    loadAudit()
+  } else if (!newValue) {
+    auditLogs.value = []
+  }
+})
 
 // Перезагрузка по глобальному событию, инициируемому после сохранения
 function handleAuditReload(event) {
   const incomingId = event?.detail?.projectId
   const currentId = props.projectData?.id
   if (!incomingId || !currentId || incomingId === currentId) {
-    loadAudit()
+    if (shouldShowAudit.value) {
+      loadAudit()
+    }
   }
 }
 
