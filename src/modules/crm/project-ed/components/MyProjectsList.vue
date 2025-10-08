@@ -9,6 +9,7 @@
 
         <div v-else class="position-relative">
             <button
+                v-if="showNavigationButtons"
                 class="btn btn-info text-white shadow-sm nav-btn left"
                 type="button"
                 @click="scrollLeft"
@@ -47,6 +48,7 @@
                 </div>
             </div>
             <button
+                v-if="showNavigationButtons"
                 class="btn btn-info text-white shadow-sm nav-btn right"
                 type="button"
                 @click="scrollRight"
@@ -94,6 +96,7 @@ const filteredProjects = computed(() => {
 const router = useRouter()
 const scrollContainer = ref(null)
 const cardHeight = ref(null)
+const showNavigationButtons = ref(true)
 
 const scrollByAmount = 320
 
@@ -194,6 +197,8 @@ watch(filteredProjects, async () => {
     adjustNamesToFit()
     await nextTick()
     syncUniformHeights()
+    await nextTick()
+    checkNavigationButtons()
 })
 
 // Выравнивание высоты всех карточек по максимальной естественной
@@ -208,7 +213,22 @@ const syncUniformHeights = () => {
         const naturalHeights = cards.map((c) => c.offsetHeight)
         const maxHeight = Math.max(...naturalHeights)
         cardHeight.value = maxHeight
+        
+        // Проверяем, нужны ли кнопки навигации
+        checkNavigationButtons()
     })
+}
+
+// Проверка необходимости показа кнопок навигации
+const checkNavigationButtons = () => {
+    if (!scrollContainer.value) return
+    
+    const container = scrollContainer.value
+    const containerWidth = container.clientWidth
+    const scrollWidth = container.scrollWidth
+    
+    // Показываем кнопки только если есть горизонтальная прокрутка
+    showNavigationButtons.value = scrollWidth > containerWidth
 }
 </script>
 
