@@ -18,8 +18,19 @@
  * - generateAllRoutes() - генерирует полную конфигурацию маршрутов
  */
 
-import menuConfig from '@/config/menu-config.json';
+import { generateMenuConfig } from '@/config/menu-loader.js';
 import coreRoutesConfig from '@/config/routes.js';
+
+// Кеш для конфигурации меню
+let menuConfigCache = null
+
+// Асинхронная функция для получения конфигурации меню
+async function getMenuConfig() {
+  if (!menuConfigCache) {
+    menuConfigCache = await generateMenuConfig()
+  }
+  return menuConfigCache
+}
 
 /**
  * Автоматически загружает все routes.js из core модулей
@@ -277,10 +288,11 @@ function transformMenuSection(section) {
 
 /**
  * Генерирует массив маршрутов из JSON конфигурации меню
- * @returns {Array} - массив маршрутов для Vue Router
+ * @returns {Promise<Array>} - массив маршрутов для Vue Router
  */
-export function generateRoutesFromConfig() {
+export async function generateRoutesFromConfig() {
   try {
+    const menuConfig = await getMenuConfig()
     const routes = menuConfig.menuSections
       .map(transformMenuSection)
       .filter(route => route !== null) // Убираем невалидные маршруты
@@ -475,9 +487,9 @@ function generateMissingRoutes(createdRouteNames) {
  * Генерирует полную конфигурацию маршрутов
  * @returns {Array} - полный массив маршрутов для приложения
  */
-export function generateAllRoutes() {
+export async function generateAllRoutes() {
   const coreRoutes = generateCoreRoutes()
-  const menuRoutes = generateRoutesFromConfig()
+  const menuRoutes = await generateRoutesFromConfig()
   
   // Получаем имена уже созданных маршрутов
   const createdRouteNames = getCreatedRouteNames([...coreRoutes, ...menuRoutes])

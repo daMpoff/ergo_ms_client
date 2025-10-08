@@ -32,8 +32,8 @@ if (validation.warnings.length > 0) {
   console.warn('⚠️ Предупреждения конфигурации маршрутов:', validation.warnings)
 }
 
-// Генерация маршрутов из JSON конфигурации
-const routes = generateAllRoutes()
+// Генерация маршрутов из JSON конфигурации (async)
+const routes = await generateAllRoutes()
 
 routes.forEach((route) => {
   if (!route.meta || !Object.prototype.hasOwnProperty.call(route.meta, 'startRoute')) {
@@ -41,6 +41,8 @@ routes.forEach((route) => {
     route.meta.startRoute = false
   }
 })
+
+console.log(routes)
 
 const router = createRouter({
   history: createWebHistory(),
@@ -74,7 +76,9 @@ router.beforeEach(async (to, from, next) => {
         const { useUserStore } = await import('@/core/cms/js/userStore.js')
         const userStore = useUserStore()
         if (!userStore.isInitialized) {
-          try { await userStore.initializeUser() } catch (_) {}
+          try { await userStore.initializeUser() } catch {
+            // Игнорируем ошибки инициализации
+          }
         }
         const uid = userStore.user?.id
         if (uid) {
@@ -84,7 +88,9 @@ router.beforeEach(async (to, from, next) => {
           const roleName = data.role_name || data.profile?.role_name
           if (roleName === 'Администратор') isAdmin = true
         }
-      } catch (_) {}
+      } catch {
+        // Игнорируем ошибки проверки роли
+      }
 
       if (!isAdmin) {
         const { useUserStore } = await import('@/core/cms/js/userStore.js')
