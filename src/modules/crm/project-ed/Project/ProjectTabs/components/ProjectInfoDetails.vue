@@ -78,38 +78,17 @@
 
     
   </BaseInfoCard>
-
-  <!-- Модальное окно редактирования основной информации -->
-  <div v-if="showEditModal" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5); z-index: 9999;">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Редактирование основной информации</h5>
-          <button type="button" class="btn-close" @click="closeEditModal" :disabled="isSaving"></button>
-        </div>
-        <div class="modal-body">
-          <BasicProvisions 
-            ref="basicProvisionsRef"
-            :provisions="editProvisions"
-            :user-role="userRole"
-            :selected-event="selectedEvent"
-            :user-info="userInfo"
-            :rector-info="rectorInfo"
-            @update:provisions="updateEditProvisions"
-          />
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="closeEditModal" :disabled="isSaving">
-            Отмена
-          </button>
-          <button type="button" class="btn btn-primary" @click="saveChanges" :disabled="isSaving">
-            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status"></span>
-            Сохранить
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <ProjectUnifiedEditModal
+    :is-open="unifiedModalOpen"
+    :project-data="projectData"
+    :user-role="userRole"
+    :user-info="userInfo"
+    :rector-info="rectorInfo"
+    focus-section="details"
+    @close="unifiedModalOpen = false"
+    @saved="onUnifiedSaved"
+    @update:projectData="onUnifiedProjectUpdate"
+  />
 </template>
 
 <script setup>
@@ -120,6 +99,7 @@ import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/component
 import BasicProvisions from '@/modules/crm/project-ed/components/steps/BasicProvisions.vue'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
+import ProjectUnifiedEditModal from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectUnifiedEditModal.vue'
 
 const props = defineProps({
   projectData: {
@@ -144,8 +124,8 @@ const emit = defineEmits(['project-updated'])
 
 const toast = useToast()
 
-// Состояние модального окна
-const showEditModal = ref(false)
+// Единое модальное окно
+const unifiedModalOpen = ref(false)
 const isSaving = ref(false)
 const basicProvisionsRef = ref(null)
 
@@ -221,190 +201,34 @@ watch(() => props.projectData?.tasks, () => {
   loadProjectTasks()
 }, { immediate: true })
 
-// Функции для управления прокруткой страницы
-const disableBodyScroll = () => {
-  document.body.style.overflow = 'hidden'
-}
-
-const enableBodyScroll = () => {
-  document.body.style.overflow = ''
-}
-
-// Следим за состоянием модального окна и управляем прокруткой
-watch(showEditModal, (isOpen) => {
-  if (isOpen) {
-    disableBodyScroll()
-  } else {
-    enableBodyScroll()
-  }
-})
-
 // Загружаем задачи при монтировании компонента
 onMounted(() => {
   loadProjectTasks()
 })
 
-// Восстанавливаем прокрутку при размонтировании компонента
-onUnmounted(() => {
-  enableBodyScroll()
-})
+onUnmounted(() => {})
 
 // Методы для работы с модальным окном
-const openEditModal = async () => {
-  if (!props.projectData) {
-    toast.error('Данные проекта не загружены')
-    return
-  }
-
-  try {
-    // Отладочная информация для отслеживания проблемы с названием
-    console.log('=== ProjectInfoDetails: Отладка названия проекта ===')
-    console.log('ProjectInfoDetails: Полные данные проекта:', props.projectData)
-    console.log('ProjectInfoDetails: props.projectData.name =', props.projectData.name)
-    console.log('ProjectInfoDetails: props.projectData.short_name =', props.projectData.short_name)
-    console.log('ProjectInfoDetails: props.projectData.name_clarification =', props.projectData.name_clarification)
-    console.log('ProjectInfoDetails: props.projectData.full_name =', props.projectData.full_name)
-    console.log('ProjectInfoDetails: props.projectData.title =', props.projectData.title)
-    
-    // Проверяем все поля, которые могут содержать название
-    const possibleNameFields = ['name', 'short_name', 'name_clarification', 'full_name', 'title', 'project_name', 'display_name']
-    console.log('ProjectInfoDetails: Проверка возможных полей с названием:')
-    possibleNameFields.forEach(field => {
-      console.log(`  ${field}:`, props.projectData[field])
-    })
-    
-    // Выводим все поля объекта для полной картины
-    console.log('ProjectInfoDetails: Все доступные поля проекта:', Object.keys(props.projectData || {}))
-    
-    // Загружаем данные мероприятия, если есть event_id
-    if (props.projectData.event_id) {
-      const eventResp = await apiClient.get(endpoints.project_ed.events.detail(props.projectData.event_id))
-      selectedEvent.value = eventResp.data
-    }
-
-    // Подготавливаем данные для редактирования
-    const projectName = props.projectData.name || ''
-    
-    console.log('ProjectInfoDetails: Выбранное название для редактирования:', projectName)
-    console.log('ProjectInfoDetails: Длина названия:', projectName.length)
-    console.log('ProjectInfoDetails: Тип названия:', typeof projectName)
-    
-    editProvisions.value = {
-      projectName: projectName,
-      projectNameClarification: props.projectData.name_clarification || '',
-      shortName: props.projectData.short_name || '',
-      projectGoal: props.projectData.goal || props.projectData.objective || props.projectData.description || '',
-      projectTasks: props.projectData.tasks ? props.projectData.tasks.map(task => task.description || task.title || '') : ['', ''],
-      startDate: props.projectData.start_date || '',
-      endDate: props.projectData.end_date || '',
-      curator: props.projectData.curator_id || null,
-      customer: props.projectData.customer_name || '',
-      customerId: props.projectData.customer_id || null,
-      manager: props.projectData.manager_name || '',
-      executors: Array.isArray(props.projectData.performers)
-        ? props.projectData.performers
-            .map(p => (p && typeof p === 'object' ? p.id : p))
-            .filter(Boolean)
-        : [],
-      plannedResults: props.projectData.planned_results ? 
-        props.projectData.planned_results.map(result => result.description || result) : 
-        ['', ''],
-      comments: {
-        projectName: '',
-        shortName: '',
-        projectGoal: '',
-        projectTasks: '',
-        projectDates: '',
-        curator: '',
-        customer: '',
-        manager: '',
-        executors: '',
-        plannedResults: ''
-      }
-    }
-
-    console.log('ProjectInfoDetails: Итоговые данные для редактирования:', editProvisions.value)
-    console.log('ProjectInfoDetails: Открываем модальное окно...')
-
-    showEditModal.value = true
-  } catch (error) {
-    console.error('Ошибка при открытии модального окна редактирования:', error)
-    toast.error('Не удалось загрузить данные для редактирования')
-  }
-}
-
-const closeEditModal = () => {
-  showEditModal.value = false
-  editProvisions.value = {}
-  selectedEvent.value = null
-  // Прокрутка будет восстановлена автоматически через watch
-}
+const openEditModal = async () => { unifiedModalOpen.value = true }
+const closeEditModal = () => { unifiedModalOpen.value = false }
 
 const updateEditProvisions = (newProvisions) => {
   editProvisions.value = { ...newProvisions }
 }
 
-const saveChanges = async () => {
-  if (!props.projectData?.id) {
-    toast.error('ID проекта не найден')
-    return
-  }
+const saveChanges = async () => {}
 
-  isSaving.value = true
-
-  try {
-    // Подготавливаем данные для отправки
-    const updateData = {
-      name: editProvisions.value.projectName,
-      name_clarification: editProvisions.value.projectNameClarification,
-      short_name: editProvisions.value.shortName,
-      goal: editProvisions.value.projectGoal,
-      start_date: editProvisions.value.startDate,
-      end_date: editProvisions.value.endDate,
-      curator_id: editProvisions.value.curator,
-      customer_id: editProvisions.value.customerId,
-      planned_results: Array.isArray(editProvisions.value.plannedResults)
-        ? editProvisions.value.plannedResults
-            .map((res, idx) => {
-              const description = typeof res === 'string' ? res : (res?.description || '')
-              return { description: (description || '').trim(), order: idx }
-            })
-            .filter(item => item.description)
-        : [],
-      tasks: Array.isArray(editProvisions.value.projectTasks)
-        ? editProvisions.value.projectTasks
-            .map((t, idx) => {
-              const description = typeof t === 'string' ? t : (t?.description || t?.title || '')
-              return { description: (description || '').trim(), order: idx }
-            })
-            .filter(item => item.description)
-        : [],
-      executors: Array.isArray(editProvisions.value.executors)
-        ? editProvisions.value.executors
-            .map(id => {
-              const n = Number(id)
-              return Number.isFinite(n) ? n : null
-            })
-            .filter(Boolean)
-        : []
-    }
-
-    // Обновляем проект
-    await apiClient.patch(endpoints.project_ed.projects.detail(props.projectData.id), updateData)
-
-    toast.success('Основная информация проекта успешно обновлена')
-    closeEditModal()
-    
-    // Уведомляем родительский компонент об обновлении
+function onUnifiedSaved(payload) {
+  if (payload?.section === 'details') {
     emit('project-updated')
-
-  } catch (error) {
-    console.error('Ошибка при сохранении изменений:', error)
-    const errorMessage = error.response?.data?.detail || error.message || 'Произошла ошибка при сохранении'
-    toast.error(`Не удалось сохранить изменения: ${errorMessage}`)
-  } finally {
-    isSaving.value = false
+    unifiedModalOpen.value = false
   }
+}
+
+function onUnifiedProjectUpdate(updated) {
+  // Пробрасываем наверх, если родитель ожидает синхронизацию данных проекта
+  // Здесь компонент не принимает v-model, поэтому просто закрываем модалку
+  unifiedModalOpen.value = false
 }
 </script>
 

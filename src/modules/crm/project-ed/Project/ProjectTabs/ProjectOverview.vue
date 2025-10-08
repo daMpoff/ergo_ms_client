@@ -4,7 +4,10 @@
             <ProjectDashboard :project-data="projectData" />
             <ProjectAudit :project-data="projectData" />
 
-            <ProjectInfoEvent :project-data="projectData" />
+            <ProjectInfoEvent 
+              :project-data="projectData" 
+              @update:project-data="onProjectUpdated"
+            />
             <ProjectInfoDetails 
               :project-data="projectData" 
               :user-role="userRole"
@@ -142,9 +145,9 @@ const onProjectSubmitted = (updatedProjectData) => {
 }
 
 // Обработчик события обновления основной информации проекта
-const onProjectUpdated = () => {
+const onProjectUpdated = (updatedProjectData) => {
   // Эмитим событие наверх для обновления данных проекта
-  emit('project-updated')
+  emit('project-updated', updatedProjectData)
 }
 
 const emit = defineEmits(['project-updated'])

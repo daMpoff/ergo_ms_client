@@ -227,8 +227,9 @@ import SelectBox from '@/components/SelectBox.vue'
 import { apiClient } from '@/js/api/manager.js'
 
 const props = defineProps({
+    // Текущее выбранное мероприятие: допускается объект или числовой ID
     event: {
-        type: Object,
+        type: [Object, Number, String],
         default: null
     }
 })
@@ -236,8 +237,52 @@ const props = defineProps({
 const emit = defineEmits(['update:event'])
 
 // Данные
-const selectedEvent = ref(props.event)
+// Локально выбранное мероприятие (объект). Если из props приходит только ID — найдём объект после загрузки
+const selectedEvent = ref(null)
 const eventSections = ref([])
+
+// Следим за изменением props.event
+watch(() => props.event, (newEvent) => {
+    const normalizeId = (val) => {
+        const n = Number(val)
+        return Number.isFinite(n) && n > 0 ? n : null
+    }
+
+    // Если пришёл объект с id
+    if (newEvent && typeof newEvent === 'object' && newEvent.id) {
+        if (eventSections.value.length > 0) {
+            const foundEvent = findEventById(newEvent.id)
+            if (foundEvent) {
+                selectedEvent.value = foundEvent
+                const eventSection = eventSections.value.find(s => s.events.some(e => e.id === foundEvent.id))
+                if (eventSection) activeSectionId.value = eventSection.id
+                return
+            }
+        }
+        selectedEvent.value = newEvent
+        return
+    }
+
+    // Если пришёл ID (число/строка)
+    const id = normalizeId(newEvent)
+    if (id) {
+        if (eventSections.value.length > 0) {
+            const foundEvent = findEventById(id)
+            if (foundEvent) {
+                selectedEvent.value = foundEvent
+                const eventSection = eventSections.value.find(s => s.events.some(e => e.id === foundEvent.id))
+                if (eventSection) activeSectionId.value = eventSection.id
+                return
+            }
+        }
+        // Отложенно установим после загрузки данных
+        selectedEvent.value = { id }
+        return
+    }
+
+    // Иначе сбрасываем
+    selectedEvent.value = null
+}, { immediate: true })
 
 // Вид отображения: 'grid' | 'list'
 const viewMode = ref('grid')
@@ -369,6 +414,17 @@ const filteredEventSections = computed(() => {
 const selectEvent = (event) => {
     selectedEvent.value = event
     emit('update:event', event)
+}
+
+// Поиск мероприятия по ID в загруженных данных
+const findEventById = (eventId) => {
+    for (const section of eventSections.value) {
+        const foundEvent = section.events.find(event => event.id === eventId)
+        if (foundEvent) {
+            return foundEvent
+        }
+    }
+    return null
 }
 
 
@@ -596,7 +652,17 @@ onMounted(async () => {
         availableYears.value = Array.from(years).sort((a, b) => a - b)
         eventSections.value = sections
 
-        if (eventSections.value.length > 0) {
+        // Если есть выбранное мероприятие (объект или только id), найдем его в загруженных данных
+        const preselectedId = (props.event && typeof props.event === 'object') ? props.event.id : Number(props.event)
+        const targetId = (selectedEvent.value && selectedEvent.value.id) ? selectedEvent.value.id : (Number.isFinite(preselectedId) ? preselectedId : null)
+        if (targetId) {
+            const foundEvent = findEventById(targetId)
+            if (foundEvent) {
+                selectedEvent.value = foundEvent
+                const eventSection = sections.find(s => s.events.some(e => e.id === foundEvent.id))
+                if (eventSection) activeSectionId.value = eventSection.id
+            }
+        } else if (eventSections.value.length > 0) {
             activeSectionId.value = eventSections.value[0].id
         }
     } catch (e) {

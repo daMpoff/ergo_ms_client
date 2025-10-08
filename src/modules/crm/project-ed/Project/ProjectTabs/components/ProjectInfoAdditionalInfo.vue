@@ -38,29 +38,13 @@
       </div>
     </div>
   </BaseInfoCard>
-  
-  <!-- Модальное окно редактирования раздела (как в TargetIndicatorsPage.vue) -->
-  <div class="modal fade" :class="{ 'show d-block': showModal }" tabindex="-1" v-if="showModal">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Дополнительная информация</h5>
-          <button type="button" class="btn-close" @click="closeModal"></button>
-        </div>
-        <div class="modal-body">
-          <AdditionalInfo v-model:info="localInfo" />
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="handleCancel" :disabled="isSaving">Отменить</button>
-          <button type="button" class="btn btn-primary" @click="handleSave" :disabled="isSaving">
-            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-            <span>{{ isSaving ? 'Сохранение...' : 'Сохранить' }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="modal-backdrop fade" :class="{ 'show': showModal }" v-if="showModal"></div>
+  <ProjectUnifiedEditModal
+    :is-open="unifiedModalOpen"
+    :project-data="projectData"
+    focus-section="additional"
+    @close="unifiedModalOpen = false"
+    @saved="onUnifiedSaved"
+  />
   
 </template>
 
@@ -72,6 +56,7 @@ import AdditionalInfo from '@/modules/crm/project-ed/components/steps/Additional
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import { useToast } from 'vue-toastification'
+import ProjectUnifiedEditModal from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectUnifiedEditModal.vue'
 
 const props = defineProps({
   projectData: {
@@ -100,52 +85,27 @@ const localInfo = ref({
   additionalInfo: additionalInfo.value || ''
 })
 
-const showModal = ref(false)
+const unifiedModalOpen = ref(false)
 const isSaving = ref(false)
 const isUpdating = ref(false)
 const emit = defineEmits(['saved', 'cancelled'])
 const toast = useToast()
 
-function openEditModal() {
-  // Инициализируем локальное значение при открытии
-  localInfo.value = { additionalInfo: additionalInfo.value || '' }
-  showModal.value = true
-}
-function closeModal() { showModal.value = false }
+function openEditModal() { unifiedModalOpen.value = true }
+function closeModal() { unifiedModalOpen.value = false }
 
 function handleCancel() {
   emit('cancelled')
   closeModal()
 }
 
-async function handleSave() {
-  if (!props.projectData?.id) {
-    toast.error('Не удалось определить проект')
-    return
-  }
-  try {
-    isSaving.value = true
-    isUpdating.value = true
-    const payload = { additional_info: localInfo.value.additionalInfo || '' }
-    await apiClient.patch(endpoints.project_ed.projects.update(props.projectData.id), payload)
-    toast.success('Изменения сохранены')
-    emit('saved', { ...localInfo.value })
-    // Сообщаем контейнеру аудита о необходимости перезагрузки
-    try {
-      const projectId = props.projectData.id
-      window.dispatchEvent(new CustomEvent('project-audit:reload', { detail: { projectId } }))
-    } catch (err) {
-      // no-op: безопасный фоллбек, если window недоступен
-    }
-    // Мгновенно обновляем отображение в контейнере
-    displayedAdditionalInfo.value = localInfo.value.additionalInfo || ''
-    closeModal()
-  } catch (e) {
-    toast.error('Ошибка при сохранении изменений')
-  } finally {
-    isSaving.value = false
-    // Небольшая задержка для ощущения обновления
-    setTimeout(() => { isUpdating.value = false }, 300)
+async function handleSave() {}
+
+function onUnifiedSaved(payload) {
+  if (payload?.section === 'additional') {
+    const info = payload?.data?.additional_info
+    if (typeof info === 'string') displayedAdditionalInfo.value = info
+    unifiedModalOpen.value = false
   }
 }
 </script>

@@ -18,7 +18,7 @@
         <button
           type="button"
           class="icon-btn"
-          @click="$emit('edit-click')"
+          @click="handleEditClick"
           :title="'Редактировать раздел'"
           aria-label="Редактировать раздел"
         >
@@ -49,11 +49,15 @@ const props = defineProps({
   }
 })
 
-defineEmits(['edit-click', 'warnings-click'])
+const emit = defineEmits(['edit-click', 'warnings-click'])
 
 const userStore = useUserStore()
 
 const isProjectManager = computed(() => isProjectManagerUtil(userStore.user, props.projectData))
+
+const handleEditClick = () => {
+  emit('edit-click')
+}
 </script>
 
 <style scoped lang="scss">

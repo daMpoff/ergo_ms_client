@@ -42,31 +42,25 @@
       </div>
   </BaseInfoCard>
 
-  <ModalCenter :title="'Редактирование целевых показателей'" :modal-id="modalId" :dialog-class="'modal-xl'" @closemodal="onModalClose">
-    <form @submit.prevent="onSave" class="d-flex flex-column gap-2">
-      <TargetIndicators
-        :indicators="editIndicators"
-        :selectedEvent="selectedEventForIndicators"
-        @update:indicators="val => (editIndicators = val)"
-      />
-
-      <div class="d-flex justify-content-end gap-2 mt-2">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-        <button type="submit" class="btn btn-primary" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
-      </div>
-    </form>
-  </ModalCenter>
+  <ProjectUnifiedEditModal
+    :is-open="showUnified"
+    :project-data="projectData"
+    :user-role="null"
+    :user-info="null"
+    :rector-info="null"
+    focus-section="indicators"
+    @close="() => (showUnified = false)"
+    @saved="onUnifiedSaved"
+  />
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { Target } from 'lucide-vue-next'
 import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
-import ModalCenter from '@/components/ModalCenter.vue'
-import TargetIndicators from '@/modules/crm/project-ed/components/steps/TargetIndicators.vue'
+import ProjectUnifiedEditModal from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectUnifiedEditModal.vue'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
-import { Modal } from 'bootstrap'
 import { useToast } from 'vue-toastification'
 
 const props = defineProps({
@@ -78,12 +72,9 @@ const props = defineProps({
 
 const targetIndicators = ref([])
 const loadingIndicators = ref(false)
-const saving = ref(false)
 const toast = useToast()
 
-const modalId = 'editTargetIndicatorsModal'
-let modalInstance = null
-const editIndicators = ref([])
+const showUnified = ref(false)
 
 const selectedEventForIndicators = computed(() => {
   const blockId = props.projectData?.event_block_id || props.projectData?.event_block || null
@@ -143,67 +134,17 @@ onMounted(() => {
   loadTargetIndicators()
 })
 
-function ensureModal() {
-  if (modalInstance) return modalInstance
-  try {
-    const el = document.getElementById(modalId)
-    if (el) {
-      modalInstance = new Modal(el)
-    }
-  } catch (_) {}
-  return modalInstance
-}
-
 function openEditModal() {
-  // Инициализируем данные для редактирования из текущих показателей
-  editIndicators.value = (targetIndicators.value || []).map(it => ({
-    // Если indicator привязан к справочному показателю блока, backend отдает его id в поле source_indicator
-    // SelectBox ожидает value из options: it.id || it.code || it.name — поэтому передаем строковый id
-    name: (Number.isFinite(Number(it.source_indicator)) ? String(Number(it.source_indicator)) : String(it.name || '')),
-    unit: it.unit || '',
-    baseValue: it.baseline != null ? Number(it.baseline) : 0,
-    targetValue: it.planned != null ? Number(it.planned) : 0,
-    isCustom: !(Number.isFinite(Number(it.source_indicator)) && Number(it.source_indicator) > 0),
-  }))
-  // Гарантируем хотя бы одну строку
-  if (!editIndicators.value.length) {
-    editIndicators.value = [{ name: '', unit: '', baseValue: 0, targetValue: 0, isCustom: true }]
-  }
-  nextTick(() => {
-    const m = ensureModal()
-    if (m) m.show()
-  })
+  showUnified.value = true
 }
 
-function onModalClose() {
-  // noop for now
-}
-
-function mapIndicatorsToPayload(items) {
-  return (items || []).map(it => {
-    const maybeId = Number(it.name)
-    const source_indicator_id = (!it.isCustom && Number.isFinite(maybeId)) ? maybeId : null
-    return {
-      source_indicator_id,
-      name: it.isCustom ? String(it.name || '') : '',
-      unit: String(it.unit || ''),
-      baseline: it.baseValue != null && it.baseValue !== '' ? Number(it.baseValue) : null,
-      planned: it.targetValue != null && it.targetValue !== '' ? Number(it.targetValue) : null,
-    }
-  })
-}
-
-async function onSave() {
-  if (!props.projectData?.id) return
-  saving.value = true
+function onUnifiedSaved(evt) {
   try {
-    const payload = { target_indicators: mapIndicatorsToPayload(editIndicators.value) }
-    const resp = await apiClient.patch(endpoints.project_ed.projects.update(props.projectData.id), payload)
-    const data = resp?.data || {}
-    const latestIndicators = Array.isArray(data?.target_indicators) ? data.target_indicators : (data?.target_indicators_rel || [])
-    if (Array.isArray(latestIndicators)) {
-      // Обновляем локальный список для немедленного отображения
-      targetIndicators.value = latestIndicators.map(indicator => ({
+    if (!evt || evt.section !== 'indicators') return
+    const data = evt.data || {}
+    const latest = Array.isArray(data?.target_indicators) ? data.target_indicators : (data?.target_indicators_rel || [])
+    if (Array.isArray(latest)) {
+      targetIndicators.value = latest.map(indicator => ({
         id: indicator.id,
         name: indicator.display_name || indicator.name || 'Не указано',
         unit: indicator.display_unit || indicator.unit || '',
@@ -212,30 +153,8 @@ async function onSave() {
         source_indicator: indicator.source_indicator
       }))
     }
-    // Сообщаем другим виджетам обновить аудит
-    try {
-      const evt = new CustomEvent('project-audit:reload', { detail: { projectId: props.projectData.id } })
-      window.dispatchEvent(evt)
-    } catch (_) {}
-    // Закрываем модалку
-    const m = ensureModal()
-    if (m) m.hide()
-    try { toast.success('Целевые показатели обновлены') } catch (_) {}
-  } catch (e) {
-    try { toast.error('Не удалось сохранить целевые показатели') } catch (_) {}
-  } finally {
-    saving.value = false
-  }
-}
-
-onBeforeUnmount(() => {
-  try {
-    if (modalInstance) {
-      modalInstance.dispose?.()
-      modalInstance = null
-    }
   } catch (_) {}
-})
+}
 </script>
 
 <style scoped lang="scss">

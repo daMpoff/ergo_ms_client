@@ -93,32 +93,13 @@
         </div>
       </div>
   </BaseInfoCard>
-  <div class="modal fade" :class="{ 'show d-block': showModal }" tabindex="-1" v-if="showModal">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Редактирование бюджета</h5>
-          <button type="button" class="btn-close" @click="closeModal"></button>
-        </div>
-        <div class="modal-body">
-          <Budget 
-            :plan="planForBudget" 
-            :budget="localBudget"
-            @update:budget="onBudgetUpdate"
-            @validation-change="onValidation"
-          />
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="handleCancel" :disabled="isSaving">Отменить</button>
-          <button type="button" class="btn btn-primary" @click="handleSave" :disabled="isSaving || !isBudgetValid">
-            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-            <span>{{ isSaving ? 'Сохранение...' : 'Сохранить' }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="modal-backdrop fade" :class="{ 'show': showModal }" v-if="showModal"></div>
+  <ProjectUnifiedEditModal
+    :is-open="unifiedModalOpen"
+    :project-data="projectData"
+    focus-section="budget"
+    @close="unifiedModalOpen = false"
+    @saved="onUnifiedSaved"
+  />
 </template>
 
 <script setup>
@@ -128,6 +109,7 @@ import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import { useToast } from 'vue-toastification'
 import Budget from '@/modules/crm/project-ed/components/steps/Budget.vue'
+import ProjectUnifiedEditModal from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectUnifiedEditModal.vue'
 
 const props = defineProps({
   projectData: {
@@ -140,7 +122,7 @@ const budgetData = ref(null)
 const budgetItems = ref([])
 const loadingBudget = ref(false)
 const isUpdating = ref(false)
-const showModal = ref(false)
+const unifiedModalOpen = ref(false)
 const isSaving = ref(false)
 const toast = useToast()
 const emit = defineEmits(['saved', 'cancelled'])
@@ -356,58 +338,9 @@ const navigateToStage = (stageData) => {
   console.log('Переход к этапу:', stageData)
 }
 
-function openEditModal() {
-  // Построим локальную модель из данных проекта
-  const items = Array.isArray(props.projectData?.budget_items) ? props.projectData.budget_items : []
-  const totals = props.projectData?.budget_totals || {}
-
-  // Карта id этапа -> имя
-  const stageIdToName = new Map()
-  if (Array.isArray(props.projectData?.stages)) {
-    props.projectData.stages.forEach((s, idx) => {
-      stageIdToName.set(s.id, s.name || `Этап ${idx + 1}`)
-    })
-  }
-
-  const byStageName = new Map()
-  items.forEach(it => {
-    const stageName = stageIdToName.get(it.stage_id) || 'Без этапа'
-    if (!byStageName.has(stageName)) byStageName.set(stageName, { name: stageName, items: [] })
-    byStageName.get(stageName).items.push({
-      article: it.cost_article === 'salary' ? 'salary' : 'other',
-      source: it.funding_source === 'budget' ? 'budget' : 'nonbudget',
-      amount: Number(it.amount) || 0
-    })
-  })
-
-  localBudget.value = {
-    stages: Array.from(byStageName.values()),
-    totals: {
-      salary: Number(totals?.salary_budget) || 0,
-      other: Number(totals?.other_budget) || 0,
-      withInsurance: Number(totals?.total_with_insurance) || 0,
-      byArticleSource: {
-        salary: {
-          budget: Number(totals?.salary_budget) || 0,
-          nonbudget: Number(totals?.salary_off_budget) || 0
-        },
-        other: {
-          budget: Number(totals?.other_budget) || 0,
-          nonbudget: Number(totals?.other_off_budget) || 0
-        }
-      }
-    }
-  }
-
-  showModal.value = true
-}
-
-function closeModal() { showModal.value = false }
-
-function handleCancel() {
-  emit('cancelled')
-  closeModal()
-}
+function openEditModal() { unifiedModalOpen.value = true }
+function closeModal() { unifiedModalOpen.value = false }
+function handleCancel() { emit('cancelled'); closeModal() }
 
 // Подбор id этапа по имени (если не найдено — null)
 const resolveStageIdByName = (name) => {
@@ -416,55 +349,10 @@ const resolveStageIdByName = (name) => {
   return found ? found.id : null
 }
 
-async function handleSave() {
-  if (!props.projectData?.id) {
-    toast.error('Не удалось определить проект')
-    return
-  }
-  try {
-    isSaving.value = true
-    isUpdating.value = true
-    const totals = localBudget.value?.totals || {}
-    const by = totals?.byArticleSource || { salary: {}, other: {} }
-    const payload = {
-      budget_totals: {
-        salary_budget: Number(by?.salary?.budget) || 0,
-        salary_off_budget: Number(by?.salary?.nonbudget) || 0,
-        other_budget: Number(by?.other?.budget) || 0,
-        other_off_budget: Number(by?.other?.nonbudget) || 0,
-        total_with_insurance: Number(totals?.withInsurance) || 0
-      },
-      budget_items: (localBudget.value?.stages || []).flatMap(stg =>
-        (stg.items || []).map(row => ({
-          cost_article: row.article === 'salary' ? 'salary' : 'other',
-          funding_source: row.source === 'budget' ? 'budget' : 'nonbudget',
-          amount: Number(row.amount) || 0,
-          stage_id: resolveStageIdByName(stg.name)
-        }))
-      )
-    }
-    await apiClient.patch(endpoints.project_ed.projects.update(props.projectData.id), payload)
-    toast.success('Изменения сохранены')
-    emit('saved', { ...payload })
-    try {
-      const projectId = props.projectData.id
-      window.dispatchEvent(new CustomEvent('project-audit:reload', { detail: { projectId } }))
-    } catch (err) {
-      // no-op
-    }
-    budgetData.value = { ...payload.budget_totals }
-    budgetItems.value = [...payload.budget_items]
-    closeModal()
-  } catch (e) {
-    toast.error('Ошибка при сохранении изменений')
-  } finally {
-    isSaving.value = false
-    setTimeout(() => { isUpdating.value = false }, 300)
-  }
-}
+async function handleSave() {}
 
 // Блокируем прокрутку страницы, пока модалка открыта
-watch(showModal, (isOpen) => {
+watch(unifiedModalOpen, (isOpen) => {
   try {
     const body = document?.body
     const html = document?.documentElement
@@ -494,6 +382,16 @@ onUnmounted(() => {
     window.removeEventListener('project-budget:reload', handleExternalReload)
   } catch (e) { /* no-op */ }
 })
+
+function onUnifiedSaved(payload) {
+  if (payload?.section === 'budget') {
+    // обновим локально, если пришли данные
+    const d = payload?.data
+    if (d?.budget_totals) budgetData.value = d.budget_totals
+    if (Array.isArray(d?.budget_items)) budgetItems.value = d.budget_items
+    unifiedModalOpen.value = false
+  }
+}
 
 function handleExternalReload(event) {
   const incomingId = event?.detail?.projectId

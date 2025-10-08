@@ -1,5 +1,9 @@
 <template>
-  <BaseInfoCard title="Блок и мероприятие проекта" :project-data="projectData">
+  <BaseInfoCard 
+    title="Блок и мероприятие проекта" 
+    :project-data="projectData"
+    @edit-click="handleEditClick"
+  >
     <dl class="info-list">
         <div class="info-row">
           <dt>Блок мероприятий</dt>
@@ -27,14 +31,25 @@
 
         
     </dl>
+
+    <!-- Единое модальное окно: секция Мероприятие -->
+    <ProjectUnifiedEditModal
+      :is-open="editModalOpen"
+      :project-data="projectData"
+      focus-section="event"
+      @close="closeEditModal"
+      @update:projectData="onUnifiedProjectUpdate"
+    />
   </BaseInfoCard>
 </template>
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
 import BaseInfoCard from '@/modules/crm/project-ed/Project/ProjectTabs/components/BaseInfoCard.vue'
+import ProjectUnifiedEditModal from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectUnifiedEditModal.vue'
 
 const props = defineProps({
   projectData: {
@@ -42,6 +57,13 @@ const props = defineProps({
     default: null
   }
 })
+
+const emit = defineEmits(['update:projectData'])
+
+const toast = useToast()
+
+// Состояние модального окна
+const editModalOpen = ref(false)
 
 // Безопасно достаём объект мероприятия и блока из возможных форм ответа API
 const eventObj = computed(() => {
@@ -114,6 +136,33 @@ const blockTitle = computed(() => (blockObj.value?.title || blockObj.value?.name
 
 const eventCode = computed(() => (eventObj.value?.code || fetchedEvent.value?.code || ''))
 const eventTitle = computed(() => (eventObj.value?.name || eventObj.value?.title || fetchedEvent.value?.name || fetchedEvent.value?.title || ''))
+
+// Нормализованное текущее мероприятие для модального окна (поддержка id без вложенного объекта)
+const currentSelectedEvent = computed(() => {
+  if (eventObj.value) return eventObj.value
+  if (fetchedEvent.value) return fetchedEvent.value
+  const id = Number(eventId.value)
+  if (id && Number.isFinite(id)) {
+    const block = Number(blockId.value)
+    return block && Number.isFinite(block) ? { id, blockId: block } : { id }
+  }
+  return null
+})
+
+// Методы для работы с модальным окном
+const handleEditClick = () => {
+  editModalOpen.value = true
+}
+
+const closeEditModal = () => {
+  editModalOpen.value = false
+}
+
+function onUnifiedProjectUpdate(updatedProjectData) {
+  emit('update:projectData', updatedProjectData)
+  toast.success('Мероприятие успешно обновлено')
+  editModalOpen.value = false
+}
 
 // Период и результаты по требованию не отображаются
 </script>
