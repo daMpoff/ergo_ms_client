@@ -40,6 +40,7 @@
                   :user-info="userInfo"
                   :rector-info="rectorInfo"
                   @project-updated="onProjectUpdated"
+                  @project-deleted="onProjectDeleted"
                 />
                 <ProjectTeam v-else-if="activeTab === 'team'" :project-data="projectData" />
                 <ProjectAuditPage v-else-if="activeTab === 'activity'" :project-data="projectData" />
@@ -51,7 +52,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import { Home, List, FileText, BookOpen, Users, CheckSquare, Activity, FileSpreadsheet } from 'lucide-vue-next'
@@ -65,6 +66,7 @@ import ProjectAuditPage from '@/modules/crm/project-ed/Project/ProjectTabs/Proje
 import ReportsPage from '@/modules/crm/project-ed/ReportsPage.vue'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
 const projectTitleHeading = ref('Проект')
@@ -107,6 +109,12 @@ const onProjectUpdated = async () => {
   if (projectData.value?.id) {
     await loadProjectData(projectData.value.id)
   }
+}
+
+// Обработчик удаления проекта
+function onProjectDeleted(projectId) {
+  // Перенаправляем пользователя на страницу списка проектов
+  router.push('/crm/project-ed/my-projects')
 }
 
 // Загрузка данных проекта

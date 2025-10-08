@@ -122,14 +122,42 @@
             </dl>
         </div>
     </div>
+    
+    <p v-if="isCurrentUserManager" class="text-delete-project">
+        Вы можете 
+        <a href="#" @click.prevent="showDeleteConfirm = true" class="delete-link">
+            удалить
+        </a> 
+        проект.
+    </p>
+    
+    <ModalDelete
+        :show="showDeleteConfirm"
+        :confirm-text="deleteButtonText"
+        :confirm-disabled="deleteTimer > 0"
+        :is-deleting="isDeleting"
+        @confirm="handleDeleteConfirm"
+        @cancel="handleDeleteCancel"
+        @close="handleDeleteCancel"
+    />
 </template>
 
 <script setup>
-import { defineProps, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import ModalDelete from '@/modules/crm/project-ed/components/ModalDelete.vue'
 import { initializePopover, cleanupPopover } from '@/modules/crm/project-ed/components/steps/js/popoverUtils.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
+import { isProjectManager as isProjectManagerUtil } from '@/modules/crm/project-ed/js/projectRoles.js'
+import { apiClient } from '@/js/api/manager'
+import { projectEdEndpoints as endpoints } from '@/modules/crm/project-ed/js/endpoints.js'
+import { useNotifications } from '@/modules/lms/composables/useNotifications'
 
 const props = defineProps({
+  projectData: {
+    type: Object,
+    required: true
+  },
   projectRoles: {
     type: Object,
     default: () => ({
@@ -157,11 +185,23 @@ const props = defineProps({
   performers: {
     type: Array,
     default: () => []
+  },
+  projectData: {
+    type: Object,
+    default: null
   }
 })
 
+const emit = defineEmits(['project-deleted'])
+
 const performerRefs = ref([])
 const popovers = ref([])
+const userStore = useUserStore()
+const { showSuccess, showError } = useNotifications()
+const showDeleteConfirm = ref(false)
+const deleteTimer = ref(5)
+const isDeleting = ref(false)
+let timerInterval = null
 
 function setPerformerRef(el, index) {
   performerRefs.value[index] = el
@@ -197,9 +237,92 @@ watch(() => props.performers, async () => {
   initPerformerPopovers()
 }, { deep: true })
 
+// Проверка, является ли текущий пользователь руководителем проекта
+const isCurrentUserManager = computed(() => isProjectManagerUtil(userStore.user, props.projectData))
+
+// Обработчики модального окна удаления
+async function handleDeleteConfirm() {
+  // Блокируем удаление, пока таймер работает
+  if (deleteTimer.value > 0) {
+    return
+  }
+  
+  if (!props.projectData?.id) {
+    showError('Ошибка: ID проекта не найден')
+    return
+  }
+  
+  isDeleting.value = true
+  showDeleteConfirm.value = false
+  
+  try {
+    // Вызываем API для удаления проекта
+    await apiClient.delete(endpoints.project_ed.projects.delete(props.projectData.id))
+    
+    // Показываем уведомление об успешном удалении
+    showSuccess('Проект успешно удален')
+    
+    // Эмитим событие о том, что проект удален
+    emit('project-deleted', props.projectData.id)
+    
+  } catch (error) {
+    console.error('Ошибка при удалении проекта:', error)
+    
+    // Показываем уведомление об ошибке
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.message || 
+                        error.message || 
+                        'Произошла ошибка при удалении проекта'
+    showError(errorMessage)
+    
+    // Возвращаем модальное окно обратно
+    showDeleteConfirm.value = true
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+function handleDeleteCancel() {
+  showDeleteConfirm.value = false
+  clearDeleteTimer()
+  // Сбрасываем таймер только при отмене
+  deleteTimer.value = 5
+}
+
+function startDeleteTimer() {
+  deleteTimer.value = 5
+  timerInterval = setInterval(() => {
+    deleteTimer.value--
+    console.log('Таймер:', deleteTimer.value) // Отладка
+    if (deleteTimer.value <= 0) {
+      clearDeleteTimer()
+    }
+  }, 1000)
+}
+
+function clearDeleteTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+  // Не сбрасываем таймер на 5, оставляем текущее значение
+}
+
+// Запуск таймера при открытии модального окна
+watch(showDeleteConfirm, (newValue) => {
+  if (newValue) {
+    startDeleteTimer()
+  } else {
+    clearDeleteTimer()
+    // Сбрасываем таймер только при закрытии модального окна
+    deleteTimer.value = 5
+  }
+})
+
 onBeforeUnmount(() => {
   popovers.value.forEach(p => cleanupPopover(p))
   popovers.value = []
+  clearDeleteTimer()
 })
 
 function formatDate(value) {
@@ -219,6 +342,14 @@ function formatDate(value) {
     return String(value)
   }
 }
+
+// Динамический текст кнопки удаления с таймером
+const deleteButtonText = computed(() => {
+  if (deleteTimer.value > 0) {
+    return `Удалить (${deleteTimer.value})`
+  }
+  return 'Удалить'
+})
 </script>
 
 <style scoped lang="scss">
@@ -299,4 +430,25 @@ dd {
   object-fit: cover;
   display: block;
 }
+
+.text-delete-project {
+  padding: .5rem;
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.delete-link {
+  color: #dc3545;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.delete-link:hover {
+  color: #c82333;
+  text-decoration: underline;
+}
+
 </style>

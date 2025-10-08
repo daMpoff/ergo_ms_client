@@ -32,6 +32,8 @@
               :start-date="projectStartDate"
               :end-date="projectEndDate"
               :performers="projectPerformers"
+              :project-data="projectData"
+              @project-deleted="onProjectDeleted"
             />
         </aside>
     </div>
@@ -150,7 +152,13 @@ const onProjectUpdated = (updatedProjectData) => {
   emit('project-updated', updatedProjectData)
 }
 
-const emit = defineEmits(['project-updated'])
+const emit = defineEmits(['project-updated', 'project-deleted'])
+
+// Обработчик удаления проекта
+function onProjectDeleted(projectId) {
+  // Эмитим событие наверх для обработки удаления проекта
+  emit('project-deleted', projectId)
+}
 </script>
 
 <style scoped lang="scss">
