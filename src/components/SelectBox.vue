@@ -215,6 +215,11 @@ function isSelected(val) {
 function handleClickOutside(e) {
     const root = rootEl.value
     if (!root) return
+    // Если клик произошёл внутри телепортированного меню, не закрываем
+    const openMenus = document.querySelectorAll('ul.dropdown-menu.fixed-menu.show')
+    for (const menu of openMenus) {
+        if (menu.contains(e.target)) return
+    }
     if (!root.contains(e.target)) close()
 }
 
@@ -288,7 +293,7 @@ watch(() => props.modelValue, async () => {
     right: 0;
     top: 100%;
     margin-top: .25rem;
-    z-index: 1070;
+    z-index: 12000; /* поверх модалки Bootstrap */
     max-height: 260px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -302,6 +307,7 @@ watch(() => props.modelValue, async () => {
 }
 .fixed-menu {
     position: fixed;
+    z-index: 12000; /* поверх модалки Bootstrap */
     left: auto; /* задаётся inline */
     right: auto; /* сбрасываем наследование */
     top: auto;  /* задаётся inline */
