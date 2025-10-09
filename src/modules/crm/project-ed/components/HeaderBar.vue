@@ -23,7 +23,7 @@
             </div>
             <div class="header-profile" ref="profileRef">
                 <div class="profile-alerts-container" ref="alertsRef">
-                    <div class="profile-alerts" @click="toggleNotifications" role="button" aria-label="Уведомления">
+                    <div class="profile-alerts" :class="{ active: showNotifications }" @click="toggleNotifications" role="button" aria-label="Уведомления">
                         <Bell :size="18" />
                         <span v-if="unreadNotificationsCount > 0" class="badge-count">{{ unreadNotificationsCount >= 99 ? '99+' : unreadNotificationsCount }}</span>
                     </div>
@@ -293,6 +293,7 @@ onBeforeUnmount(() => {
     position: relative;
 }
 .profile-alerts:hover { background-color: var(--color-hover-background); }
+.profile-alerts.active { background-color: var(--color-hover-background); }
 .badge-count {
     position: absolute;
     right: -2px;

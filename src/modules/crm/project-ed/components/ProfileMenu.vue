@@ -121,7 +121,7 @@ function goToServicePage() {
 <style scoped lang="scss">
 .profile-menu {
     position: absolute;
-    top: calc(100% + .5rem);
+    top: 0;
     right: 0;
     min-width: 260px;
     border: 1px solid var(--bs-border-color, #dee2e6);
