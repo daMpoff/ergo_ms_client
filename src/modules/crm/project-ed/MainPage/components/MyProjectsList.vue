@@ -145,8 +145,12 @@ let touchMoveHandler = null
 onMounted(() => {
     if (!scrollContainer.value) return
     wheelHandler = (e) => {
-        // Разрешаем клики по карточкам, но блокируем горизонтальную прокрутку жестами
-        if (e.deltaX !== 0 || e.deltaY !== 0) {
+        // Блокируем только горизонтальную прокрутку, разрешаем вертикальную
+        if (e.deltaX !== 0) {
+            e.preventDefault()
+        }
+        // Если это горизонтальная прокрутка (Shift + колесо мыши), блокируем
+        if (e.shiftKey && e.deltaY !== 0) {
             e.preventDefault()
         }
     }

@@ -2,12 +2,18 @@
     <div class="page-container">
         <Breadcrumbs :items="breadcrumbItems" />
         <div class="page-content">
+            <div class="content-projects-on-apply" v-if="canViewProjectsOnApply && hasProjectsOnApply">
+                <h3>Проекты на утверждении</h3>
+                <ProjectsOnApply :projects="projects" />
+            </div>
+
             <div class="content-projects" v-if="hasMyProjects">
                 <h3>
                     <router-link :to="{ name: 'ProjectEdMyProjects' }" class="h3-link">Мои проекты</router-link>
                 </h3>
                 <MyProjectsList :projects="projects" />
             </div>
+            
             <div class="content-programm">
                 <div class="programm-header" style="display: flex; flex-direction: column; gap: 1rem;">
                     <div class="header-h3">
@@ -41,11 +47,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { Home } from 'lucide-vue-next'
-import MyProjectsList from './components/MyProjectsList.vue'
+import MyProjectsList from './MainPage/components/MyProjectsList.vue'
+import ProjectsOnApply from './MainPage/components/ProjectsOnApply.vue'
 import ProgrammList from './components/ProgrammList.vue'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 import { apiClient } from '@/js/api/manager'
-import { endpoints } from '@/js/api/endpoints'
+import { projectEdEndpoints } from './js/endpoints.js'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 
 // Программа развития: выбранная вкладка
 const selectedProgramTab = ref('events')
@@ -55,8 +63,24 @@ const projects = ref([])
 const isLoadingProjects = ref(false)
 const projectsError = ref('')
 
+// Состояние роли пользователя
+const userStore = useUserStore()
+const userRole = ref('')
+const isLoadingRole = ref(false)
+
 // Вычисляемое свойство для определения наличия проектов
 const hasMyProjects = computed(() => projects.value.length > 0)
+
+// Вычисляемое свойство для определения наличия проектов на утверждении
+const hasProjectsOnApply = computed(() => {
+    return projects.value.some(project => project.status === 'На утверждении')
+})
+
+// Вычисляемое свойство для проверки прав на просмотр проектов на утверждении
+const canViewProjectsOnApply = computed(() => {
+    const role = userRole.value
+    return role === 'Администратор' || role === 'Экспертная группа'
+})
 
 // Настройка breadcrumbs для главной страницы
 const breadcrumbItems = ref([
@@ -86,6 +110,30 @@ const getProjectRole = (project) => {
     return 'Участник'
 }
 
+// Загрузка роли пользователя
+async function loadUserRole() {
+    if (!userStore.user?.id) return
+    
+    isLoadingRole.value = true
+    try {
+        console.log('Загружаем роль пользователя...')
+        const response = await apiClient.get(`/project_ed/profiles/profiles/${userStore.user.id}/`)
+        const profile = response.data
+        
+        if (profile?.role_name) {
+            userRole.value = profile.role_name
+            console.log('Роль пользователя:', userRole.value)
+        } else {
+            userRole.value = 'Пользователь'
+        }
+    } catch (err) {
+        console.error('Ошибка загрузки роли пользователя:', err)
+        userRole.value = 'Пользователь'
+    } finally {
+        isLoadingRole.value = false
+    }
+}
+
 // Загрузка проектов
 async function loadProjects() {
     isLoadingProjects.value = true
@@ -93,7 +141,7 @@ async function loadProjects() {
     
     try {
         console.log('Загружаем проекты в MainPage...')
-        const response = await apiClient.get(endpoints.project_ed.projects.list)
+        const response = await apiClient.get(projectEdEndpoints.project_ed.projects.list)
         const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
         
         // Преобразуем данные API в нужный формат
@@ -119,9 +167,18 @@ async function loadProjects() {
     }
 }
 
-// Загружаем проекты при монтировании
-onMounted(() => {
-    loadProjects()
+// Загружаем данные при монтировании
+onMounted(async () => {
+    // Сначала инициализируем пользователя, если не инициализирован
+    if (!userStore.isInitialized) {
+        await userStore.initializeUser()
+    }
+    
+    // Загружаем роль пользователя и проекты параллельно
+    await Promise.all([
+        loadUserRole(),
+        loadProjects()
+    ])
 })
 </script>
 
