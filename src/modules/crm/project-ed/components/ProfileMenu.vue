@@ -26,7 +26,7 @@
                     <span>Служебная страница</span>
                 </button>
                 <hr v-if="isAdmin" class="dropdown-divider" />
-                <button class="menu-item text-danger" type="button" @click="$emit('navigate', 'logout')">
+                <button class="menu-item text-danger" type="button" @click="goToLogout">
                     <LogOut :size="18" />
                     <span>Выйти</span>
                 </button>
@@ -115,6 +115,10 @@ function goToProfile() {
 
 function goToServicePage() {
     router.push({ name: 'ProjectEdTechnical' })
+}
+
+function goToLogout() {
+    router.push({ name: 'logout' })
 }
 </script>
 
