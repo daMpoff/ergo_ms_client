@@ -123,7 +123,7 @@
         </div>
     </div>
     
-    <p v-if="isCurrentUserManager" class="text-delete-project">
+    <p v-if="isCurrentUserManager && isDraftStatus" class="text-delete-project">
         Вы можете 
         <a href="#" @click.prevent="showDeleteConfirm = true" class="delete-link">
             удалить
@@ -239,6 +239,11 @@ watch(() => props.performers, async () => {
 
 // Проверка, является ли текущий пользователь руководителем проекта
 const isCurrentUserManager = computed(() => isProjectManagerUtil(userStore.user, props.projectData))
+
+// Доступность удаления только в статусе draft
+const isDraftStatus = computed(() => {
+  return !!props.projectData && props.projectData.status === 'draft'
+})
 
 // Обработчики модального окна удаления
 async function handleDeleteConfirm() {
