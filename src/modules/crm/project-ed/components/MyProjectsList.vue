@@ -42,7 +42,7 @@
                         </div>
                         <div class="mt-auto d-flex align-items-center justify-content-between text-muted small">
                             <span class="text-truncate">{{ formatCreated(project) }}</span>
-                            <span class="badge bg-secondary text-wrap ms-2">{{ project.status }}</span>
+                            <span class="badge text-wrap ms-2" :class="getStatusClass(project.status)">{{ getStatusLabel(project.status) }}</span>
                         </div>
                     </div>
                 </div>
@@ -115,6 +115,27 @@ const scrollRight = () => {
 const formatCreated = (project) => {
     const created = project?.createdAt || project?.created_at || project?.created || project?.createdDate
     return created ? getRelativeTime(created) : ''
+}
+
+// Функции для работы со статусами (работаем с русскими названиями, которые приходят из MainPage.vue)
+const getStatusLabel = (status) => {
+    // Статус уже приходит в русском формате из MainPage.vue, просто возвращаем его
+    return status || ''
+}
+
+const getStatusClass = (status) => {
+    // Маппинг русских названий статусов на Bootstrap классы
+    const map = {
+        'Черновик': 'bg-secondary',
+        'На утверждении': 'bg-warning',
+        'Отклонен': 'bg-danger',
+        'В работе': 'bg-primary',
+        'Завершен': 'bg-success'
+    }
+    const result = map[status] || 'bg-secondary'
+    // Отладочная информация
+    console.log(`Статус: "${status}" -> Класс: "${result}"`)
+    return result
 }
 
 // Блокируем ручную прокрутку (колесо мыши/тач) — оставляем только кнопки
