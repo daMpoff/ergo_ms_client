@@ -18,7 +18,23 @@
         </div>
         
         <div class="notification-list" ref="notificationList">
-            <div v-if="notifications.length === 0" class="empty-state">
+            <!-- Индикатор загрузки -->
+            <div v-if="isLoading" class="loading-state">
+                <div class="spinner"></div>
+                <p class="loading-text">Загрузка уведомлений...</p>
+            </div>
+            
+            <!-- Состояние ошибки -->
+            <div v-else-if="error" class="error-state">
+                <AlertCircle :size="48" class="error-icon" />
+                <p class="error-text">{{ error }}</p>
+                <button class="retry-button" @click="loadNotifications">
+                    Попробовать снова
+                </button>
+            </div>
+            
+            <!-- Пустое состояние -->
+            <div v-else-if="notifications.length === 0" class="empty-state">
                 <Bell :size="48" class="empty-icon" />
                 <p class="empty-text">Нет новых уведомлений</p>
             </div>
@@ -27,7 +43,7 @@
                 v-for="notification in notifications" 
                 :key="notification.id"
                 class="notification-item"
-                :class="{ 'unread': !notification.read }"
+                :class="{ 'unread': !notification.is_read }"
                 @click="markAsRead(notification.id)"
             >
                 <div class="notification-icon" :data-type="notification.type">
@@ -37,12 +53,12 @@
                 <div class="notification-content">
                     <div class="notification-header-content">
                         <h4 class="notification-subject">{{ notification.title }}</h4>
-                        <span class="notification-time">{{ formatTime(notification.createdAt) }}</span>
+                        <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
                     </div>
                     <p class="notification-message">{{ notification.message }}</p>
-                    <div v-if="notification.actions" class="notification-actions-item">
+                    <div v-if="notification.payload?.actions" class="notification-actions-item">
                         <button 
-                            v-for="action in notification.actions"
+                            v-for="action in notification.payload.actions"
                             :key="action.label"
                             class="action-link"
                             @click.stop="handleAction(notification.id, action)"
@@ -53,7 +69,7 @@
                 </div>
                 
                 <div class="notification-status">
-                    <div v-if="!notification.read" class="unread-indicator"></div>
+                    <div v-if="!notification.is_read" class="unread-indicator"></div>
                 </div>
             </div>
         </div>
@@ -68,8 +84,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Bell, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-vue-next'
+import { useNotifications } from '../js/useNotifications'
 
 const props = defineProps({
     visible: {
@@ -80,100 +97,63 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'action'])
 
-const notifications = ref([
-    {
-        id: 1,
-        type: 'info',
-        title: 'Новый проект создан',
-        message: 'Проект "Анализ рынка" успешно создан и готов к работе',
-        read: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 15), // 15 минут назад
-        actions: [
-            { label: 'Перейти к проекту', action: 'navigate' }
-        ]
-    },
-    {
-        id: 2,
-        type: 'warning',
-        title: 'Срок выполнения приближается',
-        message: 'До завершения проекта "Исследование пользователей" осталось 2 дня',
-        read: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 часа назад
-        actions: [
-            { label: 'Посмотреть проект', action: 'view' },
-            { label: 'Продлить срок', action: 'extend' }
-        ]
-    },
-    {
-        id: 3,
-        type: 'success',
-        title: 'Задача выполнена',
-        message: 'Задача "Сбор данных" в проекте "Анализ конкурентов" завершена',
-        read: true,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 часа назад
-        actions: [
-            { label: 'Посмотреть результаты', action: 'results' }
-        ]
-    },
-    {
-        id: 4,
-        type: 'error',
-        title: 'Ошибка при обработке',
-        message: 'Не удалось обработать файл data.csv. Проверьте формат файла',
-        read: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 часов назад
-        actions: [
-            { label: 'Повторить обработку', action: 'retry' },
-            { label: 'Посмотреть логи', action: 'logs' }
-        ]
-    }
-])
+// Используем composable для работы с уведомлениями
+const {
+    notifications,
+    isLoading,
+    error,
+    unreadCount,
+    loadNotifications,
+    markAsRead: markAsReadApi,
+    markAllAsRead: markAllAsReadApi,
+    formatTime,
+    getNotificationIcon: getNotificationIconName
+} = useNotifications()
 
-const unreadCount = computed(() => {
-    return notifications.value.filter(n => !n.read).length
+// Получаем компонент иконки по имени
+const getNotificationIcon = (type) => {
+    const iconName = getNotificationIconName(type)
+    const icons = {
+        Info,
+        AlertTriangle,
+        CheckCircle,
+        AlertCircle,
+        Bell
+    }
+    return icons[iconName] || Bell
+}
+
+// Загружаем уведомления при монтировании компонента
+onMounted(() => {
+    loadNotifications()
 })
 
-const getNotificationIcon = (type) => {
-    const icons = {
-        info: Info,
-        warning: AlertTriangle,
-        success: CheckCircle,
-        error: AlertCircle
+// Отслеживаем изменения видимости для обновления данных
+watch(() => props.visible, (newVisible) => {
+    if (newVisible) {
+        loadNotifications()
     }
-    return icons[type] || Bell
-}
+})
 
-const formatTime = (date) => {
-    const now = new Date()
-    const diff = now - date
-    const minutes = Math.floor(diff / (1000 * 60))
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    
-    if (minutes < 60) {
-        return `${minutes} мин назад`
-    } else if (hours < 24) {
-        return `${hours} ч назад`
-    } else {
-        return `${days} дн назад`
+// Отметить уведомление как прочитанное
+const markAsRead = async (notificationId) => {
+    const success = await markAsReadApi(notificationId)
+    if (success) {
+        emit('action', { notificationId, action: 'read' })
     }
 }
 
-const markAsRead = (notificationId) => {
-    const notification = notifications.value.find(n => n.id === notificationId)
-    if (notification && !notification.read) {
-        notification.read = true
+// Отметить все как прочитанные
+const markAllAsRead = async () => {
+    const updatedCount = await markAllAsReadApi()
+    if (updatedCount > 0) {
+        emit('action', { action: 'markAllRead', count: updatedCount })
     }
-}
-
-const markAllAsRead = () => {
-    notifications.value.forEach(notification => {
-        notification.read = true
-    })
 }
 
 const clearAll = () => {
     notifications.value = []
+    emit('action', { action: 'clearAll' })
 }
 
 const handleAction = (notificationId, action) => {
@@ -250,6 +230,71 @@ export default {
     flex: 1;
     overflow-y: auto;
     max-height: 340px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--bs-secondary, #6c757d);
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--bs-border-color, #dee2e6);
+    border-top: 2px solid var(--bs-primary, #0d6efd);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin: 0;
+    font-size: 14px;
+}
+
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--bs-danger, #dc3545);
+}
+
+.error-icon {
+    margin-bottom: 12px;
+    opacity: 0.7;
+}
+
+.error-text {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    text-align: center;
+}
+
+.retry-button {
+    padding: 6px 12px;
+    border: 1px solid var(--bs-danger, #dc3545);
+    border-radius: .375rem;
+    background: #fff;
+    color: var(--bs-danger, #dc3545);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    
+    &:hover {
+        background: var(--bs-danger, #dc3545);
+        color: #fff;
+    }
 }
 
 .empty-state {

@@ -54,8 +54,10 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { UserRound, Bell, Plus, Search } from 'lucide-vue-next'
 import ProfileMenu from './ProfileMenu.vue'
-import NotificationContainer from '../NotificationContainer.vue'
+import NotificationContainer from '../Profile/NotificationContainer.vue'
 import { useUserStore } from '@/core/cms/js/userStore.js'
+import { apiClient } from '@/js/api/manager.js'
+import { projectEdEndpoints } from '../js/endpoints.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -74,8 +76,8 @@ const isCreatePage = computed(() => {
 
 const avatarUrl = computed(() => userStore.avatarUrl)
 
-// Для демонстрации - количество непрочитанных уведомлений
-const unreadNotificationsCount = ref(3)
+// Количество непрочитанных уведомлений
+const unreadNotificationsCount = ref(0)
 
 const incrementAlerts = () => {
     if (alertsCount.value < 99) {
@@ -103,6 +105,12 @@ const toggleProfileMenu = () => {
 
 const handleNotificationAction = (actionData) => {
     console.log('Notification action:', actionData)
+    
+    // Обновляем счетчик после действий с уведомлениями
+    if (actionData.action === 'read' || actionData.action === 'markAllRead') {
+        refreshUnreadCount()
+    }
+    
     // Здесь можно добавить логику обработки действий уведомлений
     if (actionData.action === 'viewAll') {
         // Переход на страницу всех уведомлений
@@ -145,14 +153,31 @@ const onMenuNavigate = (action) => {
     showProfileMenu.value = false
 }
 
+let pollTimer = null
+const refreshUnreadCount = async () => {
+    try {
+        const res = await apiClient.get(projectEdEndpoints.project_ed.notifications.unreadCount)
+        const count = (res?.data?.count ?? res?.data ?? 0)
+        unreadNotificationsCount.value = Number.isFinite(count) ? count : 0
+    } catch (e) {
+        // Тихо игнорируем ошибки загрузки счётчика
+        console.debug('Ошибка загрузки счетчика уведомлений:', e.message)
+    }
+}
+
 onMounted(() => {
     document.addEventListener('click', closeOnOutside)
     document.addEventListener('keydown', closeOnEsc)
+    // Первичная загрузка счётчика уведомлений
+    refreshUnreadCount()
+    // Периодическое обновление раз в 30 секунд
+    pollTimer = setInterval(refreshUnreadCount, 30000)
 })
 
 onBeforeUnmount(() => {
     document.removeEventListener('click', closeOnOutside)
     document.removeEventListener('keydown', closeOnEsc)
+    if (pollTimer) clearInterval(pollTimer)
 })
 </script>
 

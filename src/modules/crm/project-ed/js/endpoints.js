@@ -60,6 +60,13 @@ export const projectEdEndpoints = {
             detail: (id) => `project_ed/profiles/profiles/${id}/`,
             leadership: 'project_ed/profiles/profiles/leadership/',
             userProjects: (id) => `project_ed/profiles/profiles/${id}/projects/`,
+        },
+        notifications: {
+            list: 'project_ed/notifications/',
+            detail: (id) => `project_ed/notifications/${id}/`,
+            unreadCount: 'project_ed/notifications/unread_count/',
+            markRead: (id) => `project_ed/notifications/${id}/mark_read/`,
+            markAllRead: 'project_ed/notifications/mark_all_read/',
         }
     }
 };
