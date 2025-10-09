@@ -4,20 +4,17 @@
         <Breadcrumbs :items="breadcrumbItems" class="mt-3" />
         <h2 class="mt-3">{{ projectTitleHeading }}</h2>
 
-        <!-- Состояние загрузки -->
         <div v-if="isLoading" class="loading-state mt-3">
             <div class="spinner-border text-primary" role="status" aria-label="Загрузка"></div>
             <div class="loading-text mt-2">Загрузка проекта…</div>
         </div>
 
-        <!-- Основной контент -->
         <template v-else>
-            <!-- Полоса с переключателями страниц -->
             <div class="project-navigation mt-2">
                 <nav class="nav-tabs-container">
                     <div class="nav-tabs">
                         <button 
-                            v-for="tab in tabs" 
+                            v-for="tab in visibleTabs" 
                             :key="tab.id" 
                             class="nav-tab"
                             :class="{ active: activeTab === tab.id }"
@@ -31,7 +28,6 @@
                 </nav>
             </div>
             
-            <!-- Контент активной вкладки -->
             <div class="tab-content mt-3">
                 <ProjectOverview 
                   v-if="activeTab === 'overview'" 
@@ -43,7 +39,7 @@
                   @project-deleted="onProjectDeleted"
                 />
                 <ProjectTeam v-else-if="activeTab === 'team'" :project-data="projectData" />
-                <ProjectAuditPage v-else-if="activeTab === 'activity'" :project-data="projectData" />
+                <ProjectAuditPage v-else-if="activeTab === 'activity' && canSeeActivityTab" :project-data="projectData" />
                 <ReportsPage v-else-if="activeTab === 'reports'" />
             </div>
         </template>
@@ -51,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
@@ -94,6 +90,26 @@ const tabs = ref([
     { id: 'reports', name: 'Отчеты', icon: FileSpreadsheet },
     { id: 'activity', name: 'Активность', icon: Activity, count: undefined },
 ])
+
+// Право доступа к вкладке "Активность": только для ролей Руководитель, Куратор, Заказчик в рамках проекта
+const canSeeActivityTab = computed(() => {
+  const currentUserId = userInfo.value?.id
+  const pd = projectData.value
+  if (!currentUserId || !pd) return false
+  return pd.manager_id === currentUserId || pd.curator_id === currentUserId || pd.customer_id === currentUserId
+})
+
+// Отфильтрованный список вкладок в зависимости от прав
+const visibleTabs = computed(() => {
+  return tabs.value.filter((tab) => tab.id !== 'activity' || canSeeActivityTab.value)
+})
+
+// Если вкладка "Активность" недоступна, а она активна — переключаем на "Обзор"
+watch([canSeeActivityTab, activeTab], ([canSee], currentTab) => {
+  if (currentTab === 'activity' && !canSee) {
+    activeTab.value = 'overview'
+  }
+})
 
 // Обработчик события переключения вкладки
 function handleTabSwitch(event) {
@@ -141,31 +157,14 @@ const loadProjectData = async (projectIdToLoad) => {
     if (projectDataLoaded) {
       projectData.value = projectDataLoaded
       
-      // Отладочная информация
-      console.log('=== ProjectPage: Отладка названия проекта ===')
-      console.log('ProjectPage: Загружены данные проекта:', projectDataLoaded)
-      console.log('ProjectPage: projectDataLoaded.name =', projectDataLoaded?.name)
-      console.log('ProjectPage: projectDataLoaded.short_name =', projectDataLoaded?.short_name)
-      console.log('ProjectPage: projectDataLoaded.name_clarification =', projectDataLoaded?.name_clarification)
-      console.log('ProjectPage: Владелец ID:', projectDataLoaded?.owner_id)
-      console.log('ProjectPage: Руководитель ID:', projectDataLoaded?.manager_id)
-      console.log('ProjectPage: Куратор ID:', projectDataLoaded?.curator_id)
-      console.log('ProjectPage: Заказчик ID:', projectDataLoaded?.customer_id)
-      console.log('ProjectPage: Исполнители:', projectDataLoaded?.performers)
-      console.log('ProjectPage: Роли пользователей:', projectDataLoaded?.roles)
-      
       // Заголовок страницы: полное название без уточнения
       const headingBase = projectDataLoaded?.name || projectDataLoaded?.short_name || 'Проект'
       projectTitleHeading.value = headingBase
-      console.log('ProjectPage: Заголовок страницы (headingBase):', headingBase)
       
       // Хлебные крошки: как раньше, с возможным уточнением
       const crumbBase = projectDataLoaded?.short_name || projectDataLoaded?.name || 'Проект'
       const clarification = projectDataLoaded?.name_clarification ? ` ${projectDataLoaded.name_clarification}` : ''
       projectTitleBreadcrumb.value = `${crumbBase}${clarification}`
-      console.log('ProjectPage: Хлебные крошки (crumbBase):', crumbBase)
-      console.log('ProjectPage: Уточнение (clarification):', clarification)
-      console.log('ProjectPage: Итоговые хлебные крошки:', projectTitleBreadcrumb.value)
     }
   } catch (e) {
     console.error('Ошибка загрузки данных проекта:', e)

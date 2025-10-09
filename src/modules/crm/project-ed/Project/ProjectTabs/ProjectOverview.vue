@@ -1,7 +1,7 @@
 <template>
     <div class="overview-grid">
         <div class="overview-main">
-            <ProjectDashboard :project-data="projectData" />
+            <ProjectDashboard v-if="canSeePrivileged" :project-data="projectData" />
             <ProjectAudit :project-data="projectData" />
 
             <ProjectInfoEvent 
@@ -138,6 +138,14 @@ const projectEndDate = computed(() => {
 
 const projectPerformers = computed(() => {
   return Array.isArray(props.projectData?.performers) ? props.projectData.performers : []
+})
+
+// Доступ к дашборду проекта: только руководитель, куратор или заказчик проекта
+const canSeePrivileged = computed(() => {
+  const currentUserId = props.userInfo?.id
+  const pd = props.projectData
+  if (!currentUserId || !pd) return false
+  return pd.manager_id === currentUserId || pd.curator_id === currentUserId || pd.customer_id === currentUserId
 })
 
 // Обработчик события отправки проекта на рассмотрение
