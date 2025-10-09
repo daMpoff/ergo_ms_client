@@ -1,7 +1,7 @@
 <template>
     <div v-if="isProjectManager" class="action-bar">
         <button 
-            @click="submitForReview" 
+            @click="showConfirmModal" 
             :disabled="isSubmitting || !canSubmit"
             class="btn btn-primary btn-sm w-100"
         >
@@ -12,6 +12,19 @@
             {{ isSubmitting ? 'Отправка...' : 'Отправить на рассмотрение' }}
         </button>
     </div>
+
+    <!-- Модальное окно подтверждения -->
+    <ConfirmDialog
+        :show="showModal"
+        title="Отправка проекта на рассмотрение"
+        :message="confirmMessage"
+        confirm-text="Да, отправить"
+        cancel-text="Отмена"
+        variant="warning"
+        @confirm="submitForReview"
+        @cancel="showModal = false"
+        @close="showModal = false"
+    />
 </template>
 
 <script setup>
@@ -21,6 +34,7 @@ import { useToast } from 'vue-toastification'
 import { useUserStore } from '@/core/cms/js/userStore.js'
 import { apiClient } from '@/js/api/manager.js'
 import { isProjectManager as isProjectManagerUtil } from '@/modules/crm/project-ed/js/projectRoles.js'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const props = defineProps({
   projectData: {
@@ -35,6 +49,9 @@ const toast = useToast()
 const userStore = useUserStore()
 
 const isSubmitting = ref(false)
+const showModal = ref(false)
+
+const confirmMessage = 'После отправки проекта на рассмотрение экспертной группе, проект будет недоступен для редактирования до завершения рассмотрения. Вы уверены, что хотите отправить проект на рассмотрение?'
 
 // Проверяем, является ли текущий пользователь руководителем проекта
 const isProjectManager = computed(() => isProjectManagerUtil(userStore.user, props.projectData))
@@ -48,15 +65,21 @@ const canSubmit = computed(() => {
   return status === 'draft'
 })
 
+const showConfirmModal = () => {
+  if (!canSubmit.value || isSubmitting.value) return
+  showModal.value = true
+}
+
 const submitForReview = async () => {
   if (!canSubmit.value || isSubmitting.value) return
   
   try {
     isSubmitting.value = true
+    showModal.value = false
     
     // Отправляем запрос на изменение статуса проекта
     const response = await apiClient.patch(
-      `/project_ed/projects/projects/${props.projectData.id}/`,
+      `project_ed/projects/${props.projectData.id}/`,
       { status: 'pending' }
     )
     

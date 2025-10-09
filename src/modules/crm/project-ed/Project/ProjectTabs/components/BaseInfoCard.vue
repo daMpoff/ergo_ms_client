@@ -18,8 +18,10 @@
         <button
           type="button"
           class="icon-btn"
+          :class="{ 'icon-btn--disabled': !canEdit }"
           @click="handleEditClick"
-          :title="'Редактировать раздел'"
+          :disabled="!canEdit"
+          :title="canEdit ? 'Редактировать раздел' : 'Редактирование недоступно во время рассмотрения'"
           aria-label="Редактировать раздел"
         >
           <Pencil :size="18" />
@@ -54,6 +56,12 @@ const emit = defineEmits(['edit-click', 'warnings-click'])
 const userStore = useUserStore()
 
 const isProjectManager = computed(() => isProjectManagerUtil(userStore.user, props.projectData))
+
+// Проверяем, можно ли редактировать проект
+const canEdit = computed(() => {
+  if (!props.projectData) return false
+  return props.projectData.status === 'draft'
+})
 
 const handleEditClick = () => {
   emit('edit-click')
@@ -106,6 +114,16 @@ const handleEditClick = () => {
 
 .icon-btn--danger {
   color: var(--bs-danger);
+}
+
+.icon-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-btn--disabled:hover {
+  background-color: transparent;
+  transform: none;
 }
 </style>
 
