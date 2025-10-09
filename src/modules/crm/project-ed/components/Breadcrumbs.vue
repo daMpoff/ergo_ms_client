@@ -97,7 +97,7 @@ const breadcrumbs = computed(() => {
     margin: 0;
     padding: 0;
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
 }
 
 .breadcrumb-item {
@@ -124,7 +124,7 @@ const breadcrumbs = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     text-decoration: none;
 }
 
@@ -132,7 +132,7 @@ const breadcrumbs = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #212529;
+    color: var(--color-primary-text);
     font-weight: 500;
 }
 
@@ -141,7 +141,7 @@ const breadcrumbs = computed(() => {
     align-items: center;
     justify-content: center;
     margin: 0 0.5rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     user-select: none;
 }
 
@@ -153,7 +153,7 @@ const breadcrumbs = computed(() => {
 
 .breadcrumb-item.active {
     .breadcrumb-current {
-        color: #212529;
+        color: var(--color-primary-text);
         font-weight: 500;
     }
 }

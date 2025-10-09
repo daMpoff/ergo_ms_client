@@ -110,7 +110,7 @@ watch(() => userStore.user?.id, async (newId, oldId) => {
 
 function goToProfile() {
     const currentUserId = userStore.user?.id
-    router.push({ name: 'ProjectEdProfile', params: { userId: currentUserId } })
+    router.push(`/project-ed/profile/${currentUserId}`)
 }
 
 function goToServicePage() {
@@ -128,9 +128,9 @@ function goToLogout() {
     top: 0;
     right: 0;
     min-width: 260px;
-    border: 1px solid var(--bs-border-color, #dee2e6);
+    border: 1px solid var(--color-border);
     border-radius: .75rem;
-    background-color: #fff;
+    background-color: var(--color-primary-background);
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
     z-index: 1000;
     padding: .5rem;
@@ -148,8 +148,8 @@ function goToLogout() {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
+    background-color: var(--color-primary-background);
+    border: 1px solid var(--color-border);
     overflow: hidden;
 }
 .avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -166,18 +166,18 @@ function goToLogout() {
     border-radius: .5rem;
     border: none;
     background: transparent;
-    color: var(--bs-body-color, #212529);
+    color: var(--color-primary-text);
     cursor: pointer;
     transition: background-color .15s ease, color .15s ease;
 }
-.menu-item:hover { background-color: var(--color-hover-background, #f8f9fa); }
+.menu-item:hover { background-color: var(--color-hover-background); }
 
 .dropdown-divider {
     height: 0;
     margin: .25rem 0;
     overflow: visible;
     border: 0;
-    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    border-top: 1px solid var(--color-border);
 }
 
 .fade-scale-enter-active, .fade-scale-leave-active { transition: all .12s ease; }

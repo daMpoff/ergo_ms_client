@@ -161,8 +161,8 @@ const arrowStyle = computed(() => {
 
 <style scoped lang="scss">
 .simple-tooltip {
-    background: white;
-    border: 1px solid #dee2e6;
+    background: var(--color-primary-background);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     position: relative;
@@ -176,7 +176,7 @@ const arrowStyle = computed(() => {
     height: 0;
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-top: 6px solid #dee2e6;
+    border-top: 6px solid var(--color-border);
     
     &::after {
         content: '';
@@ -193,7 +193,7 @@ const arrowStyle = computed(() => {
     &:not([style*="border-bottom"]) {
         &::after {
             bottom: 1px;
-            border-top: 5px solid white;
+            border-top: 5px solid var(--color-primary-background);
         }
     }
     
@@ -201,7 +201,7 @@ const arrowStyle = computed(() => {
     &[style*="border-bottom"] {
         &::after {
             top: 1px;
-            border-bottom: 5px solid white;
+            border-bottom: 5px solid var(--color-primary-background);
         }
     }
 }
@@ -210,7 +210,7 @@ const arrowStyle = computed(() => {
     padding: 0.75rem;
     font-size: 0.875rem;
     line-height: 1.4;
-    color: #495057;
+    color: var(--color-primary-text);
 }
 
 // Анимации

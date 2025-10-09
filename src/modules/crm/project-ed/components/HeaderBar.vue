@@ -205,13 +205,13 @@ onBeforeUnmount(() => {
     padding: .375rem .75rem;
     border-radius: 2rem;
     background-color: var(--color-header-background);
-    color: var(--bs-body-color, #212529);
+    color: var(--color-primary-text);
     cursor: pointer;
     transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
 }
 .button-create:hover {
     background-color: var(--color-hover-background, #f8f9fa);
-    border-color: var(--bs-border-color, #ced4da);
+    border-color: var(--color-border);
 }
 .header-profile {
     position: relative;
@@ -229,14 +229,14 @@ onBeforeUnmount(() => {
     width: 100%;
     height: 38px;
     padding: .375rem 2.25rem .375rem .875rem;
-    border: 1px solid var(--bs-border-color, #dee2e6);
+    border: 1px solid var(--color-border);
     border-radius: 9999px;
-    background-color: #fff;
-    color: var(--bs-body-color, #212529);
+    background-color: var(--color-primary-background);
+    color: var(--color-primary-text);
     outline: none;
     transition: box-shadow .15s ease, border-color .15s ease;
 }
-.search-input::placeholder { color: #adb5bd; }
+.search-input::placeholder { color: var(--color-secondary-text); }
 .search-input:focus {
     border-color: var(--bs-primary, #0d6efd);
     box-shadow: 0 0 0 .2rem rgba(13,110,253,.15);
@@ -254,11 +254,11 @@ onBeforeUnmount(() => {
     border: none;
     border-radius: 50%;
     background: transparent;
-    color: var(--bs-body-color, #212529);
+    color: var(--color-primary-text);
     cursor: pointer;
     transition: background-color .15s ease, color .15s ease;
 }
-.search-button:hover { background-color: var(--color-hover-background, #f8f9fa); }
+.search-button:hover { background-color: var(--color-hover-background); }
 .profile-avatar {
     width: 36px;
     height: 36px;
@@ -266,8 +266,8 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
+    background-color: var(--color-primary-background);
+    border: 1px solid var(--color-border);
     overflow: hidden;
 }
 .avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -303,7 +303,7 @@ onBeforeUnmount(() => {
     padding: 0 4px;
     border-radius: 9999px;
     background-color: var(--bs-danger, #dc3545);
-    color: #fff;
+    color: var(--color-primary-text);
     font-size: 10px;
     line-height: 16px;
     display: flex;

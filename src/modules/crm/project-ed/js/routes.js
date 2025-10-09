@@ -120,7 +120,7 @@ export default {
     }
   },
   "ProjectEdProfile": {
-    "path": "/profile/:userId",
+    "path": "/project-ed/profile/:userId",
     "component": "@/modules/crm/project-ed/Profile/ProfilePage.vue",
     "meta": {
       "title": "Профиль",
