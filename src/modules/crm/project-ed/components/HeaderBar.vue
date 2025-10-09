@@ -22,16 +22,27 @@
                 </div>
             </div>
             <div class="header-profile" ref="profileRef">
-                <div class="profile-alerts" @click="incrementAlerts" role="button" aria-label="Уведомления">
-                    <Bell :size="18" />
-                    <span v-if="alertsCount > 0" class="badge-count">{{ alertsCount >= 99 ? '99+' : alertsCount }}</span>
+                <div class="profile-alerts-container" ref="alertsRef">
+                    <div class="profile-alerts" @click="toggleNotifications" role="button" aria-label="Уведомления">
+                        <Bell :size="18" />
+                        <span v-if="unreadNotificationsCount > 0" class="badge-count">{{ unreadNotificationsCount >= 99 ? '99+' : unreadNotificationsCount }}</span>
+                    </div>
+                    <div class="alerts-menu-wrapper" v-show="showNotifications">
+                        <NotificationContainer 
+                            :visible="showNotifications" 
+                            @close="showNotifications = false"
+                            @action="handleNotificationAction"
+                        />
+                    </div>
                 </div>
-                <div class="profile-avatar" role="button" aria-haspopup="dialog" aria-expanded="showProfileMenu ? 'true' : 'false'" @click="toggleProfileMenu">
-                    <img v-if="avatarUrl" :src="avatarUrl" alt="Аватар" class="avatar-img" />
-                    <UserRound v-else :size="18" />
-                </div>
-                <div class="profile-menu-wrapper" v-show="showProfileMenu">
-                    <ProfileMenu :visible="showProfileMenu" @navigate="onMenuNavigate" />
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar" role="button" aria-haspopup="dialog" aria-expanded="showProfileMenu ? 'true' : 'false'" @click="toggleProfileMenu">
+                        <img v-if="avatarUrl" :src="avatarUrl" alt="Аватар" class="avatar-img" />
+                        <UserRound v-else :size="18" />
+                    </div>
+                    <div class="profile-menu-wrapper" v-show="showProfileMenu">
+                        <ProfileMenu :visible="showProfileMenu" @navigate="onMenuNavigate" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -43,6 +54,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { UserRound, Bell, Plus, Search } from 'lucide-vue-next'
 import ProfileMenu from './ProfileMenu.vue'
+import NotificationContainer from '../NotificationContainer.vue'
 import { useUserStore } from '@/core/cms/js/userStore.js'
 
 const route = useRoute()
@@ -52,7 +64,9 @@ const userStore = useUserStore()
 
 const alertsCount = ref(0)
 const showProfileMenu = ref(false)
+const showNotifications = ref(false)
 const profileRef = ref(null)
+const alertsRef = ref(null)
 
 const isCreatePage = computed(() => {
     return route.name === 'ProjectEdCreate'
@@ -60,9 +74,19 @@ const isCreatePage = computed(() => {
 
 const avatarUrl = computed(() => userStore.avatarUrl)
 
+// Для демонстрации - количество непрочитанных уведомлений
+const unreadNotificationsCount = ref(3)
+
 const incrementAlerts = () => {
     if (alertsCount.value < 99) {
         alertsCount.value += 1
+    }
+}
+
+const toggleNotifications = () => {
+    showNotifications.value = !showNotifications.value
+    if (showNotifications.value) {
+        showProfileMenu.value = false
     }
 }
 
@@ -72,19 +96,40 @@ const navigateToCreate = () => {
 
 const toggleProfileMenu = () => {
     showProfileMenu.value = !showProfileMenu.value
+    if (showProfileMenu.value) {
+        showNotifications.value = false
+    }
+}
+
+const handleNotificationAction = (actionData) => {
+    console.log('Notification action:', actionData)
+    // Здесь можно добавить логику обработки действий уведомлений
+    if (actionData.action === 'viewAll') {
+        // Переход на страницу всех уведомлений
+        console.log('Переход на страницу всех уведомлений')
+    } else {
+        // Обработка конкретных действий уведомления
+        console.log(`Действие ${actionData.action} для уведомления ${actionData.notificationId}`)
+    }
 }
 
 const closeOnOutside = (event) => {
-    const root = profileRef.value
-    if (!root) return
-    if (!root.contains(event.target)) {
+    const profileRoot = profileRef.value
+    const alertsRoot = alertsRef.value
+    
+    if (profileRoot && !profileRoot.contains(event.target)) {
         showProfileMenu.value = false
+    }
+    
+    if (alertsRoot && !alertsRoot.contains(event.target)) {
+        showNotifications.value = false
     }
 }
 
 const closeOnEsc = (event) => {
     if (event.key === 'Escape') {
         showProfileMenu.value = false
+        showNotifications.value = false
     }
 }
 
@@ -201,6 +246,14 @@ onBeforeUnmount(() => {
     overflow: hidden;
 }
 .avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile-alerts-container {
+    position: relative;
+}
+
+.profile-avatar-container {
+    position: relative;
+}
+
 .profile-alerts {
     width: 36px;
     height: 36px;
@@ -232,7 +285,26 @@ onBeforeUnmount(() => {
     justify-content: center;
     z-index: 1;
 }
-.profile-menu-wrapper { position: absolute; top: 100%; right: 0; }
+.profile-menu-wrapper { 
+    position: absolute !important; 
+    top: 100% !important; 
+    right: 0 !important; 
+    margin-top: .5rem; 
+}
+.alerts-menu-wrapper { 
+    position: absolute !important; 
+    top: 100% !important; 
+    right: 0 !important; 
+    margin-top: .5rem; 
+}
+
+.alerts-menu-wrapper .notification-container {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+}
 </style>
 
 
