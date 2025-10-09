@@ -89,7 +89,6 @@ async function loadRole(userId) {
             userRole.value = 'Роль не определена'
         }
     } catch (e) {
-        console.error('Ошибка загрузки роли пользователя:', e)
         userRole.value = 'Роль не определена'
     }
     isAdmin.value = admin

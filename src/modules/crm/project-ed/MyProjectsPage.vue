@@ -9,7 +9,6 @@
 
             <h3 class="page-title">Мои проекты</h3>
 
-            <!-- Filters -->
             <div class="filters-section">
                 <div class="row">
                     <div class="col-md-6 col-lg-4">
@@ -39,7 +38,6 @@
             </div>
         </div>
 
-        <!-- Projects List -->
         <div class="container">
             <div v-if="isLoading" class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
@@ -137,6 +135,7 @@ async function loadProjects() {
             role: project.user_role || getProjectRole(project), // Используем роль из API
             status: getProjectStatus(project.status),
             executors_count: project.executors_count || 0, // Добавляем количество исполнителей
+            executors: project.performers || [], // Добавляем данные об исполнителях
             created_at: project.created_at,
             updated_at: project.updated_at
         }))
@@ -222,7 +221,7 @@ onMounted(async () => {
 
 .page-title {
     margin: 1rem 0;
-    color: #333;
+    color: var(--color-primary-text);
 }
 
 .filters-section {
@@ -237,5 +236,4 @@ onMounted(async () => {
     flex-direction: column;
     gap: 1rem;
 }
-/* Стили элемента проекта перенесены в ProjectListItem */
 </style>

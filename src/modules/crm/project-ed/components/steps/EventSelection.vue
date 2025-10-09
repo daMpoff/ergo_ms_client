@@ -192,17 +192,20 @@
             @mouseenter="handleTooltipMouseEnter"
             @mouseleave="handleTooltipMouseLeave"
         >
-            <LeadersList 
-                :leaders="hoveredEvent?.leaders || []" 
+            <UsersList 
+                :users="hoveredEvent?.leaders || []" 
+                type="leaders"
+                :max-displayed="3"
                 @open-modal="openLeadersModal"
             />
         </SimpleTooltip>
 
         <!-- Модальное окно с полным списком руководителей -->
-        <LeadersModal
-            v-if="leadersModalVisible"
-            :visible="true"
-            :leaders="modalLeaders"
+        <UserListModal
+            :visible="leadersModalVisible"
+            :users="modalLeaders"
+            type="leaders"
+            modal-id="leadersModal"
             @close="closeLeadersModal"
         />
 
@@ -218,11 +221,12 @@ import {
     ChevronLeft, 
     ChevronRight, 
     LayoutGrid,
-    List
+    List,
+    X
 } from 'lucide-vue-next'
 import SimpleTooltip from '../SimpleTooltip.vue'
-import LeadersList from '../LeadersList.vue'
-import LeadersModal from '../LeadersModal.vue'
+import UsersList from '../UsersList.vue'
+import UserListModal from '../UserListModal.vue'
 import SelectBox from '@/components/SelectBox.vue'
 import { apiClient } from '@/js/api/manager.js'
 
@@ -492,6 +496,7 @@ let hideTimeout = null
 // Модальное окно для руководителей
 const leadersModalVisible = ref(false)
 const modalLeaders = ref([])
+const savedLeaders = ref([]) // Сохраняем руководителей для модального окна
 
 const getLeadersText = (count) => {
     if (count === 1) return 'руководитель'
@@ -520,6 +525,13 @@ const showLeadersTooltip = (event, mouseEvent) => {
     }
     
     hoveredEvent.value = event
+    
+    // Сохраняем руководителей для модального окна
+    if (event?.leaders && Array.isArray(event.leaders)) {
+        savedLeaders.value = [...event.leaders]
+    } else {
+        savedLeaders.value = []
+    }
     
     // Используем currentTarget - это должен быть элемент event-leaders
     tooltipTarget.value = mouseEvent.currentTarget
@@ -555,8 +567,10 @@ const handleTooltipMouseLeave = () => {
 
 // Методы для управления модальным окном руководителей
 const openLeadersModal = () => {
-    // Сохраняем данные о руководителях перед открытием модального окна
-    if (hoveredEvent.value?.leaders && Array.isArray(hoveredEvent.value.leaders)) {
+    // Используем сохраненных руководителей
+    if (savedLeaders.value && Array.isArray(savedLeaders.value) && savedLeaders.value.length > 0) {
+        modalLeaders.value = [...savedLeaders.value]
+    } else if (hoveredEvent.value?.leaders && Array.isArray(hoveredEvent.value.leaders)) {
         modalLeaders.value = [...hoveredEvent.value.leaders]
     } else {
         modalLeaders.value = []
@@ -1180,4 +1194,5 @@ watch(filteredEventSections, async () => {
         font-size: 0.75rem;
     }
 }
+
 </style>

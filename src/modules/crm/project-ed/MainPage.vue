@@ -116,18 +116,15 @@ async function loadUserRole() {
     
     isLoadingRole.value = true
     try {
-        console.log('Загружаем роль пользователя...')
         const response = await apiClient.get(`/project_ed/profiles/profiles/${userStore.user.id}/`)
         const profile = response.data
         
         if (profile?.role_name) {
             userRole.value = profile.role_name
-            console.log('Роль пользователя:', userRole.value)
         } else {
             userRole.value = 'Пользователь'
         }
     } catch (err) {
-        console.error('Ошибка загрузки роли пользователя:', err)
         userRole.value = 'Пользователь'
     } finally {
         isLoadingRole.value = false
@@ -140,7 +137,6 @@ async function loadProjects() {
     projectsError.value = ''
     
     try {
-        console.log('Загружаем проекты в MainPage...')
         const response = await apiClient.get(projectEdEndpoints.project_ed.projects.list)
         const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
         
@@ -157,9 +153,7 @@ async function loadProjects() {
         }))
         
         projects.value = mappedProjects
-        console.log('Загружено проектов:', mappedProjects.length)
     } catch (err) {
-        console.error('Ошибка загрузки проектов в MainPage:', err)
         projectsError.value = 'Не удалось загрузить проекты'
         projects.value = []
     } finally {

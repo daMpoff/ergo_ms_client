@@ -104,8 +104,6 @@ const toggleProfileMenu = () => {
 }
 
 const handleNotificationAction = (actionData) => {
-    console.log('Notification action:', actionData)
-    
     // Обновляем счетчик после действий с уведомлениями
     if (actionData.action === 'read' || actionData.action === 'markAllRead') {
         refreshUnreadCount()
@@ -114,10 +112,7 @@ const handleNotificationAction = (actionData) => {
     // Здесь можно добавить логику обработки действий уведомлений
     if (actionData.action === 'viewAll') {
         // Переход на страницу всех уведомлений
-        console.log('Переход на страницу всех уведомлений')
-    } else {
-        // Обработка конкретных действий уведомления
-        console.log(`Действие ${actionData.action} для уведомления ${actionData.notificationId}`)
+        // router.push('/notifications')
     }
 }
 
@@ -161,7 +156,6 @@ const refreshUnreadCount = async () => {
         unreadNotificationsCount.value = Number.isFinite(count) ? count : 0
     } catch (e) {
         // Тихо игнорируем ошибки загрузки счётчика
-        console.debug('Ошибка загрузки счетчика уведомлений:', e.message)
     }
 }
 

@@ -133,8 +133,6 @@ const getStatusClass = (status) => {
         'Завершен': 'bg-success'
     }
     const result = map[status] || 'bg-secondary'
-    // Отладочная информация
-    console.log(`Статус: "${status}" -> Класс: "${result}"`)
     return result
 }
 

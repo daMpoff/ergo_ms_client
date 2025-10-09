@@ -20,7 +20,13 @@
                     {{ project.role }}
                 </span>
                 <span class="meta-separator" aria-hidden="true" v-if="project.executors_count > 0">•</span>
-                <span class="executors-count" v-if="project.executors_count > 0">
+                <span 
+                    class="executors-count" 
+                    v-if="project.executors_count > 0"
+                    ref="executorsElementRef"
+                    @mouseenter="showExecutorsTooltip"
+                    @mouseleave="hideExecutorsTooltip"
+                >
                     <Users class="executors-icon" :size="14" />
                     {{ project.executors_count }} {{ getExecutorsWord(project.executors_count) }}
                 </span>
@@ -44,13 +50,40 @@
             />
         </div>
     </div>
+
+    <!-- Тултип для исполнителей -->
+    <SimpleTooltip
+        :visible="executorsTooltipVisible"
+        :target-element="executorsTooltipTarget"
+        @mouseenter="handleExecutorsTooltipMouseEnter"
+        @mouseleave="handleExecutorsTooltipMouseLeave"
+    >
+        <UsersList 
+            :users="project.executors || project.performers || []" 
+            type="executors"
+            :max-displayed="3"
+            @open-modal="openExecutorsModal"
+        />
+    </SimpleTooltip>
+
+    <!-- Модальное окно с полным списком исполнителей -->
+    <UserListModal
+        :visible="executorsModalVisible"
+        :users="modalExecutors"
+        type="executors"
+        modal-id="executorsModal"
+        @close="closeExecutorsModal"
+    />
 </template>
 
 <script setup>
-import { User, Star, Users } from 'lucide-vue-next'
+import { User, Star, Users, X } from 'lucide-vue-next'
 import { defineProps, defineEmits, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { getRelativeTime } from './steps/js/timeUtils.js'
 import { initializeDatePopover, cleanupDatePopover, initializePopover, cleanupPopover } from './steps/js/popoverUtils.js'
+import SimpleTooltip from './SimpleTooltip.vue'
+import UsersList from './UsersList.vue'
+import UserListModal from './UserListModal.vue'
 
 const props = defineProps({
     project: {
@@ -71,6 +104,18 @@ const datePopoverElement = ref(null)
 // Ref для элемента роли
 const roleElementRef = ref(null)
 const rolePopoverElement = ref(null)
+
+// Ref для элемента исполнителей
+const executorsElementRef = ref(null)
+
+// Тултип для исполнителей
+const executorsTooltipVisible = ref(false)
+const executorsTooltipTarget = ref(null)
+let executorsHideTimeout = null
+
+// Модальное окно для исполнителей
+const executorsModalVisible = ref(false)
+const modalExecutors = ref([])
 
 const projectDateText = computed(() => {
     const p = props.project || {}
@@ -111,6 +156,23 @@ function toggleFavorite() {
     emit('toggle-favorite', { project: props.project, isFavorite: isFavorite.value })
 }
 
+// Методы для управления модальным окном исполнителей
+const openExecutorsModal = () => {
+    if (props.project?.executors && Array.isArray(props.project.executors)) {
+        modalExecutors.value = [...props.project.executors]
+    } else if (props.project?.performers && Array.isArray(props.project.performers)) {
+        modalExecutors.value = [...props.project.performers]
+    } else {
+        modalExecutors.value = []
+    }
+    executorsModalVisible.value = true
+}
+
+const closeExecutorsModal = () => {
+    executorsModalVisible.value = false
+    modalExecutors.value = []
+}
+
 // Инициализация кастомного popup для даты и роли
 onMounted(() => {
     nextTick(() => {
@@ -140,6 +202,12 @@ onUnmounted(() => {
     if (rolePopoverElement.value) {
         cleanupPopover(rolePopoverElement.value)
         rolePopoverElement.value = null
+    }
+    
+    // Очищаем таймер тултипа исполнителей
+    if (executorsHideTimeout) {
+        clearTimeout(executorsHideTimeout)
+        executorsHideTimeout = null
     }
 })
 
@@ -172,6 +240,50 @@ function getExecutorsWord(count) {
     } else {
         return 'исполнителей'
     }
+}
+
+// Методы для работы с тултипом исполнителей
+const showExecutorsTooltip = (event) => {
+    // Не показываем тултип, если исполнителей нет
+    const executorsCount = props.project?.executors_count || (props.project?.executors ? props.project.executors.length : 0)
+    
+    if (executorsCount === 0) {
+        return
+    }
+    
+    // Отменяем предыдущий таймер скрытия
+    if (executorsHideTimeout) {
+        clearTimeout(executorsHideTimeout)
+        executorsHideTimeout = null
+    }
+    
+    // Используем currentTarget - это должен быть элемент executors-count
+    executorsTooltipTarget.value = event.currentTarget
+    executorsTooltipVisible.value = true
+}
+
+const hideExecutorsTooltip = () => {
+    // Устанавливаем задержку для плавного перехода
+    executorsHideTimeout = setTimeout(() => {
+        executorsTooltipVisible.value = false
+        executorsTooltipTarget.value = null
+    }, 150)
+}
+
+const handleExecutorsTooltipMouseEnter = () => {
+    // Отменяем скрытие тултипа при наведении на него
+    if (executorsHideTimeout) {
+        clearTimeout(executorsHideTimeout)
+        executorsHideTimeout = null
+    }
+}
+
+const handleExecutorsTooltipMouseLeave = () => {
+    // Скрываем тултип при уходе с него
+    executorsHideTimeout = setTimeout(() => {
+        executorsTooltipVisible.value = false
+        executorsTooltipTarget.value = null
+    }, 100)
 }
 </script>
 
@@ -295,6 +407,14 @@ function getExecutorsWord(count) {
                 font-size: 0.875rem;
                 align-items: center;
                 gap: 0.25rem;
+                cursor: pointer;
+                text-underline-offset: 2px;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    color: var(--color-primary);
+                    text-decoration: underline;
+                }
 
                 .executors-icon {
                     display: flex;
@@ -414,5 +534,6 @@ function getExecutorsWord(count) {
 :global(.custom-popover-content) {
     padding: 12px 16px;
 }
+
 </style>
 

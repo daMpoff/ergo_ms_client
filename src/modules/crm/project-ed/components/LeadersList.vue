@@ -15,8 +15,8 @@
             >
                 <div class="leader-avatar-container">
                     <img 
-                        v-if="leader.avatar_url && leader.avatar_url !== '/src/assets/avatars/placeholder.svg'"
-                        :src="leader.avatar_url" 
+                        v-if="getLeaderAvatar(leader)"
+                        :src="getLeaderAvatar(leader)" 
                         :alt="getLeaderInitials(leader.full_name || leader.name)" 
                         class="leader-avatar"
                         @error="handleAvatarError"
@@ -44,8 +44,8 @@
                         :style="{ zIndex: 4 - index }"
                     >
                         <img 
-                            v-if="leader.avatar_url"
-                            :src="leader.avatar_url" 
+                            v-if="getLeaderAvatar(leader)"
+                            :src="getLeaderAvatar(leader)" 
                             :alt="getLeaderInitials(leader.full_name || leader.name)" 
                             class="stacked-avatar-img"
                             @error="handleAvatarError"
@@ -78,10 +78,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Users } from 'lucide-vue-next'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import { getUserAvatar } from '@/js/userAvatar.js'
+import { apiClient } from '@/js/api/manager.js'
 
 const props = defineProps({
     leaders: {
@@ -96,10 +98,76 @@ const props = defineProps({
 
 const router = useRouter()
 const avatarErrors = ref(new Set())
+const leaderAvatars = ref(new Map()) // Кэш загруженных аватаров
+
+// Функция нормализации URL аватара
+const normalizeUrl = (url) => {
+    if (!url) return null
+    if (typeof url !== 'string') return null
+    
+    // Если URL уже абсолютный, возвращаем как есть
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+        return url
+    }
+    
+    // Если URL начинается с /, используем его как есть
+    if (url.startsWith('/')) {
+        return `${apiClient.baseUrl}${url}`
+    }
+    
+    // Иначе добавляем / в начало
+    return `${apiClient.baseUrl}/${url}`
+}
+
+// Функция получения аватара руководителя
+const getLeaderAvatar = (leader) => {
+    // Сначала проверяем кэш
+    if (leaderAvatars.value.has(leader.id)) {
+        return leaderAvatars.value.get(leader.id)
+    }
+    
+    // Если есть avatar_url, нормализуем его
+    if (leader.avatar_url) {
+        const normalizedUrl = normalizeUrl(leader.avatar_url)
+        if (normalizedUrl) {
+            leaderAvatars.value.set(leader.id, normalizedUrl)
+            return normalizedUrl
+        }
+    }
+    
+    return null
+}
+
+// Загрузка аватаров для всех руководителей
+const loadLeaderAvatars = async () => {
+    const tasks = []
+    
+    for (const leader of props.leaders) {
+        if (leader.id && !leaderAvatars.value.has(leader.id)) {
+            tasks.push(
+                getUserAvatar(leader.id)
+                    .then(avatarUrl => {
+                        if (avatarUrl) {
+                            const normalizedUrl = normalizeUrl(avatarUrl)
+                            if (normalizedUrl) {
+                                leaderAvatars.value.set(leader.id, normalizedUrl)
+                            }
+                        }
+                    })
+                    .catch(error => {
+                    })
+            )
+        }
+    }
+    
+    if (tasks.length > 0) {
+        await Promise.allSettled(tasks)
+    }
+}
 
 // Навигация к профилю пользователя
 const navigateToProfile = (userId) => {
-    router.push({ name: 'ProjectEdProfile', params: { userId: userId } })
+    router.push(`/project-ed/profile/${userId}`)
 }
 
 // Ограничиваем количество отображаемых руководителей
@@ -186,6 +254,18 @@ const openModal = (event) => {
     // Эмитим событие для открытия модального окна
     emit('open-modal')
 }
+
+// Загружаем аватары при монтировании компонента
+onMounted(async () => {
+    await loadLeaderAvatars()
+})
+
+// Следим за изменением списка руководителей и загружаем новые аватары
+watch(() => props.leaders, async (newLeaders) => {
+    if (newLeaders && newLeaders.length > 0) {
+        await loadLeaderAvatars()
+    }
+}, { deep: true })
 </script>
 
 <style scoped lang="scss">

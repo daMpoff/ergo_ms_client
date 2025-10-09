@@ -77,7 +77,6 @@ const hasCustomAvatar = computed(() => {
 
 // Обработка ошибки загрузки изображения
 const onImageError = (event) => {
-  console.error('Ошибка загрузки аватара в UserAvatar:', event.target.src)
 }
 </script>
 
