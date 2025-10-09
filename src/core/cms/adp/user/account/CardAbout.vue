@@ -119,6 +119,7 @@ const fetchProfile = async () => {
       formData.value = {
         first_name: profileData.value.firstName === ' ' ? '' : (profileData.value.firstName || ''),
         last_name: profileData.value.lastName === ' ' ? '' : (profileData.value.lastName || ''),
+        middle_name: profileData.value.middleName === ' ' ? '' : (profileData.value.middleName || ''),
         email: profileData.value.email,
         phone: profileData.value.phone,
         website: profileData.value.website,
@@ -193,6 +194,7 @@ const cancelEditing = () => {
     formData.value = {
       first_name: profileData.value.firstName === ' ' ? '' : (profileData.value.firstName || ''),
       last_name: profileData.value.lastName === ' ' ? '' : (profileData.value.lastName || ''),
+      middle_name: profileData.value.middleName === ' ' ? '' : (profileData.value.middleName || ''),
       email: profileData.value.email,
       phone: profileData.value.phone,
       website: profileData.value.website,
@@ -221,6 +223,7 @@ const saveProfile = async () => {
       ...formData.value,
       first_name: formData.value.first_name?.trim() || '',
       last_name: formData.value.last_name?.trim() || '',
+      middle_name: formData.value.middle_name?.trim() || '',
       phone: formData.value.phone?.trim() || '',
       website: formData.value.website?.trim() || '',
       bio: formData.value.bio?.trim() || '',
@@ -374,7 +377,7 @@ onMounted(() => {
           
           <div class="row g-3">
             <!-- Имя -->
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label text-muted small">Имя</label>
               <div v-if="!editing" class="fw-medium">
                 {{ (formData.first_name && formData.first_name.trim()) ? formData.first_name.trim() : 'Не указано' }}
@@ -394,7 +397,7 @@ onMounted(() => {
             </div>
 
             <!-- Фамилия -->
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label text-muted small">Фамилия</label>
               <div v-if="!editing" class="fw-medium">
                 {{ (formData.last_name && formData.last_name.trim()) ? formData.last_name.trim() : 'Не указано' }}
@@ -409,6 +412,26 @@ onMounted(() => {
                 />
                 <div v-if="errors.last_name" class="invalid-feedback">
                   {{ errors.last_name }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Отчество -->
+            <div class="col-md-4">
+              <label class="form-label text-muted small">Отчество</label>
+              <div v-if="!editing" class="fw-medium">
+                {{ (formData.middle_name && formData.middle_name.trim()) ? formData.middle_name.trim() : 'Не указано' }}
+              </div>
+              <div v-else>
+                <input 
+                  v-model="formData.middle_name" 
+                  type="text" 
+                  class="form-control form-control-sm"
+                  :class="{ 'is-invalid': errors.middle_name }"
+                  placeholder="Введите отчество"
+                />
+                <div v-if="errors.middle_name" class="invalid-feedback">
+                  {{ errors.middle_name }}
                 </div>
               </div>
             </div>
