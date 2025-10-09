@@ -40,7 +40,7 @@
                 />
                 <ProjectTeam v-else-if="activeTab === 'team'" :project-data="projectData" />
                 <ProjectAuditPage v-else-if="activeTab === 'activity' && canSeeActivityTab" :project-data="projectData" />
-                <ReportsPage v-else-if="activeTab === 'reports'" />
+                <ReportsPage v-else-if="activeTab === 'reports'" :project-data="projectData" />
             </div>
         </template>
     </div>
