@@ -69,33 +69,27 @@ function formatRegistrationDate(dateString) {
 // Загрузка аватара
 async function fetchAvatar() {
   try {
-    console.log('🔄 fetchAvatar начало, userStore.avatarUrl:', userStore.avatarUrl)
     avatarLoading.value = true
     
     // Сначала проверяем, есть ли аватар в userStore
     if (userStore.avatarUrl) {
       userInfo.value.image = userStore.avatarUrl
       avatarLoading.value = false
-      console.log('✅ Используем аватар из userStore:', userStore.avatarUrl)
       return
     }
     
     const resp = await apiClient.get(endpoints.userAvatars.list)
     if (resp.data.length && resp.data[0].image) {
       userInfo.value.image = resp.data[0].image
-      console.log('✅ Загружен аватар с сервера:', resp.data[0].image)
     } else {
       // Не устанавливаем дефолтное изображение - оставляем null
       userInfo.value.image = null
-      console.log('🚫 Нет аватара на сервере, оставляем null')
     }
   } catch (error) {
     // В случае ошибки тоже оставляем null вместо дефолтного изображения
     userInfo.value.image = null
-    console.log('❌ Ошибка загрузки аватара:', error)
   } finally {
     avatarLoading.value = false
-    console.log('🏁 fetchAvatar завершён, userInfo.value.image:', userInfo.value.image)
   }
 }
 
@@ -159,17 +153,14 @@ watch(() => userStore.user, async (newUser, oldUser) => {
 })
 
 onMounted(async () => {
-  console.log('🔍 CardMain onMounted - userStore.avatarUrl:', userStore.avatarUrl)
   
   // Принудительно убеждаемся что нет дефолтного изображения
   if (!userStore.avatarUrl) {
     userInfo.value.image = null
     avatarLoading.value = true
-    console.log('🚫 Нет аватара в userStore, устанавливаем image = null')
   } else {
     userInfo.value.image = userStore.avatarUrl
     avatarLoading.value = false
-    console.log('✅ Есть аватар в userStore:', userStore.avatarUrl)
   }
   
   // Запускаем загрузку параллельно
