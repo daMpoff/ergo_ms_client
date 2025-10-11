@@ -450,9 +450,6 @@ const getDefaultEndDate = () => {
 }
 
 // Инициализация данных с учетом новой структуры
-console.log('=== BasicProvisions: Отладка инициализации ===')
-console.log('BasicProvisions: props.provisions:', props.provisions)
-console.log('BasicProvisions: props.provisions.projectName:', props.provisions.projectName)
 
 const localProvisions = ref({
     // Основные поля
@@ -490,8 +487,6 @@ const localProvisions = ref({
     }
 })
 
-console.log('BasicProvisions: localProvisions.value после инициализации:', localProvisions.value)
-console.log('BasicProvisions: localProvisions.value.projectName:', localProvisions.value.projectName)
 
 const errors = ref({})
 
@@ -864,12 +859,8 @@ watch(localProvisions, (newValue) => {
 
 // Следим за изменениями props.provisions
 watch(() => props.provisions, (newProvisions) => {
-    console.log('BasicProvisions: props.provisions изменились:', newProvisions)
-    console.log('BasicProvisions: newProvisions.projectName:', newProvisions.projectName)
-    
     // Обновляем localProvisions при изменении props
     if (newProvisions.projectName !== localProvisions.value.projectName) {
-        console.log('BasicProvisions: Обновляем projectName с', localProvisions.value.projectName, 'на', newProvisions.projectName)
         localProvisions.value.projectName = newProvisions.projectName || ''
     }
 }, { deep: true, immediate: true })
@@ -945,7 +936,6 @@ const initializePopover = () => {
     if (infoIconRef.value) {
         const iconElement = infoIconRef.value.$el || infoIconRef.value
         if (iconElement) {
-            console.log('Инициализируем кастомный popover для элемента:', iconElement)
             
             // Создаем popover элемент
             const popover = document.createElement('div')
@@ -1004,13 +994,7 @@ const initializePopover = () => {
             
             // Сохраняем обработчики для очистки
             popover._resizeHandler = handleResize
-            
-            console.log('Кастомный popover создан')
-        } else {
-            console.log('Элемент иконки не найден')
         }
-    } else {
-        console.log('Ref не найден')
     }
 }
 
@@ -1019,7 +1003,6 @@ const initializeShortNamePopover = () => {
     if (shortNameInfoIconRef.value) {
         const iconElement = shortNameInfoIconRef.value.$el || shortNameInfoIconRef.value
         if (iconElement) {
-            console.log('Инициализируем кастомный popover для краткого наименования:', iconElement)
             
             // Создаем popover элемент
             const popover = document.createElement('div')
@@ -1078,13 +1061,7 @@ const initializeShortNamePopover = () => {
             
             // Сохраняем обработчики для очистки
             popover._resizeHandler = handleResize
-            
-            console.log('Кастомный popover для краткого наименования создан')
-        } else {
-            console.log('Элемент иконки краткого наименования не найден')
         }
-    } else {
-        console.log('Ref краткого наименования не найден')
     }
 }
 

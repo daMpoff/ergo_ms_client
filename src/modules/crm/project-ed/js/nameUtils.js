@@ -23,7 +23,7 @@ export function formatNameWithInitials(person) {
         }
         
         if (middleName && middleName.trim()) {
-            result += `${middleName.trim().charAt(0).toUpperCase()}.`
+            result += ` ${middleName.trim().charAt(0).toUpperCase()}.`
         }
         
         return result.trim() || '—'
