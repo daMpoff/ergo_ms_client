@@ -1,6 +1,7 @@
 <template>
     <div class="overview-grid">
         <div class="overview-main">
+            <ProjectReviewSummary :project-data="projectData" />
             <ProjectDashboard v-if="canSeePrivileged" :project-data="projectData" />
             <ProjectAudit :project-data="projectData" />
 
@@ -43,6 +44,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import ProjectReviewSummary from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectReviewSummary.vue'
 import ProjectDashboard from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectDashboard.vue'
 import ProjectAudit from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectAudit.vue'
 import ProjectInfo from '@/modules/crm/project-ed/Project/ProjectTabs/components/ProjectInfo.vue'
@@ -84,16 +86,16 @@ const projectRoles = computed(() => {
   
   return {
     manager: props.projectData.manager_data ? {
-      full_name: `${props.projectData.manager_data.first_name || ''} ${props.projectData.manager_data.last_name || ''}`.trim() || props.projectData.manager_data.username,
-      avatar_url: props.projectData.manager_data.avatar_url
+      ...props.projectData.manager_data,
+      full_name: `${props.projectData.manager_data.first_name || ''} ${props.projectData.manager_data.last_name || ''}`.trim() || props.projectData.manager_data.username
     } : null,
     client: props.projectData.customer_data ? {
-      full_name: `${props.projectData.customer_data.first_name || ''} ${props.projectData.customer_data.last_name || ''}`.trim() || props.projectData.customer_data.username,
-      avatar_url: props.projectData.customer_data.avatar_url
+      ...props.projectData.customer_data,
+      full_name: `${props.projectData.customer_data.first_name || ''} ${props.projectData.customer_data.last_name || ''}`.trim() || props.projectData.customer_data.username
     } : null,
     curator: props.projectData.curator_data ? {
-      full_name: `${props.projectData.curator_data.first_name || ''} ${props.projectData.curator_data.last_name || ''}`.trim() || props.projectData.curator_data.username,
-      avatar_url: props.projectData.curator_data.avatar_url
+      ...props.projectData.curator_data,
+      full_name: `${props.projectData.curator_data.first_name || ''} ${props.projectData.curator_data.last_name || ''}`.trim() || props.projectData.curator_data.username
     } : null
   }
 })

@@ -8,7 +8,6 @@
         </div>
 
         <div class="form-content">
-            <!-- Фильтры и поиск -->
             <div class="filters-section">
                 <div class="filters-row">
                     <div class="filter-group">
@@ -64,7 +63,6 @@
                 </div>
             </div>
 
-            <!-- Переключатель секций с горизонтальной прокруткой -->
             <div v-if="filteredEventSections.length > 1" class="sections-tabs">
                 <button
                     type="button"
@@ -185,7 +183,6 @@
             </div>
         </div>
 
-        <!-- Тултип для руководителей -->
         <SimpleTooltip
             :visible="tooltipVisible"
             :target-element="tooltipTarget"
@@ -200,7 +197,6 @@
             />
         </SimpleTooltip>
 
-        <!-- Модальное окно с полным списком руководителей -->
         <UserListModal
             :visible="leadersModalVisible"
             :users="modalLeaders"
@@ -467,25 +463,6 @@ const setActiveSection = (sectionId) => {
     activeSectionId.value = sectionId
 }
 
-const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    })
-}
-
-const getStatusText = (status) => {
-    const statusMap = {
-        'planned': 'Запланировано',
-        'active': 'Активно',
-        'completed': 'Завершено',
-        'cancelled': 'Отменено'
-    }
-    return statusMap[status] || status
-}
-
 // Тултип для руководителей
 const tooltipVisible = ref(false)
 const hoveredEvent = ref(null)
@@ -726,12 +703,12 @@ watch(filteredEventSections, async () => {
 .step-title {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #212529;
+    color: var(--color-primary-text);
     margin: 0 0 0.5rem 0;
 }
 
 .step-description {
-    color: #6c757d;
+    color: var(--color-secondary-text);
     margin: 0;
 }
 
@@ -742,10 +719,10 @@ watch(filteredEventSections, async () => {
 }
 
 .filters-section {
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
     border-radius: 8px;
     padding: 1.5rem;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--color-border);
 }
 
 .filters-row {
@@ -778,7 +755,7 @@ watch(filteredEventSections, async () => {
 .filter-label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #495057;
+    color: var(--color-primary-text);
     line-height: 1.2;
     min-height: 2.25rem; // обеспечиваем одинаковую высоту области подписи
     display: flex;
@@ -798,10 +775,10 @@ watch(filteredEventSections, async () => {
 .combobox {
     width: 100%;
     padding: 0.75rem 2.5rem 0.75rem 1rem;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--color-border);
     border-radius: 6px;
     font-size: 0.875rem;
-    background: white;
+    background: var(--color-primary-background);
     cursor: pointer;
     appearance: none;
     transition: border-color 0.2s ease;
@@ -813,7 +790,7 @@ watch(filteredEventSections, async () => {
     }
 
     &:hover {
-        border-color: #adb5bd;
+        border-color: var(--color-hover-background);
     }
 }
 
@@ -822,7 +799,7 @@ watch(filteredEventSections, async () => {
     right: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #6c757d;
+    color: var(--color-secondary-text);
     pointer-events: none;
 }
 
@@ -834,7 +811,7 @@ watch(filteredEventSections, async () => {
     gap: 0.5rem;
     margin-bottom: 1rem;
     padding: 0 0.5rem;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .sections-tabs__viewport {
@@ -860,7 +837,7 @@ watch(filteredEventSections, async () => {
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
@@ -869,13 +846,13 @@ watch(filteredEventSections, async () => {
 
     &:hover {
         color: #0d6efd;
-        background: #f8f9ff;
+        background: var(--color-hover-background);
     }
 
     &.active {
         color: #0d6efd;
         border-bottom-color: #0d6efd;
-        background: #f8f9ff;
+        background: var(--color-hover-background);
     }
 }
 
@@ -900,10 +877,10 @@ watch(filteredEventSections, async () => {
     .section-title {
         font-size: 1.25rem;
         font-weight: 600;
-        color: #212529;
+        color: var(--color-primary-text);
         margin: 0;
         padding: 1rem;
-        background: #f8f9fa;
+        background: var(--color-secondary-background);
         border-radius: 8px;
         border-left: 4px solid #0d6efd;
         flex: 1 1 auto;
@@ -936,8 +913,8 @@ watch(filteredEventSections, async () => {
 }
 
 .event-card {
-    background: white;
-    border: 2px solid #dee2e6;
+    background: var(--color-primary-background);
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     padding: 1.5rem;
     cursor: pointer;
@@ -954,7 +931,7 @@ watch(filteredEventSections, async () => {
 
     &.selected {
         border-color: #0d6efd;
-        background: #f8f9ff;
+        background: var(--color-hover-background);
         box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
     }
 
@@ -982,8 +959,8 @@ watch(filteredEventSections, async () => {
 }
 
 .event-code {
-    background: #e9ecef;
-    color: #495057;
+    background: var(--color-secondary-background);
+    color: var(--color-primary-text);
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-size: 0.75rem;
@@ -994,7 +971,7 @@ watch(filteredEventSections, async () => {
 .event-title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #212529;
+    color: var(--color-primary-text);
     margin: 0 0 1rem 0;
     line-height: 1.4;
 
@@ -1050,7 +1027,7 @@ watch(filteredEventSections, async () => {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     font-size: 0.75rem;
 
     .icon {
@@ -1074,7 +1051,7 @@ watch(filteredEventSections, async () => {
 }
 
 .event-key-results {
-    color: #495057;
+    color: var(--color-primary-text);
     font-size: 0.875rem;
     line-height: 1.5;
     margin: 0 0 1rem 0;
@@ -1112,7 +1089,7 @@ watch(filteredEventSections, async () => {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     font-size: 0.75rem;
     cursor: pointer;
     padding: 0.25rem 0.5rem;
@@ -1120,7 +1097,7 @@ watch(filteredEventSections, async () => {
     transition: background-color 0.2s ease;
 
     &:hover {
-        background: #f8f9fa;
+        background: var(--color-hover-background);
         color: #0d6efd;
     }
 
@@ -1133,7 +1110,7 @@ watch(filteredEventSections, async () => {
 .no-events {
     text-align: center;
     padding: 3rem 1rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
 
     .no-events-icon {
         margin-bottom: 1rem;
@@ -1142,7 +1119,7 @@ watch(filteredEventSections, async () => {
 
     h3 {
         margin: 0 0 0.5rem 0;
-        color: #495057;
+        color: var(--color-primary-text);
     }
 
     p {

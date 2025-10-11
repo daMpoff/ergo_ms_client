@@ -114,9 +114,10 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { generateInitials } from '@/modules/crm/project-ed/components/steps/js/initialsGenerator.js'
 import { useUserStore } from '@/core/cms/js/userStore.js'
+import { apiClient } from '@/js/api/manager.js'
 import { 
     Calendar, 
     FileText, 
@@ -127,9 +128,8 @@ import {
     ArrowLeft,
     ArrowRight,
     Check
-} from 'lucide-vue-next'
-import { apiClient } from '@/js/api/manager.js'
-import { endpoints } from '@/js/api/endpoints.js'
+  } from 'lucide-vue-next'
+  import { endpoints } from '@/js/api/endpoints.js'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
@@ -140,15 +140,35 @@ const userStore = useUserStore()
 // Роль пользователя
 const userRole = ref('expert') // Может быть: 'user', 'expert', 'admin', 'supervisor'
 
-// Информация о пользователе из store
-const userInfo = computed(() => {
-    const fullName = userStore.fullName
-    return {
-        id: userStore.user?.id,
-        name: fullName,
-        initials: generateInitials(fullName)
+// Информация о пользователе из CMS API
+const userInfo = ref(null)
+
+// Загружаем данные пользователя из CMS API
+async function fetchUserInfo() {
+    try {
+        const response = await apiClient.get('/cms/adp/profile/')
+        const userData = response.data
+        
+        userInfo.value = {
+            id: userData.id,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            middle_name: userData.adp_profile?.middle_name,
+            username: userData.username,
+            email: userData.email,
+            name: userData.adp_profile?.full_name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки данных пользователя:', error)
+        // Fallback на данные из store
+        const fullName = userStore.fullName
+        userInfo.value = {
+            id: userStore.user?.id,
+            name: fullName,
+            initials: generateInitials(fullName)
+        }
     }
-})
+}
 
 // Импорт компонентов этапов
 import EventSelection from './steps/EventSelection.vue'
@@ -468,6 +488,11 @@ const submitForm = async () => {
         isSubmitting.value = false
     }
 }
+
+// Загружаем данные пользователя при монтировании компонента
+onMounted(() => {
+    fetchUserInfo()
+})
 </script>
 
 <style scoped lang="scss">
@@ -483,7 +508,7 @@ const submitForm = async () => {
 .progress-bar {
     width: 100%;
     height: 48px;
-    background: #e9ecef;
+    background: var(--color-secondary-background);
     border-radius: 32px;
     overflow: hidden;
     position: relative;
@@ -518,9 +543,9 @@ const submitForm = async () => {
     display: flex;
     gap: 0.25rem;
     padding: 0.5rem;
-    background: #f8f9fa;
+    background: var(--color-primary-background);
     border-radius: 8px;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--color-border);
     flex-wrap: wrap;
     justify-content: center;
 }
@@ -530,8 +555,8 @@ const submitForm = async () => {
     align-items: center;
     gap: 0.25rem;
     padding: 0.5rem 0.75rem;
-    background: white;
-    border: 1px solid #dee2e6;
+    background: var(--color-primary-background);
+    border: 1px solid var(--color-border);
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -562,8 +587,8 @@ const submitForm = async () => {
     }
 
     &.disabled {
-        background: #f8f9fa;
-        color: #6c757d;
+        background: var(--color-secondary-background);
+        color: var(--color-secondary-text);
         cursor: not-allowed;
         opacity: 0.6;
     }
@@ -586,9 +611,9 @@ const submitForm = async () => {
 
 // Контент формы
 .form-content {
-    background: white;
+    background: var(--color-primary-background);
     border-radius: 8px;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--color-border);
     overflow: hidden;
 }
 
@@ -636,7 +661,7 @@ const submitForm = async () => {
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: var(--color-secondary-background);
     color: white;
 
     &:hover:not(:disabled) {

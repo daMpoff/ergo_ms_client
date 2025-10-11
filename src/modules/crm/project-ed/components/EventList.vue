@@ -1,6 +1,5 @@
 <template>
     <div class="events-table">
-        <!-- Панель фильтров (минимум, оставим фильтр по проекту при наличии пропсов) -->
         <div class="filters card p-3 mb-3">
             <div class="row g-2 align-items-end">
                 <div class="col-12 col-lg-3">
@@ -47,7 +46,6 @@
             </div>
         </div>
 
-        <!-- Карточки блоков мероприятий -->
         <div class="block-list">
             <div v-if="isLoading" class="p-4 text-center">Загрузка...</div>
             <template v-else>
@@ -81,7 +79,6 @@
 
                             <div class="list-group">
                                 <div v-for="ev in block.events" :key="ev.id" class="list-group-item event-item px-0">
-                                    <!-- Заголовок мероприятия -->
                                     <div :class="['event-item-header','d-flex','align-items-center','justify-content-between', { 'is-open': ev._showResults }]" role="button" @click="ev._showResults = !ev._showResults">
                                         <div class="d-flex flex-column flex-grow-1 event-item-main">
                                             <div class="d-flex align-items-center gap-3">
@@ -100,7 +97,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Спойлер с результатами -->
                                     <div v-if="ev._showResults" class="mt-2 ps-3 pe-2 pb-2">
                                         <div class="text-muted mb-1 years-th">Основные результаты:</div>
                                         <template v-if="splitResults(ev.results || ev.description).length <= 1">
@@ -128,7 +124,7 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { apiClient } from '@/js/api/manager'
 import { endpoints } from '@/js/api/endpoints'
 import { useToast } from 'vue-toastification'
-import { ChevronDown, ChevronUp, Eye, EyeOff, FileText, Users, ListChecks, Calendar } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, Users, ListChecks, Calendar } from 'lucide-vue-next'
 import SelectBox from '@/components/SelectBox.vue'
 
 const props = defineProps({
@@ -363,7 +359,7 @@ watch(() => [filters.value.yearFrom, filters.value.yearTo], async () => {
 <style scoped lang="scss">
 .block-list { display: block; }
 .block-card {
-    border: 1px solid var(--bs-border-color, #dee2e6);
+    border: 1px solid var(--color-border);
     border-radius: .75rem;
     background-color: var(--color-primary-background);
     overflow: hidden;
@@ -381,8 +377,8 @@ watch(() => [filters.value.yearFrom, filters.value.yearTo], async () => {
     flex: 1 1 auto;
     padding: .5rem .75rem;
     border-radius: .5rem;
-    background-color: var(--bs-secondary-bg, #f8f9fa);
-    border: 1px solid var(--bs-border-color, #dee2e6);
+    background-color: var(--color-secondary-background);
+    border: 1px solid var(--color-border);
     white-space: normal;
     word-break: break-word;
 }
@@ -401,7 +397,7 @@ watch(() => [filters.value.yearFrom, filters.value.yearTo], async () => {
 .list-group-item { background: transparent; }
 .event-item {
     background: var(--color-primary-background);
-    border: 1px solid var(--bs-border-color, #dee2e6);
+    border: 1px solid var(--color-border);
     border-radius: .5rem;
     overflow: hidden;
     padding: 0; /* убираем внутренний отступ list-group-item */
@@ -410,7 +406,7 @@ watch(() => [filters.value.yearFrom, filters.value.yearTo], async () => {
 .list-group .event-item:last-child { margin-bottom: .5rem; }
 .block-card .card-body { padding-bottom: 1rem; }
 .event-item-header { padding: .75rem .75rem .5rem .75rem; }
-.event-item-header:hover { background-color: var(--color-hover-background, #f1f3f5); }
+.event-item-header:hover { background-color: var(--color-hover-background); }
 .event-item-header.is-open { background-color: var(--bs-secondary-bg, #f8f9fa); border-bottom-color: var(--color-border); }
 .event-item-meta { padding: 0 .75rem .5rem 0; }
 /* hover только на шапке элемента */

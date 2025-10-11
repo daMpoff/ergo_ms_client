@@ -16,7 +16,6 @@
                 </span>
                 <span class="d-inline-flex align-items-center"><ChevronDown class="icon-center" /></span>
             </button>
-            <!-- Портал выпадающего списка в body с позиционированием fixed -->
             <teleport to="body">
                 <ul
                     v-if="isOpen"
@@ -275,13 +274,14 @@ watch(() => props.modelValue, async () => {
 /* Кнопка-селект */
 .select-trigger {
     background-color: var(--color-primary-background);
-    border: 1px solid var(--bs-border-color, #dee2e6);
+    border: 1px solid var(--color-border);
     min-height: 38px;
     white-space: nowrap;
     text-align: left;
     display: inline-flex;
 }
 .select-trigger .value-text {
+    color: var(--color-primary-text);
     display: block;
     white-space: nowrap;
     overflow: hidden;
@@ -300,8 +300,8 @@ watch(() => props.modelValue, async () => {
     width: auto;
     min-width: 100%;
     max-width: 100vw;
-    background-color: var(--bs-body-bg, #fff);
-    border: 1px solid var(--bs-border-color, #dee2e6);
+    background-color: var(--color-primary-background);
+    border: 1px solid var(--color-border);
     border-radius: .375rem;
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
 }

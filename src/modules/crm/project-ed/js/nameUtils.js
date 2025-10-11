@@ -12,7 +12,8 @@ export function formatNameWithInitials(person) {
     
     const lastName = person.last_name || ''
     const firstName = person.first_name || ''
-    const middleName = person.middle_name || ''
+    // Отчество может быть в person.middle_name или в person.adp_profile.middle_name
+    const middleName = person.middle_name || person.adp_profile?.middle_name || ''
     
     // Если есть отдельные поля имени, формируем инициалы
     if (lastName || firstName || middleName) {
@@ -43,7 +44,8 @@ export function formatFullName(person) {
     
     const lastName = person.last_name || ''
     const firstName = person.first_name || ''
-    const middleName = person.middle_name || ''
+    // Отчество может быть в person.middle_name или в person.adp_profile.middle_name
+    const middleName = person.middle_name || person.adp_profile?.middle_name || ''
     
     // Если есть отдельные поля имени, формируем полное имя
     if (lastName || firstName || middleName) {
@@ -64,7 +66,8 @@ export function getInitials(person) {
     if (!person) return ''
     
     const firstName = person.first_name || ''
-    const middleName = person.middle_name || ''
+    // Отчество может быть в person.middle_name или в person.adp_profile.middle_name
+    const middleName = person.middle_name || person.adp_profile?.middle_name || ''
     
     let result = ''
     

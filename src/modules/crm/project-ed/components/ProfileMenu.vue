@@ -40,9 +40,8 @@ import { defineProps, defineEmits, computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserRound, Settings, LogOut, Wrench } from 'lucide-vue-next'
 import { useUserStore } from '@/core/cms/js/userStore.js'
+import { formatNameWithInitials } from '../js/nameUtils.js'
 
-// Сервисы для проверки административных прав (как в router guard)
-import { authService } from '@/core/cms/adp/js/authService'
 import { apiClient } from '@/js/api/manager.js'
 
 defineProps({
@@ -57,17 +56,9 @@ const router = useRouter()
 const userFullName = computed(() => {
     const user = userStore.user
     if (!user) return 'Гость'
-
-    const firstName = user.first_name?.trim()
-    const lastName = user.last_name?.trim()
-
-    const cleanFirst = firstName === ' ' ? '' : firstName
-    const cleanLast = lastName === ' ' ? '' : lastName
-
-    if (cleanFirst && cleanLast) return `${cleanFirst} ${cleanLast}`
-    if (cleanFirst) return cleanFirst
-    if (cleanLast) return cleanLast
-    return 'Гость'
+    
+    const formattedName = formatNameWithInitials(user)
+    return formattedName !== '—' ? formattedName : 'Гость'
 })
 
 const userRole = ref('Роль не определена')

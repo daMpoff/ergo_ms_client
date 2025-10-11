@@ -229,7 +229,19 @@ async function resolveCustomerFromApi() {
         const resp = await apiClient.get('/project_ed/profiles/profiles/leadership/', { position_exact: 'Ректор' })
         const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
         const list = norm(resp)
-        const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
+        const toName = (u) => {
+            const firstName = u.first_name || ''
+            const lastName = u.last_name || ''
+            const middleName = u.middle_name || ''
+            
+            // Формируем полное имя: Фамилия Имя Отчество
+            const fullName = [lastName, firstName, middleName]
+                .filter(part => part.trim() !== '')
+                .join(' ')
+                .trim()
+            
+            return fullName || u.username || ''
+        }
         customerCandidates.value = list.map(u => ({
             id: u.id,
             name: toName(u),
@@ -252,7 +264,19 @@ async function resolveCuratorsFromApi() {
         const resp = await apiClient.get('/project_ed/profiles/profiles/leadership/', { position: 'проректор' })
         const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
         const list = norm(resp)
-        const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
+        const toName = (u) => {
+            const firstName = u.first_name || ''
+            const lastName = u.last_name || ''
+            const middleName = u.middle_name || ''
+            
+            // Формируем полное имя: Фамилия Имя Отчество
+            const fullName = [lastName, firstName, middleName]
+                .filter(part => part.trim() !== '')
+                .join(' ')
+                .trim()
+            
+            return fullName || u.username || ''
+        }
         prorectorCandidates.value = list.map(u => ({
             id: u.id,
             name: toName(u),
@@ -284,8 +308,18 @@ onMounted(() => {
 // Отображаемое имя руководителя
 const managerDisplayName = computed(() => {
     if (!props.userInfo) return '—'
-    const full = `${props.userInfo.first_name || ''} ${props.userInfo.last_name || ''}`.trim()
-    return full || props.userInfo.username || props.userInfo.name || '—'
+    
+    const firstName = props.userInfo.first_name || ''
+    const lastName = props.userInfo.last_name || ''
+    const middleName = props.userInfo.middle_name || ''
+    
+    // Формируем полное имя: Фамилия Имя Отчество
+    const fullName = [lastName, firstName, middleName]
+        .filter(part => part.trim() !== '')
+        .join(' ')
+        .trim()
+    
+    return fullName || props.userInfo.username || '—'
 })
 
 </script>
@@ -302,21 +336,21 @@ const managerDisplayName = computed(() => {
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--color-border);
 }
 
 .curator-select:deep(.select-trigger) {
-    background: #f8f9fa !important;
-    border: 1px solid #e9ecef !important;
+    background: var(--color-secondary-background) !important;
+    border: 1px solid var(--color-border) !important;
     border-radius: 8px !important;
     min-height: 56px;
     padding: 0.5rem 0.75rem;
 }
 .curator-select:deep(.select-trigger:hover),
 .curator-select:deep(.select-trigger:focus) {
-    background: #fff !important;
+    background: var(--color-primary-background) !important;
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
 }
 .curator-select:deep(.dropdown-item) {
@@ -366,9 +400,9 @@ const managerDisplayName = computed(() => {
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem;
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--color-border);
 }
 
 .customer-info {
@@ -378,14 +412,14 @@ const managerDisplayName = computed(() => {
 
 .customer-name {
     font-weight: 600;
-    color: #212529;
+    color: var(--color-primary-text);
     font-size: 0.95rem;
     line-height: 1.2;
 }
 
 .customer-position {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     margin-top: 0.125rem;
     line-height: 1.2;
 }

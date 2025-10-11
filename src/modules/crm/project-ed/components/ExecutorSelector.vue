@@ -1,6 +1,5 @@
 <template>
     <div class="executor-selector">
-        <!-- Компактное отображение выбранных исполнителей -->
         <div v-if="selectedExecutors.length > 0" class="selected-executors">
             <div class="executors-grid">
                 <div 
@@ -27,7 +26,6 @@
             </div>
         </div>
 
-        <!-- Кнопка добавления исполнителей -->
         <button 
             type="button" 
             class="add-executors-btn"
@@ -38,10 +36,8 @@
             <span class="btn-text">Добавить исполнителей</span>
         </button>
 
-        <!-- Оверлей -->
         <div v-if="isOpen" class="tooltip-overlay" @click="closeSelector"></div>
         
-        <!-- Тултип с выбором исполнителей -->
         <div v-if="isOpen" class="executor-tooltip" ref="tooltipRef" @click.stop>
             <div class="tooltip-header">
                 <h4 class="tooltip-title">Выберите исполнителей</h4>
@@ -54,7 +50,6 @@
                 </button>
             </div>
             
-            <!-- Поиск -->
             <div class="search-section">
                 <input
                     v-model="searchQuery"
@@ -64,7 +59,6 @@
                 />
             </div>
 
-            <!-- Список пользователей -->
             <div class="users-list">
                 <div 
                     v-for="user in filteredUsers" 
@@ -92,7 +86,6 @@
                 </div>
             </div>
 
-            <!-- Кнопки действий -->
             <div class="tooltip-actions">
                 <button 
                     type="button" 
@@ -139,20 +132,6 @@ const searchQuery = ref('')
 const selectedUsers = ref([])
 const tempSelectedUsers = ref([]) // Временный выбор в модальном окне
 const tooltipRef = ref(null)
-
-// Тестовые данные пользователей
-const testUsers = ref([
-    { id: 1, name: 'Сканцев Виталий Михайлович', position: 'Первый проректор', initials: 'С.В.М.' },
-    { id: 2, name: 'Шкаберин Виталий Александрович', position: 'Первый проректор по учебной работе и цифровизации', initials: 'Ш.В.А.' },
-    { id: 3, name: 'Киричек Андрей Викторович', position: 'Проректор по перспективному развитию', initials: 'К.А.В.' },
-    { id: 4, name: 'Симкин Альберт Зямович', position: 'Проректор по молодежной политике и воспитательной работе', initials: 'С.А.З.' },
-    { id: 5, name: 'Глебов Глеб Владимирович', position: 'Проректор по АХР', initials: 'Г.Г.В.' },
-    { id: 6, name: 'Геращенкова Татьяна Михайловна', position: 'Проректор по качеству и аккредитации', initials: 'Г.Т.М.' },
-    { id: 7, name: 'Петров Иван Сергеевич', position: 'Начальник отдела кадров', initials: 'П.И.С.' },
-    { id: 8, name: 'Сидорова Анна Владимировна', position: 'Заместитель директора по науке', initials: 'С.А.В.' },
-    { id: 9, name: 'Козлов Михаил Петрович', position: 'Руководитель IT-отдела', initials: 'К.М.П.' },
-    { id: 10, name: 'Морозова Елена Александровна', position: 'Главный бухгалтер', initials: 'М.Е.А.' }
-])
 
 // Используем тестовые данные или переданные пользователи
 const allUsers = computed(() => props.availableUsers.length > 0 ? props.availableUsers : testUsers.value)
@@ -229,11 +208,6 @@ const removeExecutor = (userId) => {
         selectedUsers.value.splice(index, 1)
         emit('update:modelValue', [...selectedUsers.value])
     }
-}
-
-// Обработчик клика вне тултипа (теперь не нужен, так как используется оверлей)
-const handleClickOutside = (event) => {
-    // Обработчик больше не нужен, так как используется оверлей
 }
 
 // Инициализация выбранных пользователей из props
@@ -334,7 +308,7 @@ onUnmounted(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
+    background: var(--color-primary-background);
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 9999;
@@ -342,6 +316,8 @@ onUnmounted(() => {
     height: 520px;
     overflow: hidden;
     animation: slideIn 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
 }
 
 @keyframes slideIn {
@@ -360,8 +336,8 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e9ecef;
-    background: #f8f9fa;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-secondary-background);
     border-radius: 10px 10px 0 0;
 }
 
@@ -369,13 +345,13 @@ onUnmounted(() => {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #212529;
+    color: var(--color-primary-text);
 }
 
 .close-btn {
     background: none;
     border: none;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     cursor: pointer;
     padding: 4px;
     width: 28px;
@@ -387,20 +363,20 @@ onUnmounted(() => {
     transition: all 0.2s ease;
 
     &:hover {
-        background: #e9ecef;
-        color: #495057;
+        background: var(--color-hover-background);
+        color: var(--color-primary-text);
     }
 }
 
 .search-section {
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .search-input {
     width: 100%;
     padding: 0.75rem;
-    border: 2px solid #e9ecef;
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     font-size: 0.95rem;
     transition: all 0.3s ease;
@@ -412,14 +388,15 @@ onUnmounted(() => {
     }
 
     &::placeholder {
-        color: #6c757d;
+        color: var(--color-secondary-text);
     }
 }
 
 .users-list {
-    height: 300px;
+    flex: 1;
     overflow-y: auto;
     padding: 0.5rem 0;
+    min-height: 0;
 }
 
 .user-item {
@@ -429,14 +406,14 @@ onUnmounted(() => {
     padding: 0.75rem 1.5rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    border-bottom: 1px solid #f8f9fa;
+    border-bottom: 1px solid var(--color-border);
 
     &:hover {
-        background: #f8f9fa;
+        background: var(--color-hover-background);
     }
 
     &.selected {
-        background: #e3f2fd;
+        background: var(--color-hover-background);
         border-left: 3px solid #0d6efd;
     }
 
@@ -456,7 +433,7 @@ onUnmounted(() => {
 
 .user-name {
     font-weight: 500;
-    color: #212529;
+    color: var(--color-primary-text);
     font-size: 0.95rem;
     line-height: 1.2;
     margin-bottom: 0.125rem;
@@ -464,7 +441,7 @@ onUnmounted(() => {
 
 .user-position {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     line-height: 1.2;
 }
 
@@ -475,7 +452,7 @@ onUnmounted(() => {
 .checkbox {
     width: 20px;
     height: 20px;
-    border: 2px solid #dee2e6;
+    border: 2px solid var(--color-border);
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -489,7 +466,7 @@ onUnmounted(() => {
 }
 
 .checkmark {
-    color: white;
+    color: var(--color-primary-text);
     font-size: 0.75rem;
     font-weight: bold;
 }
@@ -498,10 +475,11 @@ onUnmounted(() => {
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
-    padding: 1rem 1.5rem;
-    border-top: 1px solid #e9ecef;
-    background: #f8f9fa;
-    border-radius: 0 0 10px 10px;
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-secondary-background);
+    border-radius: 0 0 12px 12px;
+    margin-top: auto;
 }
 
 .cancel-btn,
@@ -515,11 +493,11 @@ onUnmounted(() => {
 }
 
 .cancel-btn {
-    background: #6c757d;
-    color: white;
+    background: var(--color-secondary-background);
+    color: var(--color-primary-text);
 
     &:hover {
-        background: #5a6268;
+        background: var(--color-hover-background);
     }
 }
 
@@ -532,7 +510,8 @@ onUnmounted(() => {
     }
 
     &:disabled {
-        background: #6c757d;
+        background: var(--color-secondary-background);
+        border: 1px solid var(--color-border);
         cursor: not-allowed;
         opacity: 0.6;
     }
@@ -541,9 +520,9 @@ onUnmounted(() => {
 .selected-executors {
     margin-bottom: 1rem;
     padding: 1rem;
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--color-border);
 }
 
 .executors-grid {
@@ -557,9 +536,9 @@ onUnmounted(() => {
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem;
-    background: white;
+    background: var(--color-primary-background);
     border-radius: 6px;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--color-border);
     position: relative;
 }
 
@@ -570,7 +549,7 @@ onUnmounted(() => {
 
 .executor-name {
     font-weight: 500;
-    color: #212529;
+    color: var(--color-primary-text);
     font-size: 0.85rem;
     line-height: 1.2;
     margin-bottom: 0.125rem;
@@ -581,7 +560,7 @@ onUnmounted(() => {
 
 .executor-position {
     font-size: 0.75rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -465,7 +465,19 @@ const localProvisions = ref({
     customerId: props.provisions.customerId || null,
     manager: props.provisions.manager || (
         props.userInfo
-            ? (`${props.userInfo.first_name || ''} ${props.userInfo.last_name || ''}`.trim() || props.userInfo.username || props.userInfo.name || '')
+            ? (() => {
+                const firstName = props.userInfo.first_name || ''
+                const lastName = props.userInfo.last_name || ''
+                const middleName = props.userInfo.middle_name || ''
+                
+                // Формируем полное имя: Фамилия Имя Отчество
+                const fullName = [lastName, firstName, middleName]
+                    .filter(part => part.trim() !== '')
+                    .join(' ')
+                    .trim()
+                
+                return fullName || props.userInfo.username || props.userInfo.name || ''
+            })()
             : ''
     ), // Автоматически устанавливаем создателя проекта
     executors: props.provisions.executors || [],
@@ -499,7 +511,19 @@ async function fetchAvailableUsersForExecutors() {
         const resp = await apiClient.get('/project_ed/profiles/profiles/', { page_size: 1000 })
         const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
         const list = norm(resp)
-        const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
+        const toName = (u) => {
+            const firstName = u.first_name || ''
+            const lastName = u.last_name || ''
+            const middleName = u.middle_name || ''
+            
+            // Формируем полное имя: Фамилия Имя Отчество
+            const fullName = [lastName, firstName, middleName]
+                .filter(part => part.trim() !== '')
+                .join(' ')
+                .trim()
+            
+            return fullName || u.username || ''
+        }
         
         // Фильтруем пользователей: исключаем создателя проекта и пользователей с должностями "ректор" и "проректор"
         const filteredList = list.filter(u => {
@@ -541,7 +565,19 @@ async function resolveCustomerFromApi() {
         const resp = await apiClient.get('/project_ed/profiles/profiles/leadership/', { position_exact: 'Ректор' })
         const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
         const list = norm(resp)
-        const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
+        const toName = (u) => {
+            const firstName = u.first_name || ''
+            const lastName = u.last_name || ''
+            const middleName = u.middle_name || ''
+            
+            // Формируем полное имя: Фамилия Имя Отчество
+            const fullName = [lastName, firstName, middleName]
+                .filter(part => part.trim() !== '')
+                .join(' ')
+                .trim()
+            
+            return fullName || u.username || ''
+        }
         customerCandidates.value = list.map(u => ({
             id: u.id,
             name: toName(u),
@@ -569,7 +605,19 @@ async function resolveCuratorsFromApi() {
         const resp = await apiClient.get('/project_ed/profiles/profiles/leadership/', { position: 'проректор' })
         const norm = (r) => Array.isArray(r?.data) ? r.data : (r?.data?.results || [])
         const list = norm(resp)
-        const toName = (u) => (`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '').trim()
+        const toName = (u) => {
+            const firstName = u.first_name || ''
+            const lastName = u.last_name || ''
+            const middleName = u.middle_name || ''
+            
+            // Формируем полное имя: Фамилия Имя Отчество
+            const fullName = [lastName, firstName, middleName]
+                .filter(part => part.trim() !== '')
+                .join(' ')
+                .trim()
+            
+            return fullName || u.username || ''
+        }
         prorectorCandidates.value = list.map(u => ({
             id: u.id,
             name: toName(u),
@@ -1108,12 +1156,12 @@ onUnmounted(() => {
 .step-title {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #212529;
+    color: var(--color-primary-text);
     margin: 0 0 0.5rem 0;
 }
 
 .step-description {
-    color: #6c757d;
+    color: var(--color-secondary-text);
     margin: 0;
 }
 
@@ -1131,10 +1179,10 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    background: white;
+    background: var(--color-primary-background);
     border-radius: 12px;
     padding: 2rem;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--color-border);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -1150,7 +1198,7 @@ onUnmounted(() => {
     align-items: center;
     gap: 0.25rem;
     font-weight: 600;
-    color: #212529;
+    color: var(--color-primary-text);
     margin-bottom: 0.75rem;
     font-size: 0.95rem;
 
@@ -1161,7 +1209,7 @@ onUnmounted(() => {
 }
 
 .info-icon {
-    color: #6c757d;
+    color: var(--color-secondary-text);
     cursor: pointer;
     transition: all 0.2s ease;
     display: inline-block;
@@ -1204,21 +1252,21 @@ onUnmounted(() => {
 .form-select {
     width: 100%;
     padding: 0.875rem;
-    border: 2px solid #e9ecef;
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     font-size: 1rem;
     transition: all 0.3s ease;
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
 
     &:focus {
         outline: none;
         border-color: #0d6efd;
-        background: white;
+        background: var(--color-primary-background);
         box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
     }
 
     &::placeholder {
-        color: #6c757d;
+        color: var(--color-secondary-text);
     }
 }
 
@@ -1246,24 +1294,24 @@ onUnmounted(() => {
             width: 100%;
             cursor: pointer;
             font-weight: 500;
-            color: #495057;
+            color: var(--color-primary-text);
             padding: 0.875rem;
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--color-border);
             border-radius: 8px;
             font-size: 1rem;
             transition: all 0.3s ease;
-            background: #f8f9fa;
+            background: var(--color-secondary-background);
             
             &:focus {
                 outline: none;
                 border-color: #0d6efd;
-                background: white;
+                background: var(--color-primary-background);
                 box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
             }
             
             &:hover {
                 border-color: #0d6efd;
-                background: white;
+                background: var(--color-hover-background);
             }
             
             // Скрываем стандартную иконку календаря браузера
@@ -1301,22 +1349,22 @@ onUnmounted(() => {
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--color-border);
 }
 
 /* Визуальное выравнивание селекта куратора под блок заказчика */
 .curator-select:deep(.select-trigger) {
-    background: #f8f9fa !important;
-    border: 1px solid #e9ecef !important;
+    background: var(--color-secondary-background) !important;
+    border: 1px solid var(--color-border) !important;
     border-radius: 8px !important;
     min-height: 56px; /* как у блока с аватаром */
     padding: 0.5rem 0.75rem;
 }
 .curator-select:deep(.select-trigger:hover),
 .curator-select:deep(.select-trigger:focus) {
-    background: #fff !important;
+    background: var(--color-primary-background) !important;
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
 }
 .curator-select:deep(.dropdown-item) {
@@ -1368,9 +1416,9 @@ onUnmounted(() => {
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem;
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--color-border);
 }
 
 .customer-info {
@@ -1380,14 +1428,14 @@ onUnmounted(() => {
 
 .customer-name {
     font-weight: 600;
-    color: #212529;
+    color: var(--color-primary-text);
     font-size: 0.95rem;
     line-height: 1.2;
 }
 
 .customer-position {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     margin-top: 0.125rem;
     line-height: 1.2;
 }
@@ -1401,7 +1449,7 @@ onUnmounted(() => {
         top: 50%;
         transform: translateY(-50%);
         pointer-events: none;
-        color: #6c757d;
+        color: var(--color-secondary-text);
         font-size: 0.875rem;
     }
 }
@@ -1415,11 +1463,11 @@ onUnmounted(() => {
 .curator-select-trigger {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     font-size: 1rem;
     transition: all 0.3s ease;
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1428,12 +1476,12 @@ onUnmounted(() => {
     
     &:hover {
         border-color: #0d6efd;
-        background: white;
+        background: var(--color-primary-background);
     }
     
     &.is-open {
         border-color: #0d6efd;
-        background: white;
+        background: var(--color-primary-background);
         box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
     }
 }
@@ -1447,7 +1495,7 @@ onUnmounted(() => {
 }
 
 .curator-placeholder {
-    color: #6c757d;
+    color: var(--color-secondary-text);
     flex: 1;
 }
 
@@ -1458,7 +1506,7 @@ onUnmounted(() => {
 
 .curator-name {
     font-weight: 500;
-    color: #212529;
+    color: var(--color-primary-text);
     font-size: 0.95rem;
     line-height: 1.2;
     overflow: hidden;
@@ -1472,7 +1520,7 @@ onUnmounted(() => {
 
 .curator-position {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     margin-top: 0.125rem;
     line-height: 1.2;
     overflow: hidden;
@@ -1485,7 +1533,7 @@ onUnmounted(() => {
     top: calc(100% + 4px);
     left: 0;
     right: 0;
-    background: white;
+    background: var(--color-primary-background);
     border: 2px solid #0d6efd;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -1501,18 +1549,18 @@ onUnmounted(() => {
     padding: 0.875rem;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--color-border);
     
     &:last-child {
         border-bottom: none;
     }
     
     &:hover {
-        background-color: #f8f9fa;
+        background-color: var(--color-hover-background);
     }
     
     &:active {
-        background-color: #e9ecef;
+        background-color: var(--color-hover-background);
     }
 }
 
@@ -1548,9 +1596,9 @@ onUnmounted(() => {
     align-items: flex-start;
     gap: 1rem;
     padding: 1rem;
-    background: #f8f9fa;
+    background: var(--color-secondary-background);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--color-border);
 }
 
 .task-number,
@@ -1621,14 +1669,12 @@ onUnmounted(() => {
 
 // Стили для бюджета
 .readonly-input {
-    background: #e9ecef !important;
+    background: var(--color-secondary-background) !important;
     cursor: not-allowed;
-    color: #495057;
+    color: var(--color-primary-text);
     resize: none;
     
     &:focus {
-        background: #e9ecef !important;
-        border-color: #dee2e6 !important;
         box-shadow: none !important;
     }
 }
@@ -1646,7 +1692,7 @@ onUnmounted(() => {
 .field-note {
     margin-top: 0.5rem;
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--color-secondary-text);
     font-style: italic;
 }
 
