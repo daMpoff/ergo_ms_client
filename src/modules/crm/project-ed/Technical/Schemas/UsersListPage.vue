@@ -9,7 +9,7 @@
                                 @input="handleSearch"
                                 type="text"
                                 class="form-control"
-                                placeholder="Поиск по имени, роли или должности"
+                                placeholder="Поиск по ФИО, роли или должности"
                             />
                         </div>
                         <button class="btn btn-outline-secondary d-flex align-items-center" @click="loadUsers">
@@ -30,7 +30,6 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead>
                                     <tr>
-                                        <th style="width: 56px;">#</th>
                                         <th>ФИО</th>
                                         <th class="text-center">Роль</th>
                                         <th class="text-center">Должность</th>
@@ -39,8 +38,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(u, idx) in filteredUsers" :key="u.id" class="table-row-click" @click="openEdit(u)">
-                                        <td class="text-muted">{{ idx + 1 }}</td>
+                                    <tr v-for="u in filteredUsers" :key="u.id" class="table-row-click" @click="openEdit(u)">
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <template v-if="u.avatar_url">
@@ -170,6 +168,9 @@ const filteredUsers = computed(() => {
     return users.value.filter(u => {
         const values = [
             u.displayName,
+            u.first_name,
+            u.middle_name,
+            u.last_name,
             u.role,
             u.position,
             u.faculty,
@@ -199,7 +200,7 @@ const dictsLoading = ref(false)
 
 function fullName(u) {
     if (u.displayName) return u.displayName
-    const name = `${u.first_name || ''} ${u.last_name || ''}`.trim()
+    const name = `${u.last_name || ''} ${u.first_name || ''} ${u.middle_name || ''}`.trim()
     return name || u.username || '—'
 }
 
@@ -258,8 +259,9 @@ async function loadUsers() {
                 username: u.username,
                 first_name: u.first_name,
                 last_name: u.last_name,
+                middle_name: u.middle_name || null,
                 avatar_url: u.avatar_url || null,
-                displayName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+                displayName: `${u.last_name || ''} ${u.first_name || ''} ${u.middle_name || ''}`.trim() || u.username,
                 role: prof?.role_name || null,
                 position: prof?.position_name || null,
                 faculty: prof?.faculty_name || null,
