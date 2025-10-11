@@ -16,19 +16,12 @@
                     <dt>Руководитель</dt>
                     <dd>
                         <div v-if="projectRoles.manager" class="role-person">
-                            <img 
-                                v-if="projectRoles.manager.avatar_url" 
-                                :src="projectRoles.manager.avatar_url" 
-                                :alt="projectRoles.manager.full_name"
-                                class="role-person__avatar"
-                            />
-                            <DefaultAvatar 
-                                v-else 
+                            <UserAvatar 
                                 size="small" 
+                                :custom-avatar-url="projectRoles.manager.avatar_url"
                                 :title="projectRoles.manager.full_name"
-                                class="role-person__avatar"
                             />
-                            <span class="role-person__name">{{ projectRoles.manager.full_name }}</span>
+                            <span class="role-person__name">{{ formatNameWithInitials(projectRoles.manager) }}</span>
                         </div>
                         <span v-else class="text-muted">—</span>
                     </dd>
@@ -37,19 +30,12 @@
                     <dt>Заказчик</dt>
                     <dd>
                         <div v-if="projectRoles.client" class="role-person">
-                            <img 
-                                v-if="projectRoles.client.avatar_url" 
-                                :src="projectRoles.client.avatar_url" 
-                                :alt="projectRoles.client.full_name"
-                                class="role-person__avatar"
-                            />
-                            <DefaultAvatar 
-                                v-else 
+                            <UserAvatar 
                                 size="small" 
+                                :custom-avatar-url="projectRoles.client.avatar_url"
                                 :title="projectRoles.client.full_name"
-                                class="role-person__avatar"
                             />
-                            <span class="role-person__name">{{ projectRoles.client.full_name }}</span>
+                            <span class="role-person__name">{{ formatNameWithInitials(projectRoles.client) }}</span>
                         </div>
                         <span v-else class="text-muted">—</span>
                     </dd>
@@ -58,19 +44,12 @@
                     <dt>Куратор</dt>
                     <dd>
                         <div v-if="projectRoles.curator" class="role-person">
-                            <img 
-                                v-if="projectRoles.curator.avatar_url" 
-                                :src="projectRoles.curator.avatar_url" 
-                                :alt="projectRoles.curator.full_name"
-                                class="role-person__avatar"
-                            />
-                            <DefaultAvatar 
-                                v-else 
+                            <UserAvatar 
                                 size="small" 
+                                :custom-avatar-url="projectRoles.curator.avatar_url"
                                 :title="projectRoles.curator.full_name"
-                                class="role-person__avatar"
                             />
-                            <span class="role-person__name">{{ projectRoles.curator.full_name }}</span>
+                            <span class="role-person__name">{{ formatNameWithInitials(projectRoles.curator) }}</span>
                         </div>
                         <span v-else class="text-muted">—</span>
                     </dd>
@@ -101,17 +80,10 @@
                                     class="contributors__item"
                                     :ref="el => setPerformerRef(el, idx)"
                                 >
-                                    <img
-                                        v-if="person.avatar_url"
-                                        :src="person.avatar_url"
-                                        :alt="person.full_name || 'Исполнитель'"
-                                        class="contributors__avatar"
-                                    />
-                                    <DefaultAvatar
-                                        v-else
+                                    <UserAvatar
                                         size="small"
-                                        :title="person.full_name || '—'"
-                                        class="role-person__avatar"
+                                        :custom-avatar-url="person.avatar_url"
+                                        :title="formatNameWithInitials(person)"
                                     />
                                 </div>
                             </div>
@@ -144,11 +116,12 @@
 
 <script setup>
 import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
-import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 import ModalDelete from '@/modules/crm/project-ed/components/ModalDelete.vue'
 import { initializePopover, cleanupPopover } from '@/modules/crm/project-ed/components/steps/js/popoverUtils.js'
 import { useUserStore } from '@/core/cms/js/userStore.js'
 import { isProjectManager as isProjectManagerUtil } from '@/modules/crm/project-ed/js/projectRoles.js'
+import { formatNameWithInitials } from '@/modules/crm/project-ed/js/nameUtils.js'
 import { apiClient } from '@/js/api/manager'
 import { projectEdEndpoints as endpoints } from '@/modules/crm/project-ed/js/endpoints.js'
 import { useNotifications } from '@/modules/lms/composables/useNotifications'
@@ -215,7 +188,7 @@ function initPerformerPopovers() {
   performerRefs.value.forEach((el, index) => {
     if (!el) return
     const person = props.performers?.[index]
-    const name = person?.full_name || ''
+    const name = formatNameWithInitials(person) || ''
     const pop = initializePopover(el, name, {
       className: 'custom-popover',
       position: 'auto',
@@ -348,6 +321,7 @@ function formatDate(value) {
   }
 }
 
+
 // Динамический текст кнопки удаления с таймером
 const deleteButtonText = computed(() => {
   if (deleteTimer.value > 0) {
@@ -404,10 +378,6 @@ dd {
 }
 
 .role-person__avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
   flex-shrink: 0;
 }
 
@@ -428,13 +398,6 @@ dd {
   height: 32px;
 }
 
-.contributors__avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-}
 
 .text-delete-project {
   padding: .5rem;

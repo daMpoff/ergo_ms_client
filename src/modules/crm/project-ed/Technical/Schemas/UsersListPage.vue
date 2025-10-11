@@ -159,6 +159,7 @@ import { apiClient } from '@/js/api/manager'
 import { useToast } from 'vue-toastification'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import SelectBox from '@/components/SelectBox.vue'
+import { formatNameWithInitials } from '@/modules/crm/project-ed/js/nameUtils.js'
 
 const toast = useToast()
 const users = ref([])
@@ -200,8 +201,7 @@ const dictsLoading = ref(false)
 
 function fullName(u) {
     if (u.displayName) return u.displayName
-    const name = `${u.last_name || ''} ${u.first_name || ''} ${u.middle_name || ''}`.trim()
-    return name || u.username || '—'
+    return formatNameWithInitials(u)
 }
 
 function departmentShort(u) {
