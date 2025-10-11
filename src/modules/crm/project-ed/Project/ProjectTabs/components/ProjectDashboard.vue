@@ -84,7 +84,7 @@ const formatCurrency = (amount) => {
 
 <style scoped lang="scss">
 .project-dashboard {
-  background: #fff;
+  background: var(--color-primary-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
@@ -93,7 +93,7 @@ const formatCurrency = (amount) => {
 .project-dashboard__header {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-border);
-  background: #f8f9fa;
+  background: var(--color-secondary-background);
 }
 
 .project-dashboard__body {
@@ -118,18 +118,16 @@ const formatCurrency = (amount) => {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0;
-  border-bottom: 1px solid #f8f9fa;
+  border-bottom: 1px solid var(--color-border);
   
   &:last-child {
     border-bottom: none;
     font-weight: 600;
-    padding-top: 0.75rem;
-    border-top: 2px solid #e9ecef;
   }
 }
 
 .budget-item-label {
-  color: #6c757d;
+  color: var(--color-secondary-text);
   font-size: 0.875rem;
 }
 
@@ -145,7 +143,7 @@ const formatCurrency = (amount) => {
   }
   
   &.budget-total {
-    color: #495057;
+    color: var(--color-secondary-text);
   }
 }
 
