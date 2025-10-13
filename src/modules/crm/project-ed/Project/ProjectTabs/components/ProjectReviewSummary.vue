@@ -85,8 +85,8 @@
         :visible="tooltipVisible"
         :target-element="tooltipTarget"
         placement="top"
-        @mouseenter="tooltipVisible = true"
-        @mouseleave="tooltipVisible = false"
+        @mouseenter="onTooltipEnter"
+        @mouseleave="onTooltipLeave"
       >
         <ProfileTooltip
           :userId="tooltipProfile.userId"
@@ -122,6 +122,7 @@ const defaultAvatar = '/static/img/default-avatar.svg'
 const tooltipVisible = ref(false)
 const tooltipTarget = ref(null)
 const router = useRouter()
+let hideTimer = null
 const tooltipProfile = ref({
   userId: null,
   username: '',
@@ -134,6 +135,7 @@ const tooltipProfile = ref({
 
 const onAvatarEnter = (expert, evt) => {
   tooltipTarget.value = evt.currentTarget
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
   tooltipProfile.value = {
     userId: expert?.expert ?? expert?.user_id ?? null,
     username: expert?.expert_username || expert?.username || '',
@@ -147,13 +149,24 @@ const onAvatarEnter = (expert, evt) => {
 }
 
 const onAvatarLeave = () => {
-  tooltipVisible.value = false
+  if (hideTimer) { clearTimeout(hideTimer) }
+  hideTimer = setTimeout(() => { tooltipVisible.value = false }, 180)
 }
 
 const onAvatarClick = (expert) => {
   const userId = expert?.expert ?? expert?.user_id ?? null
   if (!userId) return
   router.push({ path: `/project-ed/profile/${userId}` })
+}
+
+const onTooltipEnter = () => {
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+  tooltipVisible.value = true
+}
+
+const onTooltipLeave = () => {
+  if (hideTimer) { clearTimeout(hideTimer) }
+  hideTimer = setTimeout(() => { tooltipVisible.value = false }, 150)
 }
 
 const currentReview = computed(() => props.projectData?.current_review || null)

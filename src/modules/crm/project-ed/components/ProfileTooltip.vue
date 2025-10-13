@@ -151,7 +151,6 @@ const displayAvatarUrl = computed(() => loadedUser.value?.avatar_url || props.av
   display: flex;
   gap: 0.25rem;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
   min-width: 200px;
   max-width: 280px;
@@ -172,7 +171,6 @@ const displayAvatarUrl = computed(() => loadedUser.value?.avatar_url || props.av
 .profile-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
   flex: 1;
   min-width: 0;

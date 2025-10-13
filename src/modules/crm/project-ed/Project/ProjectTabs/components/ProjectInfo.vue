@@ -15,7 +15,7 @@
                 <div class="info-row">
                     <dt>Руководитель</dt>
                     <dd>
-                        <div v-if="projectRoles.manager" class="role-person">
+                        <div v-if="projectRoles.manager" class="role-person" @mouseenter="onHoverPerson(projectRoles.manager, $event)" @mouseleave="onLeavePerson" @click="onClickPerson(projectRoles.manager)">
                             <UserAvatar 
                                 size="small" 
                                 :custom-avatar-url="projectRoles.manager.avatar_url"
@@ -29,7 +29,7 @@
                 <div class="info-row">
                     <dt>Заказчик</dt>
                     <dd>
-                        <div v-if="projectRoles.client" class="role-person">
+                        <div v-if="projectRoles.client" class="role-person" @mouseenter="onHoverPerson(projectRoles.client, $event)" @mouseleave="onLeavePerson" @click="onClickPerson(projectRoles.client)">
                             <UserAvatar 
                                 size="small" 
                                 :custom-avatar-url="projectRoles.client.avatar_url"
@@ -43,7 +43,7 @@
                 <div class="info-row">
                     <dt>Куратор</dt>
                     <dd>
-                        <div v-if="projectRoles.curator" class="role-person">
+                        <div v-if="projectRoles.curator" class="role-person" @mouseenter="onHoverPerson(projectRoles.curator, $event)" @mouseleave="onLeavePerson" @click="onClickPerson(projectRoles.curator)">
                             <UserAvatar 
                                 size="small" 
                                 :custom-avatar-url="projectRoles.curator.avatar_url"
@@ -78,7 +78,9 @@
                                     v-for="(person, idx) in performers"
                                     :key="person.id || idx"
                                     class="contributors__item"
-                                    :ref="el => setPerformerRef(el, idx)"
+                                    @mouseenter="onHoverPerson(person, $event)"
+                                    @mouseleave="onLeavePerson"
+                                    @click="onClickPerson(person)"
                                 >
                                     <UserAvatar
                                         size="small"
@@ -94,6 +96,25 @@
             </dl>
         </div>
     </div>
+
+    <SimpleTooltip
+      :visible="tooltipVisible"
+      :target-element="tooltipTarget"
+      placement="top"
+      :offset="6"
+      @mouseenter="onTooltipEnter"
+      @mouseleave="onTooltipLeave"
+    >
+      <ProfileTooltip
+        :userId="tooltipProfile.userId"
+        :username="tooltipProfile.username"
+        :fullName="tooltipProfile.fullName"
+        :position="tooltipProfile.position"
+        :faculty="tooltipProfile.faculty"
+        :department="tooltipProfile.department"
+        :avatarUrl="tooltipProfile.avatarUrl"
+      />
+    </SimpleTooltip>
     
     <p v-if="isCurrentUserManager && isDraftStatus" class="text-delete-project">
         Вы можете 
@@ -116,9 +137,11 @@
 
 <script setup>
 import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import SimpleTooltip from '@/modules/crm/project-ed/components/SimpleTooltip.vue'
+import ProfileTooltip from '@/modules/crm/project-ed/components/ProfileTooltip.vue'
 import UserAvatar from '@/modules/crm/project-ed/components/UserAvatar.vue'
 import ModalDelete from '@/modules/crm/project-ed/components/ModalDelete.vue'
-import { initializePopover, cleanupPopover } from '@/modules/crm/project-ed/components/steps/js/popoverUtils.js'
 import { useUserStore } from '@/core/cms/js/userStore.js'
 import { isProjectManager as isProjectManagerUtil } from '@/modules/crm/project-ed/js/projectRoles.js'
 import { formatNameWithInitials } from '@/modules/crm/project-ed/js/nameUtils.js'
@@ -167,8 +190,20 @@ const props = defineProps({
 
 const emit = defineEmits(['project-deleted'])
 
-const performerRefs = ref([])
-const popovers = ref([])
+// убрано: старый тултип на исполнителях
+const tooltipVisible = ref(false)
+const tooltipTarget = ref(null)
+const tooltipProfile = ref({
+  userId: null,
+  username: '',
+  fullName: '',
+  position: '',
+  faculty: '',
+  department: '',
+  avatarUrl: null
+})
+const router = useRouter()
+let hideTimer = null
 const userStore = useUserStore()
 const { showSuccess, showError } = useNotifications()
 const showDeleteConfirm = ref(false)
@@ -176,39 +211,43 @@ const deleteTimer = ref(5)
 const isDeleting = ref(false)
 let timerInterval = null
 
-function setPerformerRef(el, index) {
-  performerRefs.value[index] = el
+// убрано: инициализация/хранение bootstrap поповеров
+
+function onHoverPerson(person, evt) {
+  tooltipTarget.value = evt?.currentTarget || evt?.target || null
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+  tooltipProfile.value = {
+    userId: person?.id ?? person?.user_id ?? null,
+    username: person?.username || '',
+    fullName: person?.full_name || '',
+    position: person?.position_name || person?.position || '',
+    faculty: person?.faculty_name || '',
+    department: person?.department_name || '',
+    avatarUrl: person?.avatar_url || null
+  }
+  tooltipVisible.value = true
 }
 
-function initPerformerPopovers() {
-  // Очистим прежние
-  popovers.value.forEach(p => cleanupPopover(p))
-  popovers.value = []
-
-  performerRefs.value.forEach((el, index) => {
-    if (!el) return
-    const person = props.performers?.[index]
-    const name = formatNameWithInitials(person) || ''
-    const pop = initializePopover(el, name, {
-      className: 'custom-popover',
-      position: 'auto',
-      offset: 8,
-      showArrow: true,
-      maxWidth: 240
-    })
-    if (pop) popovers.value.push(pop)
-  })
+function onLeavePerson() {
+  if (hideTimer) { clearTimeout(hideTimer) }
+  hideTimer = setTimeout(() => { tooltipVisible.value = false }, 180)
 }
 
-onMounted(async () => {
-  await nextTick()
-  initPerformerPopovers()
-})
+function onClickPerson(person) {
+  const userId = person?.id ?? person?.user_id ?? null
+  if (!userId) return
+  router.push({ path: `/project-ed/profile/${userId}` })
+}
 
-watch(() => props.performers, async () => {
-  await nextTick()
-  initPerformerPopovers()
-}, { deep: true })
+function onTooltipEnter() {
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+  tooltipVisible.value = true
+}
+
+function onTooltipLeave() {
+  if (hideTimer) { clearTimeout(hideTimer) }
+  hideTimer = setTimeout(() => { tooltipVisible.value = false }, 150)
+}
 
 // Проверка, является ли текущий пользователь руководителем проекта
 const isCurrentUserManager = computed(() => isProjectManagerUtil(userStore.user, props.projectData))
@@ -298,8 +337,6 @@ watch(showDeleteConfirm, (newValue) => {
 })
 
 onBeforeUnmount(() => {
-  popovers.value.forEach(p => cleanupPopover(p))
-  popovers.value = []
   clearDeleteTimer()
 })
 
@@ -321,7 +358,6 @@ function formatDate(value) {
   }
 }
 
-
 // Динамический текст кнопки удаления с таймером
 const deleteButtonText = computed(() => {
   if (deleteTimer.value > 0) {
@@ -333,7 +369,7 @@ const deleteButtonText = computed(() => {
 
 <style scoped lang="scss">
 .info-card {
-  background: #fff;
+  background: var(--color-primary-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
@@ -342,7 +378,7 @@ const deleteButtonText = computed(() => {
 .info-card__header {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-border);
-  background: #f8f9fa;
+  background: var(--color-secondary-background);
 }
 
 .info-card__body {
@@ -363,7 +399,7 @@ const deleteButtonText = computed(() => {
 
 dt {
   margin: 0;
-  color: #6c757d;
+  color: var(--color-secondary-text);
   font-weight: 500;
 }
 
@@ -375,6 +411,12 @@ dd {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.role-person:hover {
+  background-color: var(--color-hover-background);
 }
 
 .role-person__avatar {
@@ -383,7 +425,7 @@ dd {
 
 .role-person__name {
   font-weight: 500;
-  color: #495057;
+  color: var(--color-primary-text);
   font-size: 0.875rem;
 }
 
@@ -396,13 +438,14 @@ dd {
 .contributors__item {
   width: 32px;
   height: 32px;
+  cursor: pointer;
 }
 
 
 .text-delete-project {
   padding: .5rem;
   margin: 0;
-  color: #6c757d;
+  color: var(--color-secondary-text);
   font-size: 0.875rem;
 }
 

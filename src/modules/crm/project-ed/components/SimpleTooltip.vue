@@ -108,7 +108,7 @@ const tooltipStyle = computed(() => {
     const calculateBottomPosition = () => {
         return {
             left: targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2),
-            top: targetRect.bottom + props.offset
+            top: targetRect.bottom + Math.max(4, props.offset)
         }
     }
     
