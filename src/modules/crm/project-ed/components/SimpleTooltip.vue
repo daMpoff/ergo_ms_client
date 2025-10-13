@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
     visible: {
@@ -44,6 +44,7 @@ defineEmits(['mouseenter', 'mouseleave'])
 
 const tooltipRef = ref(null)
 const tooltipDimensions = ref({ width: 0, height: 0 })
+let resizeObserver = null
 
 // Отслеживаем изменения видимости для получения размеров тултипа
 watch(() => props.visible, async (newVal) => {
@@ -55,7 +56,27 @@ watch(() => props.visible, async (newVal) => {
                 width: rect.width,
                 height: rect.height
             }
+            // Подписываемся на изменения размеров контента тултипа
+            if (typeof ResizeObserver !== 'undefined') {
+                if (resizeObserver) {
+                    try { resizeObserver.disconnect() } catch(_) {}
+                }
+                resizeObserver = new ResizeObserver((entries) => {
+                    const entry = entries[0]
+                    if (!entry) return
+                    const cr = entry.contentRect
+                    tooltipDimensions.value = { width: cr.width, height: cr.height }
+                })
+                resizeObserver.observe(tooltipRef.value)
+            }
         }
+    }
+})
+
+onBeforeUnmount(() => {
+    if (resizeObserver) {
+        try { resizeObserver.disconnect() } catch (_) {}
+        resizeObserver = null
     }
 })
 
@@ -66,7 +87,7 @@ const tooltipStyle = computed(() => {
 
     const targetRect = props.targetElement.getBoundingClientRect()
     const tooltipWidth = tooltipDimensions.value.width || 250 // Дефолтная ширина
-    const tooltipHeight = tooltipDimensions.value.height || 100 // Дефолтная высота
+    const tooltipHeight = tooltipDimensions.value.height || 0 // Не используем большую высоту по умолчанию
     const windowWidth = window.innerWidth
     const windowHeight = window.innerHeight
     const scrollX = window.scrollX
@@ -91,21 +112,27 @@ const tooltipStyle = computed(() => {
         }
     }
     
-    // Пробуем разместить сверху (приоритетное размещение)
-    position = calculateTopPosition()
-    
-    // Проверяем, помещается ли тултип сверху
-    if (position.top < 10) {
-        // Если не помещается сверху, размещаем снизу
+    // Если высота еще не измерена (первый рендер), сначала ставим снизу — ближе к таргету
+    if (!tooltipHeight) {
         position = calculateBottomPosition()
         actualPlacement = 'bottom'
+    } else {
+        // Пробуем разместить сверху (приоритетное размещение)
+        position = calculateTopPosition()
         
-        // Проверяем, не выходит ли за нижнюю границу экрана
-        if (position.top + tooltipHeight > windowHeight - 10) {
-            // Если и снизу не помещается, все равно показываем сверху, но прижимаем к верху экрана
-            position = calculateTopPosition()
-            position.top = Math.max(10, position.top)
-            actualPlacement = 'top'
+        // Проверяем, помещается ли тултип сверху
+        if (position.top < 10) {
+            // Если не помещается сверху, размещаем снизу
+            position = calculateBottomPosition()
+            actualPlacement = 'bottom'
+            
+            // Проверяем, не выходит ли за нижнюю границу экрана
+            if (position.top + tooltipHeight > windowHeight - 10) {
+                // Если и снизу не помещается, все равно показываем сверху, но прижимаем к верху экрана
+                position = calculateTopPosition()
+                position.top = Math.max(10, position.top)
+                actualPlacement = 'top'
+            }
         }
     }
     

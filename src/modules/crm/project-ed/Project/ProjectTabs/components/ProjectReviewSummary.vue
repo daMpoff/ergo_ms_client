@@ -35,7 +35,7 @@
           <div class="reviewers-stat-item" v-if="pendingExperts.length > 0">
             <span class="reviewers-stat-label">Ожидают:</span>
             <div class="avatars-stack">
-              <div v-for="(u, idx) in pendingExperts" :key="`p-${idx}`" class="avatar-item">
+              <div v-for="(u, idx) in pendingExperts" :key="`p-${idx}`" class="avatar-item" @mouseenter="onAvatarEnter(u, $event)" @mouseleave="onAvatarLeave" @click="onAvatarClick(u)">
                 <UserAvatar
                   size="small"
                   :customAvatarUrl="u.expert_avatar_url ?? null"
@@ -48,7 +48,7 @@
           <div class="reviewers-stat-item" v-if="checkedExperts.length > 0">
             <span class="reviewers-stat-label">Проверили:</span>
             <div class="avatars-stack">
-              <div v-for="(u, idx) in checkedExperts" :key="`c-${idx}`" class="avatar-item checked">
+              <div v-for="(u, idx) in checkedExperts" :key="`c-${idx}`" class="avatar-item checked" @mouseenter="onAvatarEnter(u, $event)" @mouseleave="onAvatarLeave" @click="onAvatarClick(u)">
                 <UserAvatar
                   size="small"
                   :customAvatarUrl="u.expert_avatar_url ?? null"
@@ -79,14 +79,36 @@
           <span>Замечаний от экспертов пока нет</span>
         </div>
       </div>
+
+      <!-- Tooltip профиля эксперта -->
+      <SimpleTooltip
+        :visible="tooltipVisible"
+        :target-element="tooltipTarget"
+        placement="top"
+        @mouseenter="tooltipVisible = true"
+        @mouseleave="tooltipVisible = false"
+      >
+        <ProfileTooltip
+          :userId="tooltipProfile.userId"
+          :username="tooltipProfile.username"
+          :fullName="tooltipProfile.fullName"
+          :position="tooltipProfile.position"
+          :faculty="tooltipProfile.faculty"
+          :department="tooltipProfile.department"
+          :avatarUrl="tooltipProfile.avatarUrl"
+        />
+      </SimpleTooltip>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import ReviewUnit from './ReviewUnit.vue'
 import UserAvatar from '../../../components/UserAvatar.vue'
+import SimpleTooltip from '../../../components/SimpleTooltip.vue'
+import ProfileTooltip from '../../../components/ProfileTooltip.vue'
 
 const props = defineProps({
   projectData: {
@@ -95,6 +117,44 @@ const props = defineProps({
   }
 })
 const defaultAvatar = '/static/img/default-avatar.svg'
+
+// Состояние тултипа профиля
+const tooltipVisible = ref(false)
+const tooltipTarget = ref(null)
+const router = useRouter()
+const tooltipProfile = ref({
+  userId: null,
+  username: '',
+  fullName: '',
+  position: '',
+  faculty: '',
+  department: '',
+  avatarUrl: null
+})
+
+const onAvatarEnter = (expert, evt) => {
+  tooltipTarget.value = evt.currentTarget
+  tooltipProfile.value = {
+    userId: expert?.expert ?? expert?.user_id ?? null,
+    username: expert?.expert_username || expert?.username || '',
+    fullName: expert?.expert_full_name || expert?.full_name || '',
+    position: expert?.position || '',
+    faculty: expert?.faculty || '',
+    department: expert?.department || '',
+    avatarUrl: expert?.expert_avatar_url || expert?.avatar_url || null
+  }
+  tooltipVisible.value = true
+}
+
+const onAvatarLeave = () => {
+  tooltipVisible.value = false
+}
+
+const onAvatarClick = (expert) => {
+  const userId = expert?.expert ?? expert?.user_id ?? null
+  if (!userId) return
+  router.push({ path: `/project-ed/profile/${userId}` })
+}
 
 const currentReview = computed(() => props.projectData?.current_review || null)
 
@@ -345,6 +405,7 @@ const nextStepsIcon = computed(() => {
 
 .avatars-stack .avatar-item {
   margin-left: -8px;
+  cursor: pointer;
 }
 
 .avatars-stack .avatar-item:first-child {
