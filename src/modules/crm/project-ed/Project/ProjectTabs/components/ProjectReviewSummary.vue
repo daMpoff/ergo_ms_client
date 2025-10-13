@@ -31,17 +31,31 @@
             <span class="reviewers-stat-label">Всего экспертов:</span>
             <span class="reviewers-stat-value">{{ reviewersData.total }}</span>
           </div>
-          <div class="reviewers-stat-item" v-if="reviewersData.started > 0">
-            <span class="reviewers-stat-label">Работают:</span>
-            <span class="reviewers-stat-value in-progress">{{ reviewersData.started }}</span>
-          </div>
-          <div class="reviewers-stat-item" v-if="reviewersData.completed > 0">
-            <span class="reviewers-stat-label">Завершили:</span>
-            <span class="reviewers-stat-value completed">{{ reviewersData.completed }}</span>
-          </div>
-          <div class="reviewers-stat-item" v-if="reviewersData.pending > 0">
+
+          <div class="reviewers-stat-item" v-if="pendingExperts.length > 0">
             <span class="reviewers-stat-label">Ожидают:</span>
-            <span class="reviewers-stat-value pending">{{ reviewersData.pending }}</span>
+            <div class="avatars-stack">
+              <div v-for="(u, idx) in pendingExperts" :key="`p-${idx}`" class="avatar-item">
+                <UserAvatar
+                  size="small"
+                  :customAvatarUrl="u.expert_avatar_url ?? null"
+                  :title="u.expert_full_name || u.expert_username || 'Эксперт'"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="reviewers-stat-item" v-if="checkedExperts.length > 0">
+            <span class="reviewers-stat-label">Проверили:</span>
+            <div class="avatars-stack">
+              <div v-for="(u, idx) in checkedExperts" :key="`c-${idx}`" class="avatar-item checked">
+                <UserAvatar
+                  size="small"
+                  :customAvatarUrl="u.expert_avatar_url ?? null"
+                  :title="u.expert_full_name || u.expert_username || 'Эксперт'"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -52,22 +66,17 @@
           Замечания экспертов
         </h6>
         <div class="review-comments-list">
-          <div 
-            v-for="(comment, index) in reviewComments" 
-            :key="index"
-            class="review-comment-item"
-          >
-            <div class="review-comment-header">
-              <span class="review-comment-author">{{ comment.author }}</span>
-              <span class="review-comment-date">{{ formatDate(comment.date) }}</span>
-            </div>
-            <div class="review-comment-text">{{ comment.text }}</div>
-            <div class="review-comment-type" v-if="comment.type">
-              <span class="badge" :class="getCommentTypeClass(comment.type)">
-                {{ getCommentTypeLabel(comment.type) }}
-              </span>
-            </div>
-          </div>
+          <ReviewUnit v-for="(comment, index) in reviewComments" :key="index" :comment="comment" />
+        </div>
+      </div>
+      <div class="review-comments" v-else>
+        <h6 class="review-comments-title">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          Замечания экспертов
+        </h6>
+        <div class="review-comments-empty">
+          <i class="bi bi-info-circle me-2"></i>
+          <span>Замечаний от экспертов пока нет</span>
         </div>
       </div>
     </div>
@@ -76,12 +85,31 @@
 
 <script setup>
 import { computed } from 'vue'
+import ReviewUnit from './ReviewUnit.vue'
+import UserAvatar from '../../../components/UserAvatar.vue'
 
 const props = defineProps({
   projectData: {
     type: Object,
     default: null
   }
+})
+const defaultAvatar = '/static/img/default-avatar.svg'
+
+const currentReview = computed(() => props.projectData?.current_review || null)
+
+const assignedExperts = computed(() => currentReview.value?.assigned_experts || [])
+const decisions = computed(() => currentReview.value?.decisions || [])
+
+// Те, кто завершили проверку (по assigned_experts.status === 'completed')
+const checkedExperts = computed(() => {
+  return assignedExperts.value.filter(e => e.status === 'completed')
+})
+
+// Ожидают: назначены, но без решения (нет записи в decisions по expert) и статус не completed
+const pendingExperts = computed(() => {
+  const decidedIds = new Set((decisions.value || []).map(d => d.expert))
+  return assignedExperts.value.filter(e => e.status !== 'completed' && !decidedIds.has(e.expert))
 })
 
 // Определяем, нужно ли показывать блок проверки
@@ -117,24 +145,30 @@ const versionInfo = computed(() => {
   return pd.current_review.version_info
 })
 
-// Замечания экспертов (моковые данные)
+// Замечания экспертов (из API)
 const reviewComments = computed(() => {
-  // В реальности эти данные будут приходить с API
-  const mockComments = [
-    {
-      author: 'Иванов И.И.',
-      date: '2024-01-15',
-      text: 'Необходимо уточнить детали бюджета в разделе 3.2',
-      type: 'warning'
-    },
-    {
-      author: 'Петрова А.А.',
-      date: '2024-01-16',
-      text: 'Отличная проработка технической части проекта',
-      type: 'success'
+  const pd = props.projectData
+  const items = pd?.current_review?.comments || []
+
+  const mapType = (t) => {
+    if (!t) return 'info'
+    const m = {
+      'critical': 'danger',
+      'warning': 'warning',
+      'info': 'info',
+      'success': 'success',
+      'suggestion': 'info',
+      'question': 'info'
     }
-  ]
-  return mockComments
+    return m[t] || 'info'
+  }
+
+  return items.map((it) => ({
+    author: it.expert_name || '',
+    date: it.created_at || it.updated_at || null,
+    text: it.text || it.title || '',
+    type: mapType(it.comment_type)
+  }))
 })
 
 // Статус проверки
@@ -192,6 +226,16 @@ const nextSteps = computed(() => {
   if (!pd) return null
   
   if (pd.status === 'pending') {
+    const total = reviewersData.value?.total || 0
+    if (total > 0) {
+      const message = total === 1
+        ? 'Назначен 1 эксперт. Ожидается начало проверки'
+        : `Назначено экспертов: ${total}. Ожидается начало проверки`
+      return {
+        message,
+        type: 'info'
+      }
+    }
     return {
       message: `Ожидается назначение экспертов для проверки`,
       type: 'warning'
@@ -236,31 +280,6 @@ const nextStepsIcon = computed(() => {
 })
 
 // Вспомогательные функции
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ru-RU')
-}
-
-const getCommentTypeClass = (type) => {
-  const classes = {
-    'success': 'bg-success',
-    'warning': 'bg-warning',
-    'danger': 'bg-danger',
-    'info': 'bg-info'
-  }
-  return classes[type] || 'bg-secondary'
-}
-
-const getCommentTypeLabel = (type) => {
-  const labels = {
-    'success': 'Положительно',
-    'warning': 'Замечание',
-    'danger': 'Критично',
-    'info': 'Информация'
-  }
-  return labels[type] || 'Замечание'
-}
 </script>
 
 <style scoped lang="scss">
@@ -319,6 +338,19 @@ const getCommentTypeLabel = (type) => {
   gap: 0.25rem;
 }
 
+.avatars-stack {
+  display: flex;
+  align-items: center;
+}
+
+.avatars-stack .avatar-item {
+  margin-left: -8px;
+}
+
+.avatars-stack .avatar-item:first-child {
+  margin-left: 0;
+}
+
 .reviewers-stat-label {
   font-size: 0.75rem;
   color: var(--color-secondary-text);
@@ -359,6 +391,16 @@ const getCommentTypeLabel = (type) => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.review-comments-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-secondary-background);
+  border-radius: 6px;
+  color: var(--color-secondary-text);
 }
 
 .review-comment-item {

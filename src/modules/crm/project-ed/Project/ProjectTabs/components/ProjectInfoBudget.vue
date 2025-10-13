@@ -74,7 +74,7 @@
                      <span class="total-value off-budget">{{ formatCurrency(budgetData.other_off_budget) }}</span>
                    </div>
                    <div class="total-item total-final">
-                     <span class="total-label">Итого с страховкой:</span>
+                     <span class="total-label">Итого с страховыми взносами:</span>
                      <span class="total-value final">{{ formatCurrency(budgetData.total_with_insurance) }}</span>
                    </div>
                  </div>
