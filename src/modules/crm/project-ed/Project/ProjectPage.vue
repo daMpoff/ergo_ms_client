@@ -194,7 +194,7 @@ onMounted(async () => {
     window.addEventListener('switch-to-audit-tab', handleTabSwitch)
     
     const slug = route.params?.slug
-    const projectId = route.params?.projectId
+    const projectId = route.params?.projectId || route.query?.id
     if (!slug && !projectId) return
     
     // Загружаем данные ректора

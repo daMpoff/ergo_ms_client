@@ -101,6 +101,22 @@ export default {
       "requiresAuth": true
     }
   },
+  "ProjectEdProjectReview": {
+    "path": "/project/:slug/review",
+    "component": "@/modules/crm/project-ed/Project/ProjectTabs/ProjectReview.vue",
+    "meta": {
+      "title": "Ревью проекта",
+      "requiresAuth": true
+    }
+  },
+  "ProjectEdProjectReviewAlt": {
+    "path": "/crm/project-ed/project/:slug/review",
+    "component": "@/modules/crm/project-ed/Project/ProjectTabs/ProjectReview.vue",
+    "meta": {
+      "title": "Ревью проекта",
+      "requiresAuth": true
+    }
+  },
   "ProjectEdTargetIndicators": {
     "path": "/crm/project-ed/target-indicators",
     "component": "@/modules/crm/project-ed/TargetIndicatorsPage.vue",

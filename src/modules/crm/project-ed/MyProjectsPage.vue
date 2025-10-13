@@ -132,7 +132,7 @@ async function loadProjects() {
             shortName: project.short_name,
             nameClarification: project.name_clarification,
             name: project.name,
-            role: project.user_role || getProjectRole(project), // Используем роль из API
+            role: project.user_role || getProjectRole(project), // Оставляем только проекты с ролью
             status: getProjectStatus(project.status),
             executors_count: project.executors_count || 0, // Добавляем количество исполнителей
             executors: project.performers || [], // Добавляем данные об исполнителях
@@ -151,7 +151,8 @@ async function loadProjects() {
             }
         }
         
-        projects.value = uniqueProjects
+        // Оставляем только проекты, в которых у пользователя есть роль
+        projects.value = uniqueProjects.filter(p => !!p.role)
     } catch (error) {
         toast.error('Ошибка при загрузке проектов: ' + (error.response?.data?.detail || error.message))
         projects.value = []
@@ -165,7 +166,7 @@ function getProjectRole(project) {
     const currentUserId = userStore.user?.id
     
     if (!currentUserId) {
-        return 'Неизвестно'
+        return ''
     }
     
     // Если пользователь - руководитель проекта
@@ -188,8 +189,19 @@ function getProjectRole(project) {
         return 'Заказчик'
     }
     
-    // По умолчанию считаем исполнителем
-    return 'Исполнитель'
+    // Если пользователь - исполнитель проекта (по списку исполнителей, если есть)
+    try {
+        const execs = project.executors || project.performers || []
+        if (Array.isArray(execs)) {
+            const has = execs.some(e => (
+                e === currentUserId || e?.id === currentUserId || e?.user_id === currentUserId || e?.user?.id === currentUserId
+            ))
+            if (has) return 'Исполнитель'
+        }
+    } catch {}
+
+    // Нет роли в проекте
+    return ''
 }
 
 // Преобразование статуса проекта в читаемый вид
