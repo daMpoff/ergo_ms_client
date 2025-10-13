@@ -185,7 +185,7 @@ const displayAvatarUrl = computed(() => loadedUser.value?.avatar_url || props.av
 
 .username {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: clamp(0.625rem, 2.5vw, 1rem);
   color: var(--color-primary-text);
   line-height: 1.2;
 }
@@ -200,7 +200,7 @@ const displayAvatarUrl = computed(() => loadedUser.value?.avatar_url || props.av
 
 .full-name {
   font-weight: 400;
-  font-size: 0.75rem;
+  font-size: clamp(0.625rem, 2vw, .875rem);
   color: var(--color-secondary-text);
   line-height: 1.2;
 }
@@ -214,7 +214,7 @@ const displayAvatarUrl = computed(() => loadedUser.value?.avatar_url || props.av
 .detail-item {
   display: flex;
   align-items: center;
-  font-size: 0.75rem;
+  font-size: clamp(0.625rem, 2vw, .875rem);
   color: var(--color-primary-text);
   line-height: 1.2;
   
@@ -275,15 +275,6 @@ const displayAvatarUrl = computed(() => loadedUser.value?.avatar_url || props.av
     max-width: 240px;
     gap: 0.5rem;
     padding: 0.5rem;
-  }
-  
-  .username {
-    font-size: 0.8125rem;
-  }
-  
-  .full-name,
-  .detail-item {
-    font-size: 0.6875rem;
   }
 }
 </style>

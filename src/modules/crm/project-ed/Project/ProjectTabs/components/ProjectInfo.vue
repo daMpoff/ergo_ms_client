@@ -401,10 +401,12 @@ dt {
   margin: 0;
   color: var(--color-secondary-text);
   font-weight: 500;
+  font-size: clamp(0.75rem, 2vw, 1rem);
 }
 
 dd {
   margin: 0;
+  font-size: clamp(0.75rem, 2vw, 1rem);
 }
 
 .role-person {
@@ -426,7 +428,7 @@ dd {
 .role-person__name {
   font-weight: 500;
   color: var(--color-primary-text);
-  font-size: 0.875rem;
+  font-size: clamp(0.75rem, 2.5vw, 1rem);
 }
 
 .contributors__list {
@@ -446,7 +448,7 @@ dd {
   padding: .5rem;
   margin: 0;
   color: var(--color-secondary-text);
-  font-size: 0.875rem;
+  font-size: clamp(0.75rem, 2.5vw, 1rem);
 }
 
 .delete-link {

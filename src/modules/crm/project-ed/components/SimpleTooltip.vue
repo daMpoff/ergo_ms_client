@@ -235,7 +235,6 @@ const arrowStyle = computed(() => {
 
 .tooltip-content {
     padding: 0.75rem;
-    font-size: 0.875rem;
     line-height: 1.4;
     color: var(--color-primary-text);
 }
