@@ -123,8 +123,9 @@ const onProjectClick = (project) => {
 async function loadProjects() {
     isLoading.value = true
     try {
-        const response = await apiClient.get(endpoints.project_ed.projects.list)
-        const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
+        // Используем endpoint для получения только моих проектов
+        const response = await apiClient.get(`${endpoints.project_ed.projects.list}export_my/`)
+        const data = Array.isArray(response.data?.results) ? response.data.results : []
         
         // Преобразуем данные API в формат, ожидаемый компонентом
         const mappedProjects = data.map(project => ({
@@ -132,10 +133,10 @@ async function loadProjects() {
             shortName: project.short_name,
             nameClarification: project.name_clarification,
             name: project.name,
-            role: project.user_role || getProjectRole(project), // Оставляем только проекты с ролью
+            role: project.user_role || getProjectRole(project),
             status: getProjectStatus(project.status),
-            executors_count: project.executors_count || 0, // Добавляем количество исполнителей
-            executors: project.performers || [], // Добавляем данные об исполнителях
+            executors_count: project.executors_count || 0,
+            executors: project.performers || [],
             created_at: project.created_at,
             updated_at: project.updated_at
         }))
@@ -151,8 +152,8 @@ async function loadProjects() {
             }
         }
         
-        // Оставляем только проекты, в которых у пользователя есть роль
-        projects.value = uniqueProjects.filter(p => !!p.role)
+        // Все проекты уже отфильтрованы по ролям на сервере
+        projects.value = uniqueProjects
     } catch (error) {
         toast.error('Ошибка при загрузке проектов: ' + (error.response?.data?.detail || error.message))
         projects.value = []

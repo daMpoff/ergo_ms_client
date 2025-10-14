@@ -193,7 +193,8 @@ onMounted(async () => {
     // Добавляем слушатель события для переключения вкладок
     window.addEventListener('switch-to-audit-tab', handleTabSwitch)
     
-    const slug = route.params?.slug
+    const rawSlug = route.params?.slug
+    const slug = rawSlug ? decodeURIComponent(String(rawSlug)).toLowerCase() : ''
     const projectId = route.params?.projectId || route.query?.id
     if (!slug && !projectId) return
     
@@ -207,20 +208,42 @@ onMounted(async () => {
             // Если передан прямой ID проекта, используем его
             projectIdToLoad = projectId
         } else if (slug) {
-            // Если передан slug, ищем в списке проектов
-            const resp = await apiClient.get(endpoints.project_ed.projects.list)
-            const list = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
-            const match = list.find((p) => {
-                const name = p?.name || p?.short_name || ''
-                return translitSlugify(name).toLowerCase() === slug
-            })
-            projectIdToLoad = match?.id
+            // Если передан slug, сначала получаем список всех проектов и ищем по slug
+            console.log('Поиск проекта по slug:', slug)
+            try {
+                // Получаем список всех проектов для поиска по slug
+                const resp = await apiClient.get(endpoints.project_ed.projects.list)
+                const projects = Array.isArray(resp.data) ? resp.data : (resp.data?.results || [])
+
+                // Ищем проект по slug с тем же алгоритмом, что и при построении ссылок
+                const foundProject = projects.find((project) => {
+                    const name = project?.name || project?.short_name || ''
+                    try {
+                        return translitSlugify(name).toLowerCase() === slug
+                    } catch {
+                        return false
+                    }
+                })
+
+                if (foundProject) {
+                    console.log('Найден проект:', foundProject.id, foundProject.name)
+                    projectIdToLoad = foundProject.id
+                } else {
+                    console.warn('Проект не найден по slug:', slug)
+                    projectIdToLoad = null
+                }
+            } catch (error) {
+                console.error('Ошибка поиска проекта по slug:', error)
+                projectIdToLoad = null
+            }
         }
         
         if (!projectIdToLoad) return
         
-        // Загружаем данные проекта
-        await loadProjectData(projectIdToLoad)
+        // Загружаем данные проекта только если они еще не загружены
+        if (!projectData.value) {
+            await loadProjectData(projectIdToLoad)
+        }
     } catch (e) {
         console.error('Ошибка загрузки данных проекта:', e)
         // оставляем дефолтный заголовок при ошибке

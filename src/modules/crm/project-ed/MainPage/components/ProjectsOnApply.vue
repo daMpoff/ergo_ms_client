@@ -160,7 +160,14 @@ onBeforeUnmount(() => {
 })
 
 const onRowClick = (project) => {
-    const slug = translitSlugify(project.name || project.shortName || 'project').toLowerCase()
+    const baseName = project?.name || project?.fullName || project?.short_name || project?.shortName || 'project'
+    const slug = translitSlugify(baseName).toLowerCase()
+    console.log('Переход к проекту:', {
+        project: project,
+        name: project?.name,
+        shortName: project?.shortName || project?.short_name,
+        slug: slug
+    })
     router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
 }
 

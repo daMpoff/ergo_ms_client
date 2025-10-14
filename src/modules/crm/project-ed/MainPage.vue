@@ -4,7 +4,7 @@
         <div class="page-content">
             <div class="content-projects-on-apply" v-if="canViewProjectsOnApply && hasProjectsOnApply">
                 <h3>Проекты на утверждении</h3>
-                <ProjectsOnApply :projects="projects" />
+                <ProjectsOnApply :projects="projectsForReview" />
             </div>
 
             <div class="content-projects" v-if="hasMyProjects">
@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { Home } from 'lucide-vue-next'
 import MyProjectsList from './MainPage/components/MyProjectsList.vue'
 import ProjectsOnApply from './MainPage/components/ProjectsOnApply.vue'
@@ -60,8 +60,11 @@ const selectedProgramTab = ref('events')
 
 // Состояние загрузки проектов
 const projects = ref([])
+const projectsForReview = ref([])
 const isLoadingProjects = ref(false)
+const isLoadingProjectsForReview = ref(false)
 const projectsError = ref('')
+const projectsForReviewError = ref('')
 
 // Состояние роли пользователя
 const userStore = useUserStore()
@@ -73,7 +76,7 @@ const hasMyProjects = computed(() => projects.value.length > 0)
 
 // Вычисляемое свойство для определения наличия проектов на утверждении
 const hasProjectsOnApply = computed(() => {
-    return projects.value.some(project => project.status === 'На утверждении')
+    return projectsForReview.value.length > 0
 })
 
 // Вычисляемое свойство для проверки прав на просмотр проектов на утверждении
@@ -137,8 +140,9 @@ async function loadProjects() {
     projectsError.value = ''
     
     try {
-        const response = await apiClient.get(projectEdEndpoints.project_ed.projects.list)
-        const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
+        // Используем endpoint для получения только моих проектов
+        const response = await apiClient.get(`${projectEdEndpoints.project_ed.projects.list}export_my/`)
+        const data = Array.isArray(response.data?.results) ? response.data.results : []
         
         // Преобразуем данные API в нужный формат
         const mappedProjects = data.map(project => ({
@@ -161,6 +165,36 @@ async function loadProjects() {
     }
 }
 
+// Загрузка проектов на утверждении для экспертной группы
+async function loadProjectsForReview() {
+    isLoadingProjectsForReview.value = true
+    projectsForReviewError.value = ''
+    
+    try {
+        const response = await apiClient.get(`${projectEdEndpoints.project_ed.projects.list}for_review/`)
+        const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
+        
+        // Преобразуем данные API в нужный формат
+        const mappedProjects = data.map(project => ({
+            id: project.id,
+            shortName: project.short_name,
+            name: project.name,
+            role: getProjectRole(project),
+            status: getProjectStatus(project.status),
+            executors_count: project.executors_count || 0,
+            created_at: project.created_at,
+            updated_at: project.updated_at
+        }))
+        
+        projectsForReview.value = mappedProjects
+    } catch (err) {
+        projectsForReviewError.value = 'Не удалось загрузить проекты на утверждении'
+        projectsForReview.value = []
+    } finally {
+        isLoadingProjectsForReview.value = false
+    }
+}
+
 // Загружаем данные при монтировании
 onMounted(async () => {
     // Сначала инициализируем пользователя, если не инициализирован
@@ -173,6 +207,20 @@ onMounted(async () => {
         loadUserRole(),
         loadProjects()
     ])
+    
+    // Если пользователь может просматривать проекты на утверждении, загружаем их
+    if (canViewProjectsOnApply.value) {
+        await loadProjectsForReview()
+    }
+})
+
+// Следим за изменением роли пользователя и перезагружаем проекты на утверждении
+watch(canViewProjectsOnApply, async (newValue) => {
+    if (newValue && userRole.value) {
+        await loadProjectsForReview()
+    } else {
+        projectsForReview.value = []
+    }
 })
 </script>
 
