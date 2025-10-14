@@ -8,7 +8,6 @@ export const projectEdEndpoints = {
             update: (id) => `project_ed/projects/${id}/`,
             delete: (id) => `project_ed/projects/${id}/`,
             auditLogs: (id) => `project_ed/projects/${id}/audit_logs/`,
-            // Экспорт endpoints
             exportAll: 'project_ed/projects/export_all/',
             exportMy: 'project_ed/projects/export_my/',
             exportForReview: 'project_ed/projects/export_for_review/',

@@ -26,6 +26,7 @@
                     v-for="project in filteredProjects"
                     :key="project.id"
                     :project="project"
+                    :show-role-badge="true"
                     @open="onProjectClick"
                 />
             </div>
@@ -109,6 +110,7 @@ async function loadProjects() {
             status: getProjectStatus(project.status),
             executors_count: project.executors_count || 0,
             executors: project.performers || [],
+            manager_data: project.manager_data,
             created_at: project.created_at,
             updated_at: project.updated_at
         }))

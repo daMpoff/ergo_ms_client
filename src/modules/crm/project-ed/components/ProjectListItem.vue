@@ -11,7 +11,21 @@
             <p class="project-description">{{ project.name }}</p>
 
             <div class="project-meta">
+                <div 
+                    v-if="!showRoleBadge && project.manager_data"
+                    class="manager-info"
+                    @mouseenter="showManagerTooltip"
+                    @mouseleave="hideManagerTooltip"
+                >
+                    <UserAvatar 
+                        :size="'small'"
+                        :custom-avatar-url="project.manager_data.avatar_url"
+                        :title="project.manager_data.full_name"
+                    />
+                    <span class="manager-initials">{{ managerInitials }}</span>
+                </div>
                 <span 
+                    v-else
                     ref="roleElementRef"
                     class="role-badge" 
                     :class="getRoleClass(project.role)"
@@ -51,7 +65,6 @@
         </div>
     </div>
 
-    <!-- Тултип для исполнителей -->
     <SimpleTooltip
         :visible="executorsTooltipVisible"
         :target-element="executorsTooltipTarget"
@@ -66,7 +79,21 @@
         />
     </SimpleTooltip>
 
-    <!-- Модальное окно с полным списком исполнителей -->
+    <!-- Тултип для руководителя -->
+    <SimpleTooltip
+        :visible="managerTooltipVisible"
+        :target-element="managerTooltipTarget"
+        @mouseenter="handleManagerTooltipMouseEnter"
+        @mouseleave="handleManagerTooltipMouseLeave"
+    >
+        <ProfileTooltip 
+            v-if="project.manager_data"
+            :user-id="project.manager_data.id"
+            :full-name="project.manager_data.full_name"
+            :avatar-url="project.manager_data.avatar_url"
+        />
+    </SimpleTooltip>
+
     <UserListModal
         :visible="executorsModalVisible"
         :users="modalExecutors"
@@ -81,14 +108,21 @@ import { User, Star, Users, X } from 'lucide-vue-next'
 import { defineProps, defineEmits, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { getRelativeTime } from './steps/js/timeUtils.js'
 import { initializeDatePopover, cleanupDatePopover, initializePopover, cleanupPopover } from './steps/js/popoverUtils.js'
+import { getShortName } from '../js/nameUtils.js'
 import SimpleTooltip from './SimpleTooltip.vue'
 import UsersList from './UsersList.vue'
 import UserListModal from './UserListModal.vue'
+import UserAvatar from './UserAvatar.vue'
+import ProfileTooltip from './ProfileTooltip.vue'
 
 const props = defineProps({
     project: {
         type: Object,
         required: true
+    },
+    showRoleBadge: {
+        type: Boolean,
+        default: false
     }
 })
 
@@ -113,6 +147,11 @@ const executorsTooltipVisible = ref(false)
 const executorsTooltipTarget = ref(null)
 let executorsHideTimeout = null
 
+// Тултип для руководителя
+const managerTooltipVisible = ref(false)
+const managerTooltipTarget = ref(null)
+let managerHideTimeout = null
+
 // Модальное окно для исполнителей
 const executorsModalVisible = ref(false)
 const modalExecutors = ref([])
@@ -123,6 +162,11 @@ const projectDateText = computed(() => {
     const created = p.created_at || p.createdAt || p.created
     const iso = updated || created
     return getRelativeTime(iso)
+})
+
+const managerInitials = computed(() => {
+    if (!props.project?.manager_data) return ''
+    return getShortName(props.project.manager_data)
 })
 
 const fullDateTime = computed(() => {
@@ -204,10 +248,15 @@ onUnmounted(() => {
         rolePopoverElement.value = null
     }
     
-    // Очищаем таймер тултипа исполнителей
+    // Очищаем таймеры тултипов
     if (executorsHideTimeout) {
         clearTimeout(executorsHideTimeout)
         executorsHideTimeout = null
+    }
+    
+    if (managerHideTimeout) {
+        clearTimeout(managerHideTimeout)
+        managerHideTimeout = null
     }
 })
 
@@ -283,6 +332,43 @@ const handleExecutorsTooltipMouseLeave = () => {
     executorsHideTimeout = setTimeout(() => {
         executorsTooltipVisible.value = false
         executorsTooltipTarget.value = null
+    }, 100)
+}
+
+// Методы для работы с тултипом руководителя
+const showManagerTooltip = (event) => {
+    // Отменяем предыдущий таймер скрытия
+    if (managerHideTimeout) {
+        clearTimeout(managerHideTimeout)
+        managerHideTimeout = null
+    }
+    
+    // Используем currentTarget - это должен быть элемент manager-info
+    managerTooltipTarget.value = event.currentTarget
+    managerTooltipVisible.value = true
+}
+
+const hideManagerTooltip = () => {
+    // Устанавливаем задержку для плавного перехода
+    managerHideTimeout = setTimeout(() => {
+        managerTooltipVisible.value = false
+        managerTooltipTarget.value = null
+    }, 150)
+}
+
+const handleManagerTooltipMouseEnter = () => {
+    // Отменяем скрытие тултипа при наведении на него
+    if (managerHideTimeout) {
+        clearTimeout(managerHideTimeout)
+        managerHideTimeout = null
+    }
+}
+
+const handleManagerTooltipMouseLeave = () => {
+    // Скрываем тултип при уходе с него
+    managerHideTimeout = setTimeout(() => {
+        managerTooltipVisible.value = false
+        managerTooltipTarget.value = null
     }, 100)
 }
 </script>
@@ -379,6 +465,32 @@ const handleExecutorsTooltipMouseLeave = () => {
             display: flex;
             gap: 0.35rem;
             align-items: center;
+
+            .manager-info {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                color: var(--color-secondary-text);
+                font-size: 0.875rem;
+                cursor: pointer;
+                text-underline-offset: 2px;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    color: var(--color-primary);
+                    text-decoration: underline;
+                }
+                .user-avatar {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    object-fit: cover;
+                }
+                .manager-initials {
+                    font-weight: 500;
+                    white-space: nowrap;
+                }
+            }
 
             .role-badge {
                 display: flex;

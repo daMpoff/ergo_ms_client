@@ -1,9 +1,10 @@
 <template>
     <div class="projects-page">
+        <HeaderBar />
         <div class="container">
             <div class="row">
                 <div class="col-12">
-                    <Breadcrumbs :items="breadcrumbItems" />
+                    <Breadcrumbs :items="breadcrumbItems" class="mt-3"/>
                 </div>
             </div>
             <h3 class="page-title">Проекты на утверждении</h3>
@@ -38,6 +39,7 @@ import { computed, ref, onMounted } from 'vue'
 import { Home, List } from 'lucide-vue-next'
 import { useToast } from 'vue-toastification'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
+import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import ProjectListItem from '@/modules/crm/project-ed/components/ProjectListItem.vue'
 import ProjectFilters from '@/modules/crm/project-ed/components/ProjectFilters.vue'
 import { apiClient } from '@/js/api/manager.js'
@@ -103,6 +105,7 @@ async function loadProjects() {
             status: getProjectStatus(project.status),
             executors_count: project.executors_count || 0,
             executors: project.performers || [],
+            manager_data: project.manager_data,
             created_at: project.created_at,
             updated_at: project.updated_at
         }))
@@ -163,9 +166,6 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-.projects-page {
-    padding: 1rem 0;
-}
 
 .page-title {
     margin: 1rem 0;

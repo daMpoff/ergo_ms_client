@@ -154,6 +154,7 @@ async function loadProjects() {
             role: getProjectRole(project),
             status: getProjectStatus(project.status),
             executors_count: project.executors_count || 0,
+            manager_data: project.manager_data,
             created_at: project.created_at,
             updated_at: project.updated_at
         }))
@@ -184,6 +185,7 @@ async function loadProjectsForReview() {
             role: getProjectRole(project),
             status: getProjectStatus(project.status),
             executors_count: project.executors_count || 0,
+            manager_data: project.manager_data,
             created_at: project.created_at,
             updated_at: project.updated_at
         }))
