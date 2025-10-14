@@ -25,28 +25,28 @@
             <div class="card-header fw-semibold">Основная информация</div>
             <div class="card-body">
               <div class="row g-3">
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <div class="field"><span class="field-label">Короткое название:</span> <span class="field-value">{{ projectData.short_name || '—' }}</span></div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <div class="field"><span class="field-label">Полное название:</span> <span class="field-value">{{ projectData.name || '—' }}</span></div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <div class="field"><span class="field-label">Уточнение к названию:</span> <span class="field-value">{{ projectData.name_clarification || '—' }}</span></div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <div class="field"><span class="field-label">Цель проекта:</span> <span class="field-value">{{ projectData.goal || '—' }}</span></div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <div class="field"><span class="field-label">Дата начала:</span> <span class="field-value">{{ projectData.start_date || '—' }}</span></div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <div class="field"><span class="field-label">Дата окончания:</span> <span class="field-value">{{ projectData.end_date || '—' }}</span></div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <div class="field"><span class="field-label">Статус:</span> <span class="badge bg-light text-dark">{{ projectData.status }}</span></div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <div class="field"><span class="field-label">Общий бюджет:</span> <span class="field-value">{{ formatMoney(projectData.budget_total) }}</span></div>
                 </div>
               </div>
@@ -214,11 +214,11 @@
               <div v-if="!(projectData.budget_totals && projectData.budget_totals.length)" class="text-muted">Нет итогов</div>
               <div v-else>
                 <div v-for="bt in projectData.budget_totals" :key="bt.id" class="row g-3">
-                  <div class="col-12 col-sm-6 col-lg-4"><span class="field-label">Итого с ОМС:</span> <span class="field-value">{{ formatMoney(bt.total_with_insurance) }}</span></div>
-                  <div class="col-12 col-sm-6 col-lg-4"><span class="field-label">ЗП (внебюджет):</span> <span class="field-value">{{ formatMoney(bt.salary_off_budget) }}</span></div>
-                  <div class="col-12 col-sm-6 col-lg-4"><span class="field-label">ЗП (бюджет):</span> <span class="field-value">{{ formatMoney(bt.salary_budget) }}</span></div>
-                  <div class="col-12 col-sm-6 col-lg-4"><span class="field-label">Прочее (внебюджет):</span> <span class="field-value">{{ formatMoney(bt.other_off_budget) }}</span></div>
-                  <div class="col-12 col-sm-6 col-lg-4"><span class="field-label">Прочее (бюджет):</span> <span class="field-value">{{ formatMoney(bt.other_budget) }}</span></div>
+                  <div class="col-12"><span class="field-label">Итого с ОМС:</span> <span class="field-value">{{ formatMoney(bt.total_with_insurance) }}</span></div>
+                  <div class="col-12"><span class="field-label">ЗП (внебюджет):</span> <span class="field-value">{{ formatMoney(bt.salary_off_budget) }}</span></div>
+                  <div class="col-12"><span class="field-label">ЗП (бюджет):</span> <span class="field-value">{{ formatMoney(bt.salary_budget) }}</span></div>
+                  <div class="col-12"><span class="field-label">Прочее (внебюджет):</span> <span class="field-value">{{ formatMoney(bt.other_off_budget) }}</span></div>
+                  <div class="col-12"><span class="field-label">Прочее (бюджет):</span> <span class="field-value">{{ formatMoney(bt.other_budget) }}</span></div>
                 </div>
               </div>
             </div>
