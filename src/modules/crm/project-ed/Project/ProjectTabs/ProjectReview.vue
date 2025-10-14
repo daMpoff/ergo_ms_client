@@ -56,20 +56,79 @@
           <div class="card mb-3">
             <div class="card-header fw-semibold">Участники</div>
             <div class="card-body">
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <div class="field"><span class="field-label">Руководитель:</span> <span class="field-value">{{ userName(projectData.manager) || '—' }}</span></div>
+              <div class="participants-list">
+                <div class="field">
+                  <span class="field-label">Руководитель:</span> 
+                  <span class="field-value">
+                    <template v-if="projectData?.manager_data">
+                      <a 
+                        href="#" 
+                        class="user-link"
+                        @click.prevent="openProfile(projectData.manager_data.id)"
+                        @mouseenter="showTooltip($event, projectData.manager_data)"
+                        @mouseleave="hideTooltip"
+                      >
+                        {{ getManagerName() }}
+                      </a>
+                    </template>
+                    <template v-else>—</template>
+                  </span>
                 </div>
-                <div class="col-12 col-md-6">
-                  <div class="field"><span class="field-label">Куратор:</span> <span class="field-value">{{ userName(projectData.curator) || '—' }}</span></div>
+                <div class="field">
+                  <span class="field-label">Куратор:</span> 
+                  <span class="field-value">
+                    <template v-if="projectData?.curator_data">
+                      <a 
+                        href="#" 
+                        class="user-link"
+                        @click.prevent="openProfile(projectData.curator_data.id)"
+                        @mouseenter="showTooltip($event, projectData.curator_data)"
+                        @mouseleave="hideTooltip"
+                      >
+                        {{ getCuratorName() }}
+                      </a>
+                    </template>
+                    <template v-else>—</template>
+                  </span>
                 </div>
-                <div class="col-12 col-md-6">
-                  <div class="field"><span class="field-label">Заказчик:</span> <span class="field-value">{{ userName(projectData.customer) || '—' }}</span></div>
+                <div class="field">
+                  <span class="field-label">Заказчик:</span> 
+                  <span class="field-value">
+                    <template v-if="projectData?.customer_data">
+                      <a 
+                        href="#" 
+                        class="user-link"
+                        @click.prevent="openProfile(projectData.customer_data.id)"
+                        @mouseenter="showTooltip($event, projectData.customer_data)"
+                        @mouseleave="hideTooltip"
+                      >
+                        {{ getCustomerName() }}
+                      </a>
+                    </template>
+                    <template v-else>—</template>
+                  </span>
                 </div>
-                <div class="col-12">
-                  <div class="field"><span class="field-label">Исполнители:</span>
-                    <span class="field-value">{{ (projectData.executors || []).map(e => userName(e.user) || e.user?.username || e.user?.id).join(', ') || '—' }}</span>
-                  </div>
+                <div class="field">
+                  <span class="field-label">Исполнители:</span>
+                  <span class="field-value">
+                    <template v-if="projectData?.performers && projectData.performers.length > 0">
+                      <template v-for="(performer, index) in projectData.performers" :key="performer.id">
+                        <a 
+                          v-if="performer.id"
+                          href="#" 
+                          class="user-link"
+                          @click.prevent="openProfile(performer.id)"
+                          @mouseenter="showTooltip($event, performer)"
+                          @mouseleave="hideTooltip"
+                        >
+                          {{ performer.full_name || performer.username || `ID: ${performer.id}` }}
+                        </a>
+                        <span v-else>{{ performer.full_name || performer.username || `ID: ${performer.id}` }}</span>
+                        <span v-if="index < projectData.performers.length - 1">, </span>
+                      </template>
+                    </template>
+                    <template v-else>—</template>
+                  </span>
                 </div>
               </div>
             </div>
@@ -194,11 +253,31 @@
         </div>
       </template>
     </div>
+
+    <!-- Тултип с информацией о пользователе -->
+    <SimpleTooltip
+      :visible="tooltipVisible"
+      :target-element="tooltipTarget"
+      placement="top"
+      @mouseenter="cancelHideTooltip"
+      @mouseleave="hideTooltip"
+    >
+      <ProfileTooltip
+        v-if="tooltipData"
+        :user-id="tooltipData.id"
+        :username="tooltipData.username"
+        :full-name="tooltipData.full_name"
+        :position="tooltipData.position"
+        :faculty="tooltipData.faculty_name"
+        :department="tooltipData.department_name"
+        :avatar-url="tooltipData.avatar_url"
+      />
+    </SimpleTooltip>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
@@ -206,6 +285,8 @@ import { slugify as translitSlugify } from 'transliteration'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import { Home, List, FileText, CheckCircle } from 'lucide-vue-next'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
+import SimpleTooltip from '@/modules/crm/project-ed/components/SimpleTooltip.vue'
+import ProfileTooltip from '@/modules/crm/project-ed/components/ProfileTooltip.vue'
 import { useUserStore } from '@/core/cms/js/userStore.js'
 
 const route = useRoute()
@@ -222,6 +303,12 @@ const isExpertGroup = ref(false)
 const isAssignedExpert = ref(false)
 const isAllowed = computed(() => isStatusAllowed.value && (isAdmin.value || isExpertGroup.value || isAssignedExpert.value))
 const accessChecked = ref(false)
+
+// Состояние тултипов
+const tooltipVisible = ref(false)
+const tooltipTarget = ref(null)
+const tooltipData = ref(null)
+let tooltipHideTimeout = null
 
 const projectSlug = computed(() => {
   const name = projectData.value?.name || projectData.value?.short_name || ''
@@ -253,6 +340,82 @@ function userName(user) {
   const last = (user.last_name || '').trim()
   const full = `${first} ${last}`.trim()
   return full || user.username || ''
+}
+
+function getManagerName() {
+  if (!projectData.value?.manager_data) return ''
+  const manager = projectData.value.manager_data
+  const first = (manager.first_name || '').trim()
+  const last = (manager.last_name || '').trim()
+  const middle = (manager.middle_name || '').trim()
+  const parts = [last, first, middle].filter(Boolean)
+  const full = parts.join(' ')
+  return full || manager.username || ''
+}
+
+function getCuratorName() {
+  if (!projectData.value?.curator_data) return ''
+  const curator = projectData.value.curator_data
+  const first = (curator.first_name || '').trim()
+  const last = (curator.last_name || '').trim()
+  const middle = (curator.middle_name || '').trim()
+  const parts = [last, first, middle].filter(Boolean)
+  const full = parts.join(' ')
+  return full || curator.username || ''
+}
+
+function getCustomerName() {
+  if (!projectData.value?.customer_data) return ''
+  const customer = projectData.value.customer_data
+  const first = (customer.first_name || '').trim()
+  const last = (customer.last_name || '').trim()
+  const middle = (customer.middle_name || '').trim()
+  const parts = [last, first, middle].filter(Boolean)
+  const full = parts.join(' ')
+  return full || customer.username || ''
+}
+
+function getExecutorsNames() {
+  if (!projectData.value?.performers || !Array.isArray(projectData.value.performers)) return ''
+  return projectData.value.performers
+    .map(performer => performer.full_name || performer.username || `ID: ${performer.id}`)
+    .join(', ')
+}
+
+// Методы для управления тултипами
+function showTooltip(event, userData) {
+  // Отменяем таймер скрытия, если он был установлен
+  if (tooltipHideTimeout) {
+    clearTimeout(tooltipHideTimeout)
+    tooltipHideTimeout = null
+  }
+  
+  tooltipTarget.value = event.target
+  tooltipData.value = userData
+  tooltipVisible.value = true
+}
+
+function hideTooltip() {
+  // Устанавливаем задержку перед скрытием тултипа
+  tooltipHideTimeout = setTimeout(() => {
+    tooltipVisible.value = false
+    tooltipTarget.value = null
+    tooltipData.value = null
+    tooltipHideTimeout = null
+  }, 300) // 300мс задержка
+}
+
+function cancelHideTooltip() {
+  // Отменяем скрытие тултипа при наведении на сам тултип
+  if (tooltipHideTimeout) {
+    clearTimeout(tooltipHideTimeout)
+    tooltipHideTimeout = null
+  }
+}
+
+function openProfile(userId) {
+  if (!userId) return
+  router.push(`/crm/project-ed/profile/${userId}`)
 }
 
 function stageName(stageId) {
@@ -353,6 +516,14 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
+
+// Очистка таймера при размонтировании компонента
+onBeforeUnmount(() => {
+  if (tooltipHideTimeout) {
+    clearTimeout(tooltipHideTimeout)
+    tooltipHideTimeout = null
+  }
+})
 </script>
 
 <style scoped lang="scss">
@@ -382,5 +553,43 @@ onMounted(async () => {
 
 @media (max-width: 768px) {
   .table { font-size: 0.875rem; }
+}
+
+.user-link {
+  color: var(--bs-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.user-link:hover {
+  color: var(--bs-primary);
+  text-decoration: underline;
+}
+
+.participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.participants-list .field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 1.5rem;
+}
+
+.participants-list .field-label {
+  min-width: 120px;
+  flex-shrink: 0;
+  margin-right: 1rem;
+  color: var(--color-secondary-text);
+  font-weight: 500;
+}
+
+.participants-list .field-value {
+  flex: 1;
+  color: var(--color-primary-text);
 }
 </style>
