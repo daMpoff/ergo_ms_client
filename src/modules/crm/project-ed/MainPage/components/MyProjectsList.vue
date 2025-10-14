@@ -184,6 +184,7 @@ onBeforeUnmount(() => {
 
 const onRowClick = (project) => {
     const slug = translitSlugify(project.name || project.shortName || 'project').toLowerCase()
+    // С главной страницы "мои проекты" переходим на обычную страницу проекта
     router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
 }
 

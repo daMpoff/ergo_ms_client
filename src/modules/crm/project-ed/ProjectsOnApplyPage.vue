@@ -27,6 +27,7 @@
                     v-for="project in filteredProjects"
                     :key="project.id"
                     :project="project"
+                    page-context="projects-on-apply"
                     @open="onProjectClick"
                 />
             </div>
@@ -85,9 +86,16 @@ import { useRouter } from 'vue-router'
 import { slugify as translitSlugify } from 'transliteration'
 const router = useRouter()
 
-const onProjectClick = (project) => {
+const onProjectClick = (project, pageContext) => {
     const slug = translitSlugify(project.name || project.shortName || 'project').toLowerCase()
-    router.push({ name: 'ProjectEdProjectDetail', params: { slug }, query: { from: 'projects-on-apply' } })
+    
+    // Если это страница "проекты на рассмотрении", переходим на review
+    if (pageContext === 'projects-on-apply') {
+        router.push({ name: 'ProjectEdProjectReviewAlt', params: { slug } })
+    } else {
+        // Для остальных случаев переходим на обычную страницу проекта
+        router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
+    }
 }
 
 async function loadProjects() {

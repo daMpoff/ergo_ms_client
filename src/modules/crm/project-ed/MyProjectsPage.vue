@@ -27,6 +27,7 @@
                     :key="project.id"
                     :project="project"
                     :show-role-badge="true"
+                    page-context="my-projects"
                     @open="onProjectClick"
                 />
             </div>
@@ -85,8 +86,10 @@ import { useRouter } from 'vue-router'
 import { slugify as translitSlugify } from 'transliteration'
 const router = useRouter()
 
-const onProjectClick = (project) => {
+const onProjectClick = (project, pageContext) => {
     const slug = translitSlugify(project.name || project.shortName || 'project').toLowerCase()
+    
+    // Для страницы "мои проекты" всегда переходим на обычную страницу проекта
     router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
 }
 

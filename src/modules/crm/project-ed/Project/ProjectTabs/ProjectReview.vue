@@ -235,7 +235,7 @@ const projectSlug = computed(() => {
 
 const breadcrumbItems = computed(() => ([
   { label: 'Главная', to: '/crm/project-ed/main', icon: Home },
-  { label: 'Мои проекты', to: '/crm/project-ed/my-projects', icon: List },
+  { label: 'Проекты на утверждении', to: '/crm/project-ed/projects-on-apply', icon: List },
   { label: projectTitleBreadcrumb.value, to: projectSlug.value ? `/crm/project-ed/project/${projectSlug.value}` : undefined, icon: FileText },
   { label: 'Экспертная оценка', icon: CheckCircle }
 ]))

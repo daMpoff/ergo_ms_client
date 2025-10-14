@@ -123,6 +123,11 @@ const props = defineProps({
     showRoleBadge: {
         type: Boolean,
         default: false
+    },
+    pageContext: {
+        type: String,
+        default: 'my-projects', // 'my-projects' или 'projects-on-apply'
+        validator: (value) => ['my-projects', 'projects-on-apply'].includes(value)
     }
 })
 
@@ -192,7 +197,7 @@ const fullDateTime = computed(() => {
 })
 
 function emitOpen() {
-    emit('open', props.project)
+    emit('open', props.project, props.pageContext)
 }
 
 function toggleFavorite() {

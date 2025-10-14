@@ -168,7 +168,8 @@ const onRowClick = (project) => {
         shortName: project?.shortName || project?.short_name,
         slug: slug
     })
-    router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
+    // С главной страницы проекты на рассмотрении переходим на review
+    router.push({ name: 'ProjectEdProjectReviewAlt', params: { slug } })
 }
 
 // Подгон шрифта у полного названия, если контент не помещается в фиксированную высоту карточки
