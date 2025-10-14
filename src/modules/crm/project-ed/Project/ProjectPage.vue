@@ -75,11 +75,17 @@ const userRole = computed(() => userStore.user?.role || null)
 const userInfo = computed(() => userStore.user || null)
 const rectorInfo = ref(null)
 
-const breadcrumbItems = computed(() => ([
-    { label: 'Главная', to: '/crm/project-ed/main', icon: Home },
-    { label: 'Мои проекты', to: '/crm/project-ed/my-projects', icon: List },
-    { label: projectTitleBreadcrumb.value, icon: FileText }
-]))
+const breadcrumbItems = computed(() => {
+    const from = route.query?.from
+    const fromApply = from === 'projects-on-apply'
+    return [
+        { label: 'Главная', to: '/crm/project-ed/main', icon: Home },
+        fromApply
+            ? { label: 'Проекты на утверждении', to: '/crm/project-ed/projects-on-apply', icon: List }
+            : { label: 'Мои проекты', to: '/crm/project-ed/my-projects', icon: List },
+        { label: projectTitleBreadcrumb.value, icon: FileText }
+    ]
+})
 
 // Переключатели страниц
 const activeTab = ref('overview')

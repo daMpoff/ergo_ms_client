@@ -6,7 +6,7 @@
                     <Breadcrumbs :items="breadcrumbItems" />
                 </div>
             </div>
-            <h3 class="page-title">Мои проекты</h3>
+            <h3 class="page-title">Проекты на утверждении</h3>
             <ProjectFilters v-model="filters" :roles="roles" :statuses="statuses" />
         </div>
         <div class="container">
@@ -41,7 +41,7 @@ import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
 import ProjectListItem from '@/modules/crm/project-ed/components/ProjectListItem.vue'
 import ProjectFilters from '@/modules/crm/project-ed/components/ProjectFilters.vue'
 import { apiClient } from '@/js/api/manager.js'
-import { endpoints } from '@/js/api/endpoints.js'
+import { projectEdEndpoints } from '@/modules/crm/project-ed/js/endpoints.js'
 import { useUserStore } from '@/core/cms/js/userStore.js'
 
 const toast = useToast()
@@ -54,7 +54,6 @@ const filters = ref({ shortName: '', role: '', status: '' })
 const projects = ref([])
 const isLoading = ref(false)
 
-// Настройка breadcrumbs
 const breadcrumbItems = ref([
     {
         label: 'Главная',
@@ -62,7 +61,7 @@ const breadcrumbItems = ref([
         icon: Home
     },
     {
-        label: 'Мои проекты',
+        label: 'Проекты на утверждении',
         icon: List
     }
 ])
@@ -86,20 +85,15 @@ const router = useRouter()
 
 const onProjectClick = (project) => {
     const slug = translitSlugify(project.name || project.shortName || 'project').toLowerCase()
-    router.push({ name: 'ProjectEdProjectDetail', params: { slug } })
+    router.push({ name: 'ProjectEdProjectDetail', params: { slug }, query: { from: 'projects-on-apply' } })
 }
 
-// Стили применяются в компоненте ProjectListItem
-
-// Загрузка проектов пользователя
 async function loadProjects() {
     isLoading.value = true
     try {
-        // Используем endpoint для получения только моих проектов
-        const response = await apiClient.get(`${endpoints.project_ed.projects.list}export_my/`)
+        const response = await apiClient.get(projectEdEndpoints.project_ed.projects.exportForReview)
         const data = Array.isArray(response.data?.results) ? response.data.results : []
-        
-        // Преобразуем данные API в формат, ожидаемый компонентом
+
         const mappedProjects = data.map(project => ({
             id: project.id,
             shortName: project.short_name,
@@ -112,19 +106,15 @@ async function loadProjects() {
             created_at: project.created_at,
             updated_at: project.updated_at
         }))
-        
-        // Проверяем на дубликаты по ID
+
         const uniqueProjects = []
         const seenIds = new Set()
-        
         for (const project of mappedProjects) {
             if (!seenIds.has(project.id)) {
                 seenIds.add(project.id)
                 uniqueProjects.push(project)
             }
         }
-        
-        // Все проекты уже отфильтрованы по ролям на сервере
         projects.value = uniqueProjects
     } catch (error) {
         toast.error('Ошибка при загрузке проектов: ' + (error.response?.data?.detail || error.message))
@@ -134,35 +124,13 @@ async function loadProjects() {
     }
 }
 
-// Определение роли пользователя в проекте
 function getProjectRole(project) {
     const currentUserId = userStore.user?.id
-    
-    if (!currentUserId) {
-        return ''
-    }
-    
-    // Если пользователь - руководитель проекта
-    if (project.manager === currentUserId || project.manager_id === currentUserId) {
-        return 'Руководитель'
-    }
-    
-    // Если пользователь - владелец проекта (считаем руководителем)
-    if (project.owner === currentUserId || project.owner_id === currentUserId) {
-        return 'Руководитель'
-    }
-    
-    // Если пользователь - куратор проекта
-    if (project.curator === currentUserId || project.curator_id === currentUserId) {
-        return 'Куратор'
-    }
-    
-    // Если пользователь - заказчик проекта
-    if (project.customer === currentUserId || project.customer_id === currentUserId) {
-        return 'Заказчик'
-    }
-    
-    // Если пользователь - исполнитель проекта (по списку исполнителей, если есть)
+    if (!currentUserId) return ''
+    if (project.manager === currentUserId || project.manager_id === currentUserId) return 'Руководитель'
+    if (project.owner === currentUserId || project.owner_id === currentUserId) return 'Руководитель'
+    if (project.curator === currentUserId || project.curator_id === currentUserId) return 'Куратор'
+    if (project.customer === currentUserId || project.customer_id === currentUserId) return 'Заказчик'
     try {
         const execs = project.executors || project.performers || []
         if (Array.isArray(execs)) {
@@ -172,12 +140,9 @@ function getProjectRole(project) {
             if (has) return 'Исполнитель'
         }
     } catch {}
-
-    // Нет роли в проекте
     return ''
 }
 
-// Преобразование статуса проекта в читаемый вид
 function getProjectStatus(status) {
     const statusMap = {
         'draft': 'Черновик',
@@ -189,9 +154,7 @@ function getProjectStatus(status) {
     return statusMap[status] || status
 }
 
-// Загружаем проекты при монтировании компонента
 onMounted(async () => {
-    // Инициализируем пользователя если еще не инициализирован
     if (!userStore.isInitialized) {
         await userStore.initializeUser()
     }
@@ -207,13 +170,6 @@ onMounted(async () => {
 .page-title {
     margin: 1rem 0;
     color: var(--color-primary-text);
-}
-
-.filters-section {
-    background-color: rgba(var(--bs-info-rgb, 13, 202, 240), .075);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
 }
 
 .projects-list {

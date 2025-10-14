@@ -24,6 +24,14 @@ export default {
       "requiresAuth": true
     }
   },
+  "ProjectEdProjectsOnApply": {
+    "path": "/crm/project-ed/projects-on-apply",
+    "component": "@/modules/crm/project-ed/ProjectsOnApplyPage.vue",
+    "meta": {
+      "title": "Проекты на утверждении",
+      "requiresAuth": true
+    }
+  },
   "ProjectEdTechnical": {
     "path": "/crm/project-ed/technical",
     "component": "@/modules/crm/project-ed/Technical/TechnicalPage.vue",

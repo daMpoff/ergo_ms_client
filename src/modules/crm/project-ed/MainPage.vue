@@ -3,7 +3,9 @@
         <Breadcrumbs :items="breadcrumbItems" />
         <div class="page-content">
             <div class="content-projects-on-apply" v-if="canViewProjectsOnApply && hasProjectsOnApply">
-                <h3>Проекты на утверждении</h3>
+                <h3>
+                    <router-link :to="{ name: 'ProjectEdProjectsOnApply' }" class="h3-link">Проекты на утверждении</router-link>
+                </h3>
                 <ProjectsOnApply :projects="projectsForReview" />
             </div>
 
