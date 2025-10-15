@@ -285,6 +285,57 @@
                         <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий к планируемым результатам" :value="getComment(makeKey('stage_results', s.id))" @input="updateComment(makeKey('stage_results', s.id), $event.target.value)"></textarea>
                       </div>
                     </div>
+
+                    <template v-if="hasStageBudget(s.id)">
+                      <div class="field">
+                        <div class="field-label">Бюджет этапа:</div>
+                        <div class="field-value">&nbsp;</div>
+                      </div>
+
+                      <div class="field" v-if="getStageBudgetSum(s.id, 'salary', 'budget') > 0">
+                        <div class="field-label">Заработная плата (Бюджет):</div>
+                        <div class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'salary', 'budget')) }}</div>
+                        <div class="decision-inline">
+                          <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_budget_salary_budget', s.id)) }" @click="toggleClarify(makeKey('stage_budget_salary_budget', s.id))">Уточнить</button>
+                        </div>
+                        <div v-if="isClarify(makeKey('stage_budget_salary_budget', s.id))" class="decision-comment">
+                          <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('stage_budget_salary_budget', s.id))" @input="updateComment(makeKey('stage_budget_salary_budget', s.id), $event.target.value)"></textarea>
+                        </div>
+                      </div>
+
+                      <div class="field" v-if="getStageBudgetSum(s.id, 'salary', 'nonbudget') > 0">
+                        <div class="field-label">Заработная плата (Внебюджет):</div>
+                        <div class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'salary', 'nonbudget')) }}</div>
+                        <div class="decision-inline">
+                          <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_budget_salary_nonbudget', s.id)) }" @click="toggleClarify(makeKey('stage_budget_salary_nonbudget', s.id))">Уточнить</button>
+                        </div>
+                        <div v-if="isClarify(makeKey('stage_budget_salary_nonbudget', s.id))" class="decision-comment">
+                          <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('stage_budget_salary_nonbudget', s.id))" @input="updateComment(makeKey('stage_budget_salary_nonbudget', s.id), $event.target.value)"></textarea>
+                        </div>
+                      </div>
+
+                      <div class="field" v-if="getStageBudgetSum(s.id, 'other', 'budget') > 0">
+                        <div class="field-label">Другие расходы (Бюджет):</div>
+                        <div class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'other', 'budget')) }}</div>
+                        <div class="decision-inline">
+                          <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_budget_other_budget', s.id)) }" @click="toggleClarify(makeKey('stage_budget_other_budget', s.id))">Уточнить</button>
+                        </div>
+                        <div v-if="isClarify(makeKey('stage_budget_other_budget', s.id))" class="decision-comment">
+                          <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('stage_budget_other_budget', s.id))" @input="updateComment(makeKey('stage_budget_other_budget', s.id), $event.target.value)"></textarea>
+                        </div>
+                      </div>
+
+                      <div class="field" v-if="getStageBudgetSum(s.id, 'other', 'nonbudget') > 0">
+                        <div class="field-label">Другие расходы (Внебюджет):</div>
+                        <div class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'other', 'nonbudget')) }}</div>
+                        <div class="decision-inline">
+                          <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_budget_other_nonbudget', s.id)) }" @click="toggleClarify(makeKey('stage_budget_other_nonbudget', s.id))">Уточнить</button>
+                        </div>
+                        <div v-if="isClarify(makeKey('stage_budget_other_nonbudget', s.id))" class="decision-comment">
+                          <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('stage_budget_other_nonbudget', s.id))" @input="updateComment(makeKey('stage_budget_other_nonbudget', s.id), $event.target.value)"></textarea>
+                        </div>
+                      </div>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -363,41 +414,7 @@
             </div>
           </div>
 
-          <div class="card mb-3">
-            <div class="card-header fw-semibold">Бюджет: позиции</div>
-            <div class="card-body">
-              <div v-if="!projectData.budget_items || projectData.budget_items.length === 0" class="text-muted">Нет позиций</div>
-              <div v-else class="table-responsive">
-                <table class="table table-sm align-middle">
-                  <thead>
-                    <tr>
-                      <th>Этап</th>
-                      <th>Статья затрат</th>
-                      <th>Источник финансирования</th>
-                      <th class="text-end">Сумма</th>
-                      <th>Решение</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="bi in projectData.budget_items || []" :key="bi.id">
-                      <td>{{ stageName(bi.stage_id) }}</td>
-                      <td>{{ translateBudgetTerms(bi.cost_article) }}</td>
-                      <td>{{ translateBudgetTerms(bi.funding_source) }}</td>
-                      <td class="text-end">{{ formatMoney(bi.amount) }}</td>
-                      <td class="w-25">
-                        <div class="decision-inline">
-                          <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('budget_item', bi.id)) }" @click="toggleClarify(makeKey('budget_item', bi.id))">Уточнить</button>
-                        </div>
-                        <div v-if="isClarify(makeKey('budget_item', bi.id))" class="decision-comment mt-2">
-                          <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('budget_item', bi.id))" @input="updateComment(makeKey('budget_item', bi.id), $event.target.value)"></textarea>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          
 
           <div class="card mb-4">
             <div class="card-header fw-semibold">Бюджет: итоги</div>
@@ -868,6 +885,46 @@ function stageName(stageId) {
   if (!stageId || !projectData.value?.stages) return '—'
   const st = projectData.value.stages.find(s => s.id === stageId)
   return st?.name || `Этап #${stageId}`
+}
+
+function getBudgetItemsForStage(stageId) {
+  const items = projectData.value?.budget_items
+  if (!Array.isArray(items)) return []
+  const idNum = Number(stageId)
+  return items.filter((bi) => {
+    const a = bi?.stage_id
+    const b = bi?.stage
+    const c = bi?.stage?.id
+    return (
+      (a != null && Number(a) === idNum) ||
+      (b != null && Number(b) === idNum) ||
+      (c != null && Number(c) === idNum)
+    )
+  })
+}
+
+function getStageBudgetSum(stageId, costArticleKey, fundingSourceKey) {
+  const items = getBudgetItemsForStage(stageId)
+  if (!items.length) return 0
+  const keyEq = (val, key) => String(val || '').toLowerCase() === String(key).toLowerCase()
+  return items.reduce((sum, bi) => {
+    const article = String(bi?.cost_article || '').toLowerCase()
+    const source = String(bi?.funding_source || '').toLowerCase()
+    if (keyEq(article, costArticleKey) && keyEq(source, fundingSourceKey)) {
+      const amount = Number(bi?.amount)
+      if (Number.isFinite(amount)) return sum + amount
+    }
+    return sum
+  }, 0)
+}
+
+function hasStageBudget(stageId) {
+  return (
+    getStageBudgetSum(stageId, 'salary', 'budget') > 0 ||
+    getStageBudgetSum(stageId, 'salary', 'nonbudget') > 0 ||
+    getStageBudgetSum(stageId, 'other', 'budget') > 0 ||
+    getStageBudgetSum(stageId, 'other', 'nonbudget') > 0
+  )
 }
 
 async function loadProjectBySlug(slug) {
