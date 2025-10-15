@@ -21,18 +21,20 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { isDatasetSidebarOpen, currentSidebarPage } from '@/modules/bi/js/useSidebarStore'
-import { useUserStore } from '@/modules/cms/js/userStore.js'
+import { isDatasetSidebarOpen, currentSidebarPage } from '@/core/bi/MainPage/Sidebar/components/js/useSidebarStore'
+import { useUserStore } from '@/core/cms/js/userStore.js'
 import MenuList from '@/components/menu/MenuList.vue'
-import TheHeader from '@/components/header/TheHeader.vue'
 
-import StorageSidebar from '@/modules/bi/components/StorageSidebar.vue'
+import StorageSidebar from '@/core/bi/MainPage/Sidebar/StorageSidebar.vue'
+import { Menu as IconMenu } from 'lucide-vue-next'
 
 const userStore = useUserStore()
-const leftPadding = ref('280px')
+const leftPadding = ref('300px') // Увеличиваем начальное значение для адаптивной ширины
 const isMenuVisible = ref(window.innerWidth >= 1200)
 const isMenuToggledManually = ref(false)
 const isOverlayVisible = ref(false)
+const isMenuCollapsed = ref(false)
+const menuWidth = ref(260)
 
 function updateMenuVisibility() {
   if (window.innerWidth >= 1200) {
@@ -61,6 +63,11 @@ function leftToggle(val) {
   leftPadding.value = val
 }
 
+function handleMenuStateChange(collapsed, width) {
+  isMenuCollapsed.value = collapsed
+  menuWidth.value = width
+}
+
 function openSidebarWithPage(pageName) {
   currentSidebarPage.value = pageName
   isDatasetSidebarOpen.value = true
@@ -73,6 +80,10 @@ function openSidebarFromMenu(page) {
 function closeSidebar() {
   isDatasetSidebarOpen.value = false
   currentSidebarPage.value = ''
+}
+
+function onHamburgerClick() {
+  toggleMenu(!isMenuVisible.value)
 }
 
 onMounted(async () => {
@@ -89,6 +100,22 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <Teleport to="body">
+    <div class="mobile-header d-xl-none">
+      <button
+        class="btn btn-link d-flex align-items-center justify-content-center mobile-header__btn"
+        type="button"
+        :aria-label="isMenuVisible ? 'Закрыть меню' : 'Открыть меню'"
+        :title="isMenuVisible ? 'Закрыть меню' : 'Открыть меню'"
+        @click="onHamburgerClick"
+      >
+        <IconMenu :size="24" />
+      </button>
+      <RouterLink to="/" class="mobile-header__brand text-decoration-none">
+        <span class="fw-semibold">ERGO&nbsp;MS</span>
+      </RouterLink>
+    </div>
+  </Teleport>
   <div class="layout-container">
     <MenuList
       :current-page="currentSidebarPage"
@@ -96,6 +123,7 @@ onBeforeUnmount(() => {
       :is-visible="isMenuVisible"
       @open-sidebar="openSidebarFromMenu"
       @reset-page="() => currentSidebarPage = ''"
+      @menu-state-change="handleMenuStateChange"
     />
     <div class="layout-page" :style="{ paddingLeft: leftPadding }">
       <div class="py-4 container-xxl">
@@ -105,10 +133,43 @@ onBeforeUnmount(() => {
   </div>
 
   <div @click="closeMenu" class="layout-overlay" :class="{ active: isOverlayVisible }" />
-  <StorageSidebar :isDatasetSidebarOpen="isDatasetSidebarOpen" :currentPage="currentSidebarPage" @close="closeSidebar"/>
+  <StorageSidebar 
+    :isDatasetSidebarOpen="isDatasetSidebarOpen" 
+    :currentPage="currentSidebarPage" 
+    :isMenuCollapsed="isMenuCollapsed"
+    :menuWidth="menuWidth"
+    @close="closeSidebar"
+  />
 </template>
 
 <style scoped lang="scss">
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  z-index: 1100;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  width: 100%;
+
+  &__btn {
+    width: 40px;
+    height: 40px;
+    margin-right: 8px;
+    color: #0d6efd;
+  }
+
+  &__brand {
+    display: inline-flex;
+    align-items: center;
+    color: inherit;
+  }
+}
 .layout-page {
   padding-inline-start: v-bind(leftPadding);
   transition: padding-inline-start 0.3s ease;
@@ -117,8 +178,19 @@ onBeforeUnmount(() => {
   z-index: 1004;
 }
 @media (width < 1200px) {
+  .layout-container {
+    height: 100dvh;
+    overflow: hidden;
+  }
   .layout-page {
     padding-inline-start: 0;
+    padding-top: 0;
+    height: calc(100dvh - 56px);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  :deep(.side-menu__toggle) {
+    display: none !important;
   }
 }
 </style>

@@ -1,7 +1,9 @@
 <script setup>
-import Cookies from 'js-cookie';
 import { ref, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
+import cityAnalyzeApiService from '../js/apiService'
 
+const toast = useToast()
 const loading = ref(true);
 const error = ref(null);
 const taskData = ref({});
@@ -19,38 +21,33 @@ const props = defineProps({
 
 const fetchTaskStatus = async () => {
     try {
-        const token = Cookies.get('token');
+        const response = await cityAnalyzeApiService.getTaskStatus(props.id);
 
-        const response = await fetch(
-            `http://localhost:8000/api/cities_expansion/geoanalyzer/task_status?task_id=${props.id}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+        if (response.success) {
+            taskData.value = response.data;
+
+            // If task is finished, fetch images
+            if (taskData.value.status === 'FINISHED' && taskData.value.result) {
+                await fetchResultImages();
             }
-        });
 
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error('Task not found');
-            } else if (response.status === 500) {
-                throw new Error('Server error');
-            } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (failedToLoadImages.value) {
+                console.log('Failed to load images. Need to delete task.')
             }
-        }
-
-        taskData.value = await response.json();
-
-        // If task is finished, fetch images
-        if (taskData.value.status === 'FINISHED' && taskData.value.result) {
-            await fetchResultImages();
-        }
-
-        if (failedToLoadImages.value) {
-            console.log('Failed to load images. Need to delete task.')
+        } else {
+            throw new Error(response.message || 'Ошибка загрузки статуса задачи');
         }
     } catch (err) {
         console.error('Error fetching task status:', err);
-        error.value = err.message;
+        error.value = err.response?.data?.message || err.message || 'Ошибка загрузки статуса задачи';
+        
+        if (err.response?.status === 404) {
+            error.value = 'Задача не найдена';
+        } else if (err.response?.status === 500) {
+            error.value = 'Ошибка сервера';
+        }
+        
+        toast.error(error.value);
     } finally {
         loading.value = false;
     }
@@ -80,34 +77,31 @@ const fetchImage = async (id, type) => {
     const key = `${type}-${id}`;
 
     try {
-        const token = Cookies.get('token');
+        const response = await cityAnalyzeApiService.getFile(id);
 
-
-        const response = await fetch(
-            `http://localhost:8000/api/cities_expansion/get_file/?id=${id}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
+        if (response.success && response.data instanceof Blob) {
+            const imageUrl = URL.createObjectURL(response.data);
+            images.value[key] = imageUrl;
+        } else {
             let errorMsg = 'Failed to load image';
+            
             if (response.status === 403) errorMsg = 'Нет доступа к файлу';
             if (response.status === 404) errorMsg = 'Файл не найден';
             if (response.status === 500) errorMsg = 'Ошибка сервера';
 
             failedToLoadImages.value = true;
-
             imageErrors.value[key] = errorMsg;
-            return;
         }
-
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
-        images.value[key] = imageUrl;
     } catch (err) {
         console.error(`Error fetching image ${id}:`, err);
-        imageErrors.value[key] = err.message;
+        
+        let errorMsg = 'Failed to load image';
+        if (err.response?.status === 403) errorMsg = 'Нет доступа к файлу';
+        if (err.response?.status === 404) errorMsg = 'Файл не найден';
+        if (err.response?.status === 500) errorMsg = 'Ошибка сервера';
+        
+        failedToLoadImages.value = true;
+        imageErrors.value[key] = errorMsg;
     }
 };
 

@@ -1,5 +1,5 @@
 import { ref, computed, readonly, onMounted } from 'vue'
-import { authService } from '@/modules/cms/adp/js/authService'
+import { authService } from '@/core/cms/adp/js/authService'
 
 const userRole = ref(null)
 const userRoles = ref([])

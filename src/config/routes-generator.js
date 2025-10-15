@@ -1,28 +1,91 @@
 /**
- * ГЕНЕРАТОР МАРШРУТОВ ИЗ КОНФИГУРАЦИИ МЕНЮ И МАРШРУТОВ
+ * ГЕНЕРАТОР МАРШРУТОВ ИЗ МОДУЛЕЙ
  * 
- * Этот модуль генерирует маршруты Vue Router на основе:
- * - menu-config.json - структура меню (иконки, названия, иерархия, ссылки на маршруты)
- * - routes-config.json - полные конфигурации всех доступных маршрутов
+ * Этот модуль автоматически загружает маршруты из всех модулей системы:
+ * - config/routes.js - системные маршруты (главная, 404, logout, auth)
+ * - core модули - роуты из core на любом уровне вложенности
+ * - modules - роуты из modules на любом уровне вложенности
  * 
- * Структура routes-config.json:
- * - coreRoutes - системные маршруты (главная, 404, logout)
- * - authRoutes - маршруты авторизации и BI модуля
- * - routes - основные маршруты приложения
+ * Структура:
+ * - config/routes.js содержит coreRoutes и authRoutes
+ * - каждый модуль и подмодуль имеет свой файл routes.js в папке js
+ * - роуты загружаются динамически без захардкоженных путей
+ * - поддерживаются вложенные модули (например: crm/project-ed/js/routes.js)
  * 
  * Основные функции:
+ * - loadModuleRoutes() - загружает роуты из всех модулей
  * - generateRoutesFromConfig() - генерирует маршруты для Vue Router
- * - generateCoreRoutes() - генерирует системные и auth маршруты
- * - transformMenuSection() - преобразует секцию меню в маршрут
- * - transformSubItem() - преобразует подэлемент меню в дочерний маршрут
- * 
- * Использование:
- * import { generateRoutesFromConfig, generateAllRoutes } from '@/config/routes-generator.js'
- * const routes = generateAllRoutes()
+ * - generateAllRoutes() - генерирует полную конфигурацию маршрутов
  */
 
-import menuConfig from '@/config/menu-config.json'
-import routesConfig from '@/config/routes-config.json'
+import { generateMenuConfig } from '@/config/menu-loader.js';
+import coreRoutesConfig from '@/config/routes.js';
+
+// Кеш для конфигурации меню
+let menuConfigCache = null
+
+// Асинхронная функция для получения конфигурации меню
+async function getMenuConfig() {
+  if (!menuConfigCache) {
+    menuConfigCache = await generateMenuConfig()
+  }
+  return menuConfigCache
+}
+
+/**
+ * Автоматически загружает все routes.js из core модулей
+ * @returns {Object} - объект со всеми роутами из core модулей
+ */
+function loadCoreModuleRoutes() {
+  const coreRoutes = {}
+  
+  // Используем import.meta.glob для автоматической загрузки всех routes.js из core
+  // Паттерн **/js/routes.js находит routes.js на любом уровне вложенности
+  const coreModules = import.meta.glob('../core/**/js/routes.js', { eager: true })
+  
+  Object.entries(coreModules).forEach(([path, module]) => {
+    const routes = module.default || {}
+    Object.assign(coreRoutes, routes)
+  })
+  
+  return coreRoutes
+}
+
+/**
+ * Автоматически загружает все routes.js из modules
+ * @returns {Object} - объект со всеми роутами из modules
+ */
+function loadModulesRoutes() {
+  const modulesRoutes = {}
+  
+  // Используем import.meta.glob для автоматической загрузки всех routes.js из modules
+  // Паттерн **/js/routes.js находит routes.js на любом уровне вложенности
+  const modules = import.meta.glob('../modules/**/js/routes.js', { eager: true })
+  
+  Object.entries(modules).forEach(([path, module]) => {
+    const routes = module.default || {}
+    Object.assign(modulesRoutes, routes)
+  })
+  
+  return modulesRoutes
+}
+
+/**
+ * Загружает все роуты из всех модулей
+ * @returns {Object} - объект со всеми доступными роутами
+ */
+function loadAllModuleRoutes() {
+  const coreRoutes = loadCoreModuleRoutes()
+  const modulesRoutes = loadModulesRoutes()
+  
+  return {
+    ...coreRoutes,
+    ...modulesRoutes
+  }
+}
+
+// Кешируем загруженные роуты
+let cachedRoutes = null
 
 /**
  * Получает конфигурацию маршрута по имени
@@ -30,12 +93,15 @@ import routesConfig from '@/config/routes-config.json'
  * @returns {Object|null} - конфигурация маршрута или null
  */
 function getRouteConfig(routeName) {
-  return routesConfig.routes[routeName] || null
+  if (!cachedRoutes) {
+    cachedRoutes = loadAllModuleRoutes()
+  }
+  return cachedRoutes[routeName] || null
 }
 
 /**
  * Преобразует строковый путь к компоненту в функцию lazy import
- * @param {string} componentPath - путь к компоненту (например, "@/modules/cms/adp/user/ParentLayout.vue")
+ * @param {string} componentPath - путь к компоненту (например, "@/core/cms/adp/user/ParentLayout.vue")
  * @returns {Function} - функция для ленивой загрузки компонента
  */
 function createLazyImport(componentPath) {
@@ -221,11 +287,12 @@ function transformMenuSection(section) {
 }
 
 /**
- * Генерирует массив маршрутов из JSON конфигурации меню и маршрутов
- * @returns {Array} - массив маршрутов для Vue Router
+ * Генерирует массив маршрутов из JSON конфигурации меню
+ * @returns {Promise<Array>} - массив маршрутов для Vue Router
  */
-export function generateRoutesFromConfig() {
+export async function generateRoutesFromConfig() {
   try {
+    const menuConfig = await getMenuConfig()
     const routes = menuConfig.menuSections
       .map(transformMenuSection)
       .filter(route => route !== null) // Убираем невалидные маршруты
@@ -235,8 +302,6 @@ export function generateRoutesFromConfig() {
     return []
   }
 }
-
-// coreRoutes и authRoutes теперь находятся в routes-config.json
 
 /**
  * Преобразует строковый путь компонента в динамический импорт
@@ -266,31 +331,31 @@ function transformRoute(route) {
 }
 
 /**
- * Загружает и преобразует основные маршруты из JSON конфигурации
+ * Загружает и преобразует основные маршруты из конфигурации
  * @returns {Array} - массив основных маршрутов
  */
 function loadCoreRoutes() {
   try {
-    return routesConfig.coreRoutes.map(transformRoute)
+    return coreRoutesConfig.coreRoutes.map(transformRoute)
   } catch {
     return []
   }
 }
 
 /**
- * Загружает и преобразует маршруты аутентификации из JSON конфигурации
+ * Загружает и преобразует маршруты аутентификации из конфигурации
  * @returns {Array} - массив маршрутов аутентификации
  */
 function loadAuthRoutes() {
   try {
-    return routesConfig.authRoutes.map(transformRoute)
+    return coreRoutesConfig.authRoutes.map(transformRoute)
   } catch {
     return []
   }
 }
 
 /**
- * Генерирует дополнительные служебные маршруты (основные и auth) из JSON конфигурации
+ * Генерирует дополнительные служебные маршруты (основные и auth)
  * @returns {Array} - массив служебных маршрутов
  */
 export function generateCoreRoutes() {
@@ -394,15 +459,16 @@ function createStandaloneRoute(routeName, routeConfig) {
 }
 
 /**
- * Генерирует недостающие маршруты (которые есть в routes-config.json, но не в меню)
+ * Генерирует недостающие маршруты (которые есть в модулях, но не в меню)
  * @param {Set} createdRouteNames - набор уже созданных имен маршрутов
  * @returns {Array} - массив недостающих маршрутов
  */
 function generateMissingRoutes(createdRouteNames) {
   const missingRoutes = []
+  const allModuleRoutes = loadAllModuleRoutes()
   
-  // Проходим по всем маршрутам в routes-config.json
-  Object.entries(routesConfig.routes).forEach(([routeName, routeConfig]) => {
+  // Проходим по всем маршрутам из модулей
+  Object.entries(allModuleRoutes).forEach(([routeName, routeConfig]) => {
     // Если маршрут не был создан через меню, создаем его отдельно
     if (!createdRouteNames.has(routeName)) {
       try {
@@ -421,14 +487,14 @@ function generateMissingRoutes(createdRouteNames) {
  * Генерирует полную конфигурацию маршрутов
  * @returns {Array} - полный массив маршрутов для приложения
  */
-export function generateAllRoutes() {
+export async function generateAllRoutes() {
   const coreRoutes = generateCoreRoutes()
-  const menuRoutes = generateRoutesFromConfig()
+  const menuRoutes = await generateRoutesFromConfig()
   
   // Получаем имена уже созданных маршрутов
   const createdRouteNames = getCreatedRouteNames([...coreRoutes, ...menuRoutes])
   
-  // Создаем недостающие маршруты из routes-config.json
+  // Создаем недостающие маршруты из модулей
   const missingRoutes = generateMissingRoutes(createdRouteNames)
   
   return [
@@ -560,11 +626,11 @@ export function getAllRouteNames() {
 }
 
 /**
- * Получает все доступные маршруты из routes-config.json
+ * Получает все доступные маршруты из модулей
  * @returns {Object} - объект со всеми маршрутами
  */
 export function getAllAvailableRoutes() {
-  return routesConfig.routes
+  return loadAllModuleRoutes()
 }
 
 /**
@@ -585,6 +651,7 @@ export function getRoutesDebugInfo() {
   const menuRoutes = generateRoutesFromConfig()
   const createdRouteNames = getCreatedRouteNames([...coreRoutes, ...menuRoutes])
   const missingRoutes = generateMissingRoutes(createdRouteNames)
+  const allModuleRoutes = loadAllModuleRoutes()
   
   return {
     totalRoutes: coreRoutes.length + menuRoutes.length + missingRoutes.length,
@@ -596,7 +663,11 @@ export function getRoutesDebugInfo() {
       !coreRoutes.some(r => r.name === name)
     ),
     missingRouteNames: missingRoutes.map(r => r.name).filter(Boolean),
-    allAvailableRoutes: Object.keys(routesConfig.routes)
+    allAvailableRoutes: Object.keys(allModuleRoutes),
+    loadedModules: {
+      core: Object.keys(loadCoreModuleRoutes()),
+      modules: Object.keys(loadModulesRoutes())
+    }
   }
 }
 
@@ -643,4 +714,4 @@ export function validateRoutesConfig() {
     errors,
     warnings
   }
-} 
+}

@@ -1,5 +1,8 @@
 <script setup>
-import Cookies from 'js-cookie';
+import { useToast } from 'vue-toastification'
+import cityAnalyzeApiService from '../js/apiService'
+
+const toast = useToast()
 </script>
 <template>
   <div class="tasks-container">
@@ -115,24 +118,20 @@ export default {
       this.isLoading = true
       this.error = null
       try {
-        const token = Cookies.get('token');
-
-        const response = await fetch('http://localhost:8000/api/cities_expansion/get_my_tasks/', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+        const response = await cityAnalyzeApiService.getMyTasks()
         
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Необходима авторизация')
-          }
-          throw new Error('Ошибка при загрузке задач')
+        if (response.success) {
+          this.tasks = response.data
+        } else {
+          throw new Error(response.message || 'Ошибка при загрузке задач')
         }
-        
-        this.tasks = await response.json()
       } catch (err) {
-        this.error = err.message
+        console.error('Ошибка загрузки задач:', err)
+        this.error = err.response?.data?.message || err.message || 'Ошибка при загрузке задач'
+        if (err.response?.status === 401) {
+          this.error = 'Необходима авторизация'
+        }
+        toast.error(this.error)
       } finally {
         this.isLoading = false
       }
@@ -146,20 +145,13 @@ export default {
     },
     async fetchTaskStatus(taskId) {
       try {
-        const token = Cookies.get('token');
-
-        const response = await fetch(
-          `http://localhost:8000/api/cities_expansion/geoanalyzer/task_status?task_id=${taskId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        )
+        const response = await cityAnalyzeApiService.getTaskStatus(taskId)
         
-        if (!response.ok) throw new Error('Ошибка при проверке статуса задачи')
-        
-        return await response.json()
+        if (response.success) {
+          return response.data
+        } else {
+          throw new Error(response.message || 'Ошибка при проверке статуса задачи')
+        }
       } catch (err) {
         console.error(`Ошибка при проверке статуса задачи ${taskId}:`, err)
         return null
