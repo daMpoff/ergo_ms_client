@@ -228,22 +228,6 @@
           </div>
 
           <div class="card mb-3">
-            <div class="card-header fw-semibold">Бюджет: итоги</div>
-            <div class="card-body">
-              <div v-if="!(projectData.budget_totals && projectData.budget_totals.length)" class="text-muted">Нет итогов</div>
-              <div v-else>
-                <div v-for="bt in projectData.budget_totals" :key="bt.id" class="row g-3">
-                  <div class="col-12"><span class="field-label">Итого с ОМС:</span> <span class="field-value">{{ formatMoney(bt.total_with_insurance) }}</span></div>
-                  <div class="col-12"><span class="field-label">ЗП (внебюджет):</span> <span class="field-value">{{ formatMoney(bt.salary_off_budget) }}</span></div>
-                  <div class="col-12"><span class="field-label">ЗП (бюджет):</span> <span class="field-value">{{ formatMoney(bt.salary_budget) }}</span></div>
-                  <div class="col-12"><span class="field-label">Прочее (внебюджет):</span> <span class="field-value">{{ formatMoney(bt.other_off_budget) }}</span></div>
-                  <div class="col-12"><span class="field-label">Прочее (бюджет):</span> <span class="field-value">{{ formatMoney(bt.other_budget) }}</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card mb-4">
             <div class="card-header fw-semibold">Бюджет: позиции</div>
             <div class="card-body">
               <div v-if="!projectData.budget_items || projectData.budget_items.length === 0" class="text-muted">Нет позиций</div>
@@ -263,6 +247,45 @@
                       <td>{{ bi.cost_article }}</td>
                       <td>{{ bi.funding_source }}</td>
                       <td class="text-end">{{ formatMoney(bi.amount) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header fw-semibold">Бюджет: итоги</div>
+            <div class="card-body">
+              <div v-if="!(projectData.budget_totals && projectData.budget_totals.length)" class="text-muted">Нет данных по итогам бюджета</div>
+              <div v-else class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead>
+                    <tr>
+                      <th>Тип расхода</th>
+                      <th class="text-end">Сумма</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="bt in projectData.budget_totals" :key="`salary-off-${bt.id}`">
+                      <td>Зарплата (внебюджет)</td>
+                      <td class="text-end">{{ formatMoney(bt.salary_off_budget) }}</td>
+                    </tr>
+                    <tr v-for="bt in projectData.budget_totals" :key="`salary-budget-${bt.id}`">
+                      <td>Зарплата (бюджет)</td>
+                      <td class="text-end">{{ formatMoney(bt.salary_budget) }}</td>
+                    </tr>
+                    <tr v-for="bt in projectData.budget_totals" :key="`other-off-${bt.id}`">
+                      <td>Другие расходы (внебюджет)</td>
+                      <td class="text-end">{{ formatMoney(bt.other_off_budget) }}</td>
+                    </tr>
+                    <tr v-for="bt in projectData.budget_totals" :key="`other-budget-${bt.id}`">
+                      <td>Другие расходы (бюджет)</td>
+                      <td class="text-end">{{ formatMoney(bt.other_budget) }}</td>
+                    </tr>
+                    <tr v-for="bt in projectData.budget_totals" :key="`total-${bt.id}`" class="table-active">
+                      <td><strong>Итого с страховкой</strong></td>
+                      <td class="text-end"><strong>{{ formatMoney(bt.total_with_insurance) }}</strong></td>
                     </tr>
                   </tbody>
                 </table>
