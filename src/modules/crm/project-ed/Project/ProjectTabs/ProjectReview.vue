@@ -242,57 +242,49 @@
                     </div>
                   </div>
                   <div class="stage-body">
-                  <div class="stage-row">
-                    <div class="stage-label">Название этапа:</div>
-                    <div class="stage-value">{{ s.name || '—' }}</div>
-                    <div class="stage-actions">
+                    <div class="field">
+                      <div class="field-label">Название этапа:</div>
+                      <div class="field-value">{{ s.name || '—' }}</div>
                       <div class="decision-inline">
                         <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_name', s.id)) }" @click="toggleClarify(makeKey('stage_name', s.id))">Уточнить</button>
                       </div>
-                      <div v-if="isClarify(makeKey('stage_name', s.id))" class="decision-comment mt-2">
+                      <div v-if="isClarify(makeKey('stage_name', s.id))" class="decision-comment">
                         <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий к названию" :value="getComment(makeKey('stage_name', s.id))" @input="updateComment(makeKey('stage_name', s.id), $event.target.value)"></textarea>
                       </div>
                     </div>
-                  </div>
 
-                  <div class="stage-row">
-                    <div class="stage-label">Начало этапа:</div>
-                    <div class="stage-value">{{ formatDateLong(s.start_date) }}</div>
-                    <div class="stage-actions">
+                    <div class="field">
+                      <div class="field-label">Начало этапа:</div>
+                      <div class="field-value">{{ formatDateLong(s.start_date) }}</div>
                       <div class="decision-inline">
                         <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_start', s.id)) }" @click="toggleClarify(makeKey('stage_start', s.id))">Уточнить</button>
                       </div>
-                      <div v-if="isClarify(makeKey('stage_start', s.id))" class="decision-comment mt-2">
+                      <div v-if="isClarify(makeKey('stage_start', s.id))" class="decision-comment">
                         <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий к дате начала" :value="getComment(makeKey('stage_start', s.id))" @input="updateComment(makeKey('stage_start', s.id), $event.target.value)"></textarea>
                       </div>
                     </div>
-                  </div>
 
-                  <div class="stage-row">
-                    <div class="stage-label">Окончание этапа:</div>
-                    <div class="stage-value">{{ formatDateLong(s.end_date) }}</div>
-                    <div class="stage-actions">
+                    <div class="field">
+                      <div class="field-label">Окончание этапа:</div>
+                      <div class="field-value">{{ formatDateLong(s.end_date) }}</div>
                       <div class="decision-inline">
                         <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_end', s.id)) }" @click="toggleClarify(makeKey('stage_end', s.id))">Уточнить</button>
                       </div>
-                      <div v-if="isClarify(makeKey('stage_end', s.id))" class="decision-comment mt-2">
+                      <div v-if="isClarify(makeKey('stage_end', s.id))" class="decision-comment">
                         <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий к дате окончания" :value="getComment(makeKey('stage_end', s.id))" @input="updateComment(makeKey('stage_end', s.id), $event.target.value)"></textarea>
                       </div>
                     </div>
-                  </div>
 
-                  <div class="stage-row">
-                    <div class="stage-label">Планируемые результаты этапа:</div>
-                    <div class="stage-value">{{ s.planned_results || '—' }}</div>
-                    <div class="stage-actions">
+                    <div class="field">
+                      <div class="field-label">Планируемые результаты этапа:</div>
+                      <div class="field-value">{{ s.planned_results || '—' }}</div>
                       <div class="decision-inline">
                         <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_results', s.id)) }" @click="toggleClarify(makeKey('stage_results', s.id))">Уточнить</button>
                       </div>
-                      <div v-if="isClarify(makeKey('stage_results', s.id))" class="decision-comment mt-2">
+                      <div v-if="isClarify(makeKey('stage_results', s.id))" class="decision-comment">
                         <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий к планируемым результатам" :value="getComment(makeKey('stage_results', s.id))" @input="updateComment(makeKey('stage_results', s.id), $event.target.value)"></textarea>
                       </div>
                     </div>
-                  </div>
                   </div>
                 </div>
               </div>
@@ -1091,12 +1083,16 @@ onBeforeUnmount(() => {
 }
 .stage-body {
   padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* как у .participants-list */
 }
 .stage-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center; /* как у участников */
   gap: 0.5rem;
   flex-wrap: wrap;
+  min-height: 1.5rem; /* как у участников */
 }
 .stage-header .stage-title strong {
   color: var(--color-primary-text);
@@ -1115,13 +1111,46 @@ onBeforeUnmount(() => {
   min-width: 110px;
   color: var(--color-secondary-text);
   font-weight: 500;
+  line-height: 1.5;
 }
 .stage-value {
   flex: 1;
   color: var(--color-primary-text);
+  line-height: 1.5; /* выравниваем межстрочный интервал */
 }
 .stage-actions {
+  flex-basis: auto;
+  margin-left: 0.5rem;
+}
+.stage-row .decision-comment {
   flex-basis: 100%;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+/* Делаем поля этапа такими же, как у участников */
+.stage-body .field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 1.5rem;
+  flex-wrap: wrap;
+}
+.stage-body .field-label {
+  min-width: 120px;
+  flex-shrink: 0;
+  margin-right: 1rem;
+  color: var(--color-secondary-text);
+  font-weight: 500;
+}
+.stage-body .field-value {
+  flex: 1;
+  color: var(--color-primary-text);
+}
+.stage-body .decision-comment {
+  flex-basis: 100%;
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
 /* Компактный список задач */
