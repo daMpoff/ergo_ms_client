@@ -26,6 +26,28 @@
             <div class="card-body">
               <div class="row g-3">
                 <div class="col-12">
+                  <div class="field">
+                    <span class="field-label">Блок мероприятий:</span>
+                    <span class="field-value">
+                      <template v-if="blockCode || blockTitle">
+                        <template v-if="blockCode">{{ blockCode }}<span v-if="blockTitle">. </span></template>{{ blockTitle || '' }}
+                      </template>
+                      <template v-else>—</template>
+                    </span>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="field">
+                    <span class="field-label">Мероприятие:</span>
+                    <span class="field-value">
+                      <template v-if="eventCode || eventTitle">
+                        <template v-if="eventCode">{{ eventCode }}<span v-if="eventTitle">. </span></template>{{ eventTitle || '' }}
+                      </template>
+                      <template v-else>—</template>
+                    </span>
+                  </div>
+                </div>
+                <div class="col-12">
                   <div class="field"><span class="field-label">Короткое название:</span> <span class="field-value">{{ projectData.short_name || '—' }}</span></div>
                 </div>
                 <div class="col-12">
@@ -42,9 +64,6 @@
                 </div>
                 <div class="col-12">
                   <div class="field"><span class="field-label">Дата окончания:</span> <span class="field-value">{{ projectData.end_date || '—' }}</span></div>
-                </div>
-                <div class="col-12">
-                  <div class="field"><span class="field-label">Статус:</span> <span class="badge bg-light text-dark">{{ projectData.status }}</span></div>
                 </div>
                 <div class="col-12">
                   <div class="field"><span class="field-label">Общий бюджет:</span> <span class="field-value">{{ formatMoney(projectData.budget_total) }}</span></div>
@@ -186,10 +205,10 @@
             <div class="card-body">
               <div v-if="!projectData.target_indicators || projectData.target_indicators.length === 0" class="text-muted">Нет данных</div>
               <div v-else class="table-responsive">
-                <table class="table table-sm align-middle">
+                <table class="table table-sm align-middle indicators-table">
                   <thead>
                     <tr>
-                      <th>Название</th>
+                      <th class="name-col">Название</th>
                       <th>Ед. изм.</th>
                       <th>Базовое</th>
                       <th>План</th>
@@ -197,7 +216,7 @@
                   </thead>
                   <tbody>
                     <tr v-for="ti in projectData.target_indicators || []" :key="ti.id">
-                      <td>{{ ti.name }}</td>
+                      <td class="indicator-name-cell">{{ getIndicatorName(ti) }}</td>
                       <td>{{ ti.unit || '—' }}</td>
                       <td>{{ ti.baseline ?? '—' }}</td>
                       <td>{{ ti.planned ?? '—' }}</td>
@@ -277,7 +296,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
@@ -326,6 +345,134 @@ const breadcrumbItems = computed(() => ([
   { label: projectTitleBreadcrumb.value, to: projectSlug.value ? `/crm/project-ed/project/${projectSlug.value}` : undefined, icon: FileText },
   { label: 'Экспертная оценка', icon: CheckCircle }
 ]))
+
+// Данные блока и мероприятия (нормализация возможных полей)
+const eventObj = computed(() => {
+  const p = projectData.value || {}
+  return p.event || p.event_data || p.selected_event || null
+})
+
+const blockObj = computed(() => {
+  const p = projectData.value || {}
+  return p.event_block || p.event_block_data || eventObj.value?.block || null
+})
+
+// Локально загружаемые по id
+const fetchedEvent = ref(null)
+const fetchedBlock = ref(null)
+
+const eventId = computed(() => {
+  const p = projectData.value || {}
+  return p.event_id || p.event?.id || p.event || null
+})
+
+const blockId = computed(() => {
+  const p = projectData.value || {}
+  return p.event_block_id || p.event_block?.id || p.event_block || eventObj.value?.blockId || eventObj.value?.block_id || null
+})
+
+async function loadEventIfNeeded() {
+  if (eventObj.value) {
+    fetchedEvent.value = null
+    return
+  }
+  const id = Number(eventId.value)
+  if (!id || Number.isNaN(id)) return
+  try {
+    const { data } = await apiClient.get(endpoints.project_ed.events.detail(id))
+    fetchedEvent.value = data || null
+  } catch {
+    fetchedEvent.value = null
+  }
+}
+
+async function loadBlockIfNeeded() {
+  if (blockObj.value) {
+    fetchedBlock.value = null
+    return
+  }
+  const id = Number(blockId.value)
+  if (!id || Number.isNaN(id)) return
+  try {
+    const { data } = await apiClient.get(endpoints.project_ed.event_blocks.detail(id))
+    fetchedBlock.value = data || null
+  } catch {
+    fetchedBlock.value = null
+  }
+}
+
+// Загружаем при появлении projectData и при смене id
+watch(projectData, async () => {
+  await Promise.allSettled([loadEventIfNeeded(), loadBlockIfNeeded()])
+})
+watch(eventId, loadEventIfNeeded)
+watch(blockId, loadBlockIfNeeded)
+
+const blockCode = computed(() => (blockObj.value?.code || blockObj.value?.short_code || fetchedBlock.value?.code || fetchedBlock.value?.short_code || ''))
+const blockTitle = computed(() => (blockObj.value?.title || blockObj.value?.name || fetchedBlock.value?.title || fetchedBlock.value?.name || ''))
+const eventCode = computed(() => (eventObj.value?.code || fetchedEvent.value?.code || ''))
+const eventTitle = computed(() => (eventObj.value?.name || eventObj.value?.title || fetchedEvent.value?.name || fetchedEvent.value?.title || ''))
+
+// Индикаторы: подгружаем названия, связанные с блоком мероприятий
+const indicatorsById = ref(new Map())
+
+async function ensureIndicatorsLoadedForBlock() {
+  // Определяем актуальный blockId
+  const id = Number(blockId.value)
+  if (!id || Number.isNaN(id)) return
+  try {
+    const { data } = await apiClient.get(endpoints.project_ed.event_blocks.indicators(id))
+    const list = Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : [])
+    // Ожидаем, что элементы имеют id и name
+    const map = new Map(indicatorsById.value)
+    for (const it of list) {
+      if (it && (it.id || it.indicator_id)) {
+        const key = it.id || it.indicator_id
+        const name = it.name || it.title || it.indicator_name || ''
+        const numKey = Number(key)
+        if (Number.isFinite(numKey)) {
+          map.set(numKey, name)
+          // также сохраним строковый эквивалент (на случай, если в данных проекта хранится строка)
+          map.set(String(numKey), name)
+        } else {
+          map.set(String(key), name)
+        }
+      }
+    }
+    indicatorsById.value = map
+  } catch {
+    // игнорируем
+  }
+}
+
+watch(blockId, ensureIndicatorsLoadedForBlock)
+watch(projectData, ensureIndicatorsLoadedForBlock)
+
+function getIndicatorName(ti) {
+  // Порядок приоритетов: локальные поля -> связанные объекты -> кэш из блока
+  if (!ti) return '—'
+  const direct = ti.name || ti.title
+  if (direct) return direct
+  const nested = ti.indicator || ti.indicator_data
+  if (nested && (nested.name || nested.title)) return nested.name || nested.title
+  // Возможные варианты хранения ссылки на базовый показатель
+  const candidates = [
+    ti.source_indicator,
+    ti.source_indicator_id,
+    ti.indicator_id,
+    ti.id,
+    // иногда name содержит числовой id как строку
+    (typeof ti.name === 'string' && /^\d+$/.test(ti.name) ? Number(ti.name) : null),
+  ].filter(v => v != null)
+
+  for (const c of candidates) {
+    const keyNum = Number(c)
+    const keyStr = String(c)
+    const cached = indicatorsById.value.get(Number.isFinite(keyNum) ? keyNum : keyStr)
+    if (cached) return cached
+  }
+  return '—'
+}
 
 function formatMoney(value) {
   if (value === null || value === undefined || value === '') return '—'
@@ -550,6 +697,13 @@ onBeforeUnmount(() => {
 .table {
   th, td { white-space: nowrap; }
 }
+.indicators-table th.name-col,
+.indicators-table td.indicator-name-cell {
+  max-width: 420px;
+  white-space: normal; /* разрешаем перенос строк для названий */
+  word-break: break-word;
+}
+
 
 @media (max-width: 768px) {
   .table { font-size: 0.875rem; }
