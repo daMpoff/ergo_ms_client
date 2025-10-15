@@ -4,8 +4,7 @@
     <div class="mt-3">
       <Breadcrumbs v-if="accessChecked && isAllowed" :items="breadcrumbItems" class="mb-3" />
       <h2 v-if="accessChecked && isAllowed" class="mb-3">{{ pageTitle }}</h2>
-      
-
+  
       <div v-if="isLoading || !accessChecked" class="loading-state">
         <div class="spinner-border text-primary" role="status" aria-label="Загрузка"></div>
         <div class="loading-text mt-2">Загрузка проекта…</div>
@@ -243,8 +242,8 @@
                   </div>
                   <div class="stage-body">
                     <div class="field">
-                      <div class="field-label">Название этапа:</div>
-                      <div class="field-value">{{ s.name || '—' }}</div>
+                      <span class="field-label">Название этапа:</span>
+                      <span class="field-value">{{ s.name || '—' }}</span>
                       <div class="decision-inline">
                         <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_name', s.id)) }" @click="toggleClarify(makeKey('stage_name', s.id))">Уточнить</button>
                       </div>
@@ -254,8 +253,8 @@
                     </div>
 
                     <div class="field">
-                      <div class="field-label">Начало этапа:</div>
-                      <div class="field-value">{{ formatDateLong(s.start_date) }}</div>
+                      <span class="field-label">Начало этапа:</span>
+                      <span class="field-value">{{ formatDateLong(s.start_date) }}</span>
                       <div class="decision-inline">
                         <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_start', s.id)) }" @click="toggleClarify(makeKey('stage_start', s.id))">Уточнить</button>
                       </div>
@@ -265,8 +264,8 @@
                     </div>
 
                     <div class="field">
-                      <div class="field-label">Окончание этапа:</div>
-                      <div class="field-value">{{ formatDateLong(s.end_date) }}</div>
+                      <span class="field-label">Окончание этапа:</span>
+                      <span class="field-value">{{ formatDateLong(s.end_date) }}</span>
                       <div class="decision-inline">
                         <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_end', s.id)) }" @click="toggleClarify(makeKey('stage_end', s.id))">Уточнить</button>
                       </div>
@@ -276,8 +275,8 @@
                     </div>
 
                     <div class="field">
-                      <div class="field-label">Планируемые результаты этапа:</div>
-                      <div class="field-value">{{ s.planned_results || '—' }}</div>
+                      <span class="field-label">Планируемые результаты этапа:</span>
+                      <span class="field-value">{{ s.planned_results || '—' }}</span>
                       <div class="decision-inline">
                         <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_results', s.id)) }" @click="toggleClarify(makeKey('stage_results', s.id))">Уточнить</button>
                       </div>
@@ -288,13 +287,13 @@
 
                     <template v-if="hasStageBudget(s.id)">
                       <div class="field">
-                        <div class="field-label">Бюджет этапа:</div>
-                        <div class="field-value">&nbsp;</div>
+                        <span class="field-label">Бюджет этапа:</span>
+                        <span class="field-value">&nbsp;</span>
                       </div>
 
                       <div class="field" v-if="getStageBudgetSum(s.id, 'salary', 'budget') > 0">
-                        <div class="field-label">Заработная плата (Бюджет):</div>
-                        <div class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'salary', 'budget')) }}</div>
+                        <span class="field-label">Заработная плата (Бюджет):</span>
+                        <span class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'salary', 'budget')) }}</span>
                         <div class="decision-inline">
                           <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_budget_salary_budget', s.id)) }" @click="toggleClarify(makeKey('stage_budget_salary_budget', s.id))">Уточнить</button>
                         </div>
@@ -304,8 +303,8 @@
                       </div>
 
                       <div class="field" v-if="getStageBudgetSum(s.id, 'salary', 'nonbudget') > 0">
-                        <div class="field-label">Заработная плата (Внебюджет):</div>
-                        <div class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'salary', 'nonbudget')) }}</div>
+                        <span class="field-label">Заработная плата (Внебюджет):</span>
+                        <span class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'salary', 'nonbudget')) }}</span>
                         <div class="decision-inline">
                           <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_budget_salary_nonbudget', s.id)) }" @click="toggleClarify(makeKey('stage_budget_salary_nonbudget', s.id))">Уточнить</button>
                         </div>
@@ -315,8 +314,8 @@
                       </div>
 
                       <div class="field" v-if="getStageBudgetSum(s.id, 'other', 'budget') > 0">
-                        <div class="field-label">Другие расходы (Бюджет):</div>
-                        <div class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'other', 'budget')) }}</div>
+                        <span class="field-label">Другие расходы (Бюджет):</span>
+                        <span class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'other', 'budget')) }}</span>
                         <div class="decision-inline">
                           <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_budget_other_budget', s.id)) }" @click="toggleClarify(makeKey('stage_budget_other_budget', s.id))">Уточнить</button>
                         </div>
@@ -326,8 +325,8 @@
                       </div>
 
                       <div class="field" v-if="getStageBudgetSum(s.id, 'other', 'nonbudget') > 0">
-                        <div class="field-label">Другие расходы (Внебюджет):</div>
-                        <div class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'other', 'nonbudget')) }}</div>
+                        <span class="field-label">Другие расходы (Внебюджет):</span>
+                        <span class="field-value">{{ formatMoney(getStageBudgetSum(s.id, 'other', 'nonbudget')) }}</span>
                         <div class="decision-inline">
                           <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('stage_budget_other_nonbudget', s.id)) }" @click="toggleClarify(makeKey('stage_budget_other_nonbudget', s.id))">Уточнить</button>
                         </div>
@@ -382,35 +381,117 @@
             <div class="card-header fw-semibold">Целевые показатели</div>
             <div class="card-body">
               <div v-if="!projectData.target_indicators || projectData.target_indicators.length === 0" class="text-muted">Нет данных</div>
-              <div v-else class="table-responsive">
-                <table class="table table-sm align-middle indicators-table">
-                  <thead>
-                    <tr>
-                      <th class="name-col">Название</th>
-                      <th>Ед. изм.</th>
-                      <th>Базовое</th>
-                      <th>План</th>
-                      <th>Решение</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="ti in projectData.target_indicators || []" :key="ti.id">
-                      <td class="indicator-name-cell">{{ getIndicatorName(ti) }}</td>
-                      <td>{{ ti.unit || '—' }}</td>
-                      <td>{{ ti.baseline ?? '—' }}</td>
-                      <td>{{ ti.planned ?? '—' }}</td>
-                      <td class="w-25">
-                        <div class="decision-inline">
-                          <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator', ti.id)) }" @click="toggleClarify(makeKey('indicator', ti.id))">Уточнить</button>
+              <template v-else>
+                <div class="stages-list d-flex flex-column gap-3">
+                  <template v-for="(s, idx) in projectData.stages || []" :key="`ti-stage-${s.id}`">
+                    <template v-for="ti in getIndicatorsForStage(s.id)" :key="`ti-card-${ti.id}`">
+                      <div class="stage-card">
+                        <div class="stage-header d-flex align-items-center justify-content-between">
+                          <div class="indicator-card-title" :title="getIndicatorName(ti)">
+                            <strong>{{ getIndicatorName(ti) }}</strong>
+                          </div>
                         </div>
-                        <div v-if="isClarify(makeKey('indicator', ti.id))" class="decision-comment mt-2">
-                          <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator', ti.id))" @input="updateComment(makeKey('indicator', ti.id), $event.target.value)"></textarea>
+                        <div class="stage-body">
+                          <div class="field">
+                            <span class="field-label">Название показателя:</span>
+                            <span class="field-value field-value-name">{{ getIndicatorName(ti) }}</span>
+                            <div class="decision-inline">
+                              <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator', ti.id)) }" @click="toggleClarify(makeKey('indicator', ti.id))">Уточнить</button>
+                            </div>
+                            <div v-if="isClarify(makeKey('indicator', ti.id))" class="decision-comment">
+                              <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator', ti.id))" @input="updateComment(makeKey('indicator', ti.id), $event.target.value)"></textarea>
+                            </div>
+                          </div>
+                          <div class="field">
+                            <span class="field-label">Ед. изм.:</span>
+                            <span class="field-value">{{ ti.unit || '—' }}</span>
+                            <div class="decision-inline">
+                              <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator_unit', ti.id)) }" @click="toggleClarify(makeKey('indicator_unit', ti.id))">Уточнить</button>
+                            </div>
+                            <div v-if="isClarify(makeKey('indicator_unit', ti.id))" class="decision-comment">
+                              <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator_unit', ti.id))" @input="updateComment(makeKey('indicator_unit', ti.id), $event.target.value)"></textarea>
+                            </div>
+                          </div>
+                          <div class="field">
+                            <span class="field-label">Базовое значение:</span>
+                            <span class="field-value">{{ ti.baseline ?? '—' }}</span>
+                            <div class="decision-inline">
+                              <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator_baseline', ti.id)) }" @click="toggleClarify(makeKey('indicator_baseline', ti.id))">Уточнить</button>
+                            </div>
+                            <div v-if="isClarify(makeKey('indicator_baseline', ti.id))" class="decision-comment">
+                              <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator_baseline', ti.id))" @input="updateComment(makeKey('indicator_baseline', ti.id), $event.target.value)"></textarea>
+                            </div>
+                          </div>
+                          <div class="field">
+                            <span class="field-label">Плановое значение:</span>
+                            <span class="field-value">{{ ti.planned ?? '—' }}</span>
+                            <div class="decision-inline">
+                              <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator_planned', ti.id)) }" @click="toggleClarify(makeKey('indicator_planned', ti.id))">Уточнить</button>
+                            </div>
+                            <div v-if="isClarify(makeKey('indicator_planned', ti.id))" class="decision-comment">
+                              <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator_planned', ti.id))" @input="updateComment(makeKey('indicator_planned', ti.id), $event.target.value)"></textarea>
+                            </div>
+                          </div>
                         </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                      </div>
+                    </template>
+                  </template>
+                </div>
+
+                <div v-if="getIndicatorsWithoutStage().length" class="mt-3 stages-list d-flex flex-column gap-3">
+                  <template v-for="ti in getIndicatorsWithoutStage()" :key="`ti-ns-${ti.id}`">
+                    <div class="stage-card">
+                      <div class="stage-header d-flex align-items-center justify-content-between">
+                        <div class="indicator-card-title" :title="getIndicatorName(ti)">
+                          <strong>{{ getIndicatorName(ti) }}</strong>
+                        </div>
+                      </div>
+                        <div class="stage-body">
+                          <div class="field">
+                            <span class="field-label">Название показателя:</span>
+                            <span class="field-value field-value-name">{{ getIndicatorName(ti) }}</span>
+                            <div class="decision-inline">
+                              <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator', ti.id)) }" @click="toggleClarify(makeKey('indicator', ti.id))">Уточнить</button>
+                            </div>
+                            <div v-if="isClarify(makeKey('indicator', ti.id))" class="decision-comment">
+                              <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator', ti.id))" @input="updateComment(makeKey('indicator', ti.id), $event.target.value)"></textarea>
+                            </div>
+                          </div>
+                          <div class="field">
+                            <span class="field-label">Ед. изм.:</span>
+                            <span class="field-value">{{ ti.unit || '—' }}</span>
+                            <div class="decision-inline">
+                              <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator_unit', ti.id)) }" @click="toggleClarify(makeKey('indicator_unit', ti.id))">Уточнить</button>
+                            </div>
+                            <div v-if="isClarify(makeKey('indicator_unit', ti.id))" class="decision-comment">
+                              <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator_unit', ti.id))" @input="updateComment(makeKey('indicator_unit', ti.id), $event.target.value)"></textarea>
+                            </div>
+                          </div>
+                          <div class="field">
+                            <span class="field-label">Базовое значение:</span>
+                            <span class="field-value">{{ ti.baseline ?? '—' }}</span>
+                            <div class="decision-inline">
+                              <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator_baseline', ti.id)) }" @click="toggleClarify(makeKey('indicator_baseline', ti.id))">Уточнить</button>
+                            </div>
+                            <div v-if="isClarify(makeKey('indicator_baseline', ti.id))" class="decision-comment">
+                              <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator_baseline', ti.id))" @input="updateComment(makeKey('indicator_baseline', ti.id), $event.target.value)"></textarea>
+                            </div>
+                          </div>
+                          <div class="field">
+                            <span class="field-label">Плановое значение:</span>
+                            <span class="field-value">{{ ti.planned ?? '—' }}</span>
+                            <div class="decision-inline">
+                              <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('indicator_planned', ti.id)) }" @click="toggleClarify(makeKey('indicator_planned', ti.id))">Уточнить</button>
+                            </div>
+                            <div v-if="isClarify(makeKey('indicator_planned', ti.id))" class="decision-comment">
+                              <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий" :value="getComment(makeKey('indicator_planned', ti.id))" @input="updateComment(makeKey('indicator_planned', ti.id), $event.target.value)"></textarea>
+                            </div>
+                          </div>
+                        </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -499,7 +580,6 @@
       </template>
     </div>
 
-    <!-- Тултип с информацией о пользователе -->
     <SimpleTooltip
       :visible="tooltipVisible"
       :target-element="tooltipTarget"
@@ -561,24 +641,6 @@ const decisions = ref(new Map())
 function makeKey(kind, id = null) {
   // Унифицированный ключ: kind[:id]
   return id == null ? String(kind) : `${String(kind)}:${String(id)}`
-}
-
-function setAccept(key) {
-  const map = new Map(decisions.value)
-  const prev = map.get(key) || { status: null, comment: '' }
-  map.set(key, { status: 'accepted', comment: prev.comment || '' })
-  decisions.value = map
-}
-
-function setReject(key) {
-  const map = new Map(decisions.value)
-  const prev = map.get(key) || { status: null, comment: '' }
-  map.set(key, { status: 'rejected', comment: prev.comment || '' })
-  decisions.value = map
-}
-
-function getDecision(key) {
-  return decisions.value.get(key)?.status || null
 }
 
 function getComment(key) {
@@ -775,36 +837,6 @@ function formatDateLong(value) {
   return `${day} ${month} ${year} год`
 }
 
-function translateBudgetTerms(text) {
-  if (!text) return text
-  const translations = {
-    salary: 'Заработная плата',
-    other: 'Другие расходы',
-    budget: 'Бюджетные источники финансирования',
-    nonbudget: 'Внебюджетные источники финансирования'
-  }
-  const source = String(text)
-  const lowered = source.toLowerCase().trim()
-  for (const [key, value] of Object.entries(translations)) {
-    if (lowered === key) return value
-  }
-  let result = source
-  for (const [key, value] of Object.entries(translations)) {
-    if (lowered.includes(key)) {
-      result = result.replace(new RegExp(key, 'gi'), value)
-    }
-  }
-  return result
-}
-
-function userName(user) {
-  if (!user) return ''
-  const first = (user.first_name || '').trim()
-  const last = (user.last_name || '').trim()
-  const full = `${first} ${last}`.trim()
-  return full || user.username || ''
-}
-
 function getManagerName() {
   if (!projectData.value?.manager_data) return ''
   const manager = projectData.value.manager_data
@@ -838,16 +870,8 @@ function getCustomerName() {
   return full || customer.username || ''
 }
 
-function getExecutorsNames() {
-  if (!projectData.value?.performers || !Array.isArray(projectData.value.performers)) return ''
-  return projectData.value.performers
-    .map(performer => performer.full_name || performer.username || `ID: ${performer.id}`)
-    .join(', ')
-}
-
 // Методы для управления тултипами
 function showTooltip(event, userData) {
-  // Отменяем таймер скрытия, если он был установлен
   if (tooltipHideTimeout) {
     clearTimeout(tooltipHideTimeout)
     tooltipHideTimeout = null
@@ -925,6 +949,38 @@ function hasStageBudget(stageId) {
     getStageBudgetSum(stageId, 'other', 'budget') > 0 ||
     getStageBudgetSum(stageId, 'other', 'nonbudget') > 0
   )
+}
+
+// Целевые показатели по этапам
+function indicatorStageId(ti) {
+  if (!ti) return null
+  const candidates = [
+    ti.stage_id,
+    ti.stageId,
+    ti.stage,
+    ti.stage?.id,
+  ].filter(v => v != null)
+  for (const c of candidates) {
+    const num = Number(c)
+    if (Number.isFinite(num)) return num
+  }
+  return null
+}
+
+function getIndicatorsForStage(stageId) {
+  const list = projectData.value?.target_indicators
+  if (!Array.isArray(list)) return []
+  const idNum = Number(stageId)
+  return list.filter(ti => {
+    const sid = indicatorStageId(ti)
+    return sid != null && Number(sid) === idNum
+  })
+}
+
+function getIndicatorsWithoutStage() {
+  const list = projectData.value?.target_indicators
+  if (!Array.isArray(list)) return []
+  return list.filter(ti => indicatorStageId(ti) == null)
 }
 
 async function loadProjectBySlug(slug) {
@@ -1056,7 +1112,7 @@ onBeforeUnmount(() => {
 .indicators-table th.name-col,
 .indicators-table td.indicator-name-cell {
   max-width: 420px;
-  white-space: normal; /* разрешаем перенос строк для названий */
+  white-space: normal;
   word-break: break-word;
 }
 
@@ -1088,7 +1144,7 @@ onBeforeUnmount(() => {
   align-items: center;
   width: 100%;
   min-height: 1.5rem;
-  flex-wrap: wrap; /* разрешаем перенос элементов на новую строку */
+  flex-wrap: wrap;
 }
 
 .participants-list .field-label {
@@ -1119,14 +1175,12 @@ onBeforeUnmount(() => {
   resize: vertical;
 }
 
-/* В участниках переносим поле комментария на новую строку */
 .participants-list .decision-comment {
   flex-basis: 100%;
   width: 100%;
   margin-top: 0.5rem;
 }
 
-/* Стили для блочных карточек этапов */
 .stage-card {
   background: var(--color-primary-background);
   border: 1px solid var(--color-border);
@@ -1142,14 +1196,14 @@ onBeforeUnmount(() => {
   padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem; /* как у .participants-list */
+  gap: 0.75rem;
 }
 .stage-row {
   display: flex;
-  align-items: center; /* как у участников */
+  align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  min-height: 1.5rem; /* как у участников */
+  min-height: 1.5rem;
 }
 .stage-header .stage-title strong {
   color: var(--color-primary-text);
@@ -1173,7 +1227,7 @@ onBeforeUnmount(() => {
 .stage-value {
   flex: 1;
   color: var(--color-primary-text);
-  line-height: 1.5; /* выравниваем межстрочный интервал */
+  line-height: 1.5;
 }
 .stage-actions {
   flex-basis: auto;
@@ -1185,10 +1239,7 @@ onBeforeUnmount(() => {
   margin-top: 0.5rem;
 }
 
-/* Делаем поля этапа такими же, как у участников */
 .stage-body .field {
-  display: flex;
-  align-items: center;
   width: 100%;
   min-height: 1.5rem;
   flex-wrap: wrap;
@@ -1204,26 +1255,44 @@ onBeforeUnmount(() => {
   flex: 1;
   color: var(--color-primary-text);
 }
+.indicator-card-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.indicator-name-row .field-value-name {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.indicator-item + .indicator-item {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
 .stage-body .decision-comment {
   flex-basis: 100%;
   width: 100%;
   margin-top: 0.5rem;
 }
 
-/* Компактный список задач */
 .tasks-list {
-  list-style: disc; /* обычные маркеры */
+  list-style: disc;
   margin: 0;
-  padding-left: 1.25rem; /* небольшой отступ слева */
+  padding-left: 1.25rem;
 }
 .tasks-list > li,
 .tasks-list > .task-item {
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--color-border);
 }
+
 .task-text {
-  display: inline; /* не переносим текст на новую строку после маркера */
+  display: inline;
 }
+
 .tasks-list > li:last-child,
 .tasks-list > .task-item:last-child {
   border-bottom: none;
