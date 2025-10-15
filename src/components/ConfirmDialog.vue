@@ -38,9 +38,9 @@ function handleClose() {
     v-if="show && message" 
     class="modal fade show d-block" 
     tabindex="-1"
-    style="background-color: rgba(0, 0, 0, 0.5);"
+    style="background-color: rgba(0, 0, 0, 0.5); z-index: 9999;"
   >
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered" style="z-index: 10000;">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
           <div class="d-flex align-items-center gap-2">
@@ -92,10 +92,26 @@ function handleClose() {
 </template>
 
 <style scoped>
+.modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 9999 !important;
+}
+
+.modal-dialog {
+  z-index: 10000 !important;
+  position: relative !important;
+}
+
 .modal-content {
   border: none;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 10001 !important;
+  position: relative !important;
 }
 
 .modal-header, .modal-footer {

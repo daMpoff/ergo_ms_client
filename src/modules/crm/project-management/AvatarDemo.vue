@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import { getAvatarUrl } from '@/modules/cms/js/avatarUtils.js'
+import { getAvatarUrl } from '@/core/cms/js/avatarUtils.js'
 
 export default {
   name: 'AvatarDemo',

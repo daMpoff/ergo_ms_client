@@ -1,7 +1,5 @@
-import menuConfig from '@/config/menu-config.json'
-
 export class AdaptiveSeparators {
-  constructor(config = menuConfig) {
+  constructor(config = {}) {
     this.config = config
     this.separatorSettings = config.separatorSettings || {}
     this.separators = config.separators || {}

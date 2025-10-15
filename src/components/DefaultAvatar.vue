@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { User } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -52,7 +52,10 @@ const iconSize = computed(() => {
   border: 2px solid rgba($color: #1976d2, $alpha: 0.2);
   transition: all 0.2s ease;
   user-select: none;
+  width: 100%;
+  height: 100%;
   
+ 
   &--small {
     width: 32px;
     height: 32px;

@@ -3,24 +3,27 @@
     "User",
     "Settings", 
 
-    "Email",
-    "Messenger",
     "BI",
-    
     "CRM",
-
+    
+    "ProjectEd",
+    
     "LMS",
     "EducationAnalyticModule",
     "ExpertSystem",
 
     "AssetsAnalyse",
     
-    "ErgoCities"
+    "PorosityAnalysis",
+    "ImpulsAnalysis",
+    "VideoAnalysis",
+    "ErgoCityStruct"
   ],
   
   "separators": {
     "0": "Настройки",
     "2": "Модули",
+    "4": "Управление проектами",
     "5": "Обучение",
     "8": "Трендовая аналитика",
     "9": "Цифровая лаборатория"

@@ -20,7 +20,7 @@
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
-import { checkToken } from '@/modules/cms/adp/js/auth-index'
+import { checkToken } from '@/core/cms/adp/js/auth-index'
 import { generateAllRoutes, validateRoutesConfig } from '@/config/routes-generator.js'
 
 // Валидация конфигурации при запуске
@@ -32,8 +32,8 @@ if (validation.warnings.length > 0) {
   console.warn('⚠️ Предупреждения конфигурации маршрутов:', validation.warnings)
 }
 
-// Генерация маршрутов из JSON конфигурации
-const routes = generateAllRoutes()
+// Генерация маршрутов из JSON конфигурации (async)
+const routes = await generateAllRoutes()
 
 routes.forEach((route) => {
   if (!route.meta || !Object.prototype.hasOwnProperty.call(route.meta, 'startRoute')) {
@@ -41,6 +41,8 @@ routes.forEach((route) => {
     route.meta.startRoute = false
   }
 })
+
+console.log(routes)
 
 const router = createRouter({
   history: createWebHistory(),
@@ -50,7 +52,7 @@ const router = createRouter({
   },
 })
 
-import { checkAccessToPage, CheckAccessToComponents } from '../modules/cms/adp/admin/js/GroupsPolitics'
+import { checkAccessToPage, CheckAccessToComponents } from '../core/cms/adp/admin/js/GroupsPolitics'
 async function runCheckToken() {
   const isChecked = await checkToken()
   return isChecked
@@ -67,7 +69,41 @@ router.beforeEach(async (to, from, next) => {
       return next({ name: 'StartPage' })
     }
 
-    // 2) page / component ACL (выполняем параллельно)
+    // 2) requiresAdmin для страниц
+    if (to.meta && to.meta.requiresAdmin) {
+      let isAdmin = false
+      try {
+        const { useUserStore } = await import('@/core/cms/js/userStore.js')
+        const userStore = useUserStore()
+        if (!userStore.isInitialized) {
+          try { await userStore.initializeUser() } catch {
+            // Игнорируем ошибки инициализации
+          }
+        }
+        const uid = userStore.user?.id
+        if (uid) {
+          const { apiClient } = await import('./api/manager')
+          const resp = await apiClient.get(`/project_ed/profiles/profiles/${uid}/`)
+          const data = resp.data || {}
+          const roleName = data.role_name || data.profile?.role_name
+          if (roleName === 'Администратор') isAdmin = true
+        }
+      } catch {
+        // Игнорируем ошибки проверки роли
+      }
+
+      if (!isAdmin) {
+        const { useUserStore } = await import('@/core/cms/js/userStore.js')
+        const userStore = useUserStore()
+        const uid = userStore.user?.id
+        if (uid === undefined || uid === null) {
+          return next({ name: 'StartPage' })
+        }
+        return next({ name: 'NotFound' })
+      }
+    }
+
+    // 3) page / component ACL (выполняем параллельно)
     await Promise.all([
       checkAccessToPage(to.path),
       CheckAccessToComponents(to.path),

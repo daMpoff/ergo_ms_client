@@ -1,6 +1,47 @@
 <template>
   <div class="porosity-analyses-list">
-    <!-- Модальное окно подтверждения удаления -->
+    <!-- Заголовок страницы -->
+    <PageHeader
+      title="Мои анализы пористости"
+      subtitle="Управление, перезапуск, скачивание результатов и отчетов"
+      :icon="microscopeIcon"
+    >
+      <template #actions>
+        <div class="dropdown d-inline-block">
+          <button
+            type="button"
+            class="btn btn-danger d-inline-flex align-items-center dropdown-toggle"
+            data-bs-toggle="dropdown"
+            data-bs-display="static"
+            aria-expanded="false"
+            title="Выделить карточки по статусу"
+          >
+            <Clock class="me-1" size="16" /> Выделить по статусу
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li v-for="status in statusOptions" :key="status.value">
+              <a 
+                class="dropdown-item" 
+                :class="{ 'status-selected': selectedStatus === status.value }" 
+                href="#" 
+                @click.prevent="selectByStatus(status.value)"
+              >
+                <component :is="status.icon" class="me-2" size="16" /> 
+                {{ status.label }}
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item" href="#" @click.prevent="clearSelection()">
+                <Trash2 class="me-2" size="16" /> Снять выделение
+              </a>
+            </li>
+          </ul>
+        </div>
+      </template>
+    </PageHeader>
+
+    <!-- Модальные окна -->
     <ConfirmDialog
       :show="showDeleteConfirm"
       title="Удаление анализа"
@@ -8,313 +49,179 @@
       confirm-text="Удалить"
       cancel-text="Отмена"
       variant="danger"
-      :loading="deletingAnalysis !== null"
       @confirm="confirmDeleteAnalysis"
       @cancel="cancelDeleteAnalysis"
       @close="cancelDeleteAnalysis"
     />
+
+    <ConfirmDialog
+      :show="showBulkDeleteConfirm"
+      title="Массовое удаление анализов"
+      :message="bulkDeleteMessage"
+      confirm-text="Удалить выбранные"
+      cancel-text="Отмена"
+      variant="danger"
+      @confirm="confirmBulkDelete"
+      @cancel="cancelBulkDelete"
+      @close="cancelBulkDelete"
+    />
+
+    <ConfirmDialog
+      :show="showDeleteGroupConfirm"
+      title="Удаление группы"
+      :message="deleteGroupMessage"
+      confirm-text="Удалить группу"
+      cancel-text="Отмена"
+      variant="danger"
+      @confirm="confirmDeleteGroup"
+      @close="cancelDeleteGroup"
+    />
+
+    <ConfirmDialog
+      :show="showDeleteArchiveConfirm"
+      title="Удаление архива"
+      :message="deleteArchiveMessage"
+      confirm-text="Удалить архив"
+      cancel-text="Отмена"
+      variant="danger"
+      @confirm="confirmDeleteArchive"
+      @cancel="cancelDeleteArchive"
+      @close="cancelDeleteArchive"
+    />
     
     <div class="row">
       <div class="col-12">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="card-title mb-0">
-              <List class="me-2" size="20" />
-              Список анализируемых образцов
-            </h4>
+        <!-- Управление группами -->
+        <CollapsibleCard
+          title="Управление группами"
+          :badge-text="`${groups?.length || 0} групп`"
+          badge-class="bg-primary"
+          :icon="hashIcon"
+          card-class="group-management-card"
+          :default-collapsed="groupManagementCollapsed"
+          @toggle="groupManagementCollapsed = $event"
+        >
+          <GroupManagementBlock
+            :groups="groups"
+            :group-manager="groupManager"
+            @group-select="onGroupSelect"
+            @select-all-by-group="selectAllByGroup"
+            @ungroup-all-in-selected="ungroupAllInSelected"
+            @create-group="createGroup"
+            @rename-selected-group="renameSelectedGroup"
+            @request-delete-group="requestDeleteGroup"
+          />
+        </CollapsibleCard>
 
-            <div class="d-flex align-items-center gap-3">
-              <div class="filter-buttons">
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'all' }"
-                  data-filter="all"
-                  @click="setFilter('all')"
-                >
-                  <List class="me-1" size="16" />
-                  Все
-                </button>
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'pending' }"
-                  data-filter="pending"
-                  @click="setFilter('pending')"
-                >
-                  <Clock class="me-1" size="16" />
-                  Ожидающие
-                </button>
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'processing' }"
-                  data-filter="processing"
-                  @click="setFilter('processing')"
-                >
-                  <Loader2 class="me-1" size="16" />
-                  Обрабатываются
-                </button>
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'completed' }"
-                  data-filter="completed"
-                  @click="setFilter('completed')"
-                >
-                  <CheckCircle class="me-1" size="16" />
-                  Завершенные
-                </button>
-                <button
-                  type="button"
-                  class="filter-btn"
-                  :class="{ active: currentFilter === 'failed' }"
-                  data-filter="failed"
-                  @click="setFilter('failed')"
-                >
-                  <AlertTriangle class="me-1" size="16" />
-                  Ошибки
-                </button>
-              </div>
-              
-              <div class="bulk-actions">
-                <button
-                  v-if="failedAnalyses.length > 0"
-                  type="button"
-                  class="btn btn-warning btn-sm"
-                  @click="restartFailedAnalyses"
-                  :disabled="restartingMultiple"
-                >
-                  <RotateCcw class="me-1" size="16" />
-                  {{ restartingMultiple ? 'Перезапуск...' : `Перезапустить ошибки (${failedAnalyses.length})` }}
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="card-body">
-            <div v-if="loading" class="text-center py-4">
-              <div class="spinner-border" role="status">
-                <span class="visually-hidden">Загрузка...</span>
-              </div>
-            </div>
-            
-            <div v-else-if="filteredAnalyses.length === 0" class="text-center py-4">
-              <Inbox class="text-muted mb-3" size="48" />
-              <h5 class="text-muted">Анализы не найдены</h5>
-              <p class="text-muted">Создайте первый анализ для начала работы</p>
-              <router-link to="/porosity-analysis" class="btn btn-primary">
-                <Plus class="me-2" size="16" />
-                Создать анализ
-              </router-link>
-            </div>
-            
-            <div v-else>
-              <div class="row">
-                <div
-                  v-for="analysis in filteredAnalyses"
-                  :key="analysis.id"
-                  class="col-md-6 col-lg-4 mb-4"
-                >
-                  <div class="analysis-card">
-                    <div class="card-header">
-                      <div class="d-flex justify-content-between align-items-start">
-                        <h6 class="card-title mb-0">{{ analysis.name }}</h6>
-                        <span :class="getStatusBadgeClass(analysis.status)">
-                          <component :is="getStatusIcon(analysis.status)" class="me-1" size="14" />
-                          {{ getStatusText(analysis.status) }}
-                        </span>
-                      </div>
-                    </div>
-                    <div class="card-body">
-                      <p class="card-text text-muted small">
-                        {{ analysis.description || 'Описание отсутствует' }}
-                      </p>
-                      
-                      <div class="analysis-info">
-                        <div class="info-row">
-                          <div class="info-item">
-                            <Calendar class="me-1" size="14" />
-                            <small class="text-muted">Создан:</small>
-                            <div>{{ formatDate(analysis.created_at) }}</div>
-                          </div>
-                          <div class="info-item">
-                            <Ruler class="me-1" size="14" />
-                            <small class="text-muted">Шкала:</small>
-                            <div>{{ analysis.scale_value }} мкм</div>
-                          </div>
-                        </div>
-                        
-                        <div v-if="analysis.status === 'completed'" class="results-row">
-                          <div class="info-item">
-                            <BarChart3 class="me-1" size="14" />
-                            <small class="text-muted">Пористость:</small>
-                            <div class="fw-bold text-success">{{ analysis.porosity_percentage?.toFixed(2) }}%</div>
-                          </div>
-                          <div class="info-item">
-                            <CircleDot class="me-1" size="14" />
-                            <small class="text-muted">Пор:</small>
-                            <div class="fw-bold">{{ analysis.number_of_pores }}</div>
-                          </div>
-                        </div>
-                        
-                        <div v-if="analysis.status === 'failed'" class="error-row">
-                          <div class="alert alert-danger small mb-0">
-                            <AlertTriangle class="me-1" size="14" />
-                            {{ analysis.error_message || 'Неизвестная ошибка' }}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="card-footer">
-                      <div class="action-buttons">
-                        <router-link
-                          :to="`/porosity-analysis/analysis/${analysis.id}`"
-                          class="action-btn primary"
-                        >
-                          <Eye class="me-1" size="16" />
-                          Просмотр
-                        </router-link>
-                        
-                        <button
-                          v-if="analysis.status === 'failed'"
-                          type="button"
-                          class="action-btn warning"
-                          @click="restartAnalysis(analysis.id)"
-                          :disabled="restartingAnalysis === analysis.id"
-                          title="Перезапустить анализ с ошибкой"
-                        >
-                          <RotateCcw class="me-1" size="16" />
-                          {{ restartingAnalysis === analysis.id ? 'Перезапуск...' : 'Перезапустить' }}
-                        </button>
-                        
-                        <button
-                          v-if="analysis.status === 'completed'"
-                          type="button"
-                          class="action-btn info"
-                          @click="restartAnalysis(analysis.id)"
-                          :disabled="restartingAnalysis === analysis.id"
-                          title="Перезапустить завершенный анализ"
-                        >
-                          <RotateCcw class="me-1" size="16" />
-                          {{ restartingAnalysis === analysis.id ? 'Перезапуск...' : 'Перезапустить' }}
-                        </button>
-                        
-                        <button
-                          v-if="analysis.status === 'pending'"
-                          type="button"
-                          class="action-btn secondary"
-                          @click="restartAnalysis(analysis.id)"
-                          :disabled="restartingAnalysis === analysis.id"
-                          title="Перезапустить ожидающий анализ"
-                        >
-                          <RotateCcw class="me-1" size="16" />
-                          {{ restartingAnalysis === analysis.id ? 'Перезапуск...' : 'Перезапустить' }}
-                        </button>
-                        
-                        <div v-if="analysis.status === 'completed'" class="dropdown d-inline-block">
-                          <button
-                            type="button"
-                            class="action-btn success dropdown-toggle"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
-                            :disabled="downloadingAnalysis === analysis.id"
-                          >
-                            <Download class="me-1" size="16" />
-                            {{ downloadingAnalysis === analysis.id ? 'Скачивание...' : 'Скачать' }}
-                          </button>
-                          <ul class="dropdown-menu">
-                            <li>
-                              <a class="dropdown-item" href="#" @click.prevent="downloadResults(analysis.id)">
-                                <Download class="me-2" size="16" />
-                                Архив результатов
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="#" @click.prevent="downloadReport(analysis.id, 'pdf')">
-                                <FileText class="me-2" size="16" />
-                                PDF отчет
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="#" @click.prevent="downloadReport(analysis.id, 'docx')">
-                                <FileText class="me-2" size="16" />
-                                Word отчет
-                              </a>
-                            </li>
-                          </ul>
-                        </div>
-                        
-                        <button
-                          type="button"
-                          class="action-btn danger"
-                          @click="deleteAnalysis(analysis.id)"
-                          :disabled="deletingAnalysis === analysis.id"
-                        >
-                          <Trash2 class="me-1" size="16" />
-                          {{ deletingAnalysis === analysis.id ? 'Удаление...' : 'Удалить' }}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Пагинация -->
-              <div v-if="pagination.total_pages > 1" class="d-flex justify-content-center mt-4">
-                <nav aria-label="Навигация по страницам">
-                  <ul class="pagination">
-                    <!-- Кнопка "Предыдущая" -->
-                    <li class="page-item" :class="{ disabled: pagination.current_page === 1 }">
-                      <button 
-                        class="page-link" 
-                        @click="changePage(pagination.current_page - 1)"
-                        :disabled="pagination.current_page === 1"
-                      >
-                        <ChevronLeft class="me-1" size="16" />
-                        Предыдущая
-                      </button>
-                    </li>
-                    
-                    <!-- Номера страниц -->
-                    <li 
-                      v-for="page in visiblePages" 
-                      :key="page"
-                      class="page-item"
-                      :class="{ active: page === pagination.current_page }"
-                    >
-                      <button 
-                        class="page-link" 
-                        @click="changePage(page)"
-                      >
-                        {{ page }}
-                      </button>
-                    </li>
-                    
-                    <!-- Кнопка "Следующая" -->
-                    <li class="page-item" :class="{ disabled: pagination.current_page === pagination.total_pages }">
-                      <button 
-                        class="page-link" 
-                        @click="changePage(pagination.current_page + 1)"
-                        :disabled="pagination.current_page === pagination.total_pages"
-                      >
-                        Следующая
-                        <ChevronRight class="ms-1" size="16" />
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
-              
-              <!-- Информация о страницах -->
-              <div v-if="pagination.total_pages > 1" class="text-center mt-3">
-                <small class="text-muted">
-                  Страница {{ pagination.current_page }} из {{ pagination.total_pages }} 
-                  ({{ pagination.count }} анализов всего)
-                </small>
-              </div>
-            </div>
+        <!-- Управление анализами -->
+        <CollapsibleCard
+          title="Управление анализами"
+          :badge-text="`${filteredAnalyses?.length || 0} анализов`"
+          badge-class="bg-success"
+          :icon="microscopeIcon"
+          card-class="analysis-management-card"
+          :default-collapsed="analysisManagementCollapsed"
+          @toggle="analysisManagementCollapsed = $event"
+        >
+          <AnalysisManagementBlock
+            :selected-ids="selectedIds"
+            :number-input="restartInput"
+            :bulk-delete-input="bulkInput"
+            :restarting-multiple="restartingMultiple"
+            :bulk-deleting="bulkDeleting"
+            @update:numberInput="restartInput = $event"
+            @update:bulkDeleteInput="bulkInput = $event"
+            @restart-multiple-by-numbers="restartByInput"
+            @restart-selected-multiple="restartSelected"
+            @preview-bulk-delete="requestBulkDeleteByInput"
+            @preview-bulk-delete-selected="requestBulkDeleteSelected"
+          />
+        </CollapsibleCard>
+
+        <!-- Управление скачиванием результатов анализов -->
+        <CollapsibleCard
+          title="Управление скачиванием результатов анализов"
+          :badge-text="`${archives?.length || 0} архивов`"
+          badge-class="bg-info"
+          :icon="downloadIcon"
+          card-class="download-management-card"
+          :default-collapsed="downloadManagementCollapsed"
+          @toggle="downloadManagementCollapsed = $event"
+        >
+          <DownloadManagementBlock
+            :selected-ids="selectedIds"
+            :selected-analyses="selectedAnalyses"
+            :groups="groups"
+            :archives="archives"
+            :loading-archives="loadingArchives"
+            :creating-archive="creatingArchive"
+            :downloading-archive="downloadingArchive"
+            :deleting-archive="deletingArchive"
+            @create-archive="createArchive"
+            @download-archive="downloadArchive"
+            @delete-archive="requestDeleteArchive"
+            @status-filter-change="onStatusFilterChange"
+            @group-filter-change="onGroupFilterChange"
+            @select-by-filters="selectByFilters"
+            @clear-filters="clearFilters"
+            @remove-from-selection="removeFromSelection"
+            @clear-selection="clearSelection"
+          />
+        </CollapsibleCard>
+
+        <!-- Фильтры и поиск -->
+        <FilterBar
+          v-model:search="search"
+          v-model:status="currentFilter"
+          v-model:groupId="currentGroupId"
+          v-model:ordering="ordering"
+          v-model:pageSize="pagination.page_size"
+          :groups="groups"
+          @reset="resetFilters"
+        />
+
+        <!-- Статистические карточки -->
+        <StatisticsCards :stats="stats" />
+
+        <!-- Загрузка -->
+        <div v-if="loading" class="text-center py-4">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Загрузка...</span>
           </div>
         </div>
+        
+        <!-- Пустое состояние -->
+        <div v-else-if="!filteredAnalyses || filteredAnalyses.length === 0" class="text-center py-4">
+          <Inbox class="text-muted mb-3" size="48" />
+          <h5 class="text-muted">Анализы не найдены</h5>
+          <p class="text-muted">Попробуйте изменить параметры фильтрации/сортировки или создайте новый анализ</p>
+        </div>
+
+        <!-- Список анализов -->
+        <div v-else class="analyses-grid">
+          <AnalysisCard
+            v-for="analysis in paginatedAnalyses"
+            :key="analysis.id"
+            :analysis="analysis"
+            :is-selected="selectedIds.includes(analysis.id)"
+            @toggle-selection="toggleSelection"
+            @download-report="downloadReport"
+            @download-pdf="downloadPDF"
+            @download-word="downloadWord"
+            @download-original="downloadOriginal"
+            @restart-analysis="restartAnalysis"
+            @delete-analysis="requestDeleteAnalysis"
+          />
+        </div>
+
+        <!-- Пагинация -->
+        <Pagination
+          :current-page="pagination.page"
+          :total-pages="totalPages"
+          :total-items="totalItems"
+          :items-per-page="pagination.page_size"
+          @page-change="changePage"
+        />
       </div>
     </div>
   </div>
@@ -322,1090 +229,881 @@
 
 <script>
 import { porosityAnalysisAPI } from './js/porosity-analysis.js'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useToast } from 'vue-toastification'
 import { 
-  List, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus, 
-  Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
-  ChevronLeft, ChevronRight
+  Microscope, Clock, Loader2, CheckCircle, AlertTriangle, Trash2, 
+  Hash, Download, Inbox 
 } from 'lucide-vue-next'
 
-import { useToast } from 'vue-toastification'
+// Компоненты
+import PageHeader from './components/PageHeader.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import CollapsibleCard from './components/CollapsibleCard.vue'
+import GroupManagementBlock from './components/GroupManagementBlock.vue'
+import AnalysisManagementBlock from './components/AnalysisManagementBlock.vue'
+import DownloadManagementBlock from './components/DownloadManagementBlock.vue'
+import FilterBar from './components/FilterBar.vue'
+import StatisticsCards from './components/StatisticsCards.vue'
+import AnalysisCard from './components/AnalysisCard.vue'
+import Pagination from './components/Pagination.vue'
+
+// Утилиты
+import { formatDate, getStatusText } from './js/utils.js'
 
 const toast = useToast()
 
 export default {
-  name: 'PorosityAnalysesList',
+  name: 'PorosityAnalysisListOptimized',
   components: {
+    Microscope,
+    Clock,
+    Loader2,
+    CheckCircle,
+    AlertTriangle,
+    Trash2,
+    Hash,
+    Download,
+    Inbox,
+    PageHeader,
     ConfirmDialog,
-    List, Clock, Loader2, CheckCircle, AlertTriangle, Inbox, Plus,
-    Calendar, Ruler, BarChart3, CircleDot, Eye, RotateCcw, Download, Trash2, FileText,
-    ChevronLeft, ChevronRight
+    CollapsibleCard,
+    GroupManagementBlock,
+    AnalysisManagementBlock,
+    DownloadManagementBlock,
+    FilterBar,
+    StatisticsCards,
+    AnalysisCard,
+    Pagination
   },
   data() {
     return {
+      // Данные
       analyses: [],
-      loading: true,
+      groups: [],
+      archives: [],
+      loading: false,
+      
+      // Фильтры и поиск
+      search: '',
       currentFilter: 'all',
-      restartingAnalysis: null,
-      downloadingAnalysis: null,
-      deletingAnalysis: null,
-      showDeleteConfirm: false,
-      analysisToDelete: null,
-      restartingMultiple: false,
-      // Данные для пагинации
+      currentGroupId: null,
+      ordering: '-created_at',
+      
+      // Пагинация
       pagination: {
-        current_page: 1,
-        total_pages: 1,
-        count: 0,
-        page_size: 20
+        page: 1,
+        page_size: 10,
+        total: 0
+      },
+      
+      // Выбор
+      selectedIds: [],
+      selectedStatus: null,
+      
+      // Состояния загрузки
+      restartingMultiple: false,
+      bulkDeleting: false,
+      downloadingArchive: false,
+      deletingAnalysis: null,
+      loadingArchives: false,
+      creatingArchive: false,
+      deletingArchive: null,
+      
+      // Модальные окна
+      showDeleteConfirm: false,
+      showBulkDeleteConfirm: false,
+      showDeleteGroupConfirm: false,
+      showDeleteArchiveConfirm: false,
+      bulkDeleteMessage: '',
+      deleteGroupMessage: '',
+      deleteArchiveMessage: '',
+      deletingArchive: null,
+      
+      // Сворачиваемые блоки
+      groupManagementCollapsed: true,
+      analysisManagementCollapsed: true,
+      downloadManagementCollapsed: true,
+      
+      // Управление группами
+      groupManager: {
+        selectedId: null,
+        name: ''
+      },
+      
+      // Входные данные для массовых операций
+      restartInput: '',
+      bulkInput: '',
+      
+      // Статистика
+      stats: {
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0
       }
     }
   },
   computed: {
+    microscopeIcon() {
+      return Microscope
+    },
+    hashIcon() {
+      return Hash
+    },
+    downloadIcon() {
+      return Download
+    },
+    statusOptions() {
+      return [
+        { value: 'pending', label: 'Ожидает', icon: Clock },
+        { value: 'processing', label: 'Обрабатывается', icon: Loader2 },
+        { value: 'completed', label: 'Завершен', icon: CheckCircle },
+        { value: 'failed', label: 'Ошибка', icon: AlertTriangle }
+      ]
+    },
     filteredAnalyses() {
-      if (this.currentFilter === 'all') {
-        return this.analyses
+      let filtered = [...this.analyses]
+      
+      // Поиск
+      if (this.search) {
+        const searchLower = this.search.toLowerCase()
+        filtered = filtered.filter(analysis => 
+          analysis.name?.toLowerCase().includes(searchLower) ||
+          analysis.description?.toLowerCase().includes(searchLower)
+        )
       }
-      return this.analyses.filter(analysis => analysis.status === this.currentFilter)
+      
+      // Фильтр по статусу
+      if (this.currentFilter !== 'all') {
+        filtered = filtered.filter(analysis => analysis.status === this.currentFilter)
+      }
+      
+      // Фильтр по группе
+      if (this.currentGroupId !== null) {
+        if (this.currentGroupId === 0) {
+          filtered = filtered.filter(analysis => !analysis.group)
+        } else {
+          filtered = filtered.filter(analysis => analysis.group?.id === this.currentGroupId)
+        }
+      }
+      
+      // Сортировка
+      filtered.sort((a, b) => {
+        const [field, direction] = this.ordering.startsWith('-') 
+          ? [this.ordering.slice(1), -1] 
+          : [this.ordering, 1]
+        
+        let aVal = a[field]
+        let bVal = b[field]
+        
+        if (field === 'group') {
+          aVal = a.group?.name || ''
+          bVal = b.group?.name || ''
+        }
+        
+        if (aVal < bVal) return -1 * direction
+        if (aVal > bVal) return 1 * direction
+        return 0
+      })
+      
+      return filtered
     },
-    
-    failedAnalyses() {
-      return this.analyses.filter(analysis => analysis.status === 'failed')
+    paginatedAnalyses() {
+      const start = (this.pagination.page - 1) * this.pagination.page_size
+      const end = start + this.pagination.page_size
+      return this.filteredAnalyses.slice(start, end)
     },
-    
-    // Вычисляем видимые страницы для пагинации
-    visiblePages() {
-      const current = this.pagination.current_page
-      const total = this.pagination.total_pages
-      const delta = 2 // Количество страниц с каждой стороны от текущей
-      
-      let start = Math.max(1, current - delta)
-      let end = Math.min(total, current + delta)
-      
-      // Если страниц мало, показываем все
-      if (end - start < 4) {
-        start = Math.max(1, end - 4)
-        end = Math.min(total, start + 4)
-      }
-      
-      const pages = []
-      for (let i = start; i <= end; i++) {
-        pages.push(i)
-      }
-      
-      return pages
+    totalPages() {
+      return Math.ceil(this.filteredAnalyses.length / this.pagination.page_size)
+    },
+    totalItems() {
+      return this.filteredAnalyses.length
+    },
+    selectedAnalyses() {
+      return this.analyses.filter(analysis => this.selectedIds.includes(analysis.id))
     }
   },
   async mounted() {
-    await this.loadAnalyses()
+    await this.loadData()
   },
   methods: {
-    async loadAnalyses(page = 1) {
+    // Загрузка данных
+    async loadData() {
       this.loading = true
       try {
-        const params = {
-          page: page,
-          page_size: this.pagination.page_size
-        }
-        
-        const response = await porosityAnalysisAPI.getAnalyses(params)
-        if (response && response.success && response.data) {
-          // Обрабатываем ответ с пагинацией
-          if (response.data.results) {
-            this.analyses = response.data.results
-            this.pagination = {
-              current_page: response.data.current_page || page,
-              total_pages: response.data.total_pages || 1,
-              count: response.data.count || 0,
-              page_size: response.data.page_size || 20
-            }
-          } else {
-            // Fallback для старого формата ответа
-            this.analyses = response.data || []
-            this.pagination = {
-              current_page: 1,
-              total_pages: 1,
-              count: this.analyses.length,
-              page_size: 20
-            }
-          }
-        } else {
-          toast.error(response?.message || 'Ошибка при загрузке анализов')
-          this.analyses = []
-          this.pagination = {
-            current_page: 1,
-            total_pages: 1,
-            count: 0,
-            page_size: 20
-          }
-        }
-      } catch (error) {
-        let errorMessage = 'Ошибка при загрузке анализов'
-        if (error && typeof error === 'object') {
-          if (error.response && error.response.data) {
-            errorMessage = error.response.data.message || error.response.data.detail || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          }
-        }
-        toast.error(errorMessage)
-        // Устанавливаем пустой массив при ошибке
-        this.analyses = []
-        this.pagination = {
-          current_page: 1,
-          total_pages: 1,
-          count: 0,
-          page_size: 20
-        }
+        await Promise.all([
+          this.loadAnalyses(),
+          this.loadGroups(),
+          this.loadStats(),
+          this.loadArchives()
+        ])
       } finally {
         this.loading = false
       }
     },
     
-    // Метод для смены страницы
-    async changePage(page) {
-      if (page >= 1 && page <= this.pagination.total_pages && page !== this.pagination.current_page) {
-        await this.loadAnalyses(page)
+    async loadAnalyses() {
+      try {
+        const response = await porosityAnalysisAPI.getAnalyses({
+          page: this.pagination.page,
+          page_size: this.pagination.page_size,
+          ordering: this.ordering,
+          status: this.currentFilter !== 'all' ? this.currentFilter : undefined,
+          group: this.currentGroupId
+        })
+        
+        if (response && response.success) {
+          // Проверяем формат данных - массив или объект с пагинацией
+          if (Array.isArray(response.data)) {
+            // API возвращает массив напрямую
+            this.analyses = response.data
+            this.pagination.total = response.data.length
+          } else if (response.data && response.data.results) {
+            // API возвращает объект с пагинацией
+            this.analyses = response.data.results || []
+            this.pagination.total = response.data.count || 0
+          } else {
+            this.analyses = []
+            this.pagination.total = 0
+          }
+        } else {
+          this.analyses = []
+          this.pagination.total = 0
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки анализов:', error)
+        toast.error('Не удалось загрузить анализы')
+        this.analyses = []
+        this.pagination.total = 0
       }
     },
     
-    setFilter(filter) {
-      this.currentFilter = filter
-      // При смене фильтра возвращаемся на первую страницу
-      if (this.pagination.current_page !== 1) {
-        this.loadAnalyses(1)
+    async loadGroups() {
+      try {
+        const response = await porosityAnalysisAPI.getGroups()
+        if (response && response.success) {
+          this.groups = response.data || []
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки групп:', error)
       }
     },
     
-    getStatusBadgeClass(status) {
-      const classes = {
-        pending: 'badge badge-warning',
-        processing: 'badge badge-info',
-        completed: 'badge badge-success',
-        failed: 'badge badge-danger'
+    async loadStats() {
+      try {
+        const response = await porosityAnalysisAPI.getStatistics()
+        if (response && response.success) {
+          this.stats = response.data
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки статистики:', error)
       }
-      return classes[status] || 'badge badge-secondary'
     },
     
-    getStatusIcon(status) {
-      const icons = {
-        pending: 'Clock',
-        processing: 'Loader2',
-        completed: 'CheckCircle',
-        failed: 'AlertTriangle'
+    async loadArchives() {
+      this.loadingArchives = true
+      try {
+        const response = await porosityAnalysisAPI.getArchives()
+        if (response && response.success) {
+          this.archives = response.data || []
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки архивов:', error)
+        toast.error('Не удалось загрузить архивы')
+      } finally {
+        this.loadingArchives = false
       }
-      return icons[status] || 'HelpCircle'
     },
     
-    getStatusText(status) {
-      const texts = {
-        pending: 'Ожидает',
-        processing: 'Обрабатывается',
-        completed: 'Завершен',
-        failed: 'Ошибка'
+    // Утилиты
+    formatDate,
+    getStatusText,
+    
+    
+    getGroupAnalysesCount(groupId) {
+      return this.analyses.filter(a => a.group?.id === groupId).length
+    },
+    
+    getGroupColor(groupId) {
+      const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14', '#e83e8c']
+      return colors[groupId % colors.length]
+    },
+    
+    // Выбор
+    toggleSelection(analysisId) {
+      const index = this.selectedIds.indexOf(analysisId)
+      if (index > -1) {
+        this.selectedIds.splice(index, 1)
+      } else {
+        this.selectedIds.push(analysisId)
       }
-      return texts[status] || status
     },
     
-    formatDate(dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleDateString('ru-RU', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+    selectByStatus(status) {
+      this.selectedStatus = status
+      this.selectedIds = this.analyses
+        .filter(analysis => analysis.status === status)
+        .map(analysis => analysis.id)
     },
     
+    clearSelection() {
+      this.selectedIds = []
+      this.selectedStatus = null
+    },
+    
+    // Фильтры
+    async resetFilters() {
+      this.search = ''
+      this.currentFilter = 'all'
+      this.currentGroupId = null
+      this.ordering = '-created_at'
+      this.pagination.page = 1
+      // Принудительно перезагружаем данные с сервера
+      await this.loadData()
+    },
+    
+    onStatusFilterChange(status) {
+      this.currentFilter = status
+      this.pagination.page = 1
+      this.loadAnalyses()
+    },
+    
+    onGroupFilterChange(groupId) {
+      this.currentGroupId = groupId
+      this.pagination.page = 1
+      this.loadAnalyses()
+    },
+    
+    onOrderingChange() {
+      this.pagination.page = 1
+      this.loadAnalyses()
+    },
+    
+    // Пагинация
+    changePage(page) {
+      this.pagination.page = page
+      this.loadAnalyses()
+    },
+    
+    // Группы
+    onGroupSelect(groupId) {
+      this.groupManager.selectedId = groupId
+    },
+    
+    selectAllByGroup(groupId) {
+      const groupAnalyses = this.analyses.filter(a => a.group?.id === groupId)
+      this.selectedIds = groupAnalyses.map(a => a.id)
+    },
+    
+    ungroupAllInSelected(groupId) {
+      // Реализация снятия группы
+    },
+    
+    async createGroup(name) {
+      try {
+        const response = await porosityAnalysisAPI.createGroup({ name })
+        if (response && response.success) {
+          toast.success('Группа создана')
+          this.groupManager.name = ''
+          await this.loadGroups()
+        } else {
+          toast.error(response?.message || 'Ошибка создания группы')
+        }
+      } catch (error) {
+        toast.error('Ошибка создания группы')
+      }
+    },
+    
+    async renameSelectedGroup({ id, name }) {
+      try {
+        const response = await porosityAnalysisAPI.updateGroup(id, { name })
+        if (response && response.success) {
+          toast.success('Группа переименована')
+          this.groupManager.name = ''
+          await this.loadGroups()
+        } else {
+          toast.error(response?.message || 'Ошибка переименования группы')
+        }
+      } catch (error) {
+        toast.error('Ошибка переименования группы')
+      }
+    },
+    
+    requestDeleteGroup(groupId) {
+      const group = this.groups.find(g => g.id === groupId)
+      this.deleteGroupMessage = `Вы уверены, что хотите удалить группу "${group?.name}"? Все анализы в этой группе будут перемещены в "Без группы".`
+      this.groupManager.selectedId = groupId
+      this.showDeleteGroupConfirm = true
+    },
+    
+    async confirmDeleteGroup() {
+      try {
+        const response = await porosityAnalysisAPI.deleteGroup(this.groupManager.selectedId)
+        if (response && response.success) {
+          toast.success('Группа удалена')
+          this.groupManager.selectedId = null
+          await this.loadGroups()
+        } else {
+          toast.error(response?.message || 'Ошибка удаления группы')
+        }
+      } catch (error) {
+        toast.error('Ошибка удаления группы')
+      } finally {
+        this.showDeleteGroupConfirm = false
+        this.groupManager.selectedId = null
+      }
+    },
+    
+    cancelDeleteGroup() {
+      this.showDeleteGroupConfirm = false
+      this.groupManager.selectedId = null
+    },
+    
+    // Анализы
     async restartAnalysis(analysisId) {
-      this.restartingAnalysis = analysisId
       try {
         const response = await porosityAnalysisAPI.restartAnalysis(analysisId)
         if (response && response.success) {
           toast.success('Анализ перезапущен')
-          
-          // Немедленно обновляем статус анализа в списке
-          const analysisIndex = this.analyses.findIndex(a => a.id === analysisId)
-          if (analysisIndex !== -1) {
-            this.analyses[analysisIndex].status = 'pending'
-            this.analyses[analysisIndex].updated_at = new Date().toISOString()
-          }
-          
-          // Обновляем список в фоне с обработкой ошибок
-          try {
-            await this.loadAnalyses(this.pagination.current_page)
-          } catch (error) {
-            console.warn('Ошибка при обновлении списка анализов:', error)
-            // Не показываем ошибку пользователю, так как основной функционал работает
-          }
+          await this.loadAnalyses()
         } else {
-          toast.error((response && response.message) ? response.message : 'Ошибка при перезапуске анализа')
+          toast.error(response?.message || 'Ошибка перезапуска анализа')
         }
       } catch (error) {
-        let errorMessage = 'Ошибка при перезапуске анализа'
-        if (error && typeof error === 'object') {
-          if (error.response && error.response.data) {
-            errorMessage = error.response.data.message || error.response.data.detail || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          }
-        }
-        toast.error(errorMessage)
-      } finally {
-        this.restartingAnalysis = null
+        toast.error('Ошибка перезапуска анализа')
       }
     },
     
-    async restartFailedAnalyses() {
-      if (this.failedAnalyses.length === 0) {
-        toast.warning('Нет анализов с ошибками для перезапуска')
-        return
-      }
-      
-      this.restartingMultiple = true
+    async downloadReport(analysisId) {
       try {
-        const response = await porosityAnalysisAPI.restartMultipleAnalyses({
-          status: 'failed'
-        })
+        const analysis = this.analyses.find(a => a.id === analysisId)
+        
+        const filename = this.generateFilename(analysis, 'docx')
+        const response = await porosityAnalysisAPI.downloadReportWithProgress(analysisId, 'docx', filename)
         
         if (response && response.success) {
-          toast.success(`Перезапущено ${response.restarted_count} анализов`)
-          
-          // Немедленно обновляем статусы анализов в списке
-          this.failedAnalyses.forEach(analysis => {
-            const analysisIndex = this.analyses.findIndex(a => a.id === analysis.id)
-            if (analysisIndex !== -1) {
-              this.analyses[analysisIndex].status = 'pending'
-              this.analyses[analysisIndex].updated_at = new Date().toISOString()
-            }
-          })
-          
-          // Обновляем список в фоне
-          try {
-            await this.loadAnalyses(this.pagination.current_page)
-          } catch (error) {
-            console.warn('Ошибка при обновлении списка анализов:', error)
-          }
+          toast.success('Скачивание отчета начато')
         } else {
-          toast.error((response && response.message) ? response.message : 'Ошибка при массовом перезапуске')
+          console.error('Ошибка скачивания отчета:', response)
+          toast.error(response?.message || 'Ошибка скачивания отчета')
         }
       } catch (error) {
-        let errorMessage = 'Ошибка при массовом перезапуске'
-        if (error && typeof error === 'object') {
-          if (error.response && error.response.data) {
-            errorMessage = error.response.data.message || error.response.data.detail || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          }
-        }
-        toast.error(errorMessage)
-      } finally {
-        this.restartingMultiple = false
+        console.error('Ошибка скачивания отчета:', error)
+        toast.error('Ошибка скачивания отчета')
       }
     },
     
-    async downloadResults(analysisId) {
-      this.downloadingAnalysis = analysisId
+    async downloadPDF(analysisId) {
       try {
-        const response = await porosityAnalysisAPI.getDownloadResults(analysisId)
+        const analysis = this.analyses.find(a => a.id === analysisId)
+        
+        const filename = this.generateFilename(analysis, 'pdf')
+        const response = await porosityAnalysisAPI.downloadReportWithProgress(analysisId, 'pdf', filename)
+        
         if (response && response.success) {
-          // Создаем ссылку для скачивания ZIP архива
-          const url = window.URL.createObjectURL(response.data)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = `analysis_${analysisId}_results.zip`
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.URL.revokeObjectURL(url)
-          
-          toast.success('Архив с результатами скачивается')
+          toast.success('Скачивание PDF отчета начато')
         } else {
-          toast.error((response && response.message) ? response.message : 'Ошибка при скачивании результатов')
+          console.error('Ошибка скачивания PDF:', response)
+          toast.error(response?.message || 'Ошибка скачивания PDF отчета')
         }
       } catch (error) {
-        let errorMessage = 'Ошибка при скачивании результатов'
-        if (error && typeof error === 'object') {
-          if (error.response && error.response.data) {
-            errorMessage = error.response.data.message || error.response.data.detail || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          }
-        }
-        if (toast && toast.error) {
-          toast.error(errorMessage)
-        }
-      } finally {
-        this.downloadingAnalysis = null
+        console.error('Ошибка скачивания PDF:', error)
+        toast.error('Ошибка скачивания PDF отчета')
       }
     },
     
-    deleteAnalysis(analysisId) {
-      this.analysisToDelete = analysisId
+    async downloadWord(analysisId) {
+      try {
+        const analysis = this.analyses.find(a => a.id === analysisId)
+        
+        const filename = this.generateFilename(analysis, 'docx')
+        const response = await porosityAnalysisAPI.downloadReportWithProgress(analysisId, 'docx', filename)
+        
+        if (response && response.success) {
+          toast.success('Скачивание Word отчета начато')
+        } else {
+          console.error('Ошибка скачивания Word:', response)
+          toast.error(response?.message || 'Ошибка скачивания Word отчета')
+        }
+      } catch (error) {
+        console.error('Ошибка скачивания Word:', error)
+        toast.error('Ошибка скачивания Word отчета')
+      }
+    },
+    
+    async downloadOriginal(analysisId) {
+      try {
+        const analysis = this.analyses.find(a => a.id === analysisId)
+        const response = await porosityAnalysisAPI.downloadOriginal(analysisId)
+        if (response && response.success) {
+          const filename = this.generateFilename(analysis, 'png', 'original')
+          this.downloadBlob(response.data, filename)
+          toast.success('Исходное изображение скачано')
+        } else {
+          toast.error(response?.message || 'Ошибка скачивания исходного изображения')
+        }
+      } catch (error) {
+        console.error('Ошибка скачивания исходного изображения:', error)
+        toast.error('Ошибка скачивания исходного изображения')
+      }
+    },
+    
+    // Вспомогательный метод для генерации имени файла
+    generateFilename(analysis, extension, type = 'report') {
+      if (!analysis) {
+        return `analysis_${Date.now()}.${extension}`
+      }
+      
+      // Получаем название анализа или используем ID
+      let baseName = analysis.name || `Анализ_${analysis.id}`
+      
+      // Очищаем название от недопустимых символов для имени файла
+      baseName = baseName
+        .replace(/[<>:"/\\|?*]/g, '_') // Заменяем недопустимые символы на подчеркивания
+        .replace(/\s+/g, '_') // Заменяем пробелы на подчеркивания
+        .replace(/_+/g, '_') // Убираем множественные подчеркивания
+        .replace(/^_|_$/g, '') // Убираем подчеркивания в начале и конце
+        .trim()
+      
+      // Если название пустое после очистки, используем ID
+      if (!baseName) {
+        baseName = `Анализ_${analysis.id}`
+      }
+      
+      // Добавляем тип файла если это не отчет
+      if (type === 'original') {
+        return `${baseName}_исходное_изображение.${extension}`
+      } else {
+        return `${baseName}_отчет.${extension}`
+      }
+    },
+    
+    // Вспомогательный метод для скачивания blob
+    downloadBlob(blob, filename) {
+      try {
+        // Создаем URL для blob
+        const url = window.URL.createObjectURL(blob)
+        
+        // Создаем временную ссылку
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        
+        // Добавляем ссылку в DOM, кликаем и удаляем
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        // Освобождаем память
+        window.URL.revokeObjectURL(url)
+      } catch (error) {
+        console.error('Ошибка при создании ссылки для скачивания:', error)
+        toast.error('Ошибка при скачивании файла')
+      }
+    },
+    
+    
+    requestDeleteAnalysis(analysisId) {
+      this.deletingAnalysis = analysisId
       this.showDeleteConfirm = true
     },
     
     async confirmDeleteAnalysis() {
-      if (!this.analysisToDelete) return
-      
-      this.deletingAnalysis = this.analysisToDelete
       try {
-        const response = await porosityAnalysisAPI.deleteAnalysis(this.analysisToDelete)
-        
-        // Проверяем успешность удаления - учитываем разные форматы ответов
-        const isSuccess = response && (
-          response.success === true || 
-          response.status === 204 || 
-          response.status === 200 ||
-          (response.data && response.data.success === true)
-        )
-        
-        if (isSuccess) {
+        const response = await porosityAnalysisAPI.deleteAnalysis(this.deletingAnalysis)
+        if (response && response.success) {
           toast.success('Анализ удален')
-          
-          // Немедленно удаляем анализ из списка
-          this.analyses = this.analyses.filter(analysis => analysis.id !== this.analysisToDelete)
-          
-          // Пытаемся обновить список в фоне, но не блокируем UI
-          this.loadAnalyses(this.pagination.current_page).catch(() => {
-            // Игнорируем ошибки при обновлении списка
-          })
+          await this.loadAnalyses()
         } else {
-          const errorMsg = (response && response.message) ? response.message : 'Ошибка при удалении анализа'
-          toast.error(errorMsg)
+          toast.error(response?.message || 'Ошибка удаления анализа')
         }
       } catch (error) {
-        let errorMessage = 'Ошибка при удалении анализа'
-        if (error && typeof error === 'object') {
-          if (error.response && error.response.data) {
-            errorMessage = error.response.data.message || error.response.data.detail || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          }
-        }
-        toast.error(errorMessage)
+        toast.error('Ошибка удаления анализа')
       } finally {
-        this.deletingAnalysis = null
         this.showDeleteConfirm = false
-        this.analysisToDelete = null
+        this.deletingAnalysis = null
       }
     },
     
     cancelDeleteAnalysis() {
       this.showDeleteConfirm = false
-      this.analysisToDelete = null
+      this.deletingAnalysis = null
     },
     
-    async downloadReport(analysisId, reportType) {
-      this.downloadingAnalysis = analysisId
+    // Массовые операции
+    async restartByInput(input) {
+      // Реализация перезапуска по номерам
+    },
+    
+    async restartSelected(selectedIds) {
+      // Реализация перезапуска выбранных
+    },
+    
+    async requestBulkDeleteByInput(input) {
+      // Реализация массового удаления по номерам
+    },
+    
+    async requestBulkDeleteSelected(selectedIds) {
+      // Реализация массового удаления выбранных
+    },
+    
+    
+    async downloadAnalysesArchive({ selectedIds, type }) {
+      this.downloadingArchive = true
+      
       try {
-        console.log(`Downloading report type: ${reportType} for analysis: ${analysisId}`)
+        let params = {}
         
-        // Используем API клиент для скачивания файла
-        const response = await porosityAnalysisAPI.downloadReport(analysisId, reportType)
-        
-        if (response && response.success && response.data) {
-          // Создаем blob из данных
-          const blob = new Blob([response.data], {
-            type: reportType === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-          })
-          
-          // Создаем ссылку для скачивания
-          const url = window.URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = `porosity_analysis_${analysisId}_${new Date().toISOString().split('T')[0]}.${reportType}`
-          
-          // Добавляем ссылку в DOM, кликаем и удаляем
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          
-          // Освобождаем URL
-          window.URL.revokeObjectURL(url)
-          
-          toast.success(`Отчет ${reportType.toUpperCase()} скачивается`)
+        if (type === 'selected' && selectedIds && selectedIds.length > 0) {
+          // Скачивание выбранных анализов
+          params = { analysis_ids: selectedIds }
         } else {
-          throw new Error((response && response.message) ? response.message : 'Ошибка при скачивании отчета')
+          toast.error('Не выбраны анализы для скачивания')
+          return
+        }
+        
+        const response = await porosityAnalysisAPI.downloadAnalysesArchive(params)
+        
+        if (response && response.success && response.data instanceof Blob) {
+          // Генерируем имя файла для архива
+          const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+          const filename = `analyses_archive_${timestamp}.zip`
+          
+          this.downloadBlob(response.data, filename)
+          toast.success('Архив анализов скачан')
+        } else {
+          toast.error(response?.message || 'Ошибка скачивания архива')
         }
       } catch (error) {
-        console.error('Download error:', error)
-        toast.error(error.message || 'Ошибка при скачивании отчета')
+        console.error('Ошибка скачивания архива:', error)
+        toast.error('Ошибка скачивания архива')
       } finally {
-        this.downloadingAnalysis = null
+        this.downloadingArchive = false
       }
+    },
+    
+    // Фильтры для выбора
+    selectByFilters({ status, group }) {
+      // Очищаем текущий выбор
+      this.selectedIds = []
+      
+      // Фильтруем анализы по переданным параметрам
+      let filtered = [...this.analyses]
+      
+      // Фильтр по статусу
+      if (status && status !== '') {
+        filtered = filtered.filter(analysis => analysis.status === status)
+      }
+      
+      // Фильтр по группе
+      if (group !== null && group !== undefined && group !== '') {
+        if (group === 'null' || group === 0) {
+          // Анализы без группы
+          filtered = filtered.filter(analysis => !analysis.group)
+        } else {
+          // Анализы в конкретной группе
+          const groupId = typeof group === 'string' ? parseInt(group) : group
+          filtered = filtered.filter(analysis => analysis.group?.id === groupId)
+        }
+      }
+      
+      // Выбираем отфильтрованные анализы
+      this.selectedIds = filtered.map(analysis => analysis.id)
+      
+      // Показываем уведомление
+      if (this.selectedIds.length > 0) {
+        toast.success(`Выбрано ${this.selectedIds.length} анализов по фильтрам`)
+      } else {
+        toast.warning('По заданным фильтрам анализы не найдены')
+      }
+    },
+    
+    clearFilters() {
+      // Очищаем фильтры в основном компоненте
+      this.currentFilter = 'all'
+      this.currentGroupId = null
+      this.search = ''
+      this.ordering = '-created_at'
+      this.pagination.page = 1
+      
+      // Перезагружаем данные
+      this.loadAnalyses()
+      
+      // Очищаем выбор
+      this.selectedIds = []
+      
+      toast.info('Фильтры очищены')
+    },
+    
+    removeFromSelection(analysisId) {
+      const index = this.selectedIds.indexOf(analysisId)
+      if (index > -1) {
+        this.selectedIds.splice(index, 1)
+      }
+    },
+    
+    
+    // Методы для массового удаления
+    async confirmBulkDelete() {
+      try {
+        // Здесь должна быть логика массового удаления
+        
+        // TODO: Реализовать логику массового удаления через API
+        // const response = await porosityAnalysisAPI.bulkDeleteAnalyses(this.selectedIds)
+        // if (response && response.success) {
+        //   toast.success('Анализы удалены')
+        //   this.selectedIds = []
+        //   await this.loadAnalyses()
+        // }
+        
+        this.selectedIds = []
+      } catch (error) {
+        console.error('Ошибка массового удаления:', error)
+        toast.error('Ошибка массового удаления')
+      } finally {
+        this.showBulkDeleteConfirm = false
+      }
+    },
+    
+    cancelBulkDelete() {
+      this.showBulkDeleteConfirm = false
+    },
+    
+    // Методы для работы с архивами
+    async createArchive({ selectedIds, name, reportType, type }) {
+      this.creatingArchive = true
+      
+      try {
+        let analysisIds = []
+        
+        if (type === 'selected' && selectedIds && selectedIds.length > 0) {
+          analysisIds = [...selectedIds]
+        }
+        
+        if (analysisIds.length === 0) {
+          toast.error('Не выбраны анализы для архива')
+          return
+        }
+        
+        // Генерируем название архива, если не указано
+        const archiveName = name || `Архив_${new Date().toLocaleDateString('ru-RU')}_${analysisIds.length}_анализов`
+        
+        const response = await porosityAnalysisAPI.createArchive({
+          name: archiveName,
+          description: `Архив создан ${new Date().toLocaleString('ru-RU')}`,
+          report_type: reportType,
+          analysis_ids: analysisIds
+        })
+        
+        if (response && response.success) {
+          toast.success('Архив создается...')
+          await this.loadArchives()
+        } else {
+          toast.error(response?.message || 'Ошибка создания архива')
+        }
+      } catch (error) {
+        console.error('Ошибка создания архива:', error)
+        toast.error('Ошибка создания архива')
+      } finally {
+        this.creatingArchive = false
+      }
+    },
+    
+    async downloadArchive(archive) {
+      this.downloadingArchive = archive.id
+      
+      try {
+        // Используем метод с временными ссылками для показа прогресса в браузере
+        const filename = `${archive.name}.zip`
+        const response = await porosityAnalysisAPI.downloadArchiveWithProgress(archive.id, filename)
+        
+        if (response && response.success) {
+          toast.success('Скачивание архива начато')
+        } else {
+          console.error('Ошибка скачивания архива:', response)
+          toast.error(response?.message || 'Ошибка скачивания архива')
+        }
+      } catch (error) {
+        console.error('Ошибка скачивания архива:', error)
+        toast.error('Ошибка скачивания архива')
+      } finally {
+        this.downloadingArchive = false
+      }
+    },
+    
+    requestDeleteArchive(archive) {
+      this.deletingArchive = archive.id
+      this.deleteArchiveMessage = `Вы уверены, что хотите удалить архив "${archive.name}"? Это действие нельзя отменить.`
+      this.showDeleteArchiveConfirm = true
+    },
+    
+    async confirmDeleteArchive() {
+      try {
+        const response = await porosityAnalysisAPI.deleteArchive(this.deletingArchive)
+        if (response && response.success) {
+          toast.success('Архив удален')
+          await this.loadArchives()
+        } else {
+          toast.error(response?.message || 'Ошибка удаления архива')
+        }
+      } catch (error) {
+        console.error('Ошибка удаления архива:', error)
+        toast.error('Ошибка удаления архива')
+      } finally {
+        this.showDeleteArchiveConfirm = false
+        this.deletingArchive = null
+      }
+    },
+    
+    cancelDeleteArchive() {
+      this.showDeleteArchiveConfirm = false
+      this.deletingArchive = null
     }
   }
 }
 </script>
 
 <style scoped>
+@import './styles/common.scss';
+
 .porosity-analyses-list {
-  padding: 20px 0;
+  padding: 2rem;
+  min-height: 100vh;
+  background: var(--bs-gray-100);
 }
 
-.filter-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border: 1px solid #dee2e6;
-  background-color: #fff;
-  color: #6c757d;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-/* Цветные стили для кнопок фильтров */
-.filter-btn[data-filter="all"] {
-  border-color: #6c757d;
-  color: #6c757d;
-}
-
-.filter-btn[data-filter="all"]:hover {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: #fff;
-  transform: translateY(-1px);
-}
-
-.filter-btn[data-filter="all"].active {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
-}
-
-.filter-btn[data-filter="pending"] {
-  border-color: #ffc107;
-  color: #856404;
-}
-
-.filter-btn[data-filter="pending"]:hover {
-  background-color: #ffc107;
-  border-color: #ffc107;
-  color: #212529;
-  transform: translateY(-1px);
-}
-
-.filter-btn[data-filter="pending"].active {
-  background-color: #ffc107;
-  border-color: #ffc107;
-  color: #212529;
-  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
-}
-
-.filter-btn[data-filter="processing"] {
-  border-color: #17a2b8;
-  color: #0c5460;
-}
-
-.filter-btn[data-filter="processing"]:hover {
-  background-color: #17a2b8;
-  border-color: #17a2b8;
-  color: #fff;
-  transform: translateY(-1px);
-}
-
-.filter-btn[data-filter="processing"].active {
-  background-color: #17a2b8;
-  border-color: #17a2b8;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
-}
-
-.filter-btn[data-filter="completed"] {
-  border-color: #28a745;
-  color: #155724;
-}
-
-.filter-btn[data-filter="completed"]:hover {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: #fff;
-  transform: translateY(-1px);
-}
-
-.filter-btn[data-filter="completed"].active {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
-}
-
-.filter-btn[data-filter="failed"] {
-  border-color: #dc3545;
-  color: #721c24;
-}
-
-.filter-btn[data-filter="failed"]:hover {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  color: #fff;
-  transform: translateY(-1px);
-}
-
-.filter-btn[data-filter="failed"].active {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
-}
-
-.analysis-card {
-  background: #fff;
-  border: 1px solid #e9ecef;
-  border-radius: 0.5rem;
-  transition: all 0.3s ease;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-.analysis-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  border-color: #007bff;
-}
-
-.card-header {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 1px solid #e9ecef;
-  padding: 1rem;
-  border-radius: 0.5rem 0.5rem 0 0;
-}
-
-.card-title {
-  font-weight: 600;
-  color: #212529;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border-radius: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-warning {
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
-}
-
-.badge-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
-}
-
-.badge-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.badge-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-/* Стили для цветных иконок в статусах */
-.badge svg {
-  flex-shrink: 0;
-  margin-right: 0.25rem;
-}
-
-.badge-warning svg {
-  color: #ffc107;
-}
-
-.badge-info svg {
-  color: #17a2b8;
-}
-
-.badge-success svg {
-  color: #28a745;
-}
-
-.badge-danger svg {
-  color: #dc3545;
-}
-
-/* Дополнительные стили для иконок в фильтрах */
-.filter-btn svg {
-  flex-shrink: 0;
-  margin-right: 0.25rem;
-}
-
-/* Цветные иконки для фильтров */
-.filter-btn[data-filter="all"] svg {
-  color: #6c757d;
-}
-
-.filter-btn[data-filter="all"]:hover svg,
-.filter-btn[data-filter="all"].active svg {
-  color: #fff;
-}
-
-.filter-btn[data-filter="pending"] svg {
-  color: #856404;
-}
-
-.filter-btn[data-filter="pending"]:hover svg,
-.filter-btn[data-filter="pending"].active svg {
-  color: #212529;
-}
-
-.filter-btn[data-filter="processing"] svg {
-  color: #0c5460;
-}
-
-.filter-btn[data-filter="processing"]:hover svg,
-.filter-btn[data-filter="processing"].active svg {
-  color: #fff;
-}
-
-.filter-btn[data-filter="completed"] svg {
-  color: #155724;
-}
-
-.filter-btn[data-filter="completed"]:hover svg,
-.filter-btn[data-filter="completed"].active svg {
-  color: #fff;
-}
-
-.filter-btn[data-filter="failed"] svg {
-  color: #721c24;
-}
-
-.filter-btn[data-filter="failed"]:hover svg,
-.filter-btn[data-filter="failed"].active svg {
-  color: #fff;
-}
-
-/* Стили для иконок в кнопках действий */
-.action-btn svg {
-  flex-shrink: 0;
-  margin-right: 0.25rem;
-}
-
-/* Специальные цвета для иконок в кнопках */
-.action-btn.primary svg {
-  color: #fff;
-}
-
-.action-btn.warning svg {
-  color: #212529;
-}
-
-.action-btn.success svg {
-  color: #fff;
-}
-
-.action-btn.danger svg {
-  color: #fff;
-}
-
-.action-btn.info svg {
-  color: #fff;
-}
-
-.action-btn.secondary svg {
-  color: #fff;
-}
-
-/* Стили для кнопки массового перезапуска */
-.bulk-actions .btn svg {
-  flex-shrink: 0;
-  margin-right: 0.25rem;
-  color: #212529;
-}
-
-.bulk-actions .btn:hover svg {
-  color: #212529;
-}
-
-.bulk-actions .btn:disabled svg {
-  color: #6c757d;
-}
-
-.card-body {
-  padding: 1rem;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-text {
-  margin-bottom: 1rem;
-  line-height: 1.5;
-}
-
-.analysis-info {
-  margin-top: auto;
-}
-
-.info-row, .results-row {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.info-item {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.1rem;
-  margin-bottom: 0.25rem;
-  flex-wrap: wrap;
-}
-
-.info-item .lucide {
-  min-width: 18px;
-  min-height: 18px;
-  width: 18px;
-  height: 18px;
-  margin-right: 0.15rem;
-  display: inline-block;
-  vertical-align: middle;
-  color: #6c757d;
-}
-
-/* Цветные иконки для информационных блоков */
-.info-item .lucide[data-icon="calendar"] {
-  color: #17a2b8;
-}
-
-.info-item .lucide[data-icon="ruler"] {
-  color: #6f42c1;
-}
-
-.info-item .lucide[data-icon="bar-chart-3"] {
-  color: #28a745;
-}
-
-.info-item .lucide[data-icon="circle-dot"] {
-  color: #fd7e14;
-}
-
-.info-item .lucide[data-icon="alert-triangle"] {
-  color: #dc3545;
-}
-
-.info-item .date-text {
-  font-size: 0.8em;
-  word-break: break-all;
-}
-
-.info-item small {
-  font-size: 0.75rem;
-  margin-bottom: 0;
-}
-
-.info-item div {
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.error-row {
-  margin-top: 0.75rem;
-}
-
-.card-footer {
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-top: 1px solid #e9ecef;
-  border-radius: 0 0 0.5rem 0.5rem;
-}
-
-.action-buttons {
+.analyses-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.5rem;
-  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid transparent;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 100%;
-  height: 40px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  text-align: center;
-  line-height: 1.2;
-}
-
-.action-btn:hover {
-  transform: translateY(-1px);
-  text-decoration: none;
-}
-
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.action-btn.primary {
-  background-color: #007bff;
-  color: #fff;
-  border-color: #007bff;
-}
-
-.action-btn.primary:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
-  color: #fff;
-}
-
-.action-btn.warning {
-  background-color: #ffc107;
-  color: #212529;
-  border-color: #ffc107;
-}
-
-.action-btn.warning:hover {
-  background-color: #e0a800;
-  border-color: #e0a800;
-  color: #212529;
-}
-
-.action-btn.success {
-  background-color: #28a745;
-  color: #fff;
-  border-color: #28a745;
-}
-
-.action-btn.success:hover {
-  background-color: #218838;
-  border-color: #218838;
-  color: #fff;
-}
-
-.action-btn.danger {
-  background-color: #dc3545;
-  color: #fff;
-  border-color: #dc3545;
-}
-
-.action-btn.danger:hover {
-  background-color: #c82333;
-  border-color: #c82333;
-  color: #fff;
-}
-
-.action-btn.info {
-  background-color: #17a2b8;
-  color: #fff;
-  border-color: #17a2b8;
-}
-
-.action-btn.info:hover {
-  background-color: #138496;
-  border-color: #138496;
-  color: #fff;
-}
-
-.action-btn.secondary {
-  background-color: #6c757d;
-  color: #fff;
-  border-color: #6c757d;
-}
-
-.action-btn.secondary:hover {
-  background-color: #5a6268;
-  border-color: #5a6268;
-  color: #fff;
+.analyses-grid .analysis-card {
+  z-index: 1;
 }
 
 @media (max-width: 768px) {
-  .filter-buttons {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .filter-btn {
-    justify-content: center;
-  }
-  
-  .action-buttons {
+  .analyses-grid {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-  
-  .info-row, .results-row {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-    height: 44px; /* Увеличиваем высоту для лучшего тапа на мобильных */
-  }
-  
-  .analysis-card .dropdown {
-    width: 100%;
-  }
-  
-  /* Улучшение отображения кнопок перезапуска на мобильных */
-  .action-btn[title*="Перезапустить"] {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.8rem;
+    gap: 1rem;
   }
 }
 
-/* Стили для dropdown меню в карточках анализов */
-.analysis-card .dropdown {
-  width: 100%;
-  display: block;
+.status-selected {
+  background-color: #e3f2fd !important;
+  color: #1976d2 !important;
 }
 
-.analysis-card .dropdown .action-btn {
-  width: 100%;
-}
-
-.analysis-card .dropdown-menu {
-  min-width: 180px;
-  margin-top: 0.25rem;
-}
-
-/* Дополнительные стили для grid-сетки кнопок */
-.action-buttons > * {
-  width: 100%;
-}
-
-.analysis-card .dropdown-item {
+.dropdown-item {
   display: flex;
   align-items: center;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  gap: 0.5rem;
 }
 
-.analysis-card .dropdown-item svg {
+.dropdown-item svg {
   flex-shrink: 0;
-  margin-right: 0.5rem;
-  color: #6c757d;
 }
-
-.analysis-card .dropdown-item:hover {
-  background-color: #f8f9fa;
-}
-
-.analysis-card .dropdown-item:hover svg {
-  color: #495057;
-}
-
-/* Стиль для кнопки с dropdown */
-.action-btn.dropdown-toggle::after {
-  margin-left: 0.5rem;
-}
-
-/* Стили для пагинации */
-.pagination {
-  margin-bottom: 0;
-}
-
-.page-link {
-  color: #007bff;
-  background-color: #fff;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-  height: 40px;
-  transition: all 0.2s ease;
-}
-
-.page-link:hover {
-  color: #0056b3;
-  background-color: #e9ecef;
-  border-color: #dee2e6;
-  transform: translateY(-1px);
-}
-
-.page-link:focus {
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-  outline: none;
-}
-
-.page-item.active .page-link {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: #fff;
-}
-
-.page-item.disabled .page-link {
-  color: #6c757d;
-  background-color: #fff;
-  border-color: #dee2e6;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.page-item.disabled .page-link:hover {
-  transform: none;
-}
-
-/* Стили для иконок в пагинации */
-.page-link svg {
-  flex-shrink: 0;
-  margin: 0 0.25rem;
-}
-
-/* Адаптивность для пагинации */
-@media (max-width: 768px) {
-  .pagination {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .page-link {
-    min-width: 36px;
-    height: 36px;
-    font-size: 0.8rem;
-    padding: 0.4rem 0.6rem;
-  }
-  
-  .page-link svg {
-    width: 14px;
-    height: 14px;
-  }
-}
-</style> 
+</style>

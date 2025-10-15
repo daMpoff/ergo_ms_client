@@ -1,5 +1,8 @@
 <script setup>
-import Cookies from 'js-cookie';
+import { useToast } from 'vue-toastification'
+import cityAnalyzeApiService from '../js/apiService'
+
+const toast = useToast()
 </script>
 
 <template>
@@ -214,28 +217,29 @@ export default {
                     formData.append('railways_map', this.files.railwaysMap)
                 }
 
-                const token = Cookies.get('token');
+                // Отправка на сервер через apiService
+                const response = await cityAnalyzeApiService.uploadMaps(formData)
 
-                // Отправка на сервер
-                const response = await fetch('http://localhost:8000/api/cities_expansion/geoanalyzer/upload_maps', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                })
-
-                if (!response.ok) {
-                    const errorData = await response.json()
-                    console.log(errorData)
-                    throw new Error('Ошибка при отправке файлов: ' + errorData.error)
-                }
-
-                const data = await response.json()
-                if (data['success'])
+                if (response.success) {
                     this.success = 'Карты успешно загружены!'
+                    toast.success('Карты успешно загружены!')
+                    
+                    // Очистка формы
+                    this.groupName = ''
+                    this.coordsString = ''
+                    this.files.cityMap = null
+                    this.files.buildingsMap = null
+                    this.files.railwaysMap = null
+                    this.previews.cityMap = null
+                    this.previews.buildingsMap = null
+                    this.previews.railwaysMap = null
+                } else {
+                    throw new Error(response.message || 'Ошибка при отправке файлов')
+                }
             } catch (err) {
-                this.error = err.message || 'Произошла ошибка при отправке формы'
+                console.error('Ошибка загрузки карт:', err)
+                this.error = err.response?.data?.error || err.message || 'Произошла ошибка при отправке формы'
+                toast.error(this.error)
             } finally {
                 this.isSubmitting = false
             }

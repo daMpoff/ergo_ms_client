@@ -1,197 +1,214 @@
-import axios from "axios";
-import Cookies from 'js-cookie';
+/**
+ * Сервис для работы с Project Management API
+ */
 
-// Используем правильный базовый URL с портом API сервера
-const API_BASE_URL = `http://${import.meta.env.VITE_API_HOST || 'localhost'}:${import.meta.env.VITE_API_PORT || '8000'}/api`;
+import { apiClient } from '@/js/api/manager'
+import { endpoints } from '@/js/api/endpoints'
 
 class ProjectManagementApi {
     constructor() {
-        this.client = axios.create({
-            baseURL: API_BASE_URL,
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
-        // Добавляем токен авторизации к каждому запросу
-        this.client.interceptors.request.use(
-            (config) => {
-                // Используем тот же способ получения токена, что и в manager.js
-                const token = Cookies.get('token');
-                
-                if (token) {
-                    config.headers.Authorization = `Bearer ${token}`;
-                } else {
-                    console.warn('Токен авторизации не найден!')
-                }
-                
-                return config;
-            },
-            (error) => {
-                return Promise.reject(error);
-            }
-        );
+        this.endpoints = endpoints.project_management
     }
 
-    // ПРОЕКТЫ
+    /**
+     * Преобразует ответ apiClient в формат axios для совместимости
+     */
+    _adaptResponse(response) {
+        // apiClient возвращает { success, data, message }
+        // Старый код ожидает { data: ... } как axios
+        if (response && response.data !== undefined) {
+            return { data: response.data }
+        }
+        return { data: response }
+    }
+
+    /**
+     * Обработка вызовов API с адаптацией ответа
+     */
+    async _safeCall(fn) {
+        try {
+            const result = await fn()
+            return this._adaptResponse(result)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    // ===== ПРОЕКТЫ =====
+    
     async getProjects(params = {}) {
-        return await this.client.get('/crm/projects/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.projects, params))
     }
 
     async getProject(id) {
-        return await this.client.get(`/crm/projects/${id}/`);
+        return this._safeCall(() => apiClient.get(this.endpoints.projectDetail(id)))
     }
 
     async createProject(data) {
-        return await this.client.post('/crm/projects/', data);
+        return this._safeCall(() => apiClient.post(this.endpoints.projects, data))
     }
 
     async updateProject(id, data) {
-        return await this.client.patch(`/crm/projects/${id}/`, data);
+        return this._safeCall(() => apiClient.patch(this.endpoints.projectDetail(id), data))
     }
 
     async deleteProject(id) {
-        return await this.client.delete(`/crm/projects/${id}/`);
+        return this._safeCall(() => apiClient.delete(this.endpoints.projectDetail(id)))
     }
 
     async getProjectTasks(projectId) {
-        return await this.client.get(`/crm/projects/${projectId}/tasks/`);
+        return this._safeCall(() => apiClient.get(this.endpoints.projectTasks(projectId)))
     }
 
     async getProjectStatistics(projectId) {
-        return await this.client.get(`/crm/projects/${projectId}/statistics/`);
+        return this._safeCall(() => apiClient.get(this.endpoints.projectStatistics(projectId)))
     }
 
     async addProjectMember(projectId, userData) {
-        return await this.client.post(`/crm/projects/${projectId}/add_member/`, userData);
+        return this._safeCall(() => apiClient.post(this.endpoints.addProjectMember(projectId), userData))
     }
 
     async removeProjectMember(projectId, userId) {
-        return await this.client.delete(`/crm/projects/${projectId}/remove_member/`, {
-            data: { user_id: userId }
-        });
+        return this._safeCall(() => apiClient.delete(this.endpoints.removeProjectMember(projectId), {
+            user_id: userId
+        }))
     }
 
-    // ЗАДАЧИ
+    async exportProjects(format = 'csv') {
+        return this._safeCall(() => apiClient.downloadFile(this.endpoints.exportProjects, { format }))
+    }
+
+    // ===== ЗАДАЧИ =====
+    
     async getTasks(params = {}) {
-        return await this.client.get('/crm/tasks/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.tasks, params))
     }
 
     async getTask(id) {
-        return await this.client.get(`/crm/tasks/${id}/`);
+        return this._safeCall(() => apiClient.get(this.endpoints.taskDetail(id)))
     }
 
     async createTask(data) {
-        return await this.client.post('/crm/tasks/', data);
+        return this._safeCall(() => apiClient.post(this.endpoints.tasks, data))
     }
 
     async updateTask(id, data) {
-        return await this.client.patch(`/crm/tasks/${id}/`, data);
+        return this._safeCall(() => apiClient.patch(this.endpoints.taskDetail(id), data))
     }
 
     async deleteTask(id) {
-        return await this.client.delete(`/crm/tasks/${id}/`);
+        return this._safeCall(() => apiClient.delete(this.endpoints.taskDetail(id)))
     }
 
     async changeTaskStatus(taskId, status) {
-        return await this.client.post(`/crm/tasks/${taskId}/change_status/`, { status });
+        return this._safeCall(() => apiClient.post(this.endpoints.changeTaskStatus(taskId), { status }))
     }
 
-    // КАЛЕНДАРЬ
+    async exportTasks(format = 'csv', projectId = null) {
+        const params = { format }
+        if (projectId) {
+            params.project_id = projectId
+        }
+        return this._safeCall(() => apiClient.downloadFile(this.endpoints.exportTasks, params))
+    }
+
+    // ===== КАЛЕНДАРЬ =====
+    
     async getTasksForCalendar(params = {}) {
-        return await this.client.get('/crm/tasks/calendar/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.tasksCalendar, params))
     }
 
     async createTaskFromCalendar(data) {
-        return await this.client.post('/crm/tasks/create_from_calendar/', data);
+        return this._safeCall(() => apiClient.post(this.endpoints.createTaskFromCalendar, data))
     }
 
-    // КАНБАН
+    // ===== КАНБАН =====
+    
     async getKanbanTasks(params = {}) {
-        return await this.client.get('/crm/tasks/kanban/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.tasksKanban, params))
     }
 
     async updateTaskKanbanOrder(taskId, data) {
-        return await this.client.post(`/crm/tasks/${taskId}/update_kanban_order/`, data);
+        return this._safeCall(() => apiClient.post(this.endpoints.updateTaskKanbanOrder(taskId), data))
     }
 
-    // КОММЕНТАРИИ
+    // ===== КОММЕНТАРИИ =====
+    
     async getTaskComments(taskId) {
-        return await this.client.get('/crm/task-comments/', {
-            params: { task_id: taskId }
-        });
+        return this._safeCall(() => apiClient.get(this.endpoints.taskComments, {
+            task_id: taskId
+        }))
     }
 
     async addTaskComment(taskId, content) {
-        return await this.client.post(`/crm/tasks/${taskId}/add_comment/`, { content });
+        return this._safeCall(() => apiClient.post(this.endpoints.addTaskComment(taskId), { content }))
     }
 
     async updateTaskComment(commentId, data) {
-        return await this.client.patch(`/crm/task-comments/${commentId}/`, data);
+        return this._safeCall(() => apiClient.patch(this.endpoints.taskCommentDetail(commentId), data))
     }
 
     async deleteTaskComment(commentId) {
-        return await this.client.delete(`/crm/task-comments/${commentId}/`);
+        return this._safeCall(() => apiClient.delete(this.endpoints.taskCommentDetail(commentId)))
     }
 
-    // УЧЕТ ВРЕМЕНИ
+    // ===== УЧЕТ ВРЕМЕНИ =====
+    
     async getTimeLogs(params = {}) {
-        return await this.client.get('/crm/time-logs/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.timeLogs, params))
     }
 
     async getMyTimeLogs() {
-        return await this.client.get('/crm/time-logs/my_time_logs/');
+        return this._safeCall(() => apiClient.get(this.endpoints.myTimeLogs))
     }
 
     async addTimeLog(taskId, data) {
-        return await this.client.post(`/crm/tasks/${taskId}/add_time_log/`, data);
+        return this._safeCall(() => apiClient.post(this.endpoints.addTimeLog(taskId), data))
     }
 
     async updateTimeLog(logId, data) {
-        return await this.client.patch(`/crm/time-logs/${logId}/`, data);
+        return this._safeCall(() => apiClient.patch(this.endpoints.timeLogDetail(logId), data))
     }
 
     async deleteTimeLog(logId) {
-        return await this.client.delete(`/crm/time-logs/${logId}/`);
+        return this._safeCall(() => apiClient.delete(this.endpoints.timeLogDetail(logId)))
     }
 
-    // ПОЛЬЗОВАТЕЛИ
+    // ===== ПОЛЬЗОВАТЕЛИ =====
+    
     async getUsers(params = {}) {
-        return await this.client.get('/crm/users/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.users, params))
     }
 
-    // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+    // ===== ФАЙЛЫ =====
+    
     async uploadFile(file, taskId = null) {
-        const formData = new FormData();
-        formData.append('file', file);
+        const formData = new FormData()
+        formData.append('file', file)
         if (taskId) {
-            formData.append('task_id', taskId);
+            formData.append('task_id', taskId)
         }
-
-        return await this.client.post('/crm/upload-file/', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            }
-        });
+        return this._safeCall(() => apiClient.upload(this.endpoints.uploadFile, formData))
     }
 
-    // Получение статистики для дашборда
+    // ===== СТАТИСТИКА =====
+    
     async getDashboardStatistics() {
         try {
             const [projectsResponse, tasksResponse] = await Promise.all([
                 this.getProjects({ my_projects: true }),
                 this.getTasks({ my_tasks: true })
-            ]);
+            ])
 
-            const projects = projectsResponse.data.results || projectsResponse.data;
-            const tasks = tasksResponse.data.results || tasksResponse.data;
+            const projects = projectsResponse.data?.results || projectsResponse.data || []
+            const tasks = tasksResponse.data?.results || tasksResponse.data || []
 
-            const now = new Date();
+            const now = new Date()
             const overdueTasks = tasks.filter(task => 
                 task.due_date && 
                 new Date(task.due_date) < now && 
                 task.status !== 'done'
-            );
+            )
 
             return {
                 totalProjects: projects.length,
@@ -199,183 +216,165 @@ class ProjectManagementApi {
                 myTasks: tasks.length,
                 overdueTasks: overdueTasks.length,
                 completedTasks: tasks.filter(t => t.status === 'done').length
-            };
+            }
         } catch (error) {
-            console.error('Ошибка получения статистики:', error);
+            console.error('Ошибка получения статистики:', error)
             return {
                 totalProjects: 0,
                 activeProjects: 0,
                 myTasks: 0,
                 overdueTasks: 0,
                 completedTasks: 0
-            };
+            }
         }
     }
 
-    // Поиск по проектам и задачам
+    // ===== ПОИСК =====
+    
     async search(query, type = 'all') {
-        const params = { search: query };
+        const params = { search: query }
         
         if (type === 'projects') {
-            return await this.getProjects(params);
+            return await this.getProjects(params)
         } else if (type === 'tasks') {
-            return await this.getTasks(params);
+            return await this.getTasks(params)
         } else {
-            // Поиск по всем типам
             const [projects, tasks] = await Promise.all([
                 this.getProjects(params),
                 this.getTasks(params)
-            ]);
+            ])
             
             return {
-                projects: projects.data.results || projects.data,
-                tasks: tasks.data.results || tasks.data
-            };
+                projects: projects.data?.results || projects.data || [],
+                tasks: tasks.data?.results || tasks.data || []
+            }
         }
     }
 
-    // Экспорт данных
-    async exportProjects(format = 'csv') {
-        return await this.client.get('/crm/projects/export/', {
-            params: { format },
-            responseType: 'blob'
-        });
-    }
-
-    async exportTasks(format = 'csv', projectId = null) {
-        const params = { format };
-        if (projectId) {
-            params.project_id = projectId;
-        }
-        
-        return await this.client.get('/crm/tasks/export/', {
-            params,
-            responseType: 'blob'
-        });
-    }
-
-    // УПРАВЛЕНИЕ СТАТУСАМИ И ПРИОРИТЕТАМИ
-
-    // Статусы проектов
+    // ===== СТАТУСЫ ПРОЕКТОВ =====
+    
     async getProjectStatuses(params = {}) {
-        return await this.client.get('/crm/project-statuses/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.projectStatuses, params))
     }
 
     async getProjectStatus(id) {
-        return await this.client.get(`/crm/project-statuses/${id}/`);
+        return this._safeCall(() => apiClient.get(this.endpoints.projectStatusDetail(id)))
     }
 
     async createProjectStatus(data) {
-        return await this.client.post('/crm/project-statuses/', data);
+        return this._safeCall(() => apiClient.post(this.endpoints.projectStatuses, data))
     }
 
     async updateProjectStatus(id, data) {
-        return await this.client.patch(`/crm/project-statuses/${id}/`, data);
+        return this._safeCall(() => apiClient.patch(this.endpoints.projectStatusDetail(id), data))
     }
 
     async deleteProjectStatus(id) {
-        return await this.client.delete(`/crm/project-statuses/${id}/`);
+        return this._safeCall(() => apiClient.delete(this.endpoints.projectStatusDetail(id)))
     }
 
     async getActiveProjectStatuses() {
-        return await this.client.get('/crm/project-statuses/active/');
+        return this._safeCall(() => apiClient.get(this.endpoints.activeProjectStatuses))
     }
 
     async getDefaultProjectStatus() {
-        return await this.client.get('/crm/project-statuses/default/');
+        return this._safeCall(() => apiClient.get(this.endpoints.defaultProjectStatus))
     }
 
-    // Приоритеты проектов
+    // ===== ПРИОРИТЕТЫ ПРОЕКТОВ =====
+    
     async getProjectPriorities(params = {}) {
-        return await this.client.get('/crm/project-priorities/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.projectPriorities, params))
     }
 
     async getProjectPriority(id) {
-        return await this.client.get(`/crm/project-priorities/${id}/`);
+        return this._safeCall(() => apiClient.get(this.endpoints.projectPriorityDetail(id)))
     }
 
     async createProjectPriority(data) {
-        return await this.client.post('/crm/project-priorities/', data);
+        return this._safeCall(() => apiClient.post(this.endpoints.projectPriorities, data))
     }
 
     async updateProjectPriority(id, data) {
-        return await this.client.patch(`/crm/project-priorities/${id}/`, data);
+        return this._safeCall(() => apiClient.patch(this.endpoints.projectPriorityDetail(id), data))
     }
 
     async deleteProjectPriority(id) {
-        return await this.client.delete(`/crm/project-priorities/${id}/`);
+        return this._safeCall(() => apiClient.delete(this.endpoints.projectPriorityDetail(id)))
     }
 
     async getActiveProjectPriorities() {
-        return await this.client.get('/crm/project-priorities/active/');
+        return this._safeCall(() => apiClient.get(this.endpoints.activeProjectPriorities))
     }
 
     async getDefaultProjectPriority() {
-        return await this.client.get('/crm/project-priorities/default/');
+        return this._safeCall(() => apiClient.get(this.endpoints.defaultProjectPriority))
     }
 
-    // Статусы задач
+    // ===== СТАТУСЫ ЗАДАЧ =====
+    
     async getTaskStatuses(params = {}) {
-        return await this.client.get('/crm/task-statuses/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.taskStatuses, params))
     }
 
     async getTaskStatus(id) {
-        return await this.client.get(`/crm/task-statuses/${id}/`);
+        return this._safeCall(() => apiClient.get(this.endpoints.taskStatusDetail(id)))
     }
 
     async createTaskStatus(data) {
-        return await this.client.post('/crm/task-statuses/', data);
+        return this._safeCall(() => apiClient.post(this.endpoints.taskStatuses, data))
     }
 
     async updateTaskStatus(id, data) {
-        return await this.client.patch(`/crm/task-statuses/${id}/`, data);
+        return this._safeCall(() => apiClient.patch(this.endpoints.taskStatusDetail(id), data))
     }
 
     async deleteTaskStatus(id) {
-        return await this.client.delete(`/crm/task-statuses/${id}/`);
+        return this._safeCall(() => apiClient.delete(this.endpoints.taskStatusDetail(id)))
     }
 
     async getActiveTaskStatuses() {
-        return await this.client.get('/crm/task-statuses/active/');
+        return this._safeCall(() => apiClient.get(this.endpoints.activeTaskStatuses))
     }
 
     async getKanbanTaskStatuses() {
-        return await this.client.get('/crm/task-statuses/kanban_columns/');
+        return this._safeCall(() => apiClient.get(this.endpoints.kanbanTaskStatuses))
     }
 
     async getDefaultTaskStatus() {
-        return await this.client.get('/crm/task-statuses/default/');
+        return this._safeCall(() => apiClient.get(this.endpoints.defaultTaskStatus))
     }
 
-    // Приоритеты задач
+    // ===== ПРИОРИТЕТЫ ЗАДАЧ =====
+    
     async getTaskPriorities(params = {}) {
-        return await this.client.get('/crm/task-priorities/', { params });
+        return this._safeCall(() => apiClient.get(this.endpoints.taskPriorities, params))
     }
 
     async getTaskPriority(id) {
-        return await this.client.get(`/crm/task-priorities/${id}/`);
+        return this._safeCall(() => apiClient.get(this.endpoints.taskPriorityDetail(id)))
     }
 
     async createTaskPriority(data) {
-        return await this.client.post('/crm/task-priorities/', data);
+        return this._safeCall(() => apiClient.post(this.endpoints.taskPriorities, data))
     }
 
     async updateTaskPriority(id, data) {
-        return await this.client.patch(`/crm/task-priorities/${id}/`, data);
+        return this._safeCall(() => apiClient.patch(this.endpoints.taskPriorityDetail(id), data))
     }
 
     async deleteTaskPriority(id) {
-        return await this.client.delete(`/crm/task-priorities/${id}/`);
+        return this._safeCall(() => apiClient.delete(this.endpoints.taskPriorityDetail(id)))
     }
 
     async getActiveTaskPriorities() {
-        return await this.client.get('/crm/task-priorities/active/');
+        return this._safeCall(() => apiClient.get(this.endpoints.activeTaskPriorities))
     }
 
     async getDefaultTaskPriority() {
-        return await this.client.get('/crm/task-priorities/default/');
+        return this._safeCall(() => apiClient.get(this.endpoints.defaultTaskPriority))
     }
 }
 
-const projectManagementApi = new ProjectManagementApi();
-export default projectManagementApi; 
+const projectManagementApi = new ProjectManagementApi()
+export default projectManagementApi
