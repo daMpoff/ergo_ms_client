@@ -60,14 +60,12 @@
                   <div class="field"><span class="field-label">Цель проекта:</span> <span class="field-value">{{ projectData.goal || '—' }}</span></div>
                 </div>
                 <div class="col-12">
-                  <div class="field"><span class="field-label">Дата начала:</span> <span class="field-value">{{ projectData.start_date || '—' }}</span></div>
+                  <div class="field"><span class="field-label">Дата начала:</span> <span class="field-value">{{ formatDateLong(projectData.start_date) }}</span></div>
                 </div>
                 <div class="col-12">
-                  <div class="field"><span class="field-label">Дата окончания:</span> <span class="field-value">{{ projectData.end_date || '—' }}</span></div>
+                  <div class="field"><span class="field-label">Дата окончания:</span> <span class="field-value">{{ formatDateLong(projectData.end_date) }}</span></div>
                 </div>
-                <div class="col-12">
-                  <div class="field"><span class="field-label">Общий бюджет:</span> <span class="field-value">{{ formatMoney(projectData.budget_total) }}</span></div>
-                </div>
+                
               </div>
             </div>
           </div>
@@ -170,8 +168,8 @@
                   <tbody>
                     <tr v-for="s in projectData.stages" :key="s.id">
                       <td>{{ s.name }}</td>
-                      <td>{{ s.start_date || '—' }}</td>
-                      <td>{{ s.end_date || '—' }}</td>
+                      <td>{{ formatDateLong(s.start_date) }}</td>
+                      <td>{{ formatDateLong(s.end_date) }}</td>
                       <td>{{ s.planned_results || '—' }}</td>
                     </tr>
                   </tbody>
@@ -244,8 +242,8 @@
                   <tbody>
                     <tr v-for="bi in projectData.budget_items || []" :key="bi.id">
                       <td>{{ stageName(bi.stage_id) }}</td>
-                      <td>{{ bi.cost_article }}</td>
-                      <td>{{ bi.funding_source }}</td>
+                      <td>{{ translateBudgetTerms(bi.cost_article) }}</td>
+                      <td>{{ translateBudgetTerms(bi.funding_source) }}</td>
                       <td class="text-end">{{ formatMoney(bi.amount) }}</td>
                     </tr>
                   </tbody>
@@ -284,7 +282,7 @@
                       <td class="text-end">{{ formatMoney(bt.other_budget) }}</td>
                     </tr>
                     <tr v-for="bt in projectData.budget_totals" :key="`total-${bt.id}`" class="table-active">
-                      <td><strong>Итого с страховкой</strong></td>
+                      <td><strong>Итого с страховыми взносами</strong></td>
                       <td class="text-end"><strong>{{ formatMoney(bt.total_with_insurance) }}</strong></td>
                     </tr>
                   </tbody>
@@ -502,6 +500,43 @@ function formatMoney(value) {
   const num = Number(value)
   if (Number.isNaN(num)) return String(value)
   return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2 }).format(num)
+}
+
+function formatDateLong(value) {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  const day = String(date.getDate()).padStart(2, '0')
+  const monthIndex = date.getMonth()
+  const year = date.getFullYear()
+  const months = [
+    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+  ]
+  const month = months[monthIndex] || ''
+  return `${day} ${month} ${year} год`
+}
+
+function translateBudgetTerms(text) {
+  if (!text) return text
+  const translations = {
+    salary: 'Заработная плата',
+    other: 'Другие расходы',
+    budget: 'Бюджетные источники финансирования',
+    nonbudget: 'Внебюджетные источники финансирования'
+  }
+  const source = String(text)
+  const lowered = source.toLowerCase().trim()
+  for (const [key, value] of Object.entries(translations)) {
+    if (lowered === key) return value
+  }
+  let result = source
+  for (const [key, value] of Object.entries(translations)) {
+    if (lowered.includes(key)) {
+      result = result.replace(new RegExp(key, 'gi'), value)
+    }
+  }
+  return result
 }
 
 function userName(user) {
