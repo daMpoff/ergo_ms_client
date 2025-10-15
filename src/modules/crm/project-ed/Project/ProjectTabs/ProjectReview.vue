@@ -21,7 +21,13 @@
 
         <div v-else class="project-review">
           <div class="card mb-3">
-            <div class="card-header fw-semibold">Основная информация</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Основная информация</span>
+              <div v-if="getBasicInfoClarificationsCount() > 0" class="d-flex align-items-center gap-1">
+                <TriangleAlert class="text-warning" size="16" />
+                <span class="badge bg-warning text-dark">{{ getBasicInfoClarificationsCount() }}</span>
+              </div>
+            </div>
             <div class="card-body">
               <div class="row g-3">
                 <div class="col-12">
@@ -59,24 +65,10 @@
                   </div>
                 </div>
                 <div class="col-12">
-                  <div class="field"><span class="field-label">Короткое название:</span> <span class="field-value">{{ projectData.short_name || '—' }}</span>
-                    <div class="decision-inline">
-                      <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('short_name')) }" @click="toggleClarify(makeKey('short_name'))">Уточнить</button>
-                    </div>
-                    <div v-if="isClarify(makeKey('short_name'))" class="decision-comment mt-2">
-                      <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий к отклонению" :value="getComment(makeKey('short_name'))" @input="updateComment(makeKey('short_name'), $event.target.value)"></textarea>
-                    </div>
-                  </div>
+                  <div class="field"><span class="field-label">Короткое название:</span> <span class="field-value">{{ projectData.short_name || '—' }}</span></div>
                 </div>
                 <div class="col-12">
-                  <div class="field"><span class="field-label">Полное название:</span> <span class="field-value">{{ projectData.name || '—' }}</span>
-                    <div class="decision-inline">
-                      <button type="button" class="btn btn-sm btn-outline-warning" :class="{ active: isClarify(makeKey('name')) }" @click="toggleClarify(makeKey('name'))">Уточнить</button>
-                    </div>
-                    <div v-if="isClarify(makeKey('name'))" class="decision-comment mt-2">
-                      <textarea class="form-control form-control-sm" rows="2" placeholder="Комментарий к отклонению" :value="getComment(makeKey('name'))" @input="updateComment(makeKey('name'), $event.target.value)"></textarea>
-                    </div>
-                  </div>
+                  <div class="field"><span class="field-label">Полное название:</span> <span class="field-value">{{ projectData.name || '—' }}</span></div>
                 </div>
                 <div class="col-12">
                   <div class="field"><span class="field-label">Уточнение к названию:</span> <span class="field-value">{{ projectData.name_clarification || '—' }}</span>
@@ -124,7 +116,13 @@
           </div>
 
           <div class="card mb-3">
-            <div class="card-header fw-semibold">Участники</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Участники</span>
+              <div v-if="getParticipantsClarificationsCount() > 0" class="d-flex align-items-center gap-1">
+                <TriangleAlert class="text-warning" size="16" />
+                <span class="badge bg-warning text-dark">{{ getParticipantsClarificationsCount() }}</span>
+              </div>
+            </div>
             <div class="card-body">
               <div class="participants-list">
                 <div class="field">
@@ -229,7 +227,13 @@
           </div>
 
           <div class="card mb-3">
-            <div class="card-header fw-semibold">Этапы</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Этапы</span>
+              <div v-if="getStagesClarificationsCount() > 0" class="d-flex align-items-center gap-1">
+                <TriangleAlert class="text-warning" size="16" />
+                <span class="badge bg-warning text-dark">{{ getStagesClarificationsCount() }}</span>
+              </div>
+            </div>
             <div class="card-body">
               <div v-if="!projectData.stages || projectData.stages.length === 0" class="text-muted">Нет этапов</div>
               <div v-else class="stages-list d-flex flex-column gap-3">
@@ -342,7 +346,13 @@
           </div>
 
           <div class="card mb-3">
-            <div class="card-header fw-semibold">Планируемые результаты</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Планируемые результаты</span>
+              <div v-if="getPlannedResultsClarificationsCount() > 0" class="d-flex align-items-center gap-1">
+                <TriangleAlert class="text-warning" size="16" />
+                <span class="badge bg-warning text-dark">{{ getPlannedResultsClarificationsCount() }}</span>
+              </div>
+            </div>
             <div class="card-body">
               <ul class="mb-0 tasks-list">
                 <li v-for="r in projectData.planned_results || []" :key="r.id" class="task-item">
@@ -360,7 +370,13 @@
           </div>
 
           <div class="card mb-3">
-            <div class="card-header fw-semibold">Задачи</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Задачи</span>
+              <div v-if="getTasksClarificationsCount() > 0" class="d-flex align-items-center gap-1">
+                <TriangleAlert class="text-warning" size="16" />
+                <span class="badge bg-warning text-dark">{{ getTasksClarificationsCount() }}</span>
+              </div>
+            </div>
             <div class="card-body">
               <ul class="mb-0 tasks-list">
                 <li v-for="t in projectData.tasks || []" :key="t.id" class="task-item">
@@ -378,7 +394,13 @@
           </div>
 
           <div class="card mb-3">
-            <div class="card-header fw-semibold">Целевые показатели</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Целевые показатели</span>
+              <div v-if="getTargetIndicatorsClarificationsCount() > 0" class="d-flex align-items-center gap-1">
+                <TriangleAlert class="text-warning" size="16" />
+                <span class="badge bg-warning text-dark">{{ getTargetIndicatorsClarificationsCount() }}</span>
+              </div>
+            </div>
             <div class="card-body">
               <div v-if="!projectData.target_indicators || projectData.target_indicators.length === 0" class="text-muted">Нет данных</div>
               <template v-else>
@@ -498,7 +520,13 @@
           
 
           <div class="card mb-4">
-            <div class="card-header fw-semibold">Бюджет: итоги</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Бюджет: итоги</span>
+              <div v-if="getBudgetClarificationsCount() > 0" class="d-flex align-items-center gap-1">
+                <TriangleAlert class="text-warning" size="16" />
+                <span class="badge bg-warning text-dark">{{ getBudgetClarificationsCount() }}</span>
+              </div>
+            </div>
             <div class="card-body">
               <div v-if="!(projectData.budget_totals && projectData.budget_totals.length)" class="text-muted">Нет данных по итогам бюджета</div>
               <div v-else class="row g-3">
@@ -571,6 +599,27 @@
               </div>
             </div>
           </div>
+
+          <div v-if="accessChecked && isAllowed">
+            <div class="card-body">
+              <div class="d-flex justify-content-end gap-3">
+                <button type="button" class="btn btn-outline-danger" @click="handleReject">Отклонить</button>
+                <span 
+                  :title="totalClarificationsCount > 0 ? `Для принятия проекта необходимо убрать все замечания (${totalClarificationsCount} замечаний)` : 'Принять проект'"
+                >
+                  <button 
+                    type="button" 
+                    class="btn btn-success"
+                    style="color: white;" 
+                    :disabled="!canAccept" 
+                    @click="handleAccept"
+                  >
+                    Принять
+                  </button>
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </template>
     </div>
@@ -603,7 +652,7 @@ import { apiClient } from '@/js/api/manager.js'
 import { endpoints } from '@/js/api/endpoints.js'
 import { slugify as translitSlugify } from 'transliteration'
 import Breadcrumbs from '@/modules/crm/project-ed/components/Breadcrumbs.vue'
-import { Home, List, FileText, CheckCircle, Calendar } from 'lucide-vue-next'
+import { Home, List, FileText, CheckCircle, Calendar, TriangleAlert } from 'lucide-vue-next'
 import HeaderBar from '@/modules/crm/project-ed/components/HeaderBar.vue'
 import SimpleTooltip from '@/modules/crm/project-ed/components/SimpleTooltip.vue'
 import ProfileTooltip from '@/modules/crm/project-ed/components/ProfileTooltip.vue'
@@ -663,6 +712,95 @@ function toggleClarify(key) {
 
 function isClarify(key) {
   return decisions.value.get(key)?.status === 'clarify'
+}
+
+// Функции для подсчета замечаний по блокам
+function getBasicInfoClarificationsCount() {
+  const keys = ['block', 'event', 'short_name', 'name', 'name_clarification', 'goal', 'start_date', 'end_date']
+  return keys.filter(key => isClarify(makeKey(key))).length
+}
+
+function getParticipantsClarificationsCount() {
+  const keys = ['manager', 'curator', 'customer', 'performers']
+  return keys.filter(key => isClarify(makeKey(key))).length
+}
+
+function getStagesClarificationsCount() {
+  if (!projectData.value?.stages) return 0
+  let count = 0
+  projectData.value.stages.forEach(stage => {
+    const stageKeys = ['stage_name', 'stage_start', 'stage_end', 'stage_results', 
+                      'stage_budget_salary_budget', 'stage_budget_salary_nonbudget',
+                      'stage_budget_other_budget', 'stage_budget_other_nonbudget']
+    count += stageKeys.filter(key => isClarify(makeKey(key, stage.id))).length
+  })
+  return count
+}
+
+function getPlannedResultsClarificationsCount() {
+  if (!projectData.value?.planned_results) return 0
+  return projectData.value.planned_results.filter(result => isClarify(makeKey('planned_result', result.id))).length
+}
+
+function getTasksClarificationsCount() {
+  if (!projectData.value?.tasks) return 0
+  return projectData.value.tasks.filter(task => isClarify(makeKey('task', task.id))).length
+}
+
+function getTargetIndicatorsClarificationsCount() {
+  if (!projectData.value?.target_indicators) return 0
+  let count = 0
+  projectData.value.target_indicators.forEach(indicator => {
+    const indicatorKeys = ['indicator', 'indicator_unit', 'indicator_baseline', 'indicator_planned']
+    count += indicatorKeys.filter(key => isClarify(makeKey(key, indicator.id))).length
+  })
+  return count
+}
+
+function getBudgetClarificationsCount() {
+  if (!projectData.value?.budget_totals) return 0
+  let count = 0
+  projectData.value.budget_totals.forEach(bt => {
+    const budgetKeys = ['budget_total_salary_off', 'budget_total_salary_budget', 
+                       'budget_total_other_off', 'budget_total_other_budget', 'budget_total_total']
+    count += budgetKeys.filter(key => isClarify(makeKey(key, bt.id))).length
+  })
+  return count
+}
+
+// Общее количество замечаний по всем блокам
+const totalClarificationsCount = computed(() => {
+  return getBasicInfoClarificationsCount() +
+         getParticipantsClarificationsCount() +
+         getStagesClarificationsCount() +
+         getPlannedResultsClarificationsCount() +
+         getTasksClarificationsCount() +
+         getTargetIndicatorsClarificationsCount() +
+         getBudgetClarificationsCount()
+})
+
+// Кнопка "Принять" доступна только когда нет замечаний
+const canAccept = computed(() => totalClarificationsCount.value === 0)
+
+// Функции для обработки действий
+function handleAccept() {
+  if (!canAccept.value) return
+  
+  // Здесь будет логика принятия проекта
+  console.log('Проект принят')
+  // TODO: Отправить запрос на сервер для принятия проекта
+}
+
+function handleReject() {
+  if (totalClarificationsCount.value === 0) {
+    // Если нет замечаний, показать модальное окно для ввода причины отклонения
+    console.log('Отклонение без замечаний - нужна причина')
+    // TODO: Показать модальное окно для ввода причины
+  } else {
+    // Если есть замечания, отклонить с комментариями
+    console.log('Проект отклонен с замечаниями:', decisions.value)
+    // TODO: Отправить запрос на сервер для отклонения проекта с замечаниями
+  }
 }
 
 const projectSlug = computed(() => {
@@ -1087,7 +1225,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   min-height: 200px;
-  color: #6a737d;
+  color: var(--color-secondary-text);
 }
 
 .field {
